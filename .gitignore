@@ -1,0 +1,39 @@
+# Environment
+.env
+
+# Storage - logs
+storage/logs/*.log
+
+# Storage - uploads (keep directory structure via .gitkeep)
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/uploads/items/*
+!storage/uploads/items/.gitkeep
+storage/uploads/generated-icons/*
+!storage/uploads/generated-icons/.gitkeep
+
+# Storage - backups
+storage/backups/*
+!storage/backups/.gitkeep
+
+# Storage - cache
+storage/cache/*
+!storage/cache/.gitkeep
+
+# Storage - exports
+storage/exports/*
+!storage/exports/.gitkeep
+
+# Vendor (if Composer is ever introduced)
+vendor/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# Install lock
+storage/installed.lock
