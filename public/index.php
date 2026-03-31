@@ -8,7 +8,13 @@
 
 declare(strict_types=1);
 
-define('BASE_PATH', dirname(__DIR__));
+// Standard deployment: app root is one level above public/
+// cPanel subdirectory deployment: app files are in sibling folder rooted-files/
+if (file_exists(dirname(__DIR__) . '/bootstrap/init.php')) {
+    define('BASE_PATH', dirname(__DIR__));
+} else {
+    define('BASE_PATH', dirname(__DIR__) . '/rooted-files');
+}
 
 require BASE_PATH . '/bootstrap/init.php';
 
