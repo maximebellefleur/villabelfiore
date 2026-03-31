@@ -1,6 +1,10 @@
 Options -Indexes
 RewriteEngine On
 
+# Required for subdirectory installs (e.g. example.com/rooted/)
+# Apache needs this to resolve rewrites relative to the subfolder
+RewriteBase /rooted/
+
 # Serve existing files and directories directly (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

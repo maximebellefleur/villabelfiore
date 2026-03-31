@@ -15,7 +15,17 @@ class Request
     public function uri(): string
     {
         $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-        return '/' . trim($uri, '/') ?: '/';
+
+        // Strip subdirectory prefix so routes work when app is installed
+        // at e.g. /rooted/ instead of the domain root.
+        // SCRIPT_NAME is e.g. /rooted/index.php — the base is /rooted
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        if ($scriptDir !== '' && str_starts_with($uri, $scriptDir)) {
+            $uri = substr($uri, strlen($scriptDir));
+        }
+
+        $uri = '/' . ltrim($uri, '/');
+        return $uri === '' ? '/' : $uri;
     }
 
     public function get(string $key, mixed $default = null): mixed
