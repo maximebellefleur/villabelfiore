@@ -2,7 +2,7 @@
 <div class="installer-card">
     <h2>Step 2: Land Identity</h2>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-    <form method="POST" action="/install/step/3" class="form">
+    <form method="POST" action="<?= url('/install/step/3') ?>" class="form">
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
         <div class="form-group">

@@ -21,7 +21,7 @@
 <div class="card">
     <div class="card-body">
         <h3>Add Entry</h3>
-        <form method="POST" action="/finance" class="form">
+        <form method="POST" action="<?= url('/finance') ?>" class="form">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <div class="form-row">
                 <div class="form-group">

@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Action Types</h1>
-    <a href="/settings" class="btn btn-secondary">&larr; Settings</a>
+    <a href="<?= url('/settings') ?>" class="btn btn-secondary">&larr; Settings</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 <table class="table">

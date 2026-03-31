@@ -1,9 +1,9 @@
 <div class="page-header">
     <h1 class="page-title">Attachments — <?= e($item['name']) ?></h1>
-    <a href="/items/<?= (int)$item['id'] ?>" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items/' . ((int)$item['id'])) ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-<form method="POST" action="/items/<?= (int)$item['id'] ?>/attachments" enctype="multipart/form-data" class="form">
+<form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/attachments') ?>" enctype="multipart/form-data" class="form">
     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
     <input type="file" name="file" class="form-input" required>
     <select name="category" class="form-input">
@@ -22,7 +22,7 @@
 <div class="attachment-grid">
     <?php foreach ($attachments as $att): ?>
     <div class="attachment-card">
-        <a href="/attachments/<?= (int)$att['id'] ?>/download"><?= e($att['original_filename']) ?></a>
+        <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>"><?= e($att['original_filename']) ?></a>
         <span class="text-muted text-sm"><?= e($att['category']) ?></span>
     </div>
     <?php endforeach; ?>

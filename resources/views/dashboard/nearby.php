@@ -16,7 +16,7 @@ $('#detectLocation').on('click', function() {
             if (res.success && res.data.length) {
                 var html = '';
                 res.data.forEach(function(item) {
-                    html += '<li class="card"><div class="card-body"><a href="/items/'+item.id+'">'+item.name+'</a><span class="badge">'+item.type+'</span><span class="text-muted text-sm">'+parseFloat(item.distance_km).toFixed(3)+' km</span></div></li>';
+                    html += '<li class="card"><div class="card-body"><a href="<?= url('/items/'+item.id+'') ?>">'+item.name+'</a><span class="badge">'+item.type+'</span><span class="text-muted text-sm">'+parseFloat(item.distance_km).toFixed(3)+' km</span></div></li>';
                 });
                 $('#nearbyList').html(html);
                 $('#nearbyResults').show();

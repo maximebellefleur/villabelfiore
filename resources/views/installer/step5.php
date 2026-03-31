@@ -2,7 +2,7 @@
 <div class="installer-card">
     <h2>Step 4: Integrations (Optional)</h2>
     <p>These can all be configured later in Settings.</p>
-    <form method="POST" action="/install/step/5" class="form">
+    <form method="POST" action="<?= url('/install/step/5') ?>" class="form">
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
         <div class="form-group">

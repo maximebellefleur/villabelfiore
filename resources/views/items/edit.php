@@ -1,12 +1,12 @@
 <div class="page-header">
     <h1 class="page-title">Edit — <?= e($item['name']) ?></h1>
-    <a href="/items/<?= (int)$item['id'] ?>" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items/' . ((int)$item['id'])) ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="/items/<?= (int)$item['id'] ?>/update" class="form">
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/update') ?>" class="form">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <input type="hidden" name="type" value="<?= e($item['type']) ?>">
 
@@ -42,7 +42,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="/items/<?= (int)$item['id'] ?>" class="btn btn-link">Cancel</a>
+                <a href="<?= url('/items/' . ((int)$item['id'])) ?>" class="btn btn-link">Cancel</a>
             </div>
         </form>
     </div>

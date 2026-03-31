@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Error Detail</h1>
-    <a href="/logs/errors" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/logs/errors') ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <div class="card">
     <div class="card-body">

@@ -19,9 +19,14 @@ if (!function_exists('e')) {
 // -----------------------------------------------------------------------
 
 if (!function_exists('url')) {
+    /**
+     * Build an app-relative URL prefixed with APP_BASE so subdirectory installs
+     * (e.g. /rooted) work without any extra configuration.
+     * url('/install') → '/rooted/install'  (or '/install' at root)
+     */
     function url(string $path = ''): string
     {
-        $base = rtrim((string) Env::get('APP_URL', ''), '/');
+        $base = defined('APP_BASE') ? APP_BASE : rtrim((string) Env::get('APP_URL', ''), '/');
         return $base . '/' . ltrim($path, '/');
     }
 }
@@ -42,9 +47,7 @@ if (!function_exists('asset')) {
 if (!function_exists('redirect')) {
     function redirect(string $url, int $status = 302): void
     {
-        http_response_code($status);
-        header('Location: ' . $url);
-        exit;
+        \App\Support\Response::redirect($url, $status);
     }
 }
 

@@ -13,7 +13,7 @@
             <td><span class="badge"><?= e($a['action_label']) ?></span></td>
             <td>
                 <?php if ($a['item_id']): ?>
-                <a href="/items/<?= (int)$a['item_id'] ?>"><?= e($a['item_name'] ?? 'Item #'.$a['item_id']) ?></a>
+                <a href="<?= url('/items/' . ((int)$a['item_id'])) ?>"><?= e($a['item_name'] ?? 'Item #'.$a['item_id']) ?></a>
                 <?php else: ?>—<?php endif; ?>
             </td>
             <td><?= e($a['description']) ?></td>

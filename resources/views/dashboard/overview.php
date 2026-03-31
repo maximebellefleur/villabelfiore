@@ -1,7 +1,7 @@
 <div class="page-header">
     <h1 class="page-title">Land Overview</h1>
     <div class="page-actions">
-        <a href="/items/create" class="btn btn-primary">+ Add Item</a>
+        <a href="<?= url('/items/create') ?>" class="btn btn-primary">+ Add Item</a>
     </div>
 </div>
 
@@ -53,7 +53,7 @@ $withoutGps = (int)($noGpsRow['cnt'] ?? 0);
             <div class="widget__header">Items by Type</div>
             <div class="widget__body">
                 <?php if (empty($countsByType)): ?>
-                    <p class="meta-empty">No items yet. <a href="/items/create">Add your first item</a>.</p>
+                    <p class="meta-empty">No items yet. <a href="<?= url('/items/create') ?>">Add your first item</a>.</p>
                 <?php else: ?>
                 <table class="table">
                     <thead>
@@ -66,7 +66,7 @@ $withoutGps = (int)($noGpsRow['cnt'] ?? 0);
                         <tr>
                             <td><span class="type-badge type-<?= e($typeKey) ?>"><?= e($typeDef['label']) ?></span></td>
                             <td style="text-align:right;font-weight:600"><?= $cnt ?></td>
-                            <td><a href="/items?type=<?= urlencode($typeKey) ?>" class="btn btn-xs btn-secondary">View</a></td>
+                            <td><a href="<?= url('/items?type=' . (urlencode($typeKey))) ?>" class="btn btn-xs btn-secondary">View</a></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -81,10 +81,10 @@ $withoutGps = (int)($noGpsRow['cnt'] ?? 0);
             <div class="widget__header">Quick Actions</div>
             <div class="widget__body">
                 <div style="display:flex;flex-direction:column;gap:8px">
-                    <a href="/items/create"  class="btn btn-primary"   style="text-align:center">+ Add Item</a>
-                    <a href="/reminders"     class="btn btn-secondary" style="text-align:center">Reminders</a>
-                    <a href="/finance"       class="btn btn-secondary" style="text-align:center">Finance</a>
-                    <a href="/activity-log"  class="btn btn-secondary" style="text-align:center">Activity Log</a>
+                    <a href="<?= url('/items/create') ?>"  class="btn btn-primary"   style="text-align:center">+ Add Item</a>
+                    <a href="<?= url('/reminders') ?>"     class="btn btn-secondary" style="text-align:center">Reminders</a>
+                    <a href="<?= url('/finance') ?>"       class="btn btn-secondary" style="text-align:center">Finance</a>
+                    <a href="<?= url('/activity-log') ?>"  class="btn btn-secondary" style="text-align:center">Activity Log</a>
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@ $withoutGps = (int)($noGpsRow['cnt'] ?? 0);
                     </div>
                 </div>
                 <?php if ($withoutGps > 0): ?>
-                <p class="gps-accuracy-note" style="margin-top:8px"><?= $withoutGps ?> active item(s) have no GPS coordinates. <a href="/items?status=active">Review</a></p>
+                <p class="gps-accuracy-note" style="margin-top:8px"><?= $withoutGps ?> active item(s) have no GPS coordinates. <a href="<?= url('/items?status=active') ?>">Review</a></p>
                 <?php endif; ?>
             </div>
         </div>

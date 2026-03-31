@@ -148,9 +148,9 @@ $activityBreakdown = $db->fetchAll(
             <div class="widget__header">Links</div>
             <div class="widget__body">
                 <div style="display:flex;flex-direction:column;gap:8px">
-                    <a href="/activity-log" class="btn btn-secondary" style="text-align:center">Full Activity Log</a>
-                    <a href="/finance"      class="btn btn-secondary" style="text-align:center">All Finance Entries</a>
-                    <a href="/reminders"    class="btn btn-secondary" style="text-align:center">Reminders</a>
+                    <a href="<?= url('/activity-log') ?>" class="btn btn-secondary" style="text-align:center">Full Activity Log</a>
+                    <a href="<?= url('/finance') ?>"      class="btn btn-secondary" style="text-align:center">All Finance Entries</a>
+                    <a href="<?= url('/reminders') ?>"    class="btn btn-secondary" style="text-align:center">Reminders</a>
                 </div>
             </div>
         </div>

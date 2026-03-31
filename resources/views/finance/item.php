@@ -1,9 +1,9 @@
 <div class="page-header">
     <h1 class="page-title">Finance — <?= e($item['name']) ?></h1>
-    <a href="/items/<?= (int)$item['id'] ?>" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items/' . ((int)$item['id'])) ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-<form method="POST" action="/finance" class="form">
+<form method="POST" action="<?= url('/finance') ?>" class="form">
     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
     <input type="hidden" name="item_id" value="<?= (int)$item['id'] ?>">
     <div class="form-row">

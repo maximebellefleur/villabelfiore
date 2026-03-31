@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Action Log</h1>
-    <a href="/items/<?= (int)$item_id ?>" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items/' . ((int)$item_id)) ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php if (empty($log)): ?>
 <p class="text-muted">No actions logged yet.</p>

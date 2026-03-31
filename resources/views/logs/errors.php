@@ -12,7 +12,7 @@
             <td class="text-sm"><?= e(date('d M Y H:i', strtotime($log['created_at']))) ?></td>
             <td><span class="badge badge-severity-<?= e($log['severity']) ?>"><?= e(strtoupper($log['severity'])) ?></span></td>
             <td class="text-sm"><?= e($log['module']) ?></td>
-            <td><a href="/logs/errors/<?= (int)$log['id'] ?>"><?= e(mb_strimwidth($log['message'], 0, 80, '…')) ?></a></td>
+            <td><a href="<?= url('/logs/errors/' . ((int)$log['id'])) ?>"><?= e(mb_strimwidth($log['message'], 0, 80, '…')) ?></a></td>
         </tr>
         <?php endforeach; ?>
     </tbody>

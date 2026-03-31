@@ -2,7 +2,7 @@
 <div class="auth-card">
     <h1 class="auth-title">Sign In to Rooted</h1>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-    <form method="POST" action="/login" class="form" novalidate>
+    <form method="POST" action="<?= url('/login') ?>" class="form" novalidate>
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
         <div class="form-group">

@@ -11,14 +11,14 @@
         <div class="card-body">
             <strong><?= e($r['title']) ?></strong>
             <span class="text-muted text-sm"><?= e(date('d M Y H:i', strtotime($r['due_at']))) ?></span>
-            <?php if ($r['item_name']): ?><a href="/items/<?= (int)$r['item_id'] ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
+            <?php if ($r['item_name']): ?><a href="<?= url('/items/' . ((int)$r['item_id'])) ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
         </div>
         <div class="card-actions">
-            <form method="POST" action="/reminders/<?= (int)$r['id'] ?>/complete" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <button class="btn btn-sm btn-success">Done</button>
             </form>
-            <form method="POST" action="/reminders/<?= (int)$r['id'] ?>/dismiss" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/dismiss') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <button class="btn btn-sm btn-secondary">Dismiss</button>
             </form>
@@ -38,14 +38,14 @@
         <div class="card-body">
             <strong><?= e($r['title']) ?></strong>
             <span class="text-muted text-sm"><?= e(date('d M Y H:i', strtotime($r['due_at']))) ?></span>
-            <?php if ($r['item_name']): ?><a href="/items/<?= (int)$r['item_id'] ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
+            <?php if ($r['item_name']): ?><a href="<?= url('/items/' . ((int)$r['item_id'])) ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
         </div>
         <div class="card-actions">
-            <form method="POST" action="/reminders/<?= (int)$r['id'] ?>/complete" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <button class="btn btn-sm btn-success">Done</button>
             </form>
-            <form method="POST" action="/reminders/<?= (int)$r['id'] ?>/dismiss" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/dismiss') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <button class="btn btn-sm btn-secondary">Dismiss</button>
             </form>
@@ -58,7 +58,7 @@
 <div class="card">
     <div class="card-body">
         <h3>New Reminder</h3>
-        <form method="POST" action="/reminders" class="form">
+        <form method="POST" action="<?= url('/reminders') ?>" class="form">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <div class="form-group">
                 <label class="form-label">Title</label>

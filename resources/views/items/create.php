@@ -1,12 +1,12 @@
 <div class="page-header">
     <h1 class="page-title">Add Item</h1>
-    <a href="/items" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items') ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="/items" class="form" id="itemForm">
+        <form method="POST" action="<?= url('/items') ?>" class="form" id="itemForm">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
             <div class="form-group">
@@ -67,7 +67,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Item</button>
-                <a href="/items" class="btn btn-link">Cancel</a>
+                <a href="<?= url('/items') ?>" class="btn btn-link">Cancel</a>
             </div>
         </form>
     </div>

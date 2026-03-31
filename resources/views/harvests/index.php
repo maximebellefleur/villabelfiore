@@ -1,9 +1,9 @@
 <div class="page-header">
     <h1 class="page-title">Harvests — <?= e($item['name']) ?></h1>
-    <a href="/items/<?= (int)$item['id'] ?>" class="btn btn-secondary">&larr; Back</a>
+    <a href="<?= url('/items/' . ((int)$item['id'])) ?>" class="btn btn-secondary">&larr; Back</a>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-<form method="POST" action="/items/<?= (int)$item['id'] ?>/harvests" class="form-inline">
+<form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/harvests') ?>" class="form-inline">
     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
     <input type="number" step="0.001" name="quantity" class="form-input form-input--sm" placeholder="Quantity" required>
     <input type="text" name="unit" class="form-input form-input--sm" placeholder="Unit" required>

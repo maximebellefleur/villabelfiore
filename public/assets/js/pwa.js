@@ -4,7 +4,7 @@
     // Register service worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-            navigator.serviceWorker.register('/sw.js').then(function (reg) {
+            navigator.serviceWorker.register((window.APP_BASE || '') + '/sw.js').then(function (reg) {
                 console.log('[Rooted] SW registered, scope:', reg.scope);
             }).catch(function (err) {
                 console.warn('[Rooted] SW registration failed:', err);
@@ -19,7 +19,7 @@
         if (navigator.onLine) {
             $body.classList.remove('offline');
             // Attempt to process queued sync items
-            fetch('/sync/status').then(function (r) { return r.json(); }).then(function (data) {
+            fetch((window.APP_BASE || '') + '/sync/status').then(function (r) { return r.json(); }).then(function (data) {
                 if (data.data && data.data.pending > 0) {
                     document.getElementById('syncStatus') &&
                         (document.getElementById('syncStatus').style.display = 'block');

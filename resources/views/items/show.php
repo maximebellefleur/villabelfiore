@@ -6,8 +6,8 @@
         <?php endif; ?>
     </h1>
     <div class="page-actions">
-        <a href="/items/<?= (int)$item['id'] ?>/edit" class="btn btn-secondary">Edit</a>
-        <form method="POST" action="/items/<?= (int)$item['id'] ?>/trash" style="display:inline">
+        <a href="<?= url('/items/' . ((int)$item['id']) . '/edit') ?>" class="btn btn-secondary">Edit</a>
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/trash') ?>" style="display:inline">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <button class="btn btn-danger" onclick="return confirm('Move to trash?')">Trash</button>
         </form>
@@ -58,7 +58,7 @@
 
         <div class="section-actions">
             <h3>Log Action</h3>
-            <form method="POST" action="/items/<?= (int)$item['id'] ?>/actions" class="form-inline">
+            <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/actions') ?>" class="form-inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <select name="action_type" class="form-input form-input--sm">
                     <option value="note">Note</option>
@@ -75,7 +75,7 @@
 
         <div class="section-actions">
             <h3>Add Reminder</h3>
-            <form method="POST" action="/reminders" class="form-inline">
+            <form method="POST" action="<?= url('/reminders') ?>" class="form-inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <input type="hidden" name="item_id" value="<?= (int)$item['id'] ?>">
                 <input type="text" name="title" class="form-input" placeholder="Reminder title" required>
@@ -87,7 +87,7 @@
 
     <div class="tab-panel" id="tab-attachments">
         <h3>Attachments</h3>
-        <form method="POST" action="/items/<?= (int)$item['id'] ?>/attachments" enctype="multipart/form-data" class="form">
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/attachments') ?>" enctype="multipart/form-data" class="form">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <div class="form-row">
                 <input type="file" name="file" class="form-input" required>
@@ -108,13 +108,13 @@
             <?php foreach ($attachments as $att): ?>
             <div class="attachment-card">
                 <?php if (str_starts_with($att['mime_type'], 'image/')): ?>
-                <img src="/attachments/<?= (int)$att['id'] ?>/download" class="attachment-thumb" loading="lazy">
+                <img src="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-thumb" loading="lazy">
                 <?php endif; ?>
                 <div class="attachment-info">
-                    <a href="/attachments/<?= (int)$att['id'] ?>/download" class="attachment-name"><?= e($att['original_filename']) ?></a>
+                    <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-name"><?= e($att['original_filename']) ?></a>
                     <span class="badge badge-sm"><?= e(str_replace('_', ' ', $att['category'])) ?></span>
                 </div>
-                <form method="POST" action="/attachments/<?= (int)$att['id'] ?>/trash">
+                <form method="POST" action="<?= url('/attachments/' . ((int)$att['id']) . '/trash') ?>">
                     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                     <button class="btn btn-sm btn-danger">&times;</button>
                 </form>
@@ -138,7 +138,7 @@
                     <?= e(date('d M Y', strtotime($r['due_at']))) ?>
                 </span>
                 <span class="reminder-title"><?= e($r['title']) ?></span>
-                <form method="POST" action="/reminders/<?= (int)$r['id'] ?>/complete" style="display:inline">
+                <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
                     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                     <button class="btn btn-sm btn-success">Done</button>
                 </form>
@@ -151,7 +151,7 @@
     <?php if (!empty($harvests)): ?>
     <div class="tab-panel" id="tab-harvests">
         <h3>Harvests</h3>
-        <form method="POST" action="/items/<?= (int)$item['id'] ?>/harvests" class="form-inline">
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/harvests') ?>" class="form-inline">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <input type="number" step="0.001" name="quantity" class="form-input form-input--sm" placeholder="Quantity" required>
             <input type="text" name="unit" class="form-input form-input--sm" placeholder="Unit (kg, L…)" required>
@@ -178,7 +178,7 @@
     <?php if (!empty($finances)): ?>
     <div class="tab-panel" id="tab-finance">
         <h3>Finance</h3>
-        <a href="/items/<?= (int)$item['id'] ?>/finance" class="btn btn-secondary btn-sm">Full Finance View</a>
+        <a href="<?= url('/items/' . ((int)$item['id']) . '/finance') ?>" class="btn btn-secondary btn-sm">Full Finance View</a>
         <table class="table">
             <thead><tr><th>Date</th><th>Type</th><th>Label</th><th>Amount</th></tr></thead>
             <tbody>

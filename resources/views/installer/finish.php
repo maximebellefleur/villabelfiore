@@ -2,7 +2,7 @@
 <div class="installer-card">
     <h2>Step 5: Create Admin Account</h2>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
-    <form method="POST" action="/install/finish" class="form">
+    <form method="POST" action="<?= url('/install/finish') ?>" class="form">
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
         <div class="form-group">

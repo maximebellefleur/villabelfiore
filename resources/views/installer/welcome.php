@@ -25,7 +25,7 @@
     </table>
 
     <?php if ($allPassed): ?>
-    <form method="POST" action="/install/step/1">
+    <form method="POST" action="<?= url('/install/step/1') ?>">
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
         <button type="submit" class="btn btn-primary">Continue to Database Setup &rarr;</button>
     </form>
