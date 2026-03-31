@@ -16,6 +16,10 @@ if (file_exists(dirname(__DIR__) . '/bootstrap/init.php')) {
     define('BASE_PATH', dirname(__DIR__) . '/rooted-files');
 }
 
+// APP_BASE is the URL subdirectory prefix (e.g. '/rooted' or '' for root installs).
+// Detected from SCRIPT_NAME so no config is needed.
+define('APP_BASE', rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\'));
+
 require BASE_PATH . '/bootstrap/init.php';
 
 use App\Support\Router;

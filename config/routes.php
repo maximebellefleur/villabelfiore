@@ -19,11 +19,10 @@ use App\Controllers\InstallerController;
 // -------------------------------------------------------------------------
 $router->get('/', function ($req, $params) {
     if (isInstalled()) {
-        header('Location: /dashboard');
+        \App\Support\Response::redirect('/dashboard');
     } else {
-        header('Location: /install');
+        \App\Support\Response::redirect('/install');
     }
-    exit;
 });
 
 // -------------------------------------------------------------------------

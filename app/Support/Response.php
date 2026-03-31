@@ -71,9 +71,14 @@ class Response
 
     /**
      * Redirect and exit.
+     * Internal paths (starting with /) are prefixed with APP_BASE automatically
+     * so redirects work whether the app is at / or /rooted/ or any subdir.
      */
     public static function redirect(string $url, int $status = 302): void
     {
+        if (str_starts_with($url, '/') && defined('APP_BASE') && APP_BASE !== '') {
+            $url = APP_BASE . $url;
+        }
         http_response_code($status);
         header('Location: ' . $url);
         exit;
