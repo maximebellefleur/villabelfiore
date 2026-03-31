@@ -1,0 +1,42 @@
+services:
+
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: Rooted
+      APP_ENV: development
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: rooted
+      DB_USER: rooted
+      DB_PASS: rooted
+    volumes:
+      - rooted_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: rooted
+      MYSQL_USER: rooted
+      MYSQL_PASSWORD: rooted
+    volumes:
+      - rooted_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "rooted", "-prooted"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  rooted_db:
+  rooted_storage:
