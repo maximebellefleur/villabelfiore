@@ -1,0 +1,15 @@
+Options -Indexes
+RewriteEngine On
+
+# Serve existing files and directories directly (assets, etc.)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all other requests through index.php
+RewriteRule ^ index.php [L]
+
+# Deny access to sensitive files
+<FilesMatch "\.(env|log|sql|sh|bak|md)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

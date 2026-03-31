@@ -50,7 +50,12 @@ class DashboardController
     public function overview(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        Response::render('dashboard/overview', ['title' => 'Overview']);
+        $db = DB::getInstance();
+        $itemCounts = $db->fetchAll(
+            'SELECT type, COUNT(*) AS cnt FROM items WHERE status = ? AND deleted_at IS NULL GROUP BY type',
+            ['active']
+        );
+        Response::render('dashboard/overview', ['title' => 'Overview', 'itemCounts' => $itemCounts]);
     }
 
     public function nearby(Request $request, array $params = []): void
@@ -62,7 +67,7 @@ class DashboardController
     public function reports(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        Response::render('dashboard/reports', ['title' => 'Reports']);
+        Response::render('dashboard/reports', ['title' => 'Reports — ' . date('Y')]);
     }
 
     public function apiSummary(Request $request, array $params = []): void
