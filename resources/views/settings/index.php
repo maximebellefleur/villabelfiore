@@ -9,6 +9,7 @@
         <button class="tab-btn" data-tab="storage"><a href="<?= url('/settings/storage') ?>">Storage</a></button>
         <button class="tab-btn" data-tab="actions"><a href="<?= url('/settings/action-types') ?>">Action Types</a></button>
         <button class="tab-btn" data-tab="logs"><a href="<?= url('/logs/errors') ?>">Error Logs</a></button>
+        <button class="tab-btn" data-tab="upgrade"><a href="<?= url('/settings/upgrade') ?>">⬆️ Upgrade</a></button>
     </nav>
 
     <div class="tab-panel tab-panel--active" id="tab-general">

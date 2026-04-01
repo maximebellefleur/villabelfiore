@@ -551,3 +551,179 @@
 .page-btn:hover  { background: var(--color-surface); }
 .page-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 .page-btn.disabled { opacity: .4; pointer-events: none; }
+
+/* =========================================================
+   Settings — Upgrade page
+   ========================================================= */
+
+.upgrade-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.upgrade-version-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.upgrade-version-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.upgrade-version-name {
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.upgrade-steps {
+  margin: 0 0 var(--spacing-4);
+  padding-left: var(--spacing-5);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+/* Drop zone */
+.upgrade-drop-zone {
+  position: relative;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+
+.upgrade-drop-zone:hover,
+.upgrade-drop-zone--hover {
+  border-color: var(--color-primary);
+  background: rgba(45, 90, 39, .04);
+}
+
+.upgrade-drop-zone--ready {
+  border-color: var(--color-success, #4caf50);
+  background: rgba(76, 175, 80, .04);
+}
+
+.upgrade-drop-icon { font-size: 2.5rem; margin-bottom: var(--spacing-2); }
+.upgrade-drop-text { color: var(--color-text-muted); font-size: 0.9rem; }
+.upgrade-drop-filename {
+  margin-top: var(--spacing-2);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.upgrade-submit {
+  margin-top: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+/* Result card */
+.upgrade-result {
+  margin-bottom: var(--spacing-4);
+  border-left: 4px solid var(--color-success, #4caf50);
+}
+
+.upgrade-result-header {
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.upgrade-result-header h2 {
+  margin: var(--spacing-1) 0 0;
+  font-size: 1.4rem;
+}
+
+.upgrade-release-name {
+  color: var(--color-text-muted);
+  margin: 2px 0 var(--spacing-1);
+}
+
+.upgrade-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  margin-bottom: var(--spacing-1);
+}
+
+.upgrade-badge--success {
+  background: rgba(76,175,80,.15);
+  color: #2e7d32;
+}
+
+/* Changelog */
+.upgrade-changelog {
+  padding: var(--spacing-4);
+}
+
+.upgrade-changelog h3 {
+  margin: 0 0 var(--spacing-3);
+  font-size: 1rem;
+}
+
+.changelog-entry {
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.changelog-entry:last-child { border-bottom: none; }
+
+.changelog-entry--current .changelog-version {
+  color: var(--color-primary);
+}
+
+.changelog-version {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.changelog-date {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.changelog-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.changelog-section {
+  margin-bottom: var(--spacing-2);
+  font-size: 0.875rem;
+}
+
+.changelog-section ul {
+  margin: 4px 0 0;
+  padding-left: var(--spacing-5);
+}
+
+.changelog-section li {
+  margin-bottom: 2px;
+  color: var(--color-text-muted);
+}

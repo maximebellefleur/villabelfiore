@@ -12,6 +12,7 @@ use App\Controllers\ErrorLogController;
 use App\Controllers\SyncController;
 use App\Controllers\InstallerController;
 use App\Controllers\MapController;
+use App\Controllers\UpgradeController;
 
 /** @var \App\Support\Router $router */
 
@@ -111,6 +112,8 @@ $router->get('/settings/storage',              'SettingsController@storage');
 $router->post('/settings/storage',             'SettingsController@updateStorage');
 $router->get('/settings/action-types',         'SettingsController@actionTypes');
 $router->post('/settings/action-types',        'SettingsController@updateActionTypes');
+$router->get('/settings/upgrade',              'UpgradeController@index');
+$router->post('/settings/upgrade/upload',      'UpgradeController@upload');
 
 // -------------------------------------------------------------------------
 // Logs
