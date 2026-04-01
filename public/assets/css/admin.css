@@ -965,3 +965,20 @@ select.form-input--touch {
   color: var(--color-text-muted);
   margin-bottom: var(--spacing-3);
 }
+
+/* Upgrade progress bar */
+.upgrade-progress-wrap {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: var(--spacing-3);
+}
+
+.upgrade-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  width: 0;
+  transition: width .3s ease;
+}

@@ -103,6 +103,16 @@ unset($_SESSION['upgrade_result']);
                 </button>
                 <p class="text-muted text-sm">This will replace all code files. Your data is safe.</p>
             </div>
+
+            <!-- Upload progress -->
+            <div id="uploadProgress" style="display:none; margin-top:var(--spacing-4)">
+                <div class="upgrade-progress-wrap">
+                    <div class="upgrade-progress-bar" id="uploadProgressBar"></div>
+                </div>
+                <div id="uploadProgressText" class="text-muted text-sm" style="margin-top:6px">Uploading…</div>
+            </div>
+            <!-- Error box -->
+            <div id="upgradeError" class="alert alert-error" style="display:none; margin-top:var(--spacing-3)"></div>
         </form>
 
         <script>
@@ -112,9 +122,13 @@ unset($_SESSION['upgrade_result']);
             var label    = document.getElementById('dropZoneFilename');
             var submit   = document.getElementById('upgradeSubmit');
             var btn      = document.getElementById('upgradeBtn');
+            var progressWrap = document.getElementById('uploadProgress');
+            var progressBar  = document.getElementById('uploadProgressBar');
+            var progressText = document.getElementById('uploadProgressText');
+            var errorBox     = document.getElementById('upgradeError');
 
             function showFile(name) {
-                label.textContent = '✅ ' + name + ' selected';
+                label.textContent = '📦 ' + name + ' ready';
                 label.style.display = 'block';
                 submit.style.display = 'block';
                 dropZone.classList.add('upgrade-drop-zone--ready');
@@ -124,21 +138,78 @@ unset($_SESSION['upgrade_result']);
                 if (this.files[0]) showFile(this.files[0].name);
             });
 
+            // Drag and drop
             ['dragover', 'dragenter'].forEach(function(evt) {
                 dropZone.addEventListener(evt, function(e) {
                     e.preventDefault();
                     dropZone.classList.add('upgrade-drop-zone--hover');
                 });
             });
-            ['dragleave', 'drop'].forEach(function(evt) {
-                dropZone.addEventListener(evt, function() {
-                    dropZone.classList.remove('upgrade-drop-zone--hover');
-                });
+            dropZone.addEventListener('dragleave', function() {
+                dropZone.classList.remove('upgrade-drop-zone--hover');
+            });
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('upgrade-drop-zone--hover');
+                var files = e.dataTransfer.files;
+                if (files[0]) {
+                    // Transfer dropped file to the hidden input
+                    var dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    input.files = dt.files;
+                    showFile(files[0].name);
+                }
             });
 
-            document.getElementById('upgradeForm').addEventListener('submit', function() {
+            // XHR submit with progress
+            document.getElementById('upgradeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!input.files[0]) return;
+
+                var form = this;
+                var fd   = new FormData(form);
+
                 btn.disabled = true;
-                btn.textContent = '⏳ Upgrading… please wait';
+                btn.textContent = '⏳ Uploading…';
+                progressWrap.style.display = 'block';
+                errorBox.style.display = 'none';
+
+                var xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function(ev) {
+                    if (!ev.lengthComputable) return;
+                    var pct = Math.round(ev.loaded / ev.total * 100);
+                    progressBar.style.width = pct + '%';
+                    progressText.textContent = pct < 100 ? 'Uploading… ' + pct + '%' : 'Extracting files…';
+                });
+                xhr.addEventListener('load', function() {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Apply Update';
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res.success) {
+                            progressText.textContent = '✅ Done! Reloading…';
+                            setTimeout(function() { window.location.href = res.redirect || window.location.href; }, 800);
+                        } else {
+                            progressWrap.style.display = 'none';
+                            errorBox.textContent = res.message || 'Upgrade failed. Please try again.';
+                            errorBox.style.display = 'block';
+                        }
+                    } catch(err) {
+                        progressWrap.style.display = 'none';
+                        errorBox.textContent = 'Unexpected server response. Check server logs.';
+                        errorBox.style.display = 'block';
+                    }
+                });
+                xhr.addEventListener('error', function() {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Apply Update';
+                    progressWrap.style.display = 'none';
+                    errorBox.textContent = 'Network error. Please check your connection and try again.';
+                    errorBox.style.display = 'block';
+                });
+                xhr.open('POST', form.action);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.send(fd);
             });
         }());
         </script>

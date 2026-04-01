@@ -112,6 +112,19 @@
                 marker.on('click', function () { showItemInfo(item); });
                 marker.addTo(layerGroups[item.type]);
                 markerMap[item.id] = marker;
+
+                // Show GPS accuracy circle for point items
+                if (item.gps_accuracy && BOUNDARY_TYPES.indexOf(item.type) === -1) {
+                    L.circle([item.lat, item.lng], {
+                        radius: item.gps_accuracy,
+                        color: typeColor(item.type),
+                        fillColor: typeColor(item.type),
+                        fillOpacity: 0.04,
+                        weight: 1,
+                        opacity: 0.25,
+                        interactive: false,
+                    }).addTo(layerGroups[item.type]);
+                }
             }
             if (item.boundary) {
                 renderBoundary(item);

@@ -46,86 +46,132 @@ class UpgradeController
     }
 
     // -------------------------------------------------------------------------
-    // POST /settings/upgrade/upload
+    // POST /settings/upgrade/upload  — always returns JSON
     // -------------------------------------------------------------------------
     public function upload(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        CSRF::validate($request->post('_token', ''));
+
+        header('Content-Type: application/json');
+
+        // CSRF check
+        try {
+            CSRF::validate($request->post('_token', ''));
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Invalid or expired security token. Please refresh and try again.']);
+            return;
+        }
 
         if (!class_exists('ZipArchive')) {
-            flash('error', 'ZipArchive PHP extension is not available on this server. Use the manual update process instead.');
-            Response::redirect('/settings/upgrade');
+            echo json_encode(['success' => false, 'message' => 'ZipArchive PHP extension is not available on this server. Use the manual update process instead.']);
+            return;
         }
 
         $file = $_FILES['upgrade_zip'] ?? null;
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
-            flash('error', 'Upload failed. Please try again.');
-            Response::redirect('/settings/upgrade');
+            $errCode = $file['error'] ?? -1;
+            if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+                $msg = 'The uploaded file exceeds the maximum allowed size configured on this server (upload_max_filesize / post_max_size). Ask your host to increase these limits or use the manual update process.';
+            } elseif ($errCode === UPLOAD_ERR_NO_FILE) {
+                $msg = 'No file was uploaded. Please select the update ZIP and try again.';
+            } else {
+                $msg = 'Upload failed (error code ' . $errCode . '). Please try again.';
+            }
+            echo json_encode(['success' => false, 'message' => $msg]);
+            return;
         }
 
         $tmpPath = $file['tmp_name'];
 
         // Validate it's actually a ZIP
-        $zip = new \ZipArchive();
+        $zip    = new \ZipArchive();
         $opened = $zip->open($tmpPath);
         if ($opened !== true) {
-            flash('error', 'The uploaded file is not a valid ZIP archive (error code: ' . $opened . ').');
-            Response::redirect('/settings/upgrade');
+            echo json_encode(['success' => false, 'message' => 'The uploaded file is not a valid ZIP archive (error code: ' . $opened . ').']);
+            return;
+        }
+
+        // Empty ZIP check
+        if ($zip->numFiles === 0) {
+            $zip->close();
+            echo json_encode(['success' => false, 'message' => 'ZIP appears empty or unreadable.']);
+            return;
+        }
+
+        $extractBase = dirname(BASE_PATH); // e.g. public_html/
+
+        // Write-permission pre-check
+        if (!is_writable($extractBase)) {
+            $zip->close();
+            echo json_encode(['success' => false, 'message' => 'Destination directory "' . $extractBase . '" is not writable. Check file permissions and try again.']);
+            return;
         }
 
         // Read the incoming version from config/defaults.php inside the ZIP
         $newDefaults  = $this->readPhpArrayFromZip($zip, 'rooted-files/config/defaults.php');
         $newChangelog = $this->readPhpArrayFromZip($zip, 'rooted-files/config/changelog.php');
 
-        $newVersion   = $newDefaults['version']      ?? 'unknown';
-        $newName      = $newDefaults['version_name'] ?? '';
+        $newVersion  = $newDefaults['version']      ?? 'unknown';
+        $newName     = $newDefaults['version_name'] ?? '';
 
-        $defaults        = require BASE_PATH . '/config/defaults.php';
-        $currentVersion  = $defaults['version'] ?? '1.0.0';
+        $defaults       = require BASE_PATH . '/config/defaults.php';
+        $currentVersion = $defaults['version'] ?? '1.0.0';
 
         // Extract all safe files
         $extracted = [];
         $skipped   = [];
 
-        $extractBase = dirname(BASE_PATH); // e.g. public_html/
+        try {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $name = $zip->getNameIndex($i);
 
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
+                // Skip directories
+                if (substr($name, -1) === '/') continue;
 
-            // Skip directories
-            if (substr($name, -1) === '/') continue;
+                // Skip protected paths
+                if ($this->isProtected($name)) {
+                    $skipped[] = $name;
+                    continue;
+                }
 
-            // Skip protected paths
-            if ($this->isProtected($name)) {
-                $skipped[] = $name;
-                continue;
+                // Only extract known top-level folders
+                if (!str_starts_with($name, 'rooted/') && !str_starts_with($name, 'rooted-files/')) {
+                    $skipped[] = $name;
+                    continue;
+                }
+
+                $destPath = $extractBase . '/' . $name;
+                $destDir  = dirname($destPath);
+
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+
+                $contents = $zip->getFromIndex($i);
+                if ($contents !== false) {
+                    file_put_contents($destPath, $contents);
+                    $extracted[] = $name;
+                }
             }
-
-            // Only extract known top-level folders
-            if (!str_starts_with($name, 'rooted/') && !str_starts_with($name, 'rooted-files/')) {
-                $skipped[] = $name;
-                continue;
+        } catch (\Throwable $e) {
+            $zip->close();
+            if (file_exists($tmpPath)) {
+                unlink($tmpPath);
             }
-
-            $destPath = $extractBase . '/' . $name;
-            $destDir  = dirname($destPath);
-
-            if (!is_dir($destDir)) {
-                mkdir($destDir, 0755, true);
-            }
-
-            $contents = $zip->getFromIndex($i);
-            if ($contents !== false) {
-                file_put_contents($destPath, $contents);
-                $extracted[] = $name;
-            }
+            echo json_encode(['success' => false, 'message' => 'Extraction failed: ' . $e->getMessage()]);
+            return;
         }
 
         $zip->close();
         // Explicitly delete the uploaded ZIP — don't rely on PHP auto-cleanup
         if (file_exists($tmpPath)) {
             unlink($tmpPath);
+        }
+
+        // Nothing extracted — likely wrong ZIP structure
+        if (count($extracted) === 0) {
+            echo json_encode(['success' => false, 'message' => 'No files were extracted. Check that the ZIP has the correct structure (rooted/ and rooted-files/ folders).']);
+            return;
         }
 
         // Log the upgrade
@@ -141,7 +187,7 @@ class UpgradeController
             }
         }
 
-        // Store result in session for display
+        // Store result in session for display after redirect
         $_SESSION['upgrade_result'] = [
             'from'        => $currentVersion,
             'to'          => $newVersion,
@@ -152,7 +198,8 @@ class UpgradeController
         ];
 
         flash('success', 'Upgrade to v' . $newVersion . ' complete. ' . count($extracted) . ' files updated.');
-        Response::redirect('/settings/upgrade');
+
+        echo json_encode(['success' => true, 'redirect' => '/settings/upgrade']);
     }
 
     // -------------------------------------------------------------------------
