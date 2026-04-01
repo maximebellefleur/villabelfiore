@@ -1,3 +1,4 @@
+<?php $miniMapEnabled = true; ?>
 <div class="page-header">
     <h1 class="page-title">Add Item</h1>
     <a href="<?= url('/items') ?>" class="btn btn-secondary">&larr; Back</a>
@@ -53,11 +54,13 @@
                         <input type="text" name="gps_accuracy" id="gpsAccuracy" class="form-input" readonly>
                     </div>
                     <div class="form-group" style="align-self:flex-end">
-                        <button type="button" class="btn btn-secondary" id="detectGps">Detect Location</button>
+                        <button type="button" class="btn btn-secondary" id="detectGps">📍 Detect My Location</button>
                         <input type="hidden" name="gps_source" id="gpsSource" value="manual">
                     </div>
                 </div>
                 <div id="gpsStatus" class="text-muted text-sm" style="display:none"></div>
+                <div id="miniMap"></div>
+                <p class="mini-map-hint">Click the map to place a pin, or drag the pin to adjust. You can also type coordinates above.</p>
             </fieldset>
 
             <fieldset class="fieldset" id="metaFields" style="display:none">

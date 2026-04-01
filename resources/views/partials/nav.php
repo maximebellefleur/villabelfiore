@@ -5,6 +5,7 @@
     </div>
     <ul class="nav-links" id="navLinks">
         <li><a href="<?= url('/dashboard') ?>" class="nav-link">Dashboard</a></li>
+        <li><a href="<?= url('/dashboard/map') ?>" class="nav-link">Map</a></li>
         <li><a href="<?= url('/items') ?>" class="nav-link">Items</a></li>
         <li><a href="<?= url('/reminders') ?>" class="nav-link">Reminders</a></li>
         <li><a href="<?= url('/finance') ?>" class="nav-link">Finance</a></li>

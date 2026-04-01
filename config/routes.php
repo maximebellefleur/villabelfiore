@@ -11,6 +11,7 @@ use App\Controllers\SettingsController;
 use App\Controllers\ErrorLogController;
 use App\Controllers\SyncController;
 use App\Controllers\InstallerController;
+use App\Controllers\MapController;
 
 /** @var \App\Support\Router $router */
 
@@ -48,6 +49,7 @@ $router->post('/logout','AuthController@logout');
 // -------------------------------------------------------------------------
 $router->get('/dashboard',          'DashboardController@index');
 $router->get('/dashboard/overview', 'DashboardController@overview');
+$router->get('/dashboard/map',      'DashboardController@map');
 $router->get('/dashboard/nearby',   'DashboardController@nearby');
 $router->get('/dashboard/reports',  'DashboardController@reports');
 
@@ -128,6 +130,10 @@ $router->post('/sync/conflicts/{id}/resolve',  'SyncController@resolve');
 // -------------------------------------------------------------------------
 // JSON API  (/api/*)
 // -------------------------------------------------------------------------
+$router->get('/api/map/items',                 'MapController@apiItems');
+$router->post('/api/map/boundary/{id}',        'MapController@saveBoundary');
+$router->post('/api/map/boundary/{id}/delete', 'MapController@deleteBoundary');
+
 $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');
 $router->post('/api/items',                    'ItemController@apiStore');

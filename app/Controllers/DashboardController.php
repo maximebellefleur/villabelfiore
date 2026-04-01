@@ -58,6 +58,32 @@ class DashboardController
         Response::render('dashboard/overview', ['title' => 'Overview', 'itemCounts' => $itemCounts]);
     }
 
+    public function map(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+
+        $db = DB::getInstance();
+
+        $gpsCount = $db->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM items WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL
+             AND status != 'trashed' AND deleted_at IS NULL"
+        );
+
+        $center = $db->fetchOne(
+            "SELECT AVG(gps_lat) AS lat, AVG(gps_lng) AS lng FROM items
+             WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL
+             AND status != 'trashed' AND deleted_at IS NULL"
+        );
+
+        Response::render('dashboard/map', [
+            'title'      => 'Land Map',
+            'mapEnabled' => true,
+            'gpsCount'   => (int)($gpsCount['cnt'] ?? 0),
+            'defaultLat' => (float)($center['lat'] ?? 41.9),
+            'defaultLng' => (float)($center['lng'] ?? 12.5),
+        ]);
+    }
+
     public function nearby(Request $request, array $params = []): void
     {
         $this->requireAuth();
