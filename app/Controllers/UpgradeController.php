@@ -81,70 +81,153 @@ class UpgradeController
 
         $tmpPath = $file['tmp_name'];
 
-        // Validate it's actually a ZIP
+        $result = $this->extractAndApply($tmpPath);
+
+        if (file_exists($tmpPath)) {
+            unlink($tmpPath);
+        }
+
+        if (!$result['success']) {
+            echo json_encode($result);
+            return;
+        }
+
+        flash('success', 'Upgrade to v' . $result['new_version'] . ' complete. ' . $result['extracted'] . ' files updated.');
+
+        echo json_encode(['success' => true, 'redirect' => '/settings/upgrade']);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /settings/upgrade/github  — download & apply latest release from GitHub
+    // -------------------------------------------------------------------------
+    public function applyFromGitHub(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+
+        header('Content-Type: application/json');
+
+        if (!CSRF::validateToken($request->post('_token', ''))) {
+            echo json_encode(['success' => false, 'message' => 'Invalid security token. Refresh the page and try again.']);
+            return;
+        }
+
+        if (!class_exists('ZipArchive')) {
+            echo json_encode(['success' => false, 'message' => 'ZipArchive PHP extension is not available on this server.']);
+            return;
+        }
+
+        // Download the latest release ZIP from GitHub
+        $zipUrl = 'https://github.com/maximebellefleur/villabelfiore/releases/latest/download/rooted-cpanel-update.zip';
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
+
+        // Try curl first, then fall back to file_get_contents
+        $downloaded = false;
+        if (function_exists('curl_init')) {
+            $ch = curl_init($zipUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT        => 120,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
+            ]);
+            $data     = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr  = curl_error($ch);
+            curl_close($ch);
+
+            if ($data !== false && $httpCode === 200 && strlen($data) > 1000) {
+                file_put_contents($tmpPath, $data);
+                $downloaded = true;
+            } elseif ($httpCode !== 200) {
+                @unlink($tmpPath);
+                echo json_encode(['success' => false, 'message' => 'GitHub returned HTTP ' . $httpCode . '. Check that a release exists at the expected URL.']);
+                return;
+            } else {
+                @unlink($tmpPath);
+                echo json_encode(['success' => false, 'message' => 'Download failed: ' . ($curlErr ?: 'empty response')]);
+                return;
+            }
+        }
+
+        if (!$downloaded) {
+            // Fallback: file_get_contents with SSL context
+            $ctx  = stream_context_create(['http' => ['timeout' => 120, 'user_agent' => 'Rooted-Updater/1.0', 'follow_location' => true]]);
+            $data = @file_get_contents($zipUrl, false, $ctx);
+            if ($data === false || strlen($data) < 1000) {
+                @unlink($tmpPath);
+                echo json_encode(['success' => false, 'message' => 'Could not download from GitHub. Enable allow_url_fopen or the curl extension.']);
+                return;
+            }
+            file_put_contents($tmpPath, $data);
+        }
+
+        // Reuse the extraction logic
+        $result = $this->extractAndApply($tmpPath);
+
+        @unlink($tmpPath);
+
+        if (!$result['success']) {
+            echo json_encode($result);
+            return;
+        }
+
+        flash('success', 'Upgrade to v' . $result['new_version'] . ' complete via GitHub. ' . $result['extracted'] . ' files updated.');
+        echo json_encode(['success' => true, 'redirect' => '/settings/upgrade']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Open a ZIP at $tmpPath, validate it, extract safe files, write upgrade log.
+     * Returns ['success'=>bool, 'message'=>string, 'new_version'=>string, 'extracted'=>int]
+     */
+    private function extractAndApply(string $tmpPath): array
+    {
         $zip    = new \ZipArchive();
         $opened = $zip->open($tmpPath);
         if ($opened !== true) {
-            echo json_encode(['success' => false, 'message' => 'The uploaded file is not a valid ZIP archive (error code: ' . $opened . ').']);
-            return;
+            return ['success' => false, 'message' => 'The file is not a valid ZIP archive (code: ' . $opened . ').'];
         }
 
-        // Empty ZIP check
         if ($zip->numFiles === 0) {
             $zip->close();
-            echo json_encode(['success' => false, 'message' => 'ZIP appears empty or unreadable.']);
-            return;
+            return ['success' => false, 'message' => 'ZIP appears empty or unreadable.'];
         }
 
-        $extractBase = dirname(BASE_PATH); // e.g. public_html/
+        $extractBase = dirname(BASE_PATH);
 
-        // Write-permission pre-check
         if (!is_writable($extractBase)) {
             $zip->close();
-            echo json_encode(['success' => false, 'message' => 'Destination directory "' . $extractBase . '" is not writable. Check file permissions and try again.']);
-            return;
+            return ['success' => false, 'message' => 'Destination "' . $extractBase . '" is not writable. Check file permissions.'];
         }
 
-        // Read the incoming version from config/defaults.php inside the ZIP
-        $newDefaults  = $this->readPhpArrayFromZip($zip, 'rooted-files/config/defaults.php');
+        $newDefaults = $this->readPhpArrayFromZip($zip, 'rooted-files/config/defaults.php');
         $newChangelog = $this->readPhpArrayFromZip($zip, 'rooted-files/config/changelog.php');
-
         $newVersion  = $newDefaults['version']      ?? 'unknown';
         $newName     = $newDefaults['version_name'] ?? '';
 
         $defaults       = require BASE_PATH . '/config/defaults.php';
         $currentVersion = $defaults['version'] ?? '1.0.0';
 
-        // Extract all safe files
         $extracted = [];
         $skipped   = [];
 
         try {
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $name = $zip->getNameIndex($i);
-
-                // Skip directories
                 if (substr($name, -1) === '/') continue;
-
-                // Skip protected paths
-                if ($this->isProtected($name)) {
-                    $skipped[] = $name;
-                    continue;
-                }
-
-                // Only extract known top-level folders
+                if ($this->isProtected($name)) { $skipped[] = $name; continue; }
                 if (!str_starts_with($name, 'rooted/') && !str_starts_with($name, 'rooted-files/')) {
                     $skipped[] = $name;
                     continue;
                 }
-
                 $destPath = $extractBase . '/' . $name;
                 $destDir  = dirname($destPath);
-
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0755, true);
-                }
-
+                if (!is_dir($destDir)) mkdir($destDir, 0755, true);
                 $contents = $zip->getFromIndex($i);
                 if ($contents !== false) {
                     file_put_contents($destPath, $contents);
@@ -153,29 +236,16 @@ class UpgradeController
             }
         } catch (\Throwable $e) {
             $zip->close();
-            if (file_exists($tmpPath)) {
-                unlink($tmpPath);
-            }
-            echo json_encode(['success' => false, 'message' => 'Extraction failed: ' . $e->getMessage()]);
-            return;
+            return ['success' => false, 'message' => 'Extraction failed: ' . $e->getMessage()];
         }
 
         $zip->close();
-        // Explicitly delete the uploaded ZIP — don't rely on PHP auto-cleanup
-        if (file_exists($tmpPath)) {
-            unlink($tmpPath);
-        }
 
-        // Nothing extracted — likely wrong ZIP structure
         if (count($extracted) === 0) {
-            echo json_encode(['success' => false, 'message' => 'No files were extracted. Check that the ZIP has the correct structure (rooted/ and rooted-files/ folders).']);
-            return;
+            return ['success' => false, 'message' => 'No files were extracted. Check the ZIP has rooted/ and rooted-files/ folders.'];
         }
 
-        // Log the upgrade
-        $this->writeUpgradeLog($currentVersion, $newVersion);
-
-        // Figure out what's new in this version vs current
+        // Build new changelog entries
         $newEntries = [];
         if ($newChangelog) {
             foreach ($newChangelog as $ver => $entry) {
@@ -185,7 +255,8 @@ class UpgradeController
             }
         }
 
-        // Store result in session for display after redirect
+        $this->writeUpgradeLog($currentVersion, $newVersion);
+
         $_SESSION['upgrade_result'] = [
             'from'        => $currentVersion,
             'to'          => $newVersion,
@@ -195,14 +266,8 @@ class UpgradeController
             'new_entries' => $newEntries,
         ];
 
-        flash('success', 'Upgrade to v' . $newVersion . ' complete. ' . count($extracted) . ' files updated.');
-
-        echo json_encode(['success' => true, 'redirect' => '/settings/upgrade']);
+        return ['success' => true, 'new_version' => $newVersion, 'extracted' => count($extracted)];
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private function isProtected(string $zipPath): bool
     {

@@ -13,6 +13,7 @@ use App\Controllers\SyncController;
 use App\Controllers\InstallerController;
 use App\Controllers\MapController;
 use App\Controllers\UpgradeController;
+use App\Controllers\CalendarController;
 
 /** @var \App\Support\Router $router */
 
@@ -114,6 +115,7 @@ $router->get('/settings/action-types',         'SettingsController@actionTypes')
 $router->post('/settings/action-types',        'SettingsController@updateActionTypes');
 $router->get('/settings/upgrade',              'UpgradeController@index');
 $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
+$router->post('/settings/upgrade/github',      'UpgradeController@applyFromGitHub');
 $router->get('/settings/upcoming',             'SettingsController@upcoming');
 $router->get('/settings/calendar',             'CalendarController@index');
 $router->post('/settings/calendar/save',       'CalendarController@save');
