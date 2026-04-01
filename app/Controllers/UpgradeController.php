@@ -123,6 +123,10 @@ class UpgradeController
         }
 
         $zip->close();
+        // Explicitly delete the uploaded ZIP — don't rely on PHP auto-cleanup
+        if (file_exists($tmpPath)) {
+            unlink($tmpPath);
+        }
 
         // Log the upgrade
         $this->writeUpgradeLog($currentVersion, $newVersion);
