@@ -169,8 +169,11 @@ class InstallerController
         $this->saveSetting($pdo, 'app.currency',   $land['currency']  ?? 'EUR', 'text');
         $this->saveSetting($pdo, 'app.installed',  '1', 'number');
 
-        // Write .env file
+        // Write .env file with INSTALL_LOCK=true
         $this->writeEnv($dbConfig);
+
+        // Write lock file — primary installed check, doesn't depend on .env parse
+        file_put_contents(BASE_PATH . '/storage/installed.lock', date('Y-m-d H:i:s'));
 
         unset($_SESSION['installer']);
         flash('success', 'Installation complete. Please sign in.');
@@ -202,20 +205,32 @@ class InstallerController
 
     private function writeEnv(array $db): void
     {
-        $example = BASE_PATH . '/.env.example';
-        $target  = BASE_PATH . '/.env';
+        $target = BASE_PATH . '/.env';
 
-        if (!file_exists($example)) {
-            return;
+        // If an existing .env is already there and has credentials, update in place
+        // Otherwise build from .env.example, or generate a minimal one
+        $example = BASE_PATH . '/.env.example';
+        if (file_exists($target)) {
+            $content = file_get_contents($target);
+        } elseif (file_exists($example)) {
+            $content = file_get_contents($example);
+        } else {
+            // Generate minimal .env from scratch
+            $content = "APP_DEBUG=false\nAPP_TIMEZONE=Europe/Rome\nSESSION_NAME=rooted_session\nSESSION_LIFETIME=7200\n"
+                     . "DB_HOST=localhost\nDB_PORT=3306\nDB_NAME=rooted\nDB_USER=root\nDB_PASS=\nINSTALL_LOCK=false\n";
         }
 
-        $content = file_get_contents($example);
-        $content = str_replace('DB_HOST=localhost', 'DB_HOST=' . $db['db_host'], $content);
-        $content = str_replace('DB_PORT=3306',      'DB_PORT=' . $db['db_port'], $content);
-        $content = str_replace('DB_NAME=rooted',    'DB_NAME=' . $db['db_name'], $content);
-        $content = str_replace('DB_USER=root',      'DB_USER=' . $db['db_user'], $content);
-        $content = str_replace('DB_PASS=',          'DB_PASS=' . $db['db_pass'], $content);
-        $content = str_replace('INSTALL_LOCK=false','INSTALL_LOCK=true', $content);
+        $content = preg_replace('/^DB_HOST=.*/m',      'DB_HOST=' . $db['db_host'], $content);
+        $content = preg_replace('/^DB_PORT=.*/m',      'DB_PORT=' . $db['db_port'], $content);
+        $content = preg_replace('/^DB_NAME=.*/m',      'DB_NAME=' . $db['db_name'], $content);
+        $content = preg_replace('/^DB_USER=.*/m',      'DB_USER=' . $db['db_user'], $content);
+        $content = preg_replace('/^DB_PASS=.*/m',      'DB_PASS=' . $db['db_pass'], $content);
+        $content = preg_replace('/^INSTALL_LOCK=.*/m', 'INSTALL_LOCK=true', $content);
+
+        // If INSTALL_LOCK line didn't exist yet, append it
+        if (!str_contains($content, 'INSTALL_LOCK=')) {
+            $content .= "\nINSTALL_LOCK=true\n";
+        }
 
         file_put_contents($target, $content);
     }
