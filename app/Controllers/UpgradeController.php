@@ -120,19 +120,26 @@ class UpgradeController
         $defaults = require BASE_PATH . '/config/defaults.php';
         $zipUrl   = $defaults['update_zip_url'] ?? 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/main/rooted-cpanel-update.zip';
 
+        // Optional GitHub token — set GITHUB_TOKEN in .env for private repos
+        $token = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
+
         $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
 
         // Try curl first, then fall back to file_get_contents
         $downloaded = false;
         if (function_exists('curl_init')) {
             $ch = curl_init($zipUrl);
-            curl_setopt_array($ch, [
+            $curlOpts = [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_TIMEOUT        => 120,
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
-            ]);
+            ];
+            if ($token) {
+                $curlOpts[CURLOPT_HTTPHEADER] = ['Authorization: token ' . $token];
+            }
+            curl_setopt_array($ch, $curlOpts);
             $data     = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlErr  = curl_error($ch);
@@ -141,9 +148,14 @@ class UpgradeController
             if ($data !== false && $httpCode === 200 && strlen($data) > 1000) {
                 file_put_contents($tmpPath, $data);
                 $downloaded = true;
+            } elseif ($httpCode === 404) {
+                @unlink($tmpPath);
+                $hint = $token ? '' : ' If the repository is private, add GITHUB_TOKEN=your_token to your .env file.';
+                echo json_encode(['success' => false, 'message' => 'GitHub returned 404 — the ZIP was not found at the expected URL.' . $hint]);
+                return;
             } elseif ($httpCode !== 200) {
                 @unlink($tmpPath);
-                echo json_encode(['success' => false, 'message' => 'GitHub returned HTTP ' . $httpCode . '. Check that a release exists at the expected URL.']);
+                echo json_encode(['success' => false, 'message' => 'GitHub returned HTTP ' . $httpCode . '.']);
                 return;
             } else {
                 @unlink($tmpPath);
@@ -154,7 +166,8 @@ class UpgradeController
 
         if (!$downloaded) {
             // Fallback: file_get_contents with SSL context
-            $ctx  = stream_context_create(['http' => ['timeout' => 120, 'user_agent' => 'Rooted-Updater/1.0', 'follow_location' => true]]);
+            $headers = 'User-Agent: Rooted-Updater/1.0' . ($token ? "\r\nAuthorization: token " . $token : '');
+            $ctx  = stream_context_create(['http' => ['timeout' => 120, 'header' => $headers, 'follow_location' => true]]);
             $data = @file_get_contents($zipUrl, false, $ctx);
             if ($data === false || strlen($data) < 1000) {
                 @unlink($tmpPath);
