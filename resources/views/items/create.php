@@ -5,15 +5,31 @@
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
-<div class="card">
-    <div class="card-body">
-        <form method="POST" action="<?= url('/items') ?>" class="form" id="itemForm">
-            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+<form method="POST" action="<?= url('/items') ?>" class="form item-form-mobile" id="itemForm">
+    <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+    <input type="hidden" name="gps_source" id="gpsSource" value="manual">
+    <input type="hidden" name="gps_lat"    id="gpsLat"    value="<?= e(getFlash('old')['gps_lat'] ?? '') ?>">
+    <input type="hidden" name="gps_lng"    id="gpsLng"    value="<?= e(getFlash('old')['gps_lng'] ?? '') ?>">
+    <input type="hidden" name="gps_accuracy" id="gpsAccuracy" value="">
+
+    <!-- ① Map — full width, tap to place pin -->
+    <div class="item-form-map-block">
+        <div class="item-form-map-label">
+            <span>📍 Tap the map to set location</span>
+            <button type="button" class="btn btn-primary btn-sm" id="detectGps">Detect my GPS</button>
+        </div>
+        <div id="miniMap" class="item-form-map"></div>
+        <div id="gpsStatus" class="item-form-gps-status" style="display:none"></div>
+    </div>
+
+    <!-- ② Core fields -->
+    <div class="card item-form-fields">
+        <div class="card-body">
 
             <div class="form-group">
                 <label class="form-label">Item Type <span class="required">*</span></label>
-                <select name="type" id="itemType" class="form-input" required>
-                    <option value="">— Select Type —</option>
+                <select name="type" id="itemType" class="form-input form-input--touch" required>
+                    <option value="">— Select type —</option>
                     <?php foreach ($itemTypes as $typeKey => $typeCfg): ?>
                     <option value="<?= e($typeKey) ?>" <?= (getFlash('old')['type'] ?? '') === $typeKey ? 'selected' : '' ?>>
                         <?= e($typeCfg['label']) ?>
@@ -24,60 +40,66 @@
 
             <div class="form-group">
                 <label class="form-label">Name <span class="required">*</span></label>
-                <input type="text" name="name" class="form-input" required
-                       value="<?= e(getFlash('old')['name'] ?? '') ?>" placeholder="Item name">
+                <input type="text" name="name" class="form-input form-input--touch" required
+                       value="<?= e(getFlash('old')['name'] ?? '') ?>" placeholder="e.g. Olive #12, North Garden…">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Parent Item <small>(optional)</small></label>
-                <input type="number" name="parent_id" class="form-input" placeholder="Parent item ID"
+                <label class="form-label">Parent Item <small class="text-muted">(optional)</small></label>
+                <input type="number" name="parent_id" class="form-input form-input--touch" placeholder="Parent item ID"
                        value="<?= e(getFlash('old')['parent_id'] ?? '') ?>">
             </div>
 
-            <fieldset class="fieldset" id="locationFields">
-                <legend class="fieldset-legend">Location</legend>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Latitude</label>
-                        <input type="text" name="gps_lat" id="gpsLat" class="form-input"
-                               value="<?= e(getFlash('old')['gps_lat'] ?? '') ?>" placeholder="e.g. 41.902782">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Longitude</label>
-                        <input type="text" name="gps_lng" id="gpsLng" class="form-input"
-                               value="<?= e(getFlash('old')['gps_lng'] ?? '') ?>" placeholder="e.g. 12.496366">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">GPS Accuracy (m)</label>
-                        <input type="text" name="gps_accuracy" id="gpsAccuracy" class="form-input" readonly>
-                    </div>
-                    <div class="form-group" style="align-self:flex-end">
-                        <button type="button" class="btn btn-secondary" id="detectGps">📍 Detect My Location</button>
-                        <input type="hidden" name="gps_source" id="gpsSource" value="manual">
-                    </div>
-                </div>
-                <div id="gpsStatus" class="text-muted text-sm" style="display:none"></div>
-                <div id="miniMap"></div>
-                <p class="mini-map-hint">Click the map to place a pin, or drag the pin to adjust. You can also type coordinates above.</p>
-            </fieldset>
-
-            <fieldset class="fieldset" id="metaFields" style="display:none">
-                <legend class="fieldset-legend">Type-Specific Details</legend>
-                <div id="metaFieldsInner"></div>
-            </fieldset>
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save Item</button>
-                <a href="<?= url('/items') ?>" class="btn btn-link">Cancel</a>
+            <!-- Coordinates (read-only display, set by map or GPS) -->
+            <div class="gps-coords-display" id="gpsCoordsDisplay" style="display:none">
+                <span class="gps-coords-icon">📍</span>
+                <span id="gpsCoordsText"></span>
+                <button type="button" class="btn btn-link btn-sm" id="clearGps">Clear</button>
             </div>
-        </form>
+
+            <!-- Type-specific meta fields -->
+            <div id="metaFields" style="display:none">
+                <hr class="form-divider">
+                <div class="form-group-label">Type Details</div>
+                <div id="metaFieldsInner"></div>
+            </div>
+
+        </div>
     </div>
-</div>
+
+    <!-- ③ Submit -->
+    <div class="item-form-submit">
+        <button type="submit" class="btn btn-primary btn-full">Save Item</button>
+        <a href="<?= url('/items') ?>" class="btn btn-secondary btn-full">Cancel</a>
+    </div>
+
+</form>
 
 <script>
 var itemTypeMeta = <?= json_encode(array_map(fn($t) => ['required_meta' => $t['required_meta'], 'optional_meta' => $t['optional_meta']], $itemTypes)) ?>;
+
+// Update the coords display whenever lat/lng change
+function updateCoordsDisplay() {
+    var lat = $('#gpsLat').val();
+    var lng = $('#gpsLng').val();
+    if (lat && lng) {
+        $('#gpsCoordsText').text(parseFloat(lat).toFixed(5) + ', ' + parseFloat(lng).toFixed(5));
+        $('#gpsCoordsDisplay').show();
+    } else {
+        $('#gpsCoordsDisplay').hide();
+    }
+}
+
+$('#gpsLat, #gpsLng').on('change', updateCoordsDisplay);
+updateCoordsDisplay();
+
+$('#clearGps').on('click', function() {
+    $('#gpsLat').val('').trigger('change');
+    $('#gpsLng').val('').trigger('change');
+    $('#gpsAccuracy').val('');
+    $('#gpsSource').val('manual');
+    $('#gpsStatus').hide();
+});
 
 $('#itemType').on('change', function() {
     var type = $(this).val();
@@ -85,23 +107,40 @@ $('#itemType').on('change', function() {
     var fields = itemTypeMeta[type].required_meta.concat(itemTypeMeta[type].optional_meta);
     var html = '';
     fields.forEach(function(key) {
-        var label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
         html += '<div class="form-group"><label class="form-label">' + label + '</label>';
-        html += '<input type="text" name="meta[' + key + ']" class="form-input" placeholder="' + label + '"></div>';
+        html += '<input type="text" name="meta[' + key + ']" class="form-input form-input--touch" placeholder="' + label + '"></div>';
     });
     if (html) { $('#metaFieldsInner').html(html); $('#metaFields').show(); }
     else { $('#metaFields').hide(); }
 });
 
 $('#detectGps').on('click', function() {
-    if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
-    $('#gpsStatus').text('Detecting…').show();
+    if (!navigator.geolocation) {
+        $('#gpsStatus').text('Geolocation not supported by your browser.').show();
+        return;
+    }
+    var $btn = $(this);
+    $btn.prop('disabled', true).text('Detecting…');
+    $('#gpsStatus').text('Requesting location — allow access if prompted.').show();
+
     navigator.geolocation.getCurrentPosition(function(pos) {
-        $('#gpsLat').val(pos.coords.latitude.toFixed(7));
-        $('#gpsLng').val(pos.coords.longitude.toFixed(7));
+        var lat = pos.coords.latitude.toFixed(7);
+        var lng = pos.coords.longitude.toFixed(7);
+        $('#gpsLat').val(lat).trigger('change');
+        $('#gpsLng').val(lng).trigger('change');
         $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
         $('#gpsSource').val('device');
-        $('#gpsStatus').text('Location detected (accuracy: ' + Math.round(pos.coords.accuracy) + 'm). Please confirm before saving.').show();
-    }, function() { $('#gpsStatus').text('Could not detect location. Please enter manually.').show(); });
+        $('#gpsStatus').text('✅ ±' + Math.round(pos.coords.accuracy) + 'm — verify the pin on the map.').show();
+        $btn.prop('disabled', false).text('Detect my GPS');
+    }, function(err) {
+        var msgs = {
+            1: '⚠️ Permission denied — allow location in browser settings.',
+            2: '⚠️ Position unavailable — place pin manually on the map.',
+            3: '⚠️ Timed out — try again outdoors.',
+        };
+        $('#gpsStatus').text(msgs[err.code] || '⚠️ Could not detect. Place pin on map.').show();
+        $btn.prop('disabled', false).text('Detect my GPS');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 });
 </script>

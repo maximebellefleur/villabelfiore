@@ -37,6 +37,7 @@
                     <button type="button" class="btn btn-secondary btn-sm" id="detectGps">📍 Re-detect Location</button>
                     <input type="hidden" name="gps_source" id="gpsSource" value="<?= e($item['gps_source'] ?? 'manual') ?>">
                 </div>
+                <div id="gpsStatus" class="text-muted text-sm" style="display:none"></div>
                 <div id="miniMap"></div>
                 <p class="mini-map-hint">Click the map to move the pin, or drag the pin to adjust.</p>
             </fieldset>
@@ -60,11 +61,29 @@
 window.MINI_MAP_LAT = <?= (float)($item['gps_lat'] ?? 41.9) ?>;
 window.MINI_MAP_LNG = <?= (float)($item['gps_lng'] ?? 12.5) ?>;
 $('#detectGps').on('click', function() {
-    if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
+    if (!navigator.geolocation) {
+        $('#gpsStatus').text('Geolocation is not supported by your browser.').show();
+        return;
+    }
+    var $btn = $(this);
+    $btn.prop('disabled', true).text('Detecting…');
+
     navigator.geolocation.getCurrentPosition(function(pos) {
-        $('#gpsLat').val(pos.coords.latitude.toFixed(7));
-        $('#gpsLng').val(pos.coords.longitude.toFixed(7));
+        var lat = pos.coords.latitude.toFixed(7);
+        var lng = pos.coords.longitude.toFixed(7);
+        $('#gpsLat').val(lat).trigger('change');
+        $('#gpsLng').val(lng).trigger('change');
+        $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
         $('#gpsSource').val('device');
-    }, function() { alert('Could not detect location.'); });
+        $btn.prop('disabled', false).text('📍 Re-detect Location');
+    }, function(err) {
+        var msgs = {
+            1: '⚠️ Permission denied — allow location in browser settings.',
+            2: '⚠️ Position unavailable — place pin manually on the map.',
+            3: '⚠️ Timed out — try again outdoors.',
+        };
+        $('#gpsStatus').text(msgs[err.code] || '⚠️ Could not detect. Place pin on map.').show();
+        $btn.prop('disabled', false).text('📍 Re-detect Location');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 });
 </script>

@@ -133,9 +133,11 @@ $router->post('/sync/conflicts/{id}/resolve',  'SyncController@resolve');
 // -------------------------------------------------------------------------
 // JSON API  (/api/*)
 // -------------------------------------------------------------------------
-$router->get('/api/map/items',                 'MapController@apiItems');
-$router->post('/api/map/boundary/{id}',        'MapController@saveBoundary');
-$router->post('/api/map/boundary/{id}/delete', 'MapController@deleteBoundary');
+$router->get('/api/map/items',                    'MapController@apiItems');
+$router->post('/api/map/land-boundary',           'MapController@saveLandBoundary');
+$router->post('/api/map/land-boundary/delete',    'MapController@deleteLandBoundary');
+$router->post('/api/map/boundary/{id}',           'MapController@saveBoundary');
+$router->post('/api/map/boundary/{id}/delete',    'MapController@deleteBoundary');
 
 $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');

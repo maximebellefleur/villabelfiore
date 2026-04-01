@@ -176,6 +176,45 @@ class MapController
     }
 
     /**
+     * POST /api/map/land-boundary — save the overall land boundary polygon
+     */
+    public function saveLandBoundary(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $geojson = $request->post('geojson', '');
+        $decoded = json_decode($geojson, true);
+        if ($decoded === null) {
+            Response::json(['success' => false, 'message' => 'Invalid GeoJSON'], 400);
+        }
+
+        $db = DB::getInstance();
+        $db->execute(
+            "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+             VALUES ('land.boundary_geojson', ?, 'text', 1, NOW())
+             ON DUPLICATE KEY UPDATE setting_value_text = VALUES(setting_value_text), updated_at = NOW()",
+            [json_encode($decoded)]
+        );
+
+        Response::json(['success' => true, 'message' => 'Land boundary saved.']);
+    }
+
+    /**
+     * POST /api/map/land-boundary/delete — remove the land boundary
+     */
+    public function deleteLandBoundary(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $db = DB::getInstance();
+        $db->execute("DELETE FROM settings WHERE setting_key = 'land.boundary_geojson'");
+
+        Response::json(['success' => true, 'message' => 'Land boundary removed.']);
+    }
+
+    /**
      * DELETE /api/map/boundary/{id} — remove boundary
      */
     public function deleteBoundary(Request $request, array $params = []): void

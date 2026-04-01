@@ -75,12 +75,43 @@ class DashboardController
              AND status != 'trashed' AND deleted_at IS NULL"
         );
 
+        // Load land boundary and name from settings
+        $landBoundarySetting = $db->fetchOne(
+            "SELECT setting_value_text FROM settings WHERE setting_key = 'land.boundary_geojson'"
+        );
+        $landNameSetting = $db->fetchOne(
+            "SELECT setting_value_text FROM settings WHERE setting_key = 'app.name'"
+        );
+
+        $landBoundaryJson = $landBoundarySetting['setting_value_text'] ?? null;
+        $hasLandBoundary  = !empty($landBoundaryJson);
+
+        // If we have a boundary, derive the map center from it instead of item average
+        $defaultLat = (float)($center['lat'] ?? 41.9);
+        $defaultLng = (float)($center['lng'] ?? 12.5);
+        if ($hasLandBoundary) {
+            $decoded = json_decode($landBoundaryJson, true);
+            $coords  = $decoded['coordinates'][0] ?? [];
+            if ($coords) {
+                $lats = array_column($coords, 1);
+                $lngs = array_column($coords, 0);
+                $defaultLat = (array_sum($lats) / count($lats));
+                $defaultLng = (array_sum($lngs) / count($lngs));
+            }
+        }
+
+        $itemTypes = require BASE_PATH . '/config/item_types.php';
+
         Response::render('dashboard/map', [
-            'title'      => 'Land Map',
-            'mapEnabled' => true,
-            'gpsCount'   => (int)($gpsCount['cnt'] ?? 0),
-            'defaultLat' => (float)($center['lat'] ?? 41.9),
-            'defaultLng' => (float)($center['lng'] ?? 12.5),
+            'title'            => 'Land Map',
+            'mapEnabled'       => true,
+            'gpsCount'         => (int)($gpsCount['cnt'] ?? 0),
+            'defaultLat'       => $defaultLat,
+            'defaultLng'       => $defaultLng,
+            'hasLandBoundary'  => $hasLandBoundary,
+            'landBoundaryJson' => $hasLandBoundary ? $landBoundaryJson : 'null',
+            'landName'         => $landNameSetting['setting_value_text'] ?? 'My Land',
+            'itemTypes'        => $itemTypes,
         ]);
     }
 

@@ -329,6 +329,7 @@ class ItemController
     public function apiStore(Request $request, array $params = []): void
     {
         if (empty($_SESSION['user_id'])) { Response::json(['success' => false, 'message' => 'Unauthenticated'], 401); }
+        CSRF::validate($request->post('_token', ''));
 
         $data   = $request->all();
         $errors = $this->validateItem($data);
@@ -336,8 +337,51 @@ class ItemController
             Response::json(['success' => false, 'message' => 'Validation failed.', 'errors' => $errors], 422);
         }
 
-        // Delegate to store logic — simplified inline
-        Response::json(['success' => true, 'message' => 'Item stored via API (stub).', 'data' => []]);
+        $db   = DB::getInstance();
+        $uuid = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+
+        $db->execute(
+            'INSERT INTO items (uuid, type, subtype, name, parent_id, status, gps_lat, gps_lng, gps_accuracy, gps_source, is_finance_enabled, is_mobile_asset, created_by, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())',
+            [
+                $uuid,
+                $data['type'] ?? '',
+                $data['subtype'] ?? null,
+                $data['name'] ?? '',
+                !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
+                'active',
+                !empty($data['gps_lat'])      ? (float)$data['gps_lat']      : null,
+                !empty($data['gps_lng'])      ? (float)$data['gps_lng']      : null,
+                !empty($data['gps_accuracy']) ? (float)$data['gps_accuracy'] : null,
+                $data['gps_source'] ?? 'map',
+                0, 0,
+                $_SESSION['user_id'],
+            ]
+        );
+
+        $id = (int) $db->lastInsertId();
+
+        $db->execute(
+            'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at)
+             VALUES (?,?,?,?,?,?,NOW())',
+            [$id, $data['type'] ?? '', 'item_created', 'Item Created',
+             'Item "' . ($data['name'] ?? '') . '" created via map.', $_SESSION['user_id']]
+        );
+
+        Response::json(['success' => true, 'message' => 'Item created.', 'data' => [
+            'id'      => $id,
+            'name'    => $data['name'] ?? '',
+            'type'    => $data['type'] ?? '',
+            'gps_lat' => !empty($data['gps_lat']) ? (float)$data['gps_lat'] : null,
+            'gps_lng' => !empty($data['gps_lng']) ? (float)$data['gps_lng'] : null,
+            'status'  => 'active',
+        ]]);
     }
 
     public function apiAddAction(Request $request, array $params = []): void

@@ -23,15 +23,9 @@
 
     var BOUNDARY_TYPES = ['garden', 'bed', 'orchard', 'zone', 'prep_zone'];
 
-    function typeColor(type) {
-        return (TYPE_CONFIG[type] || { color: '#888' }).color;
-    }
-    function typeLabel(type) {
-        return (TYPE_CONFIG[type] || { label: type }).label;
-    }
-    function typeIcon(type) {
-        return (TYPE_CONFIG[type] || { icon: '📍' }).icon;
-    }
+    function typeColor(type) { return (TYPE_CONFIG[type] || { color: '#888' }).color; }
+    function typeLabel(type) { return (TYPE_CONFIG[type] || { label: type }).label; }
+    function typeIcon(type)  { return (TYPE_CONFIG[type] || { icon: '📍' }).icon; }
 
     // -------------------------------------------------------------------------
     // Build map
@@ -44,7 +38,7 @@
     // Satellite on by default
     var satelliteLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe, GeoEye, i-cubed, USDA FSA, USGS, AEX, Getmapping, Aerogrid, IGN, IGP, swisstopo' }
+        { maxZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)
@@ -56,11 +50,11 @@
 
     var useSatellite = true;
 
-    // Layer groups by type
+    // Layer groups
     var layerGroups = {};
     var allItems    = [];
-    var markerMap   = {};  // id → marker
-    var polygonMap  = {};  // id → polygon layer
+    var markerMap   = {};
+    var polygonMap  = {};
 
     // -------------------------------------------------------------------------
     // Custom marker icon
@@ -76,8 +70,7 @@
             '</svg>',
         ].join('');
         return L.divIcon({
-            html: svg,
-            className: '',
+            html: svg, className: '',
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
             popupAnchor: [0, -(size / 2)],
@@ -104,19 +97,15 @@
     }
 
     function renderItems(items) {
-        // Clear existing layers
         Object.keys(layerGroups).forEach(function (t) { map.removeLayer(layerGroups[t]); });
         layerGroups = {};
         markerMap   = {};
         polygonMap  = {};
 
-        // Group items by type
         items.forEach(function (item) {
             if (!layerGroups[item.type]) {
                 layerGroups[item.type] = L.layerGroup().addTo(map);
             }
-
-            // Render GPS pin
             if (item.lat && item.lng) {
                 var marker = L.marker([item.lat, item.lng], { icon: makeIcon(item.type) });
                 marker.bindPopup(buildPopup(item));
@@ -124,8 +113,6 @@
                 marker.addTo(layerGroups[item.type]);
                 markerMap[item.id] = marker;
             }
-
-            // Render boundary polygon if present
             if (item.boundary) {
                 renderBoundary(item);
             }
@@ -139,9 +126,7 @@
             '<div class="map-popup">',
             '<strong>' + typeIcon(item.type) + ' ' + escHtml(item.name) + '</strong>',
             '<div class="map-popup-type">' + typeLabel(item.type) + '</div>',
-            item.gps_accuracy
-                ? '<div class="map-popup-acc">GPS ±' + Math.round(item.gps_accuracy) + 'm</div>'
-                : '',
+            item.gps_accuracy ? '<div class="map-popup-acc">GPS ±' + Math.round(item.gps_accuracy) + 'm</div>' : '',
             '<div class="map-popup-actions">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-xs">View</a>',
             BOUNDARY_TYPES.indexOf(item.type) >= 0
@@ -178,8 +163,7 @@
         var gj = L.geoJSON(item.boundary, {
             style: {
                 color: typeColor(item.type),
-                weight: 2,
-                opacity: 0.8,
+                weight: 2, opacity: 0.8,
                 fillColor: typeColor(item.type),
                 fillOpacity: 0.15,
             },
@@ -213,10 +197,7 @@
             if (type === 'all') {
                 var checked = e.target.checked;
                 container.querySelectorAll('.layer-toggle[data-type]').forEach(function (cb) {
-                    if (cb.dataset.type !== 'all') {
-                        cb.checked = checked;
-                        toggleLayer(cb.dataset.type, checked);
-                    }
+                    if (cb.dataset.type !== 'all') { cb.checked = checked; toggleLayer(cb.dataset.type, checked); }
                 });
             } else {
                 toggleLayer(type, e.target.checked);
@@ -226,32 +207,150 @@
 
     function toggleLayer(type, visible) {
         if (!layerGroups[type]) return;
-        if (visible) {
-            map.addLayer(layerGroups[type]);
-        } else {
-            map.removeLayer(layerGroups[type]);
-        }
+        if (visible) { map.addLayer(layerGroups[type]); } else { map.removeLayer(layerGroups[type]); }
     }
 
     // -------------------------------------------------------------------------
-    // My Location button
+    // Add Item — slide-up sheet
     // -------------------------------------------------------------------------
-    document.getElementById('mapLocateMe').addEventListener('click', function () {
-        if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
-        navigator.geolocation.getCurrentPosition(function (pos) {
-            map.setView([pos.coords.latitude, pos.coords.longitude], 17);
-            L.circle([pos.coords.latitude, pos.coords.longitude], {
-                radius: pos.coords.accuracy,
-                color: '#3c8dbc',
-                fillOpacity: 0.1,
-            }).addTo(map).bindPopup('You are here (±' + Math.round(pos.coords.accuracy) + 'm)').openPopup();
-        }, function () {
-            alert('Could not determine your location.');
+    var addItemMode     = false;
+    var addItemMarker   = null;
+    var addItemLat      = null;
+    var addItemLng      = null;
+
+    var addBtn          = document.getElementById('mapAddItem');
+    var addSheet        = document.getElementById('mapAddSheet');
+    var addSheetClose   = document.getElementById('mapAddSheetClose');
+    var addSheetBackdrop= document.getElementById('mapAddSheetBackdrop');
+    var addCoordsText   = document.getElementById('mapAddCoordsText');
+    var addTypeSelect   = document.getElementById('mapAddType');
+    var addNameInput    = document.getElementById('mapAddName');
+    var addErrorDiv     = document.getElementById('mapAddError');
+    var addSubmitBtn    = document.getElementById('mapAddSubmit');
+    var addOpenFull     = document.getElementById('mapAddOpenFull');
+
+    addBtn.addEventListener('click', function () {
+        if (addItemMode) {
+            cancelAddItem();
+        } else {
+            enterAddItemMode();
+        }
+    });
+
+    function enterAddItemMode() {
+        // Close other draw modes
+        if (drawingActive)  toggleDrawMode(false);
+        if (landDrawActive) toggleLandDrawMode(false);
+
+        addItemMode = true;
+        addBtn.textContent = '✕ Cancel';
+        addBtn.classList.add('btn-danger');
+        addBtn.classList.remove('btn-primary');
+        map.getContainer().style.cursor = 'crosshair';
+        showToast('Tap the map to place the item pin');
+    }
+
+    function cancelAddItem() {
+        addItemMode = false;
+        addBtn.textContent = '+ Add Item';
+        addBtn.classList.remove('btn-danger');
+        addBtn.classList.add('btn-primary');
+        map.getContainer().style.cursor = '';
+        if (addItemMarker) { map.removeLayer(addItemMarker); addItemMarker = null; }
+        closeAddSheet();
+    }
+
+    function openAddSheet(lat, lng) {
+        addItemLat = lat;
+        addItemLng = lng;
+        addCoordsText.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+        addTypeSelect.value = '';
+        addNameInput.value  = '';
+        addErrorDiv.style.display = 'none';
+        addSheet.classList.add('open');
+        addSheet.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        setTimeout(function () { addTypeSelect.focus(); }, 320);
+
+        // Update "Open Full Form" link with pre-filled coords
+        addOpenFull.href = addOpenFull.href.split('?')[0] + '?lat=' + lat + '&lng=' + lng;
+    }
+
+    function closeAddSheet() {
+        addSheet.classList.remove('open');
+        addSheet.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    addSheetClose.addEventListener('click', cancelAddItem);
+    addSheetBackdrop.addEventListener('click', cancelAddItem);
+
+    addSubmitBtn.addEventListener('click', function () {
+        var type = addTypeSelect.value.trim();
+        var name = addNameInput.value.trim();
+        addErrorDiv.style.display = 'none';
+
+        if (!type) { showSheetError('Please select an item type.'); addTypeSelect.focus(); return; }
+        if (!name) { showSheetError('Please enter a name.'); addNameInput.focus(); return; }
+        if (addItemLat === null) { showSheetError('Tap the map to set a location first.'); return; }
+
+        addSubmitBtn.disabled = true;
+        addSubmitBtn.textContent = 'Saving…';
+
+        fetch(MAP_API_ITEMS_URL, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: [
+                '_token='      + encodeURIComponent(MAP_CSRF_TOKEN),
+                'type='        + encodeURIComponent(type),
+                'name='        + encodeURIComponent(name),
+                'gps_lat='     + encodeURIComponent(addItemLat),
+                'gps_lng='     + encodeURIComponent(addItemLng),
+                'gps_source=map',
+            ].join('&'),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            addSubmitBtn.disabled = false;
+            addSubmitBtn.textContent = 'Save Item';
+            if (res.success) {
+                cancelAddItem();
+                loadItems();
+                showToast('✅ ' + res.data.name + ' added to map');
+            } else {
+                var msg = res.message || 'Could not save item.';
+                if (res.errors) {
+                    msg = Object.values(res.errors).join(' ');
+                }
+                showSheetError(msg);
+            }
+        })
+        .catch(function () {
+            addSubmitBtn.disabled = false;
+            addSubmitBtn.textContent = 'Save Item';
+            showSheetError('Network error. Please try again.');
         });
     });
 
+    function showSheetError(msg) {
+        addErrorDiv.textContent = msg;
+        addErrorDiv.style.display = 'block';
+    }
+
+    // Simple toast notification
+    var toastEl = null;
+    function showToast(msg) {
+        if (toastEl) { clearTimeout(toastEl._timer); toastEl.remove(); }
+        toastEl = document.createElement('div');
+        toastEl.className = 'map-toast';
+        toastEl.textContent = msg;
+        document.body.appendChild(toastEl);
+        toastEl._timer = setTimeout(function () { if (toastEl) { toastEl.remove(); toastEl = null; } }, 3500);
+    }
+
     // -------------------------------------------------------------------------
-    // Boundary drawing
+    // Boundary drawing (accessible from item popup)
     // -------------------------------------------------------------------------
     var drawingActive = false;
     var drawnPoints   = [];
@@ -259,22 +358,19 @@
     var tempPolyline  = null;
     var tempPolygon   = null;
 
-    document.getElementById('mapDrawToggle').addEventListener('click', function () {
+    document.getElementById('mapDrawToggle') && document.getElementById('mapDrawToggle').addEventListener('click', function () {
         toggleDrawMode(!drawingActive);
     });
 
-    document.getElementById('cancelDraw').addEventListener('click', function () {
-        toggleDrawMode(false);
-    });
-
+    document.getElementById('cancelDraw').addEventListener('click', function () { toggleDrawMode(false); });
     document.getElementById('clearBoundary').addEventListener('click', clearDraw);
 
     function toggleDrawMode(active) {
         drawingActive = active;
         document.getElementById('boundaryPanel').style.display = active ? 'block' : 'none';
-        document.getElementById('mapDrawToggle').textContent   = active ? '✕ Stop Drawing' : '✏️ Draw Boundary';
         map.getContainer().style.cursor = active ? 'crosshair' : '';
         if (!active) clearDraw();
+        if (active) { enterAddItemMode && cancelAddItem(); }
     }
 
     function clearDraw() {
@@ -283,28 +379,15 @@
         tempMarkers = [];
         if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
         if (tempPolygon)  { map.removeLayer(tempPolygon);  tempPolygon  = null; }
-        document.getElementById('boundaryStatus').textContent = '';
+        updateDrawStatus();
     }
 
-    map.on('click', function (e) {
-        if (!drawingActive) return;
-        drawnPoints.push([e.latlng.lat, e.latlng.lng]);
-
-        var dot = L.circleMarker([e.latlng.lat, e.latlng.lng], {
-            radius: 5, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 1,
-        }).addTo(map);
-        tempMarkers.push(dot);
-
-        updateTempShape();
+    function updateDrawStatus() {
         document.getElementById('boundaryStatus').textContent =
-            drawnPoints.length + ' point(s). Double-click last point to finish.';
-    });
-
-    map.on('dblclick', function (e) {
-        if (!drawingActive || drawnPoints.length < 3) return;
-        L.DomEvent.stop(e);
-        finishPolygon();
-    });
+            drawnPoints.length > 0
+                ? drawnPoints.length + ' point(s) — double-click to finish. Click a point to remove it and all after.'
+                : '';
+    }
 
     function updateTempShape() {
         if (tempPolyline) map.removeLayer(tempPolyline);
@@ -315,7 +398,7 @@
 
     function finishPolygon() {
         if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
-        if (tempPolygon)  { map.removeLayer(tempPolygon);  }
+        if (tempPolygon)  { map.removeLayer(tempPolygon); }
         tempPolygon = L.polygon(drawnPoints, {
             color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.2, weight: 2,
         }).addTo(map);
@@ -336,7 +419,7 @@
             type: 'Polygon',
             coordinates: [drawnPoints.map(function (p) { return [p[1], p[0]]; })],
         };
-        geojson.coordinates[0].push(geojson.coordinates[0][0]); // close ring
+        geojson.coordinates[0].push(geojson.coordinates[0][0]);
 
         var status = document.getElementById('boundaryStatus');
         status.textContent = 'Saving…';
@@ -348,22 +431,19 @@
             body: '_token=' + encodeURIComponent(MAP_CSRF_TOKEN) +
                   '&geojson=' + encodeURIComponent(JSON.stringify(geojson)),
         })
-            .then(function (r) { return r.json(); })
-            .then(function (res) {
-                if (res.success) {
-                    status.textContent = '✅ ' + res.message;
-                    toggleDrawMode(false);
-                    loadItems(); // refresh
-                } else {
-                    status.textContent = '❌ ' + res.message;
-                }
-            })
-            .catch(function () {
-                status.textContent = '❌ Network error. Try again.';
-            });
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (res.success) {
+                status.textContent = '✅ ' + res.message;
+                toggleDrawMode(false);
+                loadItems();
+            } else {
+                status.textContent = '❌ ' + res.message;
+            }
+        })
+        .catch(function () { status.textContent = '❌ Network error. Try again.'; });
     });
 
-    // Expose so popup buttons can call it
     window.mapDrawForItem = function (id) {
         toggleDrawMode(true);
         document.getElementById('boundaryItemSelect').value = id;
@@ -375,9 +455,7 @@
     function populateBoundarySelect(items) {
         var sel = document.getElementById('boundaryItemSelect');
         sel.innerHTML = '<option value="">— pick item —</option>';
-        var candidates = items.filter(function (i) {
-            return BOUNDARY_TYPES.indexOf(i.type) >= 0;
-        });
+        var candidates = items.filter(function (i) { return BOUNDARY_TYPES.indexOf(i.type) >= 0; });
         candidates.sort(function (a, b) { return a.type.localeCompare(b.type) || a.name.localeCompare(b.name); });
         candidates.forEach(function (item) {
             var opt = document.createElement('option');
@@ -388,7 +466,222 @@
     }
 
     // -------------------------------------------------------------------------
-    // Satellite toggle (double-click map title area)
+    // Land boundary — render + draw + save
+    // -------------------------------------------------------------------------
+    var landBoundaryLayer = null;
+
+    function renderLandBoundary(geojson) {
+        if (landBoundaryLayer) { map.removeLayer(landBoundaryLayer); }
+        if (!geojson) return;
+        landBoundaryLayer = L.geoJSON(geojson, {
+            style: {
+                color: '#2d5a27', weight: 3, opacity: 1,
+                dashArray: '8 4',
+                fillColor: '#2d5a27', fillOpacity: 0.05,
+            },
+        });
+        landBoundaryLayer.bindTooltip(MAP_LAND_NAME + ' — Land Boundary', { sticky: false });
+        landBoundaryLayer.addTo(map);
+    }
+
+    if (MAP_LAND_BOUNDARY) { renderLandBoundary(MAP_LAND_BOUNDARY); }
+
+    var landDrawActive  = false;
+    var landDrawPoints  = [];
+    var landTempMarkers = [];
+    var landTempLine    = null;
+    var landTempPoly    = null;
+
+    document.getElementById('mapDrawLandToggle').addEventListener('click', function () {
+        toggleLandDrawMode(!landDrawActive);
+    });
+    document.getElementById('cancelLandDraw').addEventListener('click', function () { toggleLandDrawMode(false); });
+    document.getElementById('clearLandBoundary').addEventListener('click', clearLandDraw);
+
+    function toggleLandDrawMode(active) {
+        landDrawActive = active;
+        document.getElementById('landBoundaryPanel').style.display = active ? 'block' : 'none';
+        document.getElementById('mapDrawLandToggle').textContent = active ? '✕ Cancel Land Draw' : '🗺 Set Land Boundary';
+        map.getContainer().style.cursor = active ? 'crosshair' : '';
+        if (active) { toggleDrawMode(false); cancelAddItem(); }
+        if (!active) clearLandDraw();
+    }
+
+    function clearLandDraw() {
+        landDrawPoints = [];
+        landTempMarkers.forEach(function (m) { map.removeLayer(m); });
+        landTempMarkers = [];
+        if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+        if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
+        document.getElementById('landBoundaryStatus').textContent = '';
+    }
+
+    function finishLandPolygon() {
+        if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+        if (landTempPoly) map.removeLayer(landTempPoly);
+        landTempPoly = L.polygon(landDrawPoints, {
+            color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 0.08, weight: 3, dashArray: '8 4',
+        }).addTo(map);
+        document.getElementById('landBoundaryStatus').textContent =
+            'Polygon complete (' + landDrawPoints.length + ' points). Click Save.';
+        map.getContainer().style.cursor = '';
+    }
+
+    document.getElementById('saveLandBoundary').addEventListener('click', function () {
+        if (landDrawPoints.length < 3 && !landTempPoly) {
+            document.getElementById('landBoundaryStatus').textContent = 'Draw the boundary first (min 3 points, double-click to finish).';
+            return;
+        }
+        if (!landTempPoly && landDrawPoints.length >= 3) finishLandPolygon();
+
+        var geojson = {
+            type: 'Polygon',
+            coordinates: [landDrawPoints.map(function (p) { return [p[1], p[0]]; })],
+        };
+        geojson.coordinates[0].push(geojson.coordinates[0][0]);
+
+        var status = document.getElementById('landBoundaryStatus');
+        status.textContent = 'Saving…';
+
+        fetch(MAP_LAND_BOUNDARY_URL, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: '_token=' + encodeURIComponent(MAP_CSRF_TOKEN) +
+                  '&geojson=' + encodeURIComponent(JSON.stringify(geojson)),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (res.success) {
+                status.textContent = '✅ ' + res.message;
+                renderLandBoundary(geojson);
+                var notice = document.getElementById('landBoundaryNotice');
+                if (notice) notice.style.display = 'none';
+                toggleLandDrawMode(false);
+            } else {
+                status.textContent = '❌ ' + res.message;
+            }
+        })
+        .catch(function () { status.textContent = '❌ Network error.'; });
+    });
+
+    var delLandBtn = document.getElementById('deleteLandBoundary');
+    if (delLandBtn) {
+        delLandBtn.addEventListener('click', function () {
+            if (!confirm('Remove the land boundary?')) return;
+            fetch(MAP_LAND_BOUNDARY_URL + '/delete', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '_token=' + encodeURIComponent(MAP_CSRF_TOKEN),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.success) {
+                    if (landBoundaryLayer) { map.removeLayer(landBoundaryLayer); landBoundaryLayer = null; }
+                    document.getElementById('landBoundaryPanel').style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Map click handler — unified (Add Item / boundary drawing)
+    // -------------------------------------------------------------------------
+    map.on('click', function (e) {
+        // Add Item mode: place/move the pin, then open sheet
+        if (addItemMode) {
+            if (addItemMarker) map.removeLayer(addItemMarker);
+            addItemMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                icon: makeIcon('zone', 36),
+                draggable: true,
+            }).addTo(map);
+            addItemMarker.on('dragend', function (ev) {
+                var ll = ev.target.getLatLng();
+                addItemLat = ll.lat;
+                addItemLng = ll.lng;
+                addCoordsText.textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+            });
+            openAddSheet(e.latlng.lat, e.latlng.lng);
+            map.getContainer().style.cursor = '';
+            addItemMode = false; // one tap is enough; can drag pin after
+            addBtn.textContent = '✕ Cancel';
+            return;
+        }
+
+        // Zone boundary drawing
+        if (drawingActive) {
+            drawnPoints.push([e.latlng.lat, e.latlng.lng]);
+
+            var idx = drawnPoints.length - 1;
+            var dot = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+                radius: 7, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 1,
+                weight: 2,
+            }).addTo(map);
+
+            // Click on existing point: remove it and all points after it
+            (function (pointIdx, dotMarker) {
+                dotMarker.on('click', function (ev) {
+                    L.DomEvent.stop(ev);
+                    // Remove this point and all subsequent from the visual list
+                    var removed = tempMarkers.splice(pointIdx, tempMarkers.length - pointIdx);
+                    removed.forEach(function (m) { map.removeLayer(m); });
+                    drawnPoints.splice(pointIdx, drawnPoints.length - pointIdx);
+                    if (tempPolygon) { map.removeLayer(tempPolygon); tempPolygon = null; }
+                    updateTempShape();
+                    updateDrawStatus();
+                });
+            })(idx, dot);
+
+            tempMarkers.push(dot);
+            updateTempShape();
+            updateDrawStatus();
+            return;
+        }
+
+        // Land boundary drawing
+        if (landDrawActive) {
+            landDrawPoints.push([e.latlng.lat, e.latlng.lng]);
+            var landIdx = landDrawPoints.length - 1;
+            var landDot = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+                radius: 7, color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 1, weight: 2,
+            }).addTo(map);
+
+            // Click on land boundary point: remove it and all after
+            (function (pIdx, pMarker) {
+                pMarker.on('click', function (ev) {
+                    L.DomEvent.stop(ev);
+                    var removed = landTempMarkers.splice(pIdx, landTempMarkers.length - pIdx);
+                    removed.forEach(function (m) { map.removeLayer(m); });
+                    landDrawPoints.splice(pIdx, landDrawPoints.length - pIdx);
+                    if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
+                    if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+                    if (landDrawPoints.length >= 2) {
+                        landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
+                    }
+                    document.getElementById('landBoundaryStatus').textContent =
+                        landDrawPoints.length + ' point(s) — double-click to finish.';
+                });
+            })(landIdx, landDot);
+
+            landTempMarkers.push(landDot);
+            if (landTempLine) map.removeLayer(landTempLine);
+            if (landDrawPoints.length >= 2) {
+                landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
+            }
+            document.getElementById('landBoundaryStatus').textContent =
+                landDrawPoints.length + ' point(s) — double-click to finish. Click a point to remove it.';
+        }
+    });
+
+    map.on('dblclick', function (e) {
+        L.DomEvent.stop(e);
+        if (drawingActive && drawnPoints.length >= 3) { finishPolygon(); return; }
+        if (landDrawActive && landDrawPoints.length >= 3) { finishLandPolygon(); }
+    });
+
+    // -------------------------------------------------------------------------
+    // Satellite toggle button
     // -------------------------------------------------------------------------
     var satBtn = document.createElement('button');
     satBtn.className = 'btn btn-secondary btn-sm';
@@ -398,12 +691,10 @@
     satBtn.addEventListener('click', function () {
         useSatellite = !useSatellite;
         if (useSatellite) {
-            satelliteLayer.addTo(map);
-            osmLayer.addTo(map);
+            satelliteLayer.addTo(map); osmLayer.addTo(map);
             satBtn.textContent = '🗺 Map';
         } else {
-            map.removeLayer(satelliteLayer);
-            map.removeLayer(osmLayer);
+            map.removeLayer(satelliteLayer); map.removeLayer(osmLayer);
             satBtn.textContent = '🛰 Satellite';
         }
     });
