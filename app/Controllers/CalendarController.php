@@ -31,7 +31,7 @@ class CalendarController
     private const OAUTH_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
     private const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
     private const CALENDAR_API    = 'https://www.googleapis.com/calendar/v3';
-    private const SCOPE           = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+    private const SCOPE           = 'https://www.googleapis.com/auth/calendar.events';
 
     private function requireAuth(): void
     {
@@ -162,16 +162,7 @@ class CalendarController
             $this->saveSetting($db, 'google_calendar.refresh_token', $tokenData['refresh_token']);
         }
 
-        // Fetch connected account email
-        $profile = $this->httpGet(
-            'https://www.googleapis.com/oauth2/v2/userinfo',
-            $tokenData['access_token']
-        );
-        if (!empty($profile['email'])) {
-            $this->saveSetting($db, 'google_calendar.connected_email', $profile['email']);
-        }
-
-        flash('success', 'Google Calendar connected' . (!empty($profile['email']) ? ' as ' . $profile['email'] : '') . '.');
+        flash('success', 'Google Calendar connected successfully.');
         Response::redirect('/settings/calendar');
     }
 
