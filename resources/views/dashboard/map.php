@@ -25,8 +25,12 @@
         <!-- Land boundary panel -->
         <div class="map-sidebar-section" id="landBoundaryPanel" style="display:none">
             <h3 class="map-sidebar-title">🗺 Land Boundary</h3>
-            <p class="text-muted text-sm">Draw the outer limit of your entire property. Click to place points, double-click to finish.</p>
+            <p class="text-muted text-sm">Click to place points, double-click to finish. Or walk the boundary and tap GPS to add your current position.</p>
             <div class="map-boundary-actions">
+                <button class="btn btn-secondary btn-sm" id="landGpsBtn">🎯 Add GPS Point</button>
+            </div>
+            <div id="landGpsStatus" class="map-gps-status" style="display:none"></div>
+            <div class="map-boundary-actions" style="margin-top:var(--spacing-2)">
                 <button class="btn btn-primary btn-sm" id="saveLandBoundary">Save Land Boundary</button>
                 <button class="btn btn-secondary btn-sm" id="clearLandBoundary">Clear</button>
                 <button class="btn btn-link btn-sm" id="cancelLandDraw">Cancel</button>
@@ -49,8 +53,12 @@
         <!-- Zone boundary panel (accessible from item popups) -->
         <div class="map-sidebar-section" id="boundaryPanel" style="display:none">
             <h3 class="map-sidebar-title">Draw Zone Boundary</h3>
-            <p class="text-muted text-sm">Click on the map to place points. Double-click to finish. Click a placed point to remove it and all points after.</p>
-            <div class="form-group">
+            <p class="text-muted text-sm">Click to place points. Double-click to finish. Click a placed point to remove it.</p>
+            <div class="map-boundary-actions">
+                <button class="btn btn-secondary btn-sm" id="zoneGpsBtn">🎯 Add GPS Point</button>
+            </div>
+            <div id="zoneGpsStatus" class="map-gps-status" style="display:none"></div>
+            <div class="form-group" style="margin-top:var(--spacing-2)">
                 <label class="form-label">Assign to item</label>
                 <select id="boundaryItemSelect" class="form-input form-input-sm">
                     <option value="">— pick item —</option>
@@ -82,10 +90,14 @@
             <button class="map-add-sheet-close" id="mapAddSheetClose" aria-label="Close">&#10005;</button>
         </div>
         <div class="map-add-sheet-body">
-            <div class="map-add-sheet-coords" id="mapAddCoords">
-                <span class="gps-coords-icon">📍</span>
-                <span id="mapAddCoordsText">Tap the map to set location</span>
+            <div class="map-add-sheet-loc">
+                <div class="map-add-sheet-coords" id="mapAddCoords">
+                    <span class="gps-coords-icon">📍</span>
+                    <span id="mapAddCoordsText">Tap the map or use GPS to set location</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="mapAddGpsBtn">🎯 Detect GPS</button>
             </div>
+            <div id="mapAddGpsStatus" class="map-gps-status" style="display:none"></div>
             <div class="form-group">
                 <label class="form-label">Item Type <span class="required">*</span></label>
                 <select id="mapAddType" class="form-input form-input--touch" required>

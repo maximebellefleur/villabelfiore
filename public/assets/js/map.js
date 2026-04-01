@@ -242,6 +242,150 @@
     var addSubmitBtn    = document.getElementById('mapAddSubmit');
     var addOpenFull     = document.getElementById('mapAddOpenFull');
 
+    // -------------------------------------------------------------------------
+    // Shared GPS helper — used by Add Item sheet + boundary panels
+    // -------------------------------------------------------------------------
+    function detectGps(onSuccess, statusEl, btn) {
+        if (!navigator.geolocation) {
+            showGpsStatus(statusEl, '⚠️ Geolocation not supported by your browser.', 'error');
+            return;
+        }
+        var origText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '⏳ Detecting…';
+        showGpsStatus(statusEl, 'Detecting your position…', 'info');
+
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                btn.disabled = false;
+                btn.textContent = origText;
+                hideGpsStatus(statusEl);
+                onSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+            },
+            function (err) {
+                btn.disabled = false;
+                btn.textContent = origText;
+                var msgs = {
+                    1: '⚠️ Permission denied — allow location access in your browser settings.',
+                    2: '⚠️ Position unavailable — try outdoors or tap the map manually.',
+                    3: '⚠️ Timed out — move to an open area and try again.',
+                };
+                showGpsStatus(statusEl, msgs[err.code] || '⚠️ Could not detect location.', 'error');
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    }
+
+    function showGpsStatus(el, msg, type) {
+        el.textContent = msg;
+        el.className = 'map-gps-status map-gps-status--' + (type || 'info');
+        el.style.display = 'block';
+    }
+
+    function hideGpsStatus(el) {
+        el.style.display = 'none';
+    }
+
+    // GPS for Add Item sheet
+    document.getElementById('mapAddGpsBtn').addEventListener('click', function () {
+        var btn = this;
+        var statusEl = document.getElementById('mapAddGpsStatus');
+        detectGps(function (lat, lng, accuracy) {
+            // Place / move the pin
+            if (addItemMarker) map.removeLayer(addItemMarker);
+            addItemMarker = L.marker([lat, lng], { icon: makeIcon('zone', 36), draggable: true }).addTo(map);
+            addItemMarker.on('dragend', function (ev) {
+                var ll = ev.target.getLatLng();
+                addItemLat = ll.lat; addItemLng = ll.lng;
+                addCoordsText.textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+            });
+            addItemLat = lat; addItemLng = lng;
+            addCoordsText.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6) +
+                (accuracy ? '  ±' + Math.round(accuracy) + 'm' : '');
+            map.setView([lat, lng], Math.max(map.getZoom(), 18));
+            // Open sheet if it's not already open
+            if (!addSheet.classList.contains('open')) {
+                openAddSheet(lat, lng);
+            }
+            // Cancel pin-placement cursor mode — we already have a location
+            if (addItemMode) {
+                addItemMode = false;
+                addBtn.textContent = '✕ Cancel';
+                map.getContainer().style.cursor = '';
+            }
+        }, statusEl, btn);
+    });
+
+    // GPS for Land boundary panel — adds a point at current position
+    document.getElementById('landGpsBtn').addEventListener('click', function () {
+        var btn = this;
+        var statusEl = document.getElementById('landGpsStatus');
+        detectGps(function (lat, lng) {
+            // Simulate a map click at that position
+            var latlng = L.latLng(lat, lng);
+            var landIdx = landDrawPoints.length;
+            landDrawPoints.push([lat, lng]);
+            var landDot = L.circleMarker([lat, lng], {
+                radius: 7, color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 1, weight: 2,
+            }).addTo(map);
+            (function (pIdx, pMarker) {
+                pMarker.on('click', function (ev) {
+                    L.DomEvent.stop(ev);
+                    var removed = landTempMarkers.splice(pIdx, landTempMarkers.length - pIdx);
+                    removed.forEach(function (m) { map.removeLayer(m); });
+                    landDrawPoints.splice(pIdx, landDrawPoints.length - pIdx);
+                    if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
+                    if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+                    if (landDrawPoints.length >= 2) {
+                        landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
+                    }
+                    document.getElementById('landBoundaryStatus').textContent =
+                        landDrawPoints.length + ' point(s) — double-click to finish.';
+                });
+            })(landIdx, landDot);
+            landTempMarkers.push(landDot);
+            if (landTempLine) map.removeLayer(landTempLine);
+            if (landDrawPoints.length >= 2) {
+                landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
+            }
+            map.setView([lat, lng], Math.max(map.getZoom(), 18));
+            document.getElementById('landBoundaryStatus').textContent =
+                landDrawPoints.length + ' point(s) — tap GPS again or click map to continue.';
+            showGpsStatus(statusEl, '✅ Point added at ' + lat.toFixed(5) + ', ' + lng.toFixed(5), 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 2500);
+        }, statusEl, btn);
+    });
+
+    // GPS for Zone boundary panel
+    document.getElementById('zoneGpsBtn').addEventListener('click', function () {
+        var btn = this;
+        var statusEl = document.getElementById('zoneGpsStatus');
+        detectGps(function (lat, lng) {
+            var idx = drawnPoints.length;
+            drawnPoints.push([lat, lng]);
+            var dot = L.circleMarker([lat, lng], {
+                radius: 7, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 1, weight: 2,
+            }).addTo(map);
+            (function (pointIdx, dotMarker) {
+                dotMarker.on('click', function (ev) {
+                    L.DomEvent.stop(ev);
+                    var removed = tempMarkers.splice(pointIdx, tempMarkers.length - pointIdx);
+                    removed.forEach(function (m) { map.removeLayer(m); });
+                    drawnPoints.splice(pointIdx, drawnPoints.length - pointIdx);
+                    if (tempPolygon) { map.removeLayer(tempPolygon); tempPolygon = null; }
+                    updateTempShape();
+                    updateDrawStatus();
+                });
+            })(idx, dot);
+            tempMarkers.push(dot);
+            updateTempShape();
+            map.setView([lat, lng], Math.max(map.getZoom(), 18));
+            updateDrawStatus();
+            showGpsStatus(statusEl, '✅ Point added at ' + lat.toFixed(5) + ', ' + lng.toFixed(5), 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 2500);
+        }, statusEl, btn);
+    });
+
     addBtn.addEventListener('click', function () {
         if (addItemMode) {
             cancelAddItem();
