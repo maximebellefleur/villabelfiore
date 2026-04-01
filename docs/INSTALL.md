@@ -1,78 +1,96 @@
-# Rooted v1 — Installation Guide
+# Rooted — Installation Guide
+
+## Your Setup
+
+- **Server**: cPanel hosting (maximebellefleur.com)
+- **App URL**: `https://maximebellefleur.com/rooted/`
+- **PHP**: 8.2+
+- **Database**: MySQL / MariaDB (created manually in cPanel)
+
+---
+
+## What the ZIP Contains
+
+The deploy ZIP (`rooted-cpanel-deploy.zip`) creates two folders inside `public_html/`:
+
+```
+public_html/
+├── rooted/               ← web-accessible files (PHP entry point, assets, .htaccess)
+│   ├── index.php
+│   ├── .htaccess
+│   ├── assets/
+│   ├── manifest.json
+│   └── sw.js
+└── rooted-files/         ← protected app files (never directly accessible)
+    ├── app/
+    ├── bootstrap/
+    ├── config/
+    ├── database/
+    ├── resources/
+    ├── storage/
+    ├── .env.example
+    └── .htaccess         ← blocks all direct web access
+```
+
+`rooted/index.php` automatically detects the `rooted-files/` folder next to it and loads the app from there. Nothing in `rooted-files/` is reachable from a browser URL.
+
+---
+
+## First-Time Installation
+
+### Step 1 — Create the MySQL database in cPanel
+
+1. Go to **cPanel → MySQL Databases**
+2. Create a database (e.g. `maxime_rooted`)
+3. Create a database user with a strong password
+4. Add that user to the database with **All Privileges**
+5. Note down: host (`localhost`), database name, username, password
+
+### Step 2 — Upload the deploy ZIP
+
+1. Go to **cPanel → File Manager**
+2. Navigate to `public_html/`
+3. Click **Upload** and upload `rooted-cpanel-deploy.zip`
+4. Right-click the ZIP → **Extract** — this creates `rooted/` and `rooted-files/`
+5. Delete the ZIP file after extracting
+
+### Step 3 — Set storage permissions
+
+1. In File Manager, right-click `rooted-files/storage/` → **Change Permissions**
+2. Set to `755` (owner read/write/execute, others read/execute)
+3. Apply recursively to all subfolders
+
+> If the installer shows "storage/ not writable", set it to `775` instead.
+
+### Step 4 — Run the installer
+
+Visit: **https://maximebellefleur.com/rooted/**
+
+You will be redirected to `/rooted/install`. Follow the 6 steps:
+
+| Step | What it does |
+|------|-------------|
+| 1 — Environment check | Verifies PHP version, extensions, storage is writable |
+| 2 — Database setup | Enter your DB credentials; tables are created automatically |
+| 3 — Land identity | Name your land, set timezone and currency |
+| 4 — Storage | Choose **Local Filesystem** (recommended for cPanel) |
+| 5 — Integrations | Skip for now (Google Calendar etc.) |
+| 6 — Admin account | Create your login email and password |
+
+### Step 5 — Log in
+
+After installation you are redirected to `/rooted/login`. Sign in with the credentials you just created.
+
+The homepage (`/rooted/`) will now redirect to your dashboard automatically.
+
+---
 
 ## Requirements
 
-- PHP 8.2+
-- MySQL 8.0+ or MariaDB 10.5+
-- Web server (Apache or Nginx) with URL rewriting
-- PHP extensions: `pdo_mysql`, `json`, `mbstring`, `fileinfo`
-
-## Step 1: Deploy Files
-
-Upload or clone the project to your server. The web server **document root must point to the `/public` directory**, not the project root.
-
-Example Nginx config:
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    root /path/to/rooted/public;
-    index index.php;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        include fastcgi_params;
-        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    }
-}
-```
-
-Example Apache `.htaccess` (place in `/public`):
-```apache
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [L]
-```
-
-## Step 2: Set Permissions
-
-```bash
-chmod -R 755 storage/
-chmod -R 755 public/assets/
-```
-
-## Step 3: Copy and Configure .env
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and set at minimum:
-- `APP_URL` — your public URL
-- `APP_KEY` — any random 32-character string
-- Database credentials (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`)
-
-## Step 4: Run the Installer
-
-Visit `https://yourdomain.com/install` in your browser.
-
-Follow the 5-step installer:
-1. Environment check
-2. Database setup (creates all tables automatically)
-3. Land identity (name, timezone, currency)
-4. Storage setup (local filesystem by default)
-5. Integrations (optional, can skip)
-6. Create admin account
-
-## Step 5: Log In
-
-After installation completes, visit `/login` and sign in with your admin credentials.
-
-## Raspberry Pi / Local Network
-
-The application runs identically on a Raspberry Pi running PHP 8.2 + MySQL. Follow the same steps. Set `APP_URL` to the local IP address (e.g., `http://192.168.1.100`).
+| Requirement | Minimum |
+|-------------|---------|
+| PHP | 8.2+ |
+| MySQL / MariaDB | 8.0+ / 10.5+ |
+| PHP extensions | `pdo_mysql`, `json`, `mbstring`, `fileinfo` |
+| Apache mod_rewrite | Must be enabled |
+| `storage/` writable | `chmod 755` or `775` |
