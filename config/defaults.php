@@ -13,7 +13,7 @@ return [
     'reminder_default_lead_days' => 7,
     'version'                    => '1.2.0',
     'version_name'               => 'Photos, Actions & Calendar',
-    'update_zip_url'             => 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/claude/create-rooted-project-RVbog/rooted-cpanel-update.zip',
+    'update_zip_url'             => 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/main/rooted-cpanel-update.zip',
     'items_per_page'             => 20,
     'nearby_radius_km'           => 1.0,
     'google_calendar_enabled'    => false,
