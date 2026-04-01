@@ -41,17 +41,20 @@
         15
     );
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Satellite on by default
+    var satelliteLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe, GeoEye, i-cubed, USDA FSA, USGS, AEX, Getmapping, Aerogrid, IGN, IGP, swisstopo' }
+    ).addTo(map);
+
+    // OSM road overlay (labels on top of satellite)
+    var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 21,
+        opacity: 0.35,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    // Satellite toggle
-    var satelliteLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 20, attribution: 'Esri' }
-    );
-    var useSatellite = false;
+    var useSatellite = true;
 
     // Layer groups by type
     var layerGroups = {};
@@ -389,16 +392,18 @@
     // -------------------------------------------------------------------------
     var satBtn = document.createElement('button');
     satBtn.className = 'btn btn-secondary btn-sm';
-    satBtn.textContent = '🛰 Satellite';
+    satBtn.textContent = '🗺 Map';
     satBtn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:999;';
     document.getElementById('map').appendChild(satBtn);
     satBtn.addEventListener('click', function () {
         useSatellite = !useSatellite;
         if (useSatellite) {
             satelliteLayer.addTo(map);
+            osmLayer.addTo(map);
             satBtn.textContent = '🗺 Map';
         } else {
             map.removeLayer(satelliteLayer);
+            map.removeLayer(osmLayer);
             satBtn.textContent = '🛰 Satellite';
         }
     });
