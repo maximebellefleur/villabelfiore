@@ -75,7 +75,7 @@ unset($_SESSION['upgrade_result']);
         <!-- Option A: Direct from GitHub -->
         <div style="background:#f0f7f0;border:1px solid #b6d9b6;border-radius:8px;padding:20px 20px 16px;margin-bottom:24px">
             <div style="font-weight:700;font-size:1rem;margin-bottom:6px">⚡ Apply directly from GitHub</div>
-            <p style="font-size:.875rem;color:#555;margin:0 0 14px">One click — the server downloads and applies the latest update automatically. Requires a published GitHub release with <code>rooted-cpanel-update.zip</code> attached.</p>
+            <p style="font-size:.875rem;color:#555;margin:0 0 14px">One click — the server downloads the latest ZIP directly from GitHub and applies it. No download needed.</p>
             <button type="button" class="btn btn-primary" id="githubApplyBtn" style="margin-right:8px">
                 🔄 Apply Latest Update from GitHub
             </button>

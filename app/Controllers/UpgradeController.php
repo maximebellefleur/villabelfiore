@@ -116,8 +116,9 @@ class UpgradeController
             return;
         }
 
-        // Download the latest release ZIP from GitHub
-        $zipUrl = 'https://github.com/maximebellefleur/villabelfiore/releases/latest/download/rooted-cpanel-update.zip';
+        // Download the ZIP directly from the repository
+        $defaults = require BASE_PATH . '/config/defaults.php';
+        $zipUrl   = $defaults['update_zip_url'] ?? 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/main/rooted-cpanel-update.zip';
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
 
