@@ -54,11 +54,9 @@ class UpgradeController
 
         header('Content-Type: application/json');
 
-        // CSRF check
-        try {
-            CSRF::validate($request->post('_token', ''));
-        } catch (\Throwable $e) {
-            echo json_encode(['success' => false, 'message' => 'Invalid or expired security token. Please refresh and try again.']);
+        // CSRF check — use validateToken() so we can return JSON instead of calling exit
+        if (!CSRF::validateToken($request->post('_token', ''))) {
+            echo json_encode(['success' => false, 'message' => 'Invalid or expired security token. Please refresh the page and try again.']);
             return;
         }
 
