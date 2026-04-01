@@ -75,7 +75,7 @@ unset($_SESSION['upgrade_result']);
         <!-- Option A: Direct from GitHub -->
         <div style="background:#f0f7f0;border:1px solid #b6d9b6;border-radius:8px;padding:20px 20px 16px;margin-bottom:24px">
             <div style="font-weight:700;font-size:1rem;margin-bottom:6px">⚡ Apply directly from GitHub</div>
-            <p style="font-size:.875rem;color:#555;margin:0 0 14px">One click — the server downloads and applies the latest update automatically. No download needed.</p>
+            <p style="font-size:.875rem;color:#555;margin:0 0 14px">One click — the server downloads and applies the latest update automatically. Requires a published GitHub release with <code>rooted-cpanel-update.zip</code> attached.</p>
             <button type="button" class="btn btn-primary" id="githubApplyBtn" style="margin-right:8px">
                 🔄 Apply Latest Update from GitHub
             </button>
@@ -190,7 +190,7 @@ unset($_SESSION['upgrade_result']);
                         var res = JSON.parse(xhr.responseText);
                         if (res.success) {
                             progressText.textContent = '✅ Done! Reloading…';
-                            setTimeout(function() { window.location.href = res.redirect || window.location.href; }, 900);
+                            setTimeout(function() { window.location.href = (window.APP_BASE || '') + (res.redirect || '/settings/upgrade'); }, 900);
                         } else {
                             progressWrap.style.display = 'none';
                             errorBox.textContent = res.message || 'Upgrade failed.';
@@ -240,7 +240,7 @@ unset($_SESSION['upgrade_result']);
                         if (res.success) {
                             bar.style.width = '100%';
                             text.textContent = '✅ Done! Reloading…';
-                            setTimeout(function() { window.location.href = res.redirect || window.location.href; }, 900);
+                            setTimeout(function() { window.location.href = (window.APP_BASE || '') + (res.redirect || '/settings/upgrade'); }, 900);
                         } else {
                             status.style.display = 'none';
                             errBox.textContent = res.message || 'Update from GitHub failed.';

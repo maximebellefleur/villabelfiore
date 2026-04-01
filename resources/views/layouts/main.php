@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="<?= e(\App\Support\CSRF::getToken()) ?>">
     <title><?= e($title ?? 'Rooted') ?> — Rooted</title>
     <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= url('/assets/css/admin.css') ?>">
     <link rel="manifest" href="<?= url('/manifest.json') ?>">
     <meta name="theme-color" content="#2d5a27">
     <?php if (!empty($mapEnabled)): ?>
