@@ -8,6 +8,29 @@
  */
 return [
 
+    '1.2.0' => [
+        'date'     => '2026-04-01',
+        'title'    => 'Photos, Actions & Calendar',
+        'new' => [
+            'Google Calendar sync — connect your Google account and push all pending reminders as calendar events',
+            'Settings → Roadmap page: full feature list with version tracking and status (released / in progress / planned)',
+            'Settings → Calendar tab: step-by-step OAuth setup with redirect URI helper and copy button',
+            'Map item icons rebuilt as CSS div icons (reliable emoji rendering on iOS and Android)',
+            'GPS detect button in Add Item sheet — tap to place pin at your current location',
+            'GPS "Add GPS Point" button in land boundary and zone boundary draw panels',
+        ],
+        'improved' => [
+            'Map: item boundary polygons now save and load using the correct DB column (meta_value_text)',
+            'Map: items with no GPS but with a boundary polygon now render correctly',
+            'Settings navigation updated with Calendar and Roadmap tabs',
+        ],
+        'fixed' => [
+            'Map item icons using SVG text were invisible on iOS Safari and some Android browsers — replaced with div-based icons',
+            'Item boundary save/load was silently failing due to wrong DB column name (meta_value vs meta_value_text)',
+            'GPS detect on boundary panels used alert() — replaced with inline status messages',
+        ],
+    ],
+
     '1.1.0' => [
         'date'     => '2026-04-01',
         'title'    => 'Interactive Land Map',

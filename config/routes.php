@@ -114,6 +114,13 @@ $router->get('/settings/action-types',         'SettingsController@actionTypes')
 $router->post('/settings/action-types',        'SettingsController@updateActionTypes');
 $router->get('/settings/upgrade',              'UpgradeController@index');
 $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
+$router->get('/settings/upcoming',             'SettingsController@upcoming');
+$router->get('/settings/calendar',             'CalendarController@index');
+$router->post('/settings/calendar/save',       'CalendarController@save');
+$router->get('/settings/calendar/connect',     'CalendarController@connect');
+$router->get('/settings/calendar/callback',    'CalendarController@callback');
+$router->post('/settings/calendar/disconnect', 'CalendarController@disconnect');
+$router->post('/settings/calendar/sync',       'CalendarController@sync');
 
 // -------------------------------------------------------------------------
 // Logs

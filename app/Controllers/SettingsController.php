@@ -84,4 +84,11 @@ class SettingsController
         flash('success', 'Action types saved.');
         Response::redirect('/settings/action-types');
     }
+
+    public function upcoming(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $roadmap = require BASE_PATH . '/config/roadmap.php';
+        Response::render('settings/upcoming', ['title' => 'Upcoming Features', 'roadmap' => $roadmap]);
+    }
 }

@@ -6,10 +6,12 @@
 <div class="tabs">
     <nav class="tab-nav">
         <button class="tab-btn tab-btn--active" data-tab="general">General</button>
-        <button class="tab-btn" data-tab="storage"><a href="<?= url('/settings/storage') ?>">Storage</a></button>
-        <button class="tab-btn" data-tab="actions"><a href="<?= url('/settings/action-types') ?>">Action Types</a></button>
-        <button class="tab-btn" data-tab="logs"><a href="<?= url('/logs/errors') ?>">Error Logs</a></button>
-        <button class="tab-btn" data-tab="upgrade"><a href="<?= url('/settings/upgrade') ?>">⬆️ Upgrade</a></button>
+        <button class="tab-btn"><a href="<?= url('/settings/storage') ?>">Storage</a></button>
+        <button class="tab-btn"><a href="<?= url('/settings/action-types') ?>">Action Types</a></button>
+        <button class="tab-btn"><a href="<?= url('/settings/calendar') ?>">📅 Calendar</a></button>
+        <button class="tab-btn"><a href="<?= url('/logs/errors') ?>">Error Logs</a></button>
+        <button class="tab-btn"><a href="<?= url('/settings/upcoming') ?>">🗺 Roadmap</a></button>
+        <button class="tab-btn"><a href="<?= url('/settings/upgrade') ?>">⬆️ Upgrade</a></button>
     </nav>
 
     <div class="tab-panel tab-panel--active" id="tab-general">

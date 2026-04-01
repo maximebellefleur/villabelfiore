@@ -78,18 +78,18 @@ class MapController
         if ($ids) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $rows = $db->fetchAll(
-                "SELECT item_id, meta_value FROM item_meta
+                "SELECT item_id, meta_value_text FROM item_meta
                  WHERE meta_key = 'boundary_geojson' AND item_id IN ($placeholders)",
                 $ids
             );
             foreach ($rows as $row) {
-                $boundaries[$row['item_id']] = $row['meta_value'];
+                $boundaries[$row['item_id']] = $row['meta_value_text'];
             }
         }
 
         // Also load items that have a boundary but no GPS (zones drawn on map directly)
         $zonesWithBoundary = $db->fetchAll(
-            "SELECT i.id, i.name, i.type, i.status, i.gps_lat, i.gps_lng, m.meta_value AS boundary_geojson
+            "SELECT i.id, i.name, i.type, i.status, i.gps_lat, i.gps_lng, m.meta_value_text AS boundary_geojson
              FROM items i
              JOIN item_meta m ON m.item_id = i.id AND m.meta_key = 'boundary_geojson'
              WHERE (i.gps_lat IS NULL OR i.gps_lng IS NULL)
@@ -166,9 +166,9 @@ class MapController
 
         // Upsert the boundary in item_meta
         $db->execute(
-            "INSERT INTO item_meta (item_id, meta_key, meta_value, created_at, updated_at)
-             VALUES (?, 'boundary_geojson', ?, NOW(), NOW())
-             ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value), updated_at = NOW()",
+            "INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+             VALUES (?, 'boundary_geojson', ?, 'text', NOW(), NOW())
+             ON DUPLICATE KEY UPDATE meta_value_text = VALUES(meta_value_text), updated_at = NOW()",
             [$id, json_encode($decoded)]
         );
 

@@ -57,23 +57,27 @@
     var polygonMap  = {};
 
     // -------------------------------------------------------------------------
-    // Custom marker icon
+    // Custom marker icon — div-based (reliable emoji on iOS/Android, no SVG text)
     // -------------------------------------------------------------------------
     function makeIcon(type, size) {
-        size = size || 32;
+        size = size || 36;
         var color = typeColor(type);
         var emoji = typeIcon(type);
-        var svg = [
-            '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 40 40">',
-            '<circle cx="20" cy="20" r="18" fill="' + color + '" stroke="#fff" stroke-width="3"/>',
-            '<text x="20" y="26" font-size="16" text-anchor="middle">' + emoji + '</text>',
-            '</svg>',
-        ].join('');
+        var fs    = Math.round(size * 0.46);
+        var html  = '<div style="' +
+            'width:' + size + 'px;height:' + size + 'px;' +
+            'background:' + color + ';' +
+            'border-radius:50%;border:3px solid #fff;' +
+            'box-shadow:0 2px 8px rgba(0,0,0,.35);' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'font-size:' + fs + 'px;line-height:1;cursor:pointer;' +
+            '">' + emoji + '</div>';
         return L.divIcon({
-            html: svg, className: '',
-            iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2],
-            popupAnchor: [0, -(size / 2)],
+            html: html,
+            className: '',
+            iconSize:     [size, size],
+            iconAnchor:   [size / 2, size / 2],
+            popupAnchor:  [0, -(size / 2 + 4)],
         });
     }
 
