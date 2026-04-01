@@ -14,8 +14,16 @@
 
     var miniMap = L.map('miniMap').setView([initialLat, initialLng], hasCoords ? 16 : 5);
 
+    // Satellite by default
+    L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    ).addTo(miniMap);
+
+    // Road labels on top
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 21,
+        opacity: 0.35,
         attribution: '© OpenStreetMap',
     }).addTo(miniMap);
 
