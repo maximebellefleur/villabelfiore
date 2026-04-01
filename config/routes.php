@@ -14,8 +14,14 @@ use App\Controllers\InstallerController;
 use App\Controllers\MapController;
 use App\Controllers\UpgradeController;
 use App\Controllers\CalendarController;
+use App\Controllers\PublicController;
 
 /** @var \App\Support\Router $router */
+
+// -------------------------------------------------------------------------
+// Public (no auth required)
+// -------------------------------------------------------------------------
+$router->get('/privacy', 'PublicController@privacy');
 
 // -------------------------------------------------------------------------
 // Root redirect

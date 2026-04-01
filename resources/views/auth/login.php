@@ -20,4 +20,7 @@
 
         <button type="submit" class="btn btn-primary btn-full">Sign In</button>
     </form>
+    <p style="text-align:center;margin-top:var(--spacing-4);font-size:.8rem;color:var(--color-text-muted)">
+        <a href="<?= url('/privacy') ?>" style="color:var(--color-text-muted)">Privacy Policy</a>
+    </p>
 </div>
