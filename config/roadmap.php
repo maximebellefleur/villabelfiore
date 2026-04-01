@@ -48,8 +48,8 @@ return [
     ],
 
     '1.2.0' => [
-        'status'   => 'in_progress',
-        'released' => null,
+        'status'   => 'released',
+        'released' => '2026-04-01',
         'title'    => 'Photos, Actions & Calendar',
         'features' => [
             ['title' => 'Photo uploads per item',                     'detail' => 'Upload identification photos, N/S/E/W yearly directional shots, harvest photos, and general attachments. Stored in storage/uploads/.'],

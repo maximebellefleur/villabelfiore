@@ -1,3 +1,4 @@
+<?php $miniMapEnabled = !empty($item['gps_lat']) && !empty($item['gps_lng']); ?>
 <div class="page-header">
     <h1 class="page-title"><?= e($item['name']) ?>
         <span class="badge badge-type"><?= e(str_replace('_', ' ', $item['type'])) ?></span>
@@ -55,6 +56,18 @@
             </div>
             <?php endif; ?>
         </div>
+
+        <?php if ($miniMapEnabled): ?>
+        <div style="margin-top:var(--spacing-4)">
+            <h3 style="margin-bottom:var(--spacing-2)">Location</h3>
+            <div id="miniMap" style="height:220px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--color-border)"></div>
+        </div>
+        <script>
+        window.MINI_MAP_LAT = <?= (float)$item['gps_lat'] ?>;
+        window.MINI_MAP_LNG = <?= (float)$item['gps_lng'] ?>;
+        window.MINI_MAP_READONLY = true;
+        </script>
+        <?php endif; ?>
 
         <div class="section-actions">
             <h3>Log Action</h3>

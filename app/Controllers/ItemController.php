@@ -159,14 +159,15 @@ class ItemController
         foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
 
         Response::render('items/show', [
-            'title'       => e($item['name']),
-            'item'        => $item,
-            'meta'        => $metaMap,
-            'attachments' => $attachments,
-            'activityLog' => $activityLog,
-            'reminders'   => $reminders,
-            'harvests'    => $harvests,
-            'finances'    => $finances,
+            'title'          => e($item['name']),
+            'item'           => $item,
+            'meta'           => $metaMap,
+            'attachments'    => $attachments,
+            'activityLog'    => $activityLog,
+            'reminders'      => $reminders,
+            'harvests'       => $harvests,
+            'finances'       => $finances,
+            'miniMapEnabled' => !empty($item['gps_lat']) && !empty($item['gps_lng']),
         ]);
     }
 

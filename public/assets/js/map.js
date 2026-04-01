@@ -48,6 +48,12 @@
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
+    // Plain OSM base — used when satellite is off
+    var plainOsmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    });
+
     var useSatellite = true;
 
     // Layer groups
@@ -645,7 +651,12 @@
         landBoundaryLayer.addTo(map);
     }
 
-    if (MAP_LAND_BOUNDARY) { renderLandBoundary(MAP_LAND_BOUNDARY); }
+    if (MAP_LAND_BOUNDARY) {
+        renderLandBoundary(MAP_LAND_BOUNDARY);
+        if (landBoundaryLayer) {
+            map.fitBounds(landBoundaryLayer.getBounds(), { padding: [40, 40] });
+        }
+    }
 
     var landDrawActive  = false;
     var landDrawPoints  = [];
@@ -852,10 +863,12 @@
     satBtn.addEventListener('click', function () {
         useSatellite = !useSatellite;
         if (useSatellite) {
+            map.removeLayer(plainOsmLayer);
             satelliteLayer.addTo(map); osmLayer.addTo(map);
             satBtn.textContent = '🗺 Map';
         } else {
             map.removeLayer(satelliteLayer); map.removeLayer(osmLayer);
+            plainOsmLayer.addTo(map);
             satBtn.textContent = '🛰 Satellite';
         }
     });

@@ -34,9 +34,17 @@ foreach ($roadmap as $version => $block):
     </div>
 
     <div class="roadmap-feature-list">
-        <?php foreach ($block['features'] as $f): ?>
-        <div class="roadmap-feature">
-            <div class="roadmap-feature-check"><?= $block['status'] === 'released' ? '✓' : '○' ?></div>
+        <?php foreach ($block['features'] as $fi => $f): ?>
+        <?php $ckId = 'rm_' . $version . '_' . $fi; ?>
+        <div class="roadmap-feature" id="<?= e($ckId) ?>">
+            <?php if ($block['status'] === 'released'): ?>
+            <div class="roadmap-feature-check">✓</div>
+            <?php else: ?>
+            <label class="roadmap-feature-check roadmap-feature-check--toggle" title="Mark as done">
+                <input type="checkbox" class="roadmap-check" data-key="<?= e($ckId) ?>" style="display:none">
+                <span class="roadmap-check-icon">○</span>
+            </label>
+            <?php endif; ?>
             <div class="roadmap-feature-body">
                 <div class="roadmap-feature-title"><?= e($f['title']) ?></div>
                 <div class="roadmap-feature-detail"><?= e($f['detail']) ?></div>
@@ -47,3 +55,24 @@ foreach ($roadmap as $version => $block):
 </div>
 
 <?php endforeach; ?>
+
+<script>
+(function() {
+    var KEY_PREFIX = 'rooted_roadmap_';
+    document.querySelectorAll('.roadmap-check').forEach(function(cb) {
+        var k = cb.dataset.key;
+        if (localStorage.getItem(KEY_PREFIX + k) === '1') { cb.checked = true; applyDone(cb, true); }
+        cb.addEventListener('change', function() {
+            localStorage.setItem(KEY_PREFIX + k, cb.checked ? '1' : '0');
+            applyDone(cb, cb.checked);
+        });
+    });
+    function applyDone(cb, done) {
+        var icon    = cb.nextElementSibling;
+        var feature = cb.closest('.roadmap-feature');
+        icon.textContent = done ? '✓' : '○';
+        icon.style.color = done ? 'var(--color-success,#27ae60)' : '';
+        feature.style.opacity = done ? '.5' : '';
+    }
+}());
+</script>

@@ -415,8 +415,7 @@
 .tab-link:hover { color: var(--color-primary); }
 .tab-link.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+/* tab-panel visibility is controlled by app.css via .tab-panel--active */
 
 /* =========================================================
    GPS field group
@@ -1078,6 +1077,8 @@ select.form-input--touch {
   color: var(--color-primary);
   font-weight: 700;
 }
+.roadmap-feature-check--toggle { cursor: pointer; opacity: .7; transition: opacity .15s; }
+.roadmap-feature-check--toggle:hover { opacity: 1; }
 
 .roadmap-feature-title {
   font-size: 0.9rem;

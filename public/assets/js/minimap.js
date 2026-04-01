@@ -1,18 +1,27 @@
-/* Rooted — Mini map for item create/edit forms */
+/* Rooted — Mini map for item create/edit forms and item show page */
 (function () {
     'use strict';
 
-    var latInput = document.getElementById('gpsLat');
-    var lngInput = document.getElementById('gpsLng');
-    var mapDiv   = document.getElementById('miniMap');
+    var mapDiv    = document.getElementById('miniMap');
+    if (!mapDiv) return;
 
-    if (!latInput || !lngInput || !mapDiv) return;
+    var readOnly  = !!window.MINI_MAP_READONLY;
+    var latInput  = document.getElementById('gpsLat');
+    var lngInput  = document.getElementById('gpsLng');
 
-    var initialLat = parseFloat(latInput.value) || (window.MINI_MAP_LAT || 41.9);
-    var initialLng = parseFloat(lngInput.value) || (window.MINI_MAP_LNG || 12.5);
-    var hasCoords  = !!latInput.value && !!lngInput.value;
+    // In read-only mode (show page) use window variables; edit mode uses inputs
+    var initialLat = readOnly
+        ? (window.MINI_MAP_LAT || 41.9)
+        : (parseFloat(latInput && latInput.value) || window.MINI_MAP_LAT || 41.9);
+    var initialLng = readOnly
+        ? (window.MINI_MAP_LNG || 12.5)
+        : (parseFloat(lngInput && lngInput.value) || window.MINI_MAP_LNG || 12.5);
+    var hasCoords  = readOnly ? true : (!!latInput && !!latInput.value && !!lngInput && !!lngInput.value);
 
-    var miniMap = L.map('miniMap').setView([initialLat, initialLng], hasCoords ? 16 : 5);
+    if (!readOnly && (!latInput || !lngInput)) return;
+
+    var miniMap = L.map('miniMap', { zoomControl: true, dragging: !readOnly, scrollWheelZoom: !readOnly })
+                   .setView([initialLat, initialLng], hasCoords ? 16 : 5);
 
     // Satellite by default
     L.tileLayer(
@@ -30,9 +39,11 @@
     var marker = null;
 
     if (hasCoords) {
-        marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(miniMap);
-        bindMarkerDrag(marker);
+        marker = L.marker([initialLat, initialLng], { draggable: !readOnly }).addTo(miniMap);
+        if (!readOnly) bindMarkerDrag(marker);
     }
+
+    if (readOnly) return; // Show page — no editing needed
 
     // Click map to place / move marker
     miniMap.on('click', function (e) {
