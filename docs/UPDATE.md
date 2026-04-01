@@ -20,46 +20,34 @@ uploaded files, and configuration (`.env`) are **never touched** by an update.
 
 ## Update Process (cPanel)
 
-### Step 1 — Back up first (takes 2 minutes)
+> **From v1.1.0 onwards**, use the in-app upgrade instead — go to **Settings → Upgrade**,
+> download the ZIP and upload it there. PHP handles everything safely.
+> The manual steps below are only needed for the very first update to v1.1.0.
 
-In cPanel → **File Manager**:
-1. Right-click `rooted-files/.env` → **Download** (save it somewhere safe)
-2. In cPanel → **phpMyAdmin**: select your database → **Export** → Quick → Go (saves a `.sql` file)
-
-### Step 2 — Download the update ZIP
+### Step 1 — Download the update ZIP
 
 Get `rooted-cpanel-update.zip` from the GitHub repository:
 - Go to `https://github.com/maximebellefleur/villabelfiore`
 - Branch: `claude/create-rooted-project-RVbog`
 - Click the file → **Download**
 
-> The update ZIP contains only code files. It does **not** contain `storage/` or `.env.example`,
-> so your data is safe even if you forget to back up.
+### Step 2 — Upload and extract (no deleting needed)
 
-### Step 3 — Delete the old code folders in cPanel
+The update ZIP does **not** contain `.env` or `storage/`, so you can safely extract
+it over the existing folders — your config and data will not be touched.
 
-In **File Manager** → `public_html/`:
-1. Delete the `rooted/` folder
-2. Delete the `rooted-files/` folder
+In cPanel → **File Manager** → `public_html/`:
+1. Upload `rooted-cpanel-update.zip`
+2. Right-click → **Extract** (confirm overwrite if prompted — this is safe)
+3. Right-click the ZIP → **Delete**
 
-> Do **not** touch anything else in `public_html/`.
+### Step 3 — Done
 
-### Step 4 — Upload and extract the update ZIP
+Visit `https://maximebellefleur.com/rooted/` — everything works with your existing data.
 
-1. Upload `rooted-cpanel-update.zip` to `public_html/`
-2. Right-click → **Extract**
-3. Delete the ZIP after extracting
-
-### Step 5 — Restore your .env
-
-The update ZIP does not include `.env`, so you need to put it back:
-
-1. In File Manager, navigate to `public_html/rooted-files/`
-2. Click **Upload** and upload the `.env` file you saved in Step 1
-
-### Step 6 — Done
-
-Visit `https://maximebellefleur.com/rooted/` — the app loads with all your data intact.
+> **You do not need to back up or re-upload `.env`.**
+> You do not need to delete the old folders.
+> Just upload, extract, delete ZIP.
 
 ---
 
