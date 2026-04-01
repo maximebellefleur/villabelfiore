@@ -21,18 +21,12 @@ use App\Controllers\PublicController;
 // -------------------------------------------------------------------------
 // Public (no auth required)
 // -------------------------------------------------------------------------
+$router->get('/',        'PublicController@home');
 $router->get('/privacy', 'PublicController@privacy');
 
 // -------------------------------------------------------------------------
-// Root redirect
+// Installer (redirect if already installed)
 // -------------------------------------------------------------------------
-$router->get('/', function ($req, $params) {
-    if (isInstalled()) {
-        \App\Support\Response::redirect('/dashboard');
-    } else {
-        \App\Support\Response::redirect('/install');
-    }
-});
 
 // -------------------------------------------------------------------------
 // Installer
