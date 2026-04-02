@@ -70,24 +70,25 @@
     // Custom marker icon — div-based (reliable emoji on iOS/Android, no SVG text)
     // -------------------------------------------------------------------------
     function makeIcon(type, size) {
-        size = size || 36;
+        size = size || 28;
         var color = typeColor(type);
         var emoji = typeIcon(type);
-        var fs    = Math.round(size * 0.46);
+        var fs    = Math.round(size * 0.48);
+        // Subtle drop-shadow, slightly smaller border, 90% opacity so clusters look lighter
         var html  = '<div style="' +
             'width:' + size + 'px;height:' + size + 'px;' +
             'background:' + color + ';' +
-            'border-radius:50%;border:3px solid #fff;' +
-            'box-shadow:0 2px 8px rgba(0,0,0,.35);' +
+            'border-radius:50%;border:2px solid rgba(255,255,255,0.9);' +
+            'box-shadow:0 1px 4px rgba(0,0,0,.28);' +
             'display:flex;align-items:center;justify-content:center;' +
-            'font-size:' + fs + 'px;line-height:1;cursor:pointer;' +
+            'font-size:' + fs + 'px;line-height:1;cursor:pointer;opacity:0.92;' +
             '">' + emoji + '</div>';
         return L.divIcon({
             html: html,
             className: '',
             iconSize:     [size, size],
-            iconAnchor:   [size / 2, size / 2],
-            popupAnchor:  [0, -(size / 2 + 4)],
+            iconAnchor:   [size / 2, size],
+            popupAnchor:  [0, -(size + 2)],
         });
     }
 
@@ -210,27 +211,45 @@
     function buildLayerToggles() {
         var container = document.getElementById('layerToggles');
         container.innerHTML = '';
+
+        // "Show / Hide all" toggle (re-created each load so it's always inside the container)
+        var allLabel = document.createElement('label');
+        allLabel.className = 'map-layer-toggle map-layer-toggle--all';
+        allLabel.innerHTML = '<input type="checkbox" class="layer-toggle" data-type="all" checked> <strong>Show all</strong>';
+        container.appendChild(allLabel);
+
         Object.keys(layerGroups).sort().forEach(function (type) {
             var count = allItems.filter(function (i) { return i.type === type; }).length;
             var label = document.createElement('label');
             label.className = 'map-layer-toggle';
+            var dotClass = LINE_TYPES.indexOf(type) >= 0 ? 'layer-dot layer-dot--line' : 'layer-dot';
             label.innerHTML =
                 '<input type="checkbox" class="layer-toggle" data-type="' + type + '" checked> ' +
-                '<span class="layer-dot" style="background:' + typeColor(type) + '"></span>' +
+                '<span class="' + dotClass + '" style="background:' + typeColor(type) + '"></span>' +
                 typeLabel(type) + ' <span class="layer-count">(' + count + ')</span>';
             container.appendChild(label);
         });
+
+        // Remove the old static "Show all" label from HTML if it still exists
+        var staticAll = document.querySelector('.map-sidebar-section > .map-layer-toggle > input[data-type="all"]');
+        if (staticAll) staticAll.closest('label').remove();
 
         container.addEventListener('change', function (e) {
             if (!e.target.classList.contains('layer-toggle')) return;
             var type = e.target.dataset.type;
             if (type === 'all') {
                 var checked = e.target.checked;
-                container.querySelectorAll('.layer-toggle[data-type]').forEach(function (cb) {
-                    if (cb.dataset.type !== 'all') { cb.checked = checked; toggleLayer(cb.dataset.type, checked); }
+                container.querySelectorAll('.layer-toggle:not([data-type="all"])').forEach(function (cb) {
+                    cb.checked = checked;
+                    toggleLayer(cb.dataset.type, checked);
                 });
             } else {
                 toggleLayer(type, e.target.checked);
+                // Update "all" checkbox state
+                var allCb = container.querySelector('.layer-toggle[data-type="all"]');
+                var indiv = container.querySelectorAll('.layer-toggle:not([data-type="all"])');
+                var allChecked = Array.from(indiv).every(function (cb) { return cb.checked; });
+                if (allCb) allCb.checked = allChecked;
             }
         });
     }
@@ -870,11 +889,20 @@
             return;
         }
 
-        // Direct click: open add sheet immediately (no button press needed)
+        // Direct click: open add sheet (only if sheet not already open, and not a control click)
         if (!addItemMode && !drawingActive && !landDrawActive) {
+            // Ignore clicks on map controls, buttons, or if sheet is already open
+            var oe = e.originalEvent;
+            if (oe && oe.target) {
+                var t = oe.target;
+                if (t.closest && t.closest('.leaflet-control')) return;
+                if (t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'LABEL') return;
+            }
+            if (addSheet.classList.contains('open')) return;
+
             if (addItemMarker) map.removeLayer(addItemMarker);
             addItemMarker = L.marker([e.latlng.lat, e.latlng.lng], {
-                icon: makeIcon('zone', 36),
+                icon: makeIcon('zone', 30),
                 draggable: true,
             }).addTo(map);
             addItemMarker.on('dragend', function (ev) {

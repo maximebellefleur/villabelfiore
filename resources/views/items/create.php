@@ -16,7 +16,7 @@
     <div class="item-form-map-block">
         <div class="item-form-map-label">
             <span>📍 Tap the map to set location</span>
-            <button type="button" class="btn btn-primary btn-sm" id="detectGps">Detect my GPS</button>
+            <button type="button" class="btn btn-primary btn-sm" id="detectGps">🎯 Detect my GPS</button>
         </div>
         <div id="miniMap" class="item-form-map"></div>
         <div id="gpsStatus" class="item-form-gps-status" style="display:none"></div>
@@ -76,7 +76,11 @@
 </form>
 
 <script>
-var itemTypeMeta = <?= json_encode(array_map(fn($t) => ['required_meta' => $t['required_meta'], 'optional_meta' => $t['optional_meta']], $itemTypes)) ?>;
+var itemTypeMeta = <?= json_encode(array_map(fn($t) => [
+    'required_meta' => $t['required_meta'],
+    'optional_meta' => $t['optional_meta'],
+    'meta_options'  => $t['meta_options'] ?? [],
+], $itemTypes)) ?>;
 
 // Update the coords display whenever lat/lng change
 function updateCoordsDisplay() {
@@ -105,11 +109,24 @@ $('#itemType').on('change', function() {
     var type = $(this).val();
     if (!type || !itemTypeMeta[type]) { $('#metaFields').hide(); return; }
     var fields = itemTypeMeta[type].required_meta.concat(itemTypeMeta[type].optional_meta);
+    var metaOpts = itemTypeMeta[type].meta_options || {};
     var html = '';
     fields.forEach(function(key) {
         var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
         html += '<div class="form-group"><label class="form-label">' + label + '</label>';
-        html += '<input type="text" name="meta[' + key + ']" class="form-input form-input--touch" placeholder="' + label + '"></div>';
+        var opts = metaOpts[key];
+        if (opts && opts.length) {
+            html += '<select name="meta[' + key + ']" class="form-input form-input--touch">';
+            html += '<option value="">— Select —</option>';
+            opts.forEach(function(opt) {
+                var oLabel = opt.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+                html += '<option value="' + opt + '">' + oLabel + '</option>';
+            });
+            html += '</select>';
+        } else {
+            html += '<input type="text" name="meta[' + key + ']" class="form-input form-input--touch" placeholder="' + label + '">';
+        }
+        html += '</div>';
     });
     if (html) { $('#metaFieldsInner').html(html); $('#metaFields').show(); }
     else { $('#metaFields').hide(); }
@@ -117,12 +134,17 @@ $('#itemType').on('change', function() {
 
 $('#detectGps').on('click', function() {
     if (!navigator.geolocation) {
-        $('#gpsStatus').text('Geolocation not supported by your browser.').show();
+        $('#gpsStatus').text('⚠️ Geolocation not supported. Place pin on map manually.').show();
+        return;
+    }
+    // Geolocation requires HTTPS (or localhost) — warn the user
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        $('#gpsStatus').text('⚠️ GPS requires a secure (HTTPS) connection. Please tap the map to place a pin.').show();
         return;
     }
     var $btn = $(this);
-    $btn.prop('disabled', true).text('Detecting…');
-    $('#gpsStatus').text('Requesting location — allow access if prompted.').show();
+    $btn.prop('disabled', true).text('⏳ Detecting…');
+    $('#gpsStatus').text('📡 Requesting location — allow access if prompted…').show();
 
     navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude.toFixed(7);
@@ -131,16 +153,16 @@ $('#detectGps').on('click', function() {
         $('#gpsLng').val(lng).trigger('change');
         $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
         $('#gpsSource').val('device');
-        $('#gpsStatus').text('✅ ±' + Math.round(pos.coords.accuracy) + 'm — verify the pin on the map.').show();
-        $btn.prop('disabled', false).text('Detect my GPS');
+        $('#gpsStatus').text('✅ Located ±' + Math.round(pos.coords.accuracy) + 'm — drag pin to adjust.').show();
+        $btn.prop('disabled', false).text('🎯 Detect my GPS');
     }, function(err) {
         var msgs = {
-            1: '⚠️ Permission denied — allow location in browser settings.',
-            2: '⚠️ Position unavailable — place pin manually on the map.',
-            3: '⚠️ Timed out — try again outdoors.',
+            1: '⚠️ Permission denied — tap Allow Location in your browser settings, then retry.',
+            2: '⚠️ Position unavailable — move to an open area or place pin manually.',
+            3: '⚠️ Timed out — try outdoors or place pin manually on the map.',
         };
-        $('#gpsStatus').text(msgs[err.code] || '⚠️ Could not detect. Place pin on map.').show();
-        $btn.prop('disabled', false).text('Detect my GPS');
+        $('#gpsStatus').text(msgs[err.code] || '⚠️ Could not detect location. Place pin on map.').show();
+        $btn.prop('disabled', false).text('🎯 Detect my GPS');
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 });
 </script>

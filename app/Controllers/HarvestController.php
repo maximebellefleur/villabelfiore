@@ -77,4 +77,40 @@ class HarvestController
         if (empty($_SESSION['user_id'])) { Response::json(['success' => false, 'message' => 'Unauthenticated'], 401); }
         $this->store($request, $params);
     }
+
+    public function quickEntry(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+
+        // All item types that have harvest_enabled = true
+        $harvestTypes = [];
+        $itemTypesConfig = require BASE_PATH . '/config/item_types.php';
+        foreach ($itemTypesConfig as $typeKey => $typeCfg) {
+            if (!empty($typeCfg['harvest_enabled'])) {
+                $harvestTypes[] = $typeKey;
+            }
+        }
+
+        if (empty($harvestTypes)) {
+            $items = [];
+        } else {
+            $placeholders = implode(',', array_fill(0, count($harvestTypes), '?'));
+            $items = $db->fetchAll(
+                "SELECT id, name, type FROM items WHERE type IN ($placeholders) AND status = 'active' AND deleted_at IS NULL ORDER BY type, name",
+                $harvestTypes
+            );
+        }
+
+        // Fetch recent harvest entries for this session (today)
+        $recentHarvests = $db->fetchAll(
+            "SELECT h.*, i.name AS item_name FROM harvest_entries h JOIN items i ON i.id = h.item_id WHERE DATE(h.created_at) = CURDATE() ORDER BY h.created_at DESC LIMIT 20"
+        );
+
+        Response::render('harvests/quick', [
+            'title'          => 'Quick Harvest',
+            'items'          => $items,
+            'recentHarvests' => $recentHarvests,
+        ]);
+    }
 }

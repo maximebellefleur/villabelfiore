@@ -8,6 +8,34 @@
  */
 return [
 
+    '1.3.0' => [
+        'date'     => '2026-04-02',
+        'title'    => 'Mobile UX, Map Improvements & UI Revamp',
+        'new' => [
+            'Tree type is now a meta field on the generic Tree item type — select from 19 Sicily-native species',
+            'Quick harvest entry page — record harvest from dashboard without navigating to the item',
+            'Photo management page per item — dedicated mobile-friendly upload grid for N/S/E/W/ID photos',
+            'Roadmap: three-state toggle (none → done → problem) — manage your own progress list',
+            'Dashboard: harvest chart, quick action strip, lively design with emojis per type',
+            'Map: fullscreen on mobile with compact floating toolbar',
+            'Map: direct tap-to-add with safeguard against accidental triggers near controls',
+            'Map: layer Show/Hide All toggle working correctly',
+        ],
+        'improved' => [
+            'Map icons: smaller, cleaner, pinhead anchor — less visual clutter',
+            'Mobile navigation: overlay backdrop + correct z-index layering',
+            'GPS detect: HTTPS check with clear messaging, better error descriptions',
+            'Settings page: tab layout fixed (was broken — tabs and form content were side-by-side)',
+            'Item detail view: mobile-first hero card, photo gallery grouped by category',
+        ],
+        'fixed' => [
+            'Settings page: admin.css .tabs { display:flex } was placing tab nav and content side by side',
+            'Mobile nav menu: was invisible behind content (z-index fix)',
+            'Map "Show all" layer toggle was not affecting individual type checkboxes',
+            'Tree type dropdown now renders as select in Add Item form for known option lists',
+        ],
+    ],
+
     '1.2.0' => [
         'date'     => '2026-04-01',
         'title'    => 'Photos, Actions & Calendar',

@@ -67,6 +67,25 @@ return [
     ],
 
     '1.3.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-02',
+        'title'    => 'Mobile UX, Map & UI Revamp',
+        'features' => [
+            ['title' => 'Tree type as meta field',                    'detail' => 'Select from 19 Sicily-native tree species (fig, carob, lemon, orange, mandarin, pistachio, pomegranate, cherry, prickly pear, peach, apricot, mulberry, hazelnut, walnut, medlar, olive, almond, vine, other) as a meta field on the generic Tree type.'],
+            ['title' => 'Quick harvest entry from dashboard',         'detail' => 'Record harvests for any tree directly from the dashboard without navigating to the item page.'],
+            ['title' => 'Per-item photo management page',             'detail' => 'Dedicated mobile-friendly grid for uploading and viewing directional photos (N/S/E/W + ID + harvest).'],
+            ['title' => 'Roadmap 3-state toggle',                     'detail' => 'Track your own roadmap progress: none → done (✅) → problem (❌) — state persisted in browser localStorage.'],
+            ['title' => 'Dashboard revamp with harvest chart',        'detail' => 'Monthly harvest bar chart, quick action strip, emoji icons per item type, lively card design.'],
+            ['title' => 'Fullscreen map on mobile',                   'detail' => 'Map fills the full screen on mobile with compact floating toolbar. Sidebar collapses to a scrollable strip.'],
+            ['title' => 'Map direct-tap safeguard',                   'detail' => 'Tapping near controls or when sheet is open no longer triggers accidental item creation.'],
+            ['title' => 'Map layer toggle fix',                       'detail' => 'Show/Hide All layer toggle now correctly controls all individual type checkboxes.'],
+            ['title' => 'Settings page layout fix',                   'detail' => 'Tab navigation and form content were side by side — now correctly stacked.'],
+            ['title' => 'Mobile navigation fix',                      'detail' => 'Nav overlay backdrop added, z-index corrected — menu now appears above page content.'],
+            ['title' => 'GPS HTTPS detection',                        'detail' => 'GPS detect button now checks for HTTPS and shows a clear message if secure connection is required.'],
+        ],
+    ],
+
+    '1.4.0' => [
         'status'   => 'planned',
         'released' => null,
         'title'    => 'Intelligence & Offline',

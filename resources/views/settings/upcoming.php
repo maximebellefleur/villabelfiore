@@ -38,12 +38,11 @@ foreach ($roadmap as $version => $block):
         <?php $ckId = 'rm_' . $version . '_' . $fi; ?>
         <div class="roadmap-feature" id="<?= e($ckId) ?>">
             <?php if ($block['status'] === 'released'): ?>
-            <div class="roadmap-feature-check">✓</div>
+            <div class="roadmap-feature-check" style="color:var(--color-primary);font-size:1.1rem">✅</div>
             <?php else: ?>
-            <label class="roadmap-feature-check roadmap-feature-check--toggle" title="Mark as done">
-                <input type="checkbox" class="roadmap-check" data-key="<?= e($ckId) ?>" style="display:none">
-                <span class="roadmap-check-icon">○</span>
-            </label>
+            <button type="button" class="roadmap-feature-toggle btn-link" data-key="<?= e($ckId) ?>" title="Click to cycle: none → done → problem">
+                <span class="roadmap-toggle-icon">○</span>
+            </button>
             <?php endif; ?>
             <div class="roadmap-feature-body">
                 <div class="roadmap-feature-title"><?= e($f['title']) ?></div>
@@ -59,20 +58,35 @@ foreach ($roadmap as $version => $block):
 <script>
 (function() {
     var KEY_PREFIX = 'rooted_roadmap_';
-    document.querySelectorAll('.roadmap-check').forEach(function(cb) {
-        var k = cb.dataset.key;
-        if (localStorage.getItem(KEY_PREFIX + k) === '1') { cb.checked = true; applyDone(cb, true); }
-        cb.addEventListener('change', function() {
-            localStorage.setItem(KEY_PREFIX + k, cb.checked ? '1' : '0');
-            applyDone(cb, cb.checked);
+    // States: 0=none, 1=done ✅, 2=problem ❌
+    var STATES = [
+        { icon: '○', color: '',                         opacity: '1'  },
+        { icon: '✅', color: 'var(--color-success,#27ae60)', opacity: '.5' },
+        { icon: '❌', color: 'var(--color-danger,#e74c3c)',  opacity: '1'  },
+    ];
+
+    function applyState(btn, state) {
+        var cfg     = STATES[state];
+        var icon    = btn.querySelector('.roadmap-toggle-icon');
+        var feature = btn.closest('.roadmap-feature');
+        icon.textContent    = cfg.icon;
+        btn.style.color     = cfg.color;
+        feature.style.opacity = cfg.opacity;
+        btn.title = state === 0 ? 'Click: mark done' : state === 1 ? 'Click: mark problem' : 'Click: clear';
+    }
+
+    document.querySelectorAll('.roadmap-feature-toggle').forEach(function(btn) {
+        var k     = btn.dataset.key;
+        var saved = parseInt(localStorage.getItem(KEY_PREFIX + k) || '0', 10);
+        if (isNaN(saved) || saved < 0 || saved > 2) saved = 0;
+        applyState(btn, saved);
+
+        btn.addEventListener('click', function() {
+            var cur  = parseInt(localStorage.getItem(KEY_PREFIX + k) || '0', 10);
+            var next = (cur + 1) % 3;
+            localStorage.setItem(KEY_PREFIX + k, String(next));
+            applyState(btn, next);
         });
     });
-    function applyDone(cb, done) {
-        var icon    = cb.nextElementSibling;
-        var feature = cb.closest('.roadmap-feature');
-        icon.textContent = done ? '✓' : '○';
-        icon.style.color = done ? 'var(--color-success,#27ae60)' : '';
-        feature.style.opacity = done ? '.5' : '';
-    }
 }());
 </script>

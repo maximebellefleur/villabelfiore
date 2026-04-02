@@ -391,6 +391,33 @@ class ItemController
         $this->addAction($request, $params);
     }
 
+    public function photos(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $id   = (int)($params['id'] ?? 0);
+        $db   = DB::getInstance();
+        $item = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
+        if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
+
+        $attachments = $db->fetchAll(
+            "SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY created_at DESC",
+            [$id]
+        );
+        // Keep only the latest attachment per category
+        $byCategory = [];
+        foreach ($attachments as $att) {
+            if (!isset($byCategory[$att['category']])) {
+                $byCategory[$att['category']] = $att;
+            }
+        }
+
+        Response::render('items/photos', [
+            'title'      => 'Photos — ' . $item['name'],
+            'item'       => $item,
+            'byCategory' => $byCategory,
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // Validation
     // -------------------------------------------------------------------------

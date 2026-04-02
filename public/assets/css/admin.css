@@ -385,14 +385,7 @@
    Tabs
    ========================================================= */
 
-.tabs {
-  display: flex;
-  border-bottom: 2px solid var(--color-border);
-  margin-bottom: var(--spacing-5);
-  overflow-x: auto;
-  scrollbar-width: none;
-  gap: 0;
-}
+/* .tabs block is handled by app.css — do not override display here */
 .tabs::-webkit-scrollbar { display: none; }
 
 .tab-link {
@@ -1080,6 +1073,21 @@ select.form-input--touch {
 .roadmap-feature-check--toggle { cursor: pointer; opacity: .7; transition: opacity .15s; }
 .roadmap-feature-check--toggle:hover { opacity: 1; }
 
+/* Three-state roadmap toggle button */
+.roadmap-feature-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  line-height: 1;
+  transition: transform .1s;
+  min-width: 24px;
+  text-align: center;
+}
+.roadmap-feature-toggle:hover { transform: scale(1.2); }
+.roadmap-toggle-icon { display: block; }
+
 .roadmap-feature-title {
   font-size: 0.9rem;
   font-weight: 600;
@@ -1154,4 +1162,252 @@ select.form-input--touch {
 /* Planting row (line type) indicator */
 .layer-dot--line {
   border-radius: 2px; /* square dot for rows vs circle for areas */
+}
+
+/* =========================================================
+   Dashboard — Quick Actions Strip
+   ========================================================= */
+.quick-actions-strip {
+  display: flex;
+  gap: var(--spacing-3);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-2);
+  scrollbar-width: none;
+  margin-bottom: var(--spacing-5);
+}
+.quick-actions-strip::-webkit-scrollbar { display: none; }
+
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--spacing-3) var(--spacing-4);
+  text-decoration: none;
+  color: var(--color-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: box-shadow .15s, border-color .15s;
+  box-shadow: var(--shadow-card);
+  min-width: 80px;
+}
+.quick-action-btn:hover { border-color: var(--color-primary); box-shadow: 0 2px 10px rgba(0,0,0,.12); text-decoration: none; }
+.quick-action-btn--harvest { border-color: #e67e22; }
+.quick-action-icon { font-size: 1.6rem; line-height: 1; }
+.quick-action-label { font-size: .75rem; font-weight: 600; color: var(--color-text-muted); }
+
+/* =========================================================
+   Dashboard — Stats Bar
+   ========================================================= */
+.dash-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-5);
+}
+.dash-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--spacing-4);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+.dash-stat-card--warning { border-color: var(--color-warning,#e67e22); background: #fff8f0; }
+.dash-stat-value { font-size: 2rem; font-weight: 700; color: var(--color-primary); line-height: 1; }
+.dash-stat-card--warning .dash-stat-value { color: var(--color-warning,#e67e22); }
+.dash-stat-label { font-size: .75rem; color: var(--color-text-muted); margin-top: var(--spacing-1); font-weight: 500; }
+
+/* =========================================================
+   Dashboard — Sections
+   ========================================================= */
+.dash-section { margin-bottom: var(--spacing-6); }
+.dash-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.dash-overdue-list { display: flex; flex-direction: column; gap: var(--spacing-2); }
+.dash-overdue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  background: #fff8f0;
+  border: 1px solid #f0a500;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+.dash-overdue-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.dash-overdue-actions { display: flex; gap: var(--spacing-2); flex-shrink: 0; }
+
+/* =========================================================
+   Dashboard — Harvest Bar Chart
+   ========================================================= */
+.dash-harvest-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--spacing-3) var(--spacing-3) 0;
+}
+.dash-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+.dash-bar-col--future { opacity: .35; }
+.dash-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.dash-bar {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  position: relative;
+  transition: opacity .2s;
+}
+.dash-bar:hover { opacity: .75; }
+.dash-bar-val {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .6rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.dash-bar-label {
+  font-size: .6rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  padding-bottom: var(--spacing-1);
+}
+
+/* =========================================================
+   Dashboard — Items by Type
+   ========================================================= */
+.dash-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--spacing-3);
+}
+.dash-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius);
+  padding: var(--spacing-3);
+  text-decoration: none;
+  color: var(--color-text);
+  transition: box-shadow .15s;
+  box-shadow: var(--shadow-card);
+}
+.dash-type-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); text-decoration: none; }
+.dash-type-emoji { font-size: 1.5rem; line-height: 1; }
+.dash-type-count { font-size: 1.4rem; font-weight: 700; color: var(--color-primary); line-height: 1; }
+.dash-type-label { font-size: .72rem; color: var(--color-text-muted); font-weight: 500; text-align: center; }
+.dash-type-harvest { font-size: .65rem; color: var(--color-text-muted); text-align: center; }
+
+/* =========================================================
+   Dashboard — Two-column lower section
+   ========================================================= */
+.dash-lower {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-5);
+}
+@media (max-width: 640px) {
+  .dash-lower { grid-template-columns: 1fr; }
+  .dash-stats-bar { grid-template-columns: repeat(3, 1fr); gap: var(--spacing-2); }
+  .dash-stat-value { font-size: 1.5rem; }
+}
+
+/* =========================================================
+   Item Show — Hero Card
+   ========================================================= */
+.item-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4) var(--spacing-5);
+  margin-bottom: var(--spacing-5);
+  box-shadow: var(--shadow-card);
+  flex-wrap: wrap;
+}
+.item-hero-main {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex: 1;
+}
+.item-hero-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.item-hero-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 var(--spacing-2);
+}
+.item-hero-badges { display: flex; gap: var(--spacing-2); flex-wrap: wrap; }
+.item-hero-actions { display: flex; gap: var(--spacing-2); flex-wrap: wrap; align-items: center; }
+
+/* Item detail layout */
+.item-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+}
+.item-details-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-card);
+}
+.item-details-card h3 {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-3);
+}
+
+@media (max-width: 640px) {
+  .item-hero { padding: var(--spacing-3); }
+  .item-hero-emoji { font-size: 2rem; }
+  .item-hero-name { font-size: 1.2rem; }
+  .item-hero-actions { gap: var(--spacing-1); }
+  .item-hero-actions .btn { padding: var(--spacing-1) var(--spacing-3); font-size: .8rem; }
+  .item-details-grid { grid-template-columns: 1fr; }
 }

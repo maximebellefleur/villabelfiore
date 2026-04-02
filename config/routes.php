@@ -67,6 +67,7 @@ $router->post('/items/{id}/update',       'ItemController@update');
 $router->post('/items/{id}/trash',        'ItemController@trash');
 $router->post('/items/{id}/restore',      'ItemController@restore');
 $router->post('/items/{id}/archive',      'ItemController@archive');
+$router->get('/items/{id}/photos',        'ItemController@photos');
 $router->get('/items/{id}/actions',       'ItemController@actions');
 $router->post('/items/{id}/actions',      'ItemController@addAction');
 
@@ -90,6 +91,7 @@ $router->post('/reminders/{id}/dismiss',       'ReminderController@dismiss');
 // -------------------------------------------------------------------------
 // Harvests
 // -------------------------------------------------------------------------
+$router->get('/harvest/quick',                 'HarvestController@quickEntry');
 $router->get('/items/{id}/harvests',           'HarvestController@index');
 $router->post('/items/{id}/harvests',          'HarvestController@store');
 $router->post('/harvests/{id}/update',         'HarvestController@update');

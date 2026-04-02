@@ -53,6 +53,15 @@ class DashboardController
             $harvestByTypeMap[$row['type']][$row['unit']] = (float)$row['total'];
         }
 
+        $monthlyHarvest = $db->fetchAll(
+            "SELECT MONTH(h.recorded_at) AS mo, SUM(h.quantity) AS total, h.unit
+             FROM harvest_entries h
+             WHERE YEAR(h.recorded_at) = YEAR(NOW())
+             GROUP BY MONTH(h.recorded_at), h.unit
+             ORDER BY mo",
+            []
+        );
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
@@ -60,6 +69,7 @@ class DashboardController
             'upcomingReminders' => $upcomingReminders,
             'overdueReminders'  => $overdueReminders,
             'harvestByTypeMap'  => $harvestByTypeMap,
+            'monthlyHarvest'    => $monthlyHarvest,
         ]);
     }
 
