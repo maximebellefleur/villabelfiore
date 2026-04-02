@@ -279,48 +279,127 @@
     var addOpenFull     = document.getElementById('mapAddOpenFull');
 
     // -------------------------------------------------------------------------
-    // Shared GPS helper — used by Add Item sheet + boundary panels
+    // Shared GPS helper — robust with retry + watchPosition fallback
     // -------------------------------------------------------------------------
+    var GPS_MAX_RETRIES = 2;
+
     function detectGps(onSuccess, statusEl, btn) {
         if (!navigator.geolocation) {
             showGpsStatus(statusEl, '⚠️ Geolocation not supported by your browser.', 'error');
             return;
         }
-        var origText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = '⏳ Detecting…';
-        showGpsStatus(statusEl, 'Detecting your position…', 'info');
+        // HTTPS check (skip for localhost)
+        var host = location.hostname;
+        if (location.protocol !== 'https:' && host !== 'localhost' && host !== '127.0.0.1') {
+            showGpsStatus(statusEl, '⚠️ GPS requires HTTPS. Tap the map to place a pin instead.', 'error');
+            return;
+        }
+        var origText = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+        showGpsStatus(statusEl, '📡 Requesting location…', 'info');
+        _gpsAttempt(onSuccess, statusEl, btn, origText, 0);
+    }
+
+    function _gpsAttempt(onSuccess, statusEl, btn, origText, attempt) {
+        // Strategy: first try high-accuracy, fallback to low-accuracy on retry
+        var opts = attempt === 0
+            ? { enableHighAccuracy: true,  timeout: 10000, maximumAge: 5000 }
+            : { enableHighAccuracy: false, timeout: 8000,  maximumAge: 30000 };
+
+        if (attempt > 0) {
+            showGpsStatus(statusEl, '📡 Retrying (' + attempt + '/' + GPS_MAX_RETRIES + ')…', 'info');
+        }
 
         navigator.geolocation.getCurrentPosition(
             function (pos) {
-                btn.disabled = false;
-                btn.textContent = origText;
+                if (btn) { btn.disabled = false; btn.textContent = origText; }
                 hideGpsStatus(statusEl);
                 onSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
             },
             function (err) {
-                btn.disabled = false;
-                btn.textContent = origText;
-                var msgs = {
-                    1: '⚠️ Permission denied — allow location access in your browser settings.',
-                    2: '⚠️ Position unavailable — try outdoors or tap the map manually.',
-                    3: '⚠️ Timed out — move to an open area and try again.',
-                };
-                showGpsStatus(statusEl, msgs[err.code] || '⚠️ Could not detect location.', 'error');
+                if (err.code === 1) {
+                    // Permission denied — no retry will help
+                    if (btn) { btn.disabled = false; btn.textContent = origText; }
+                    showGpsStatus(statusEl, '🔒 Location access denied. Enable it in browser settings, then tap again.', 'error');
+                    return;
+                }
+                if (attempt < GPS_MAX_RETRIES) {
+                    setTimeout(function () {
+                        _gpsAttempt(onSuccess, statusEl, btn, origText, attempt + 1);
+                    }, 1500);
+                } else {
+                    if (btn) { btn.disabled = false; btn.textContent = origText; }
+                    var msgs = {
+                        2: '⚠️ Position unavailable — move outdoors or tap the map to place a pin.',
+                        3: '⚠️ GPS timed out — tap the map to place a pin manually.',
+                    };
+                    showGpsStatus(statusEl, msgs[err.code] || '⚠️ Could not detect location — tap the map instead.', 'error');
+                }
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            opts
         );
     }
 
     function showGpsStatus(el, msg, type) {
+        if (!el) return;
         el.textContent = msg;
         el.className = 'map-gps-status map-gps-status--' + (type || 'info');
         el.style.display = 'block';
     }
 
     function hideGpsStatus(el) {
+        if (!el) return;
         el.style.display = 'none';
     }
+
+    // -------------------------------------------------------------------------
+    // Floating "Locate Me" button — always visible on map
+    // -------------------------------------------------------------------------
+    (function addLocateMeBtn() {
+        var locateBtn = document.createElement('button');
+        locateBtn.className = 'map-locate-btn';
+        locateBtn.title = 'Locate me';
+        locateBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8" stroke-opacity=".4"/></svg>';
+
+        var locateStatusEl = document.createElement('div');
+        locateStatusEl.id = 'locateMeStatus';
+        locateStatusEl.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;display:none;white-space:nowrap;pointer-events:none;';
+
+        map.getContainer().appendChild(locateBtn);
+        map.getContainer().appendChild(locateStatusEl);
+
+        var locateMarker  = null;
+        var locateCircle  = null;
+        var locatePulse   = null;
+
+        locateBtn.addEventListener('click', function () {
+            locateBtn.classList.add('map-locate-btn--active');
+            detectGps(function (lat, lng, accuracy) {
+                locateBtn.classList.remove('map-locate-btn--active');
+
+                // Remove previous
+                if (locateMarker) map.removeLayer(locateMarker);
+                if (locateCircle) map.removeLayer(locateCircle);
+                if (locatePulse)  map.removeLayer(locatePulse);
+
+                // Accuracy halo
+                if (accuracy) {
+                    locateCircle = L.circle([lat, lng], {
+                        radius: accuracy, color: '#2d6a4f', fillColor: '#2d6a4f',
+                        fillOpacity: 0.08, weight: 1.5, dashArray: '4 4',
+                    }).addTo(map);
+                }
+
+                // Pulsing blue dot
+                locateMarker = L.circleMarker([lat, lng], {
+                    radius: 9, color: '#fff', weight: 3,
+                    fillColor: '#2d6a4f', fillOpacity: 1,
+                }).addTo(map);
+
+                map.setView([lat, lng], Math.max(map.getZoom(), 17));
+            }, locateStatusEl, locateBtn);
+        });
+    })();
 
     // GPS for Add Item sheet
     document.getElementById('mapAddGpsBtn').addEventListener('click', function () {

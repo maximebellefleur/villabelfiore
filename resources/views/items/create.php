@@ -16,7 +16,7 @@
     <div class="item-form-map-block">
         <div class="item-form-map-label">
             <span>📍 Tap the map to set location</span>
-            <button type="button" class="btn btn-primary btn-sm" id="detectGps">🎯 Detect my GPS</button>
+            <button type="button" class="btn btn-primary btn-sm" id="detectGps">📍 Locate Me</button>
         </div>
         <div id="miniMap" class="item-form-map"></div>
         <div id="gpsStatus" class="item-form-gps-status" style="display:none"></div>
@@ -132,20 +132,15 @@ $('#itemType').on('change', function() {
     else { $('#metaFields').hide(); }
 });
 
-$('#detectGps').on('click', function() {
-    if (!navigator.geolocation) {
-        $('#gpsStatus').text('⚠️ Geolocation not supported. Place pin on map manually.').show();
-        return;
+// GPS detection with retry logic
+var GPS_RETRIES = 2;
+function doGpsDetect(attempt) {
+    var opts = attempt === 0
+        ? { enableHighAccuracy: true,  timeout: 10000, maximumAge: 5000  }
+        : { enableHighAccuracy: false, timeout: 8000,  maximumAge: 30000 };
+    if (attempt > 0) {
+        $('#gpsStatus').text('📡 Retrying (' + attempt + '/' + GPS_RETRIES + ')…').show();
     }
-    // Geolocation requires HTTPS (or localhost) — warn the user
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        $('#gpsStatus').text('⚠️ GPS requires a secure (HTTPS) connection. Please tap the map to place a pin.').show();
-        return;
-    }
-    var $btn = $(this);
-    $btn.prop('disabled', true).text('⏳ Detecting…');
-    $('#gpsStatus').text('📡 Requesting location — allow access if prompted…').show();
-
     navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude.toFixed(7);
         var lng = pos.coords.longitude.toFixed(7);
@@ -154,15 +149,37 @@ $('#detectGps').on('click', function() {
         $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
         $('#gpsSource').val('device');
         $('#gpsStatus').text('✅ Located ±' + Math.round(pos.coords.accuracy) + 'm — drag pin to adjust.').show();
-        $btn.prop('disabled', false).text('🎯 Detect my GPS');
+        $('#detectGps').prop('disabled', false).text('📍 Locate Me');
     }, function(err) {
-        var msgs = {
-            1: '⚠️ Permission denied — tap Allow Location in your browser settings, then retry.',
-            2: '⚠️ Position unavailable — move to an open area or place pin manually.',
-            3: '⚠️ Timed out — try outdoors or place pin manually on the map.',
-        };
-        $('#gpsStatus').text(msgs[err.code] || '⚠️ Could not detect location. Place pin on map.').show();
-        $btn.prop('disabled', false).text('🎯 Detect my GPS');
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+        if (err.code === 1) {
+            $('#gpsStatus').text('🔒 Location blocked — enable it in browser settings, then tap again.').show();
+            $('#detectGps').prop('disabled', false).text('📍 Locate Me');
+            return;
+        }
+        if (attempt < GPS_RETRIES) {
+            setTimeout(function() { doGpsDetect(attempt + 1); }, 1500);
+        } else {
+            var msgs = {
+                2: '⚠️ Signal weak — move outdoors or tap the map to place a pin.',
+                3: '⚠️ GPS timed out — tap the map to place a pin manually.',
+            };
+            $('#gpsStatus').text(msgs[err.code] || '⚠️ Location unavailable — tap the map instead.').show();
+            $('#detectGps').prop('disabled', false).text('📍 Locate Me');
+        }
+    }, opts);
+}
+
+$('#detectGps').on('click', function() {
+    if (!navigator.geolocation) {
+        $('#gpsStatus').text('⚠️ Geolocation not supported. Tap map to place pin.').show();
+        return;
+    }
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        $('#gpsStatus').text('⚠️ GPS requires HTTPS. Tap the map to place a pin instead.').show();
+        return;
+    }
+    $(this).prop('disabled', true).text('⏳ Detecting…');
+    $('#gpsStatus').text('📡 Requesting your location — allow access if prompted…').show();
+    doGpsDetect(0);
 });
 </script>

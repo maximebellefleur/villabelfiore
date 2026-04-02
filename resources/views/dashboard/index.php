@@ -46,21 +46,25 @@ $currentYear = date('Y');
      QUICK ACTION STRIP
      ============================================================ -->
 <div class="quick-actions-strip">
+    <a href="<?= url('/items/create') ?>" class="quick-action-btn">
+        <span class="quick-action-icon">➕</span>
+        <span class="quick-action-label">Add Item</span>
+    </a>
     <a href="<?= url('/dashboard/map') ?>" class="quick-action-btn">
         <span class="quick-action-icon">🗺</span>
-        <span class="quick-action-label">Add to Map</span>
+        <span class="quick-action-label">Open Map</span>
     </a>
     <a href="<?= url('/harvest/quick') ?>" class="quick-action-btn quick-action-btn--harvest">
         <span class="quick-action-icon">🌾</span>
-        <span class="quick-action-label">Record Harvest</span>
+        <span class="quick-action-label">Harvest</span>
     </a>
-    <a href="<?= url('/items') ?>" class="quick-action-btn">
+    <a href="<?= url('/items?action=photos') ?>" class="quick-action-btn quick-action-btn--upload">
         <span class="quick-action-icon">📷</span>
-        <span class="quick-action-label">Upload Photo</span>
+        <span class="quick-action-label">Photos</span>
     </a>
-    <a href="<?= url('/items') ?>" class="quick-action-btn">
-        <span class="quick-action-icon">📋</span>
-        <span class="quick-action-label">Log Action</span>
+    <a href="<?= url('/reminders/create') ?>" class="quick-action-btn">
+        <span class="quick-action-icon">🔔</span>
+        <span class="quick-action-label">Reminder</span>
     </a>
 </div>
 

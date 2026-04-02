@@ -23,6 +23,40 @@
 </nav>
 <div class="nav-overlay" id="navOverlay" aria-hidden="true"></div>
 
+<!-- Bottom Navigation (mobile only) -->
+<nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
+    <a href="<?= url('/dashboard') ?>" class="bottom-nav-item" data-bnav="dashboard">
+        <span class="bottom-nav-icon">🏠</span>
+        <span class="bottom-nav-label">Home</span>
+    </a>
+    <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
+        <span class="bottom-nav-icon">🗺</span>
+        <span class="bottom-nav-label">Map</span>
+    </a>
+    <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" id="bottomFab" aria-label="Add item">
+        <span style="line-height:1;font-size:1.7rem">+</span>
+    </a>
+    <a href="<?= url('/items') ?>" class="bottom-nav-item" data-bnav="items">
+        <span class="bottom-nav-icon">🌿</span>
+        <span class="bottom-nav-label">Items</span>
+    </a>
+    <a href="<?= url('/settings') ?>" class="bottom-nav-item" data-bnav="settings">
+        <span class="bottom-nav-icon">⚙️</span>
+        <span class="bottom-nav-label">Settings</span>
+    </a>
+</nav>
+<script>
+(function() {
+    var path = window.location.pathname;
+    document.querySelectorAll('.bottom-nav-item[data-bnav]').forEach(function(el) {
+        var href = el.getAttribute('href');
+        if (href && (path === href || (href !== '/' && path.startsWith(href)))) {
+            el.classList.add('active');
+        }
+    });
+})();
+</script>
+
 <script>
 (function() {
     var toggle  = document.getElementById('navToggle');

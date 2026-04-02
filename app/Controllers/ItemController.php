@@ -400,7 +400,7 @@ class ItemController
         if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
 
         $attachments = $db->fetchAll(
-            "SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY created_at DESC",
+            "SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY uploaded_at DESC",
             [$id]
         );
         // Keep only the latest attachment per category
