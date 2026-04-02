@@ -38,7 +38,10 @@
                 <dl class="detail-list">
                     <dt>Type</dt><dd><?= e(str_replace('_', ' ', ucfirst($item['type']))) ?></dd>
                     <?php if ($item['gps_lat'] && $item['gps_lng']): ?>
-                    <dt>GPS</dt><dd><?= number_format((float)$item['gps_lat'], 7) ?>, <?= number_format((float)$item['gps_lng'], 7) ?> (<?= e($item['gps_source']) ?>)</dd>
+                    <dt>GPS</dt><dd><?= number_format((float)$item['gps_lat'], 7) ?>, <?= number_format((float)$item['gps_lng'], 7) ?><?= $item['gps_source'] ? ' (' . e($item['gps_source']) . ')' : '' ?></dd>
+                    <?php endif; ?>
+                    <?php if ($item['parent_id']): ?>
+                    <dt>Part of</dt><dd><a href="<?= url('/items/' . (int)$item['parent_id']) ?>">View parent</a></dd>
                     <?php endif; ?>
                     <dt>Status</dt><dd><?= e($item['status']) ?></dd>
                     <dt>Created</dt><dd><?= e(date('d M Y', strtotime($item['created_at']))) ?></dd>
@@ -99,41 +102,93 @@
     </div>
 
     <div class="tab-panel" id="tab-attachments">
-        <h3>Attachments</h3>
-        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/attachments') ?>" enctype="multipart/form-data" class="form">
+        <h3>Upload Attachment</h3>
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/attachments') ?>" enctype="multipart/form-data" class="form" style="margin-bottom:var(--spacing-4)">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <div class="form-row">
                 <input type="file" name="file" class="form-input" required>
                 <select name="category" class="form-input form-input--sm">
-                    <option value="general_attachment">General</option>
                     <option value="identification_photo">Identification Photo</option>
-                    <option value="yearly_refresh_north">Yearly North</option>
-                    <option value="yearly_refresh_south">Yearly South</option>
-                    <option value="yearly_refresh_east">Yearly East</option>
-                    <option value="yearly_refresh_west">Yearly West</option>
+                    <option value="yearly_refresh_north">Yearly — North</option>
+                    <option value="yearly_refresh_south">Yearly — South</option>
+                    <option value="yearly_refresh_east">Yearly — East</option>
+                    <option value="yearly_refresh_west">Yearly — West</option>
+                    <option value="harvest_photo">Harvest Photo</option>
+                    <option value="general_attachment">General Attachment</option>
                 </select>
                 <button type="submit" class="btn btn-primary">Upload</button>
             </div>
         </form>
 
+        <?php
+        $photoCategories = [
+            'identification_photo' => 'Identification Photo',
+            'yearly_refresh_north' => 'Yearly — North',
+            'yearly_refresh_south' => 'Yearly — South',
+            'yearly_refresh_east'  => 'Yearly — East',
+            'yearly_refresh_west'  => 'Yearly — West',
+            'harvest_photo'        => 'Harvest Photos',
+            'general_attachment'   => 'General Attachments',
+        ];
+        $grouped = [];
+        foreach ($attachments as $att) {
+            $grouped[$att['category']][] = $att;
+        }
+        ?>
+
         <?php if (!empty($attachments)): ?>
-        <div class="attachment-grid">
-            <?php foreach ($attachments as $att): ?>
-            <div class="attachment-card">
-                <?php if (str_starts_with($att['mime_type'], 'image/')): ?>
-                <img src="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-thumb" loading="lazy">
-                <?php endif; ?>
-                <div class="attachment-info">
-                    <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-name"><?= e($att['original_filename']) ?></a>
-                    <span class="badge badge-sm"><?= e(str_replace('_', ' ', $att['category'])) ?></span>
+            <?php foreach ($photoCategories as $catKey => $catLabel): ?>
+                <?php if (!empty($grouped[$catKey])): ?>
+                <h4 style="margin:var(--spacing-4) 0 var(--spacing-2)"><?= e($catLabel) ?></h4>
+                <div class="attachment-grid">
+                    <?php foreach ($grouped[$catKey] as $att): ?>
+                    <div class="attachment-card">
+                        <?php if (str_starts_with($att['mime_type'], 'image/')): ?>
+                        <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" target="_blank">
+                            <img src="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-thumb" loading="lazy">
+                        </a>
+                        <?php endif; ?>
+                        <div class="attachment-info">
+                            <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-name"><?= e($att['original_filename']) ?></a>
+                        </div>
+                        <form method="POST" action="<?= url('/attachments/' . ((int)$att['id']) . '/trash') ?>">
+                            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                            <button class="btn btn-sm btn-danger">&times;</button>
+                        </form>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <form method="POST" action="<?= url('/attachments/' . ((int)$att['id']) . '/trash') ?>">
-                    <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                    <button class="btn btn-sm btn-danger">&times;</button>
-                </form>
-            </div>
+                <?php endif; ?>
             <?php endforeach; ?>
-        </div>
+            <?php
+            // Render any attachments with categories not in the known list
+            foreach ($grouped as $catKey => $catAtts) {
+                if (!array_key_exists($catKey, $photoCategories)) {
+            ?>
+                <h4 style="margin:var(--spacing-4) 0 var(--spacing-2)"><?= e(str_replace('_', ' ', ucfirst($catKey))) ?></h4>
+                <div class="attachment-grid">
+                    <?php foreach ($catAtts as $att): ?>
+                    <div class="attachment-card">
+                        <?php if (str_starts_with($att['mime_type'], 'image/')): ?>
+                        <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" target="_blank">
+                            <img src="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-thumb" loading="lazy">
+                        </a>
+                        <?php endif; ?>
+                        <div class="attachment-info">
+                            <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>" class="attachment-name"><?= e($att['original_filename']) ?></a>
+                            <span class="badge badge-sm"><?= e(str_replace('_', ' ', $att['category'])) ?></span>
+                        </div>
+                        <form method="POST" action="<?= url('/attachments/' . ((int)$att['id']) . '/trash') ?>">
+                            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                            <button class="btn btn-sm btn-danger">&times;</button>
+                        </form>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php
+                }
+            }
+            ?>
         <?php else: ?>
         <p class="text-muted">No attachments yet.</p>
         <?php endif; ?>
@@ -164,20 +219,46 @@
     <?php if (!empty($harvests)): ?>
     <div class="tab-panel" id="tab-harvests">
         <h3>Harvests</h3>
-        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/harvests') ?>" class="form-inline">
+
+        <?php
+        // Compute totals per unit
+        $harvestTotals = [];
+        foreach ($harvests as $h) {
+            $u = $h['unit'] ?? 'units';
+            $harvestTotals[$u] = ($harvestTotals[$u] ?? 0) + (float)$h['quantity'];
+        }
+        $totalParts = [];
+        foreach ($harvestTotals as $unit => $qty) {
+            $totalParts[] = number_format($qty, 3) . ' ' . e($unit);
+        }
+        ?>
+        <p style="margin-bottom:var(--spacing-3)"><strong>Total harvested:</strong> <?= implode(', ', $totalParts) ?></p>
+
+        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/harvests') ?>" class="form-inline" style="margin-bottom:var(--spacing-3)">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <input type="number" step="0.001" name="quantity" class="form-input form-input--sm" placeholder="Quantity" required>
             <input type="text" name="unit" class="form-input form-input--sm" placeholder="Unit (kg, L…)" required>
             <input type="datetime-local" name="recorded_at" class="form-input form-input--sm" required>
+            <input type="text" name="quality_grade" class="form-input form-input--sm" placeholder="Grade (optional)">
+            <input type="text" name="notes" class="form-input form-input--sm" placeholder="Notes (optional)">
             <button type="submit" class="btn btn-primary">Record</button>
         </form>
+
         <table class="table">
-            <thead><tr><th>Date</th><th>Qty</th><th>Unit</th><th>Grade</th><th>Notes</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Grade</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
             <tbody>
                 <?php foreach ($harvests as $h): ?>
                 <tr>
                     <td><?= e(date('d M Y', strtotime($h['recorded_at']))) ?></td>
-                    <td><?= e($h['quantity']) ?></td>
+                    <td><?= number_format((float)$h['quantity'], 3) ?></td>
                     <td><?= e($h['unit']) ?></td>
                     <td><?= e($h['quality_grade'] ?? '—') ?></td>
                     <td><?= e($h['notes'] ?? '') ?></td>

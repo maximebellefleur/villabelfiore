@@ -99,6 +99,17 @@
         <a href="<?= url('/items?type=' . (e($c['type']))) ?>" class="stat-card stat-card--link">
             <div class="stat-value"><?= (int)$c['cnt'] ?></div>
             <div class="stat-label"><?= e(ucwords(str_replace('_', ' ', $c['type']))) ?></div>
+            <?php if (!empty($harvestByTypeMap[$c['type']])): ?>
+            <div class="stat-sub text-muted" style="font-size:.75rem;margin-top:4px">
+                <?php
+                $parts = [];
+                foreach ($harvestByTypeMap[$c['type']] as $unit => $qty) {
+                    $parts[] = number_format($qty, 1) . ' ' . e($unit);
+                }
+                echo implode(', ', $parts) . ' this year';
+                ?>
+            </div>
+            <?php endif; ?>
         </a>
         <?php endforeach; ?>
     </div>

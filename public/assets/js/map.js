@@ -22,6 +22,8 @@
     };
 
     var BOUNDARY_TYPES = ['garden', 'bed', 'orchard', 'zone', 'prep_zone'];
+    var LINE_TYPES = ['line']; // types that draw LineString (rows) not Polygon
+    var ALL_DRAWABLE = BOUNDARY_TYPES.concat(LINE_TYPES);
 
     function typeColor(type) { return (TYPE_CONFIG[type] || { color: '#888' }).color; }
     function typeLabel(type) { return (TYPE_CONFIG[type] || { label: type }).label; }
@@ -30,7 +32,7 @@
     // -------------------------------------------------------------------------
     // Build map
     // -------------------------------------------------------------------------
-    var map = L.map('map', { zoomControl: true }).setView(
+    var map = L.map('map', { zoomControl: true, maxZoom: 22 }).setView(
         [MAP_DEFAULT_LAT || 41.9, MAP_DEFAULT_LNG || 12.5],
         15
     );
@@ -38,19 +40,21 @@
     // Satellite on by default
     var satelliteLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe' }
+        { maxZoom: 22, maxNativeZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)
     var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 21,
+        maxZoom: 22,
+        maxNativeZoom: 19,
         opacity: 0.35,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
     // Plain OSM base — used when satellite is off
     var plainOsmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
+        maxZoom: 22,
+        maxNativeZoom: 19,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     });
 
@@ -152,8 +156,8 @@
             item.gps_accuracy ? '<div class="map-popup-acc">GPS ±' + Math.round(item.gps_accuracy) + 'm</div>' : '',
             '<div class="map-popup-actions">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-xs">View</a>',
-            BOUNDARY_TYPES.indexOf(item.type) >= 0
-                ? ' <button class="btn btn-secondary btn-xs" onclick="window.mapDrawForItem(' + item.id + ')">Draw boundary</button>'
+            ALL_DRAWABLE.indexOf(item.type) >= 0
+                ? ' <button class="btn btn-secondary btn-xs" onclick="window.mapDrawForItem(' + item.id + ')">' + (LINE_TYPES.indexOf(item.type) >= 0 ? 'Draw row' : 'Draw boundary') + '</button>'
                 : '',
             '</div>',
             '</div>',
@@ -170,8 +174,8 @@
             item.gps_accuracy ? '<p class="text-sm">Accuracy: ±' + Math.round(item.gps_accuracy) + 'm</p>' : '',
             '<div style="margin-top:8px">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-sm">Open item</a>',
-            BOUNDARY_TYPES.indexOf(item.type) >= 0
-                ? ' <button class="btn btn-secondary btn-sm" id="infoDrawBtn">Draw boundary</button>'
+            ALL_DRAWABLE.indexOf(item.type) >= 0
+                ? ' <button class="btn btn-secondary btn-sm" id="infoDrawBtn">' + (LINE_TYPES.indexOf(item.type) >= 0 ? 'Draw row' : 'Draw boundary') + '</button>'
                 : '',
             '</div>',
         ].join('');
@@ -183,12 +187,15 @@
     }
 
     function renderBoundary(item) {
+        var isLine = item.boundary && item.boundary.type === 'LineString';
         var gj = L.geoJSON(item.boundary, {
             style: {
                 color: typeColor(item.type),
-                weight: 2, opacity: 0.8,
+                weight: isLine ? 5 : 2,
+                opacity: isLine ? 0.85 : 0.8,
                 fillColor: typeColor(item.type),
-                fillOpacity: 0.15,
+                fillOpacity: isLine ? 0 : 0.15,
+                lineCap: isLine ? 'round' : 'butt',
             },
         });
         gj.bindTooltip(escHtml(item.name), { sticky: true });
@@ -550,10 +557,13 @@
     }
 
     function updateDrawStatus() {
+        var itemId = document.getElementById('boundaryItemSelect').value;
+        var selectedItem = itemId && allItems.find(function (i) { return String(i.id) === String(itemId); });
+        var isLineType = selectedItem && LINE_TYPES.indexOf(selectedItem.type) >= 0;
         document.getElementById('boundaryStatus').textContent =
             drawnPoints.length > 0
-                ? drawnPoints.length + ' point(s) — double-click to finish. Click a point to remove it and all after.'
-                : '';
+                ? drawnPoints.length + ' point(s) — ' + (isLineType ? 'save when done (min 2 points).' : 'double-click to finish (min 3 points). Click a point to remove it and all after.')
+                : (isLineType ? 'Click to add points for the planting row (min 2).' : 'Click to add points (min 3), double-click to finish.');
     }
 
     function updateTempShape() {
@@ -577,16 +587,30 @@
     document.getElementById('saveBoundary').addEventListener('click', function () {
         var itemId = document.getElementById('boundaryItemSelect').value;
         if (!itemId) { alert('Please select an item to assign the boundary to.'); return; }
-        if (drawnPoints.length < 3 && !tempPolygon) {
-            alert('Draw a polygon first (at least 3 points, double-click to finish).'); return;
-        }
-        if (!tempPolygon && drawnPoints.length >= 3) finishPolygon();
 
-        var geojson = {
-            type: 'Polygon',
-            coordinates: [drawnPoints.map(function (p) { return [p[1], p[0]]; })],
-        };
-        geojson.coordinates[0].push(geojson.coordinates[0][0]);
+        var selectedItem = allItems.find(function (i) { return String(i.id) === String(itemId); });
+        var isLineType = selectedItem && LINE_TYPES.indexOf(selectedItem.type) >= 0;
+
+        var geojson;
+        if (isLineType) {
+            if (drawnPoints.length < 2) {
+                alert('Draw at least 2 points for a planting row.'); return;
+            }
+            geojson = {
+                type: 'LineString',
+                coordinates: drawnPoints.map(function (p) { return [p[1], p[0]]; }),
+            };
+        } else {
+            if (drawnPoints.length < 3 && !tempPolygon) {
+                alert('Draw a polygon first (at least 3 points, double-click to finish).'); return;
+            }
+            if (!tempPolygon && drawnPoints.length >= 3) finishPolygon();
+            geojson = {
+                type: 'Polygon',
+                coordinates: [drawnPoints.map(function (p) { return [p[1], p[0]]; })],
+            };
+            geojson.coordinates[0].push(geojson.coordinates[0][0]);
+        }
 
         var status = document.getElementById('boundaryStatus');
         status.textContent = 'Saving…';
@@ -622,7 +646,7 @@
     function populateBoundarySelect(items) {
         var sel = document.getElementById('boundaryItemSelect');
         sel.innerHTML = '<option value="">— pick item —</option>';
-        var candidates = items.filter(function (i) { return BOUNDARY_TYPES.indexOf(i.type) >= 0; });
+        var candidates = items.filter(function (i) { return ALL_DRAWABLE.indexOf(i.type) >= 0; });
         candidates.sort(function (a, b) { return a.type.localeCompare(b.type) || a.name.localeCompare(b.name); });
         candidates.forEach(function (item) {
             var opt = document.createElement('option');
@@ -843,6 +867,22 @@
             }
             document.getElementById('landBoundaryStatus').textContent =
                 landDrawPoints.length + ' point(s) — double-click to finish. Click a point to remove it.';
+            return;
+        }
+
+        // Direct click: open add sheet immediately (no button press needed)
+        if (!addItemMode && !drawingActive && !landDrawActive) {
+            if (addItemMarker) map.removeLayer(addItemMarker);
+            addItemMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                icon: makeIcon('zone', 36),
+                draggable: true,
+            }).addTo(map);
+            addItemMarker.on('dragend', function (ev) {
+                var ll = ev.target.getLatLng();
+                addItemLat = ll.lat; addItemLng = ll.lng;
+                addCoordsText.textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+            });
+            openAddSheet(e.latlng.lat, e.latlng.lng);
         }
     });
 

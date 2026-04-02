@@ -1150,3 +1150,8 @@ select.form-input--touch {
   color: var(--color-text-muted);
   margin-top: 4px;
 }
+
+/* Planting row (line type) indicator */
+.layer-dot--line {
+  border-radius: 2px; /* square dot for rows vs circle for areas */
+}

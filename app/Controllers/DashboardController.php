@@ -38,12 +38,28 @@ class DashboardController
             "SELECT * FROM reminders WHERE status = 'pending' AND due_at < NOW() ORDER BY due_at ASC LIMIT 5"
         );
 
+        // Harvest totals grouped by item type (current year)
+        $harvestByType = $db->fetchAll(
+            "SELECT i.type, h.unit, SUM(h.quantity) AS total
+             FROM harvest_entries h
+             JOIN items i ON i.id = h.item_id
+             WHERE YEAR(h.recorded_at) = YEAR(NOW())
+             GROUP BY i.type, h.unit
+             ORDER BY i.type, h.unit"
+        );
+        // Reindex: ['olive_tree' => ['kg' => 120.5, ...], ...]
+        $harvestByTypeMap = [];
+        foreach ($harvestByType as $row) {
+            $harvestByTypeMap[$row['type']][$row['unit']] = (float)$row['total'];
+        }
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
             'recentActivity'    => $recentActivity,
             'upcomingReminders' => $upcomingReminders,
             'overdueReminders'  => $overdueReminders,
+            'harvestByTypeMap'  => $harvestByTypeMap,
         ]);
     }
 
