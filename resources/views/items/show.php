@@ -2,47 +2,86 @@
 $miniMapEnabled = !empty($item['gps_lat']) && !empty($item['gps_lng']);
 
 $typeEmoji = [
-    'olive_tree'  => '🫒',
-    'tree'        => '🌳',
-    'vine'        => '🍇',
-    'almond_tree' => '🌰',
-    'garden'      => '🌿',
-    'zone'        => '🛖',
-    'orchard'     => '🏕',
-    'bed'         => '🌱',
-    'line'        => '〰️',
-    'prep_zone'   => '🟫',
-    'mobile_coop' => '🐓',
-    'building'    => '🏠',
-    'water_point' => '💧',
+    'olive_tree'  => '🫒', 'tree' => '🌳', 'vine' => '🍇',
+    'almond_tree' => '🌰', 'garden' => '🌿', 'zone' => '🛖',
+    'orchard'     => '🏕', 'bed' => '🌱', 'line' => '〰️',
+    'prep_zone'   => '🟫', 'mobile_coop' => '🐓',
+    'building'    => '🏠', 'water_point' => '💧',
 ];
-$emoji = $typeEmoji[$item['type']] ?? '📦';
+$typeColor = [
+    'olive_tree'  => '#2d6a4f', 'almond_tree' => '#92400e', 'vine' => '#6d28d9',
+    'tree'        => '#166534', 'garden' => '#0369a1', 'bed' => '#0369a1',
+    'orchard'     => '#c2410c', 'zone' => '#4338ca', 'prep_zone' => '#b45309',
+    'water_point' => '#0284c7', 'mobile_coop' => '#991b1b',
+    'building'    => '#374151', 'line' => '#1d4ed8',
+];
+$emoji     = $typeEmoji[$item['type']] ?? '📦';
+$color     = $typeColor[$item['type']] ?? '#2d6a4f';
 $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
+
+// Find the identification photo if it exists
+$idPhoto = null;
+foreach ($attachments as $att) {
+    if ($att['category'] === 'identification_photo' && str_starts_with($att['mime_type'] ?? '', 'image/')) {
+        $idPhoto = $att;
+        break;
+    }
+}
+?>
 ?>
 
-<!-- HERO CARD -->
-<div class="item-hero">
-    <div class="item-hero-main">
-        <div class="item-hero-emoji"><?= $emoji ?></div>
-        <div class="item-hero-info">
-            <h1 class="item-hero-name"><?= e($item['name']) ?></h1>
-            <div class="item-hero-badges">
-                <span class="badge type-badge type-<?= e($item['type']) ?>"><?= $emoji ?> <?= e($typeLabel) ?></span>
-                <?php if ($item['status'] !== 'active'): ?>
-                <span class="badge badge-status badge-status--<?= e($item['status']) ?>"><?= e($item['status']) ?></span>
-                <?php else: ?>
-                <span class="badge" style="background:rgba(39,174,96,.12);color:#1e5631">Active</span>
-                <?php endif; ?>
-            </div>
-        </div>
+<!-- ============================================================
+     MODERN HERO
+     ============================================================ -->
+<div class="show-hero" style="--item-color:<?= $color ?>">
+    <?php if ($idPhoto): ?>
+    <div class="show-hero-photo">
+        <img src="<?= url('/attachments/' . (int)$idPhoto['id'] . '/download') ?>"
+             alt="<?= e($item['name']) ?>" loading="eager">
+        <div class="show-hero-photo-overlay"></div>
     </div>
-    <div class="item-hero-actions">
-        <a href="<?= url('/items/' . ((int)$item['id']) . '/photos') ?>" class="btn btn-secondary">📷 Photos</a>
-        <a href="<?= url('/items/' . ((int)$item['id']) . '/edit') ?>" class="btn btn-secondary">Edit</a>
-        <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/trash') ?>" style="display:inline">
-            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-            <button class="btn btn-danger" onclick="return confirm('Move to trash?')">Trash</button>
-        </form>
+    <?php else: ?>
+    <div class="show-hero-photo show-hero-photo--placeholder">
+        <span class="show-hero-placeholder-emoji"><?= $emoji ?></span>
+    </div>
+    <?php endif; ?>
+
+    <div class="show-hero-content">
+        <div class="show-hero-back">
+            <a href="<?= url('/items') ?>" class="show-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                Items
+            </a>
+        </div>
+        <div class="show-hero-badge"><?= $emoji ?> <?= e($typeLabel) ?></div>
+        <h1 class="show-hero-name"><?= e($item['name']) ?></h1>
+        <?php if ($item['status'] !== 'active'): ?>
+        <span class="show-hero-status"><?= e($item['status']) ?></span>
+        <?php endif; ?>
+    </div>
+
+    <!-- Big action strip at bottom of hero -->
+    <div class="show-hero-actions">
+        <a href="<?= url('/items/' . (int)$item['id'] . '/photos') ?>" class="show-action-btn show-action-btn--primary">
+            <span class="show-action-icon">📷</span>
+            <span>Photos</span>
+        </a>
+        <a href="<?= url('/items/' . (int)$item['id'] . '/edit') ?>" class="show-action-btn">
+            <span class="show-action-icon">✏️</span>
+            <span>Edit</span>
+        </a>
+        <?php if (!empty($item['gps_lat'])): ?>
+        <a href="<?= url('/dashboard/map') ?>" class="show-action-btn">
+            <span class="show-action-icon">📍</span>
+            <span>Map</span>
+        </a>
+        <?php endif; ?>
+        <?php if (!empty($item['is_finance_enabled'])): ?>
+        <a href="<?= url('/items/' . (int)$item['id'] . '/finance') ?>" class="show-action-btn">
+            <span class="show-action-icon">💰</span>
+            <span>Finance</span>
+        </a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -376,37 +415,136 @@ $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
 </div>
 
 <style>
-/* Item Hero */
-.item-hero {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--spacing-4);
-    flex-wrap: wrap;
+/* =========================================================
+   Item Show — Modern 2026
+   ========================================================= */
+
+/* Hero */
+.show-hero {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
     margin-bottom: var(--spacing-5);
-    padding: var(--spacing-5);
-    background: var(--color-surface-raised);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
 }
-.item-hero-main { display: flex; align-items: center; gap: var(--spacing-4); flex: 1; min-width: 0; }
-.item-hero-emoji { font-size: 3rem; line-height: 1; flex-shrink: 0; }
-.item-hero-info { flex: 1; min-width: 0; }
-.item-hero-name {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--color-text);
-    margin: 0 0 var(--spacing-2);
-    line-height: 1.2;
+
+.show-hero-photo {
+    width: 100%;
+    height: 220px;
+    position: relative;
+    overflow: hidden;
+    background: var(--item-color, #2d6a4f);
 }
-.item-hero-badges { display: flex; gap: var(--spacing-2); flex-wrap: wrap; }
-.item-hero-actions {
+.show-hero-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.show-hero-photo-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 100%);
+}
+.show-hero-photo--placeholder {
     display: flex;
-    gap: var(--spacing-2);
-    flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--item-color, #2d6a4f), color-mix(in srgb, var(--item-color, #2d6a4f) 60%, #000));
 }
+.show-hero-placeholder-emoji { font-size: 6rem; opacity: 0.5; }
+
+@media (min-width: 600px) {
+    .show-hero-photo, .show-hero-photo--placeholder { height: 280px; }
+}
+
+.show-hero-content {
+    position: absolute;
+    bottom: 72px; left: 0; right: 0;
+    padding: 0 var(--spacing-4);
+    color: #fff;
+}
+.show-hero-back { margin-bottom: var(--spacing-3); }
+.show-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: rgba(0,0,0,0.25);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(8px);
+}
+.show-back-btn:hover { color: #fff; text-decoration: none; }
+
+.show-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(255,255,255,0.20);
+    backdrop-filter: blur(8px);
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 6px;
+    color: #fff;
+}
+.show-hero-name {
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+@media (max-width: 400px) { .show-hero-name { font-size: 1.5rem; } }
+.show-hero-status {
+    display: inline-block;
+    background: rgba(220,38,38,0.85);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+}
+
+/* Action strip */
+.show-hero-actions {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.3);
+}
+.show-action-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    border-right: 1px solid var(--color-border);
+}
+.show-action-btn:last-child { border-right: none; }
+.show-action-btn:hover { background: var(--color-primary-soft); color: var(--color-primary); text-decoration: none; }
+.show-action-btn--primary { color: var(--color-primary); font-weight: 800; }
+.show-action-icon { font-size: 1.3rem; line-height: 1; }
 
 /* Detail Grid */
 .item-detail-grid {
@@ -415,57 +553,55 @@ $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
     gap: var(--spacing-4);
     margin-bottom: var(--spacing-5);
 }
-@media (min-width: 720px) {
-    .item-detail-grid { grid-template-columns: 1fr 1fr; }
-}
+@media (min-width: 720px) { .item-detail-grid { grid-template-columns: 1fr 1fr; } }
 .item-detail-left, .item-detail-right { display: flex; flex-direction: column; gap: var(--spacing-3); }
 
 .item-detail-card {
     background: var(--color-surface-raised);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: var(--spacing-4);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-card);
 }
 .item-detail-card-title {
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: .06em;
+    letter-spacing: 0.08em;
     color: var(--color-text-muted);
     margin: 0 0 var(--spacing-3);
 }
 
-/* Definition list */
 .item-dl { margin: 0; }
 .item-dl-row {
     display: flex;
     gap: var(--spacing-3);
-    padding: var(--spacing-2) 0;
+    padding: 9px 0;
     border-bottom: 1px solid var(--color-border);
     font-size: 0.875rem;
+    align-items: baseline;
 }
 .item-dl-row:last-child { border-bottom: none; }
-.item-dl-row dt { width: 90px; flex-shrink: 0; color: var(--color-text-muted); font-weight: 500; }
-.item-dl-row dd { flex: 1; min-width: 0; }
+.item-dl-row dt { width: 90px; flex-shrink: 0; color: var(--color-text-muted); font-weight: 600; font-size: 0.78rem; }
+.item-dl-row dd { flex: 1; min-width: 0; font-weight: 500; }
 
-/* Tab nav — horizontal scroll */
+/* Tabs */
 .item-tab-nav {
     display: flex;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    gap: 6px;
+    padding-bottom: var(--spacing-3);
     border-bottom: 2px solid var(--color-border);
     margin-bottom: var(--spacing-4);
-    gap: 0;
 }
 .item-tab-nav::-webkit-scrollbar { display: none; }
 .item-tab-nav .tab-btn {
     white-space: nowrap;
     flex-shrink: 0;
-    padding: var(--spacing-3) var(--spacing-4);
-    min-height: 44px;
-    font-size: 0.875rem;
+    padding: 8px 16px;
+    min-height: 38px;
+    font-size: 0.82rem;
 }
 </style>
 
