@@ -62,6 +62,13 @@ class DashboardController
             []
         );
 
+        $gpsItems = $db->fetchAll(
+            "SELECT id, name, type, gps_lat, gps_lng FROM items
+             WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL
+             AND status = 'active' AND deleted_at IS NULL
+             ORDER BY name"
+        );
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
@@ -70,6 +77,7 @@ class DashboardController
             'overdueReminders'  => $overdueReminders,
             'harvestByTypeMap'  => $harvestByTypeMap,
             'monthlyHarvest'    => $monthlyHarvest,
+            'gpsItems'          => $gpsItems,
         ]);
     }
 

@@ -144,8 +144,12 @@ function doGpsDetect(attempt) {
     navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude.toFixed(7);
         var lng = pos.coords.longitude.toFixed(7);
-        $('#gpsLat').val(lat).trigger('change');
-        $('#gpsLng').val(lng).trigger('change');
+        // Update values and fire both jQuery + native events (minimap.js uses native addEventListener)
+        var latEl = document.getElementById('gpsLat');
+        var lngEl = document.getElementById('gpsLng');
+        latEl.value = lat; latEl.dispatchEvent(new Event('change'));
+        lngEl.value = lng; lngEl.dispatchEvent(new Event('change'));
+        $('#gpsLat, #gpsLng').trigger('change');
         $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
         $('#gpsSource').val('device');
         $('#gpsStatus').text('✅ Located ±' + Math.round(pos.coords.accuracy) + 'm — drag pin to adjust.').show();
@@ -172,10 +176,6 @@ function doGpsDetect(attempt) {
 $('#detectGps').on('click', function() {
     if (!navigator.geolocation) {
         $('#gpsStatus').text('⚠️ Geolocation not supported. Tap map to place pin.').show();
-        return;
-    }
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        $('#gpsStatus').text('⚠️ GPS requires HTTPS. Tap the map to place a pin instead.').show();
         return;
     }
     $(this).prop('disabled', true).text('⏳ Detecting…');
