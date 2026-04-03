@@ -132,45 +132,19 @@ $('#itemType').on('change', function() {
     else { $('#metaFields').hide(); }
 });
 
-// GPS detection with retry logic
-var GPS_RETRIES = 2;
-function doGpsDetect(attempt) {
-    var opts = attempt === 0
-        ? { enableHighAccuracy: true,  timeout: 10000, maximumAge: 5000  }
-        : { enableHighAccuracy: false, timeout: 8000,  maximumAge: 30000 };
-    if (attempt > 0) {
-        $('#gpsStatus').text('📡 Retrying (' + attempt + '/' + GPS_RETRIES + ')…').show();
-    }
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        var lat = pos.coords.latitude.toFixed(7);
-        var lng = pos.coords.longitude.toFixed(7);
-        // Update values and fire both jQuery + native events (minimap.js uses native addEventListener)
-        var latEl = document.getElementById('gpsLat');
-        var lngEl = document.getElementById('gpsLng');
-        latEl.value = lat; latEl.dispatchEvent(new Event('change'));
-        lngEl.value = lng; lngEl.dispatchEvent(new Event('change'));
-        $('#gpsLat, #gpsLng').trigger('change');
-        $('#gpsAccuracy').val(Math.round(pos.coords.accuracy));
-        $('#gpsSource').val('device');
-        $('#gpsStatus').text('✅ Located ±' + Math.round(pos.coords.accuracy) + 'm — drag pin to adjust.').show();
-        $('#detectGps').prop('disabled', false).text('📍 Locate Me');
-    }, function(err) {
-        if (err.code === 1) {
-            $('#gpsStatus').text('🔒 Location blocked — enable it in browser settings, then tap again.').show();
-            $('#detectGps').prop('disabled', false).text('📍 Locate Me');
-            return;
-        }
-        if (attempt < GPS_RETRIES) {
-            setTimeout(function() { doGpsDetect(attempt + 1); }, 1500);
-        } else {
-            var msgs = {
-                2: '⚠️ Signal weak — move outdoors or tap the map to place a pin.',
-                3: '⚠️ GPS timed out — tap the map to place a pin manually.',
-            };
-            $('#gpsStatus').text(msgs[err.code] || '⚠️ Location unavailable — tap the map instead.').show();
-            $('#detectGps').prop('disabled', false).text('📍 Locate Me');
-        }
-    }, opts);
+// GPS detection — uses shared RootedGPS service (already warming since page load)
+function applyGpsPosition(pos) {
+    var lat = pos.lat.toFixed(7);
+    var lng = pos.lng.toFixed(7);
+    var latEl = document.getElementById('gpsLat');
+    var lngEl = document.getElementById('gpsLng');
+    latEl.value = lat; latEl.dispatchEvent(new Event('change'));
+    lngEl.value = lng; lngEl.dispatchEvent(new Event('change'));
+    $('#gpsLat, #gpsLng').trigger('change');
+    $('#gpsAccuracy').val(Math.round(pos.accuracy));
+    $('#gpsSource').val('device');
+    $('#gpsStatus').text('✅ Located ±' + Math.round(pos.accuracy) + 'm — drag pin to adjust.').show();
+    $('#detectGps').prop('disabled', false).text('📍 Locate Me');
 }
 
 $('#detectGps').on('click', function() {
@@ -179,7 +153,15 @@ $('#detectGps').on('click', function() {
         return;
     }
     $(this).prop('disabled', true).text('⏳ Detecting…');
-    $('#gpsStatus').text('📡 Requesting your location — allow access if prompted…').show();
-    doGpsDetect(0);
+    $('#gpsStatus').text('📡 Locating…').show();
+
+    RootedGPS.get(function(pos) {
+        if (!pos) {
+            $('#gpsStatus').text('🔒 Location unavailable — enable it in browser settings, then tap again.').show();
+            $('#detectGps').prop('disabled', false).text('📍 Locate Me');
+            return;
+        }
+        applyGpsPosition(pos);
+    }, 20000); // accept up to 20s old (GPS has been warming since page load)
 });
 </script>

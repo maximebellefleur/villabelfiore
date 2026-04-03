@@ -43,6 +43,109 @@ $currentYear = date('Y');
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <!-- ============================================================
+     NEAREST TO YOU — hero section, first thing on mobile
+     ============================================================ -->
+<?php if (!empty($gpsItems)): ?>
+<section class="nearby-hero" id="nearbySection">
+    <div class="nearby-hero-head">
+        <div class="nearby-hero-title">📍 Nearest to You</div>
+        <button class="nearby-refresh-btn" id="nearbyRefresh" title="Refresh">↺</button>
+    </div>
+    <div class="nearby-status-bar" id="nearbyStatus" style="display:none">📡 Locating…</div>
+    <div class="nearby-cards" id="nearbyList"></div>
+    <div id="nearbyEmpty" style="display:none;text-align:center;padding:var(--spacing-6)">
+        <div style="font-size:2rem;margin-bottom:var(--spacing-3)">📍</div>
+        <div style="color:var(--color-text-muted);margin-bottom:var(--spacing-3)">Enable location to see nearby items</div>
+        <button class="btn btn-primary" id="nearbyTryBtn">Detect My Location</button>
+    </div>
+</section>
+
+<script>
+(function () {
+    var BASE = '<?= url('/') ?>';
+    var GPS_ITEMS = <?= json_encode(array_map(fn($i) => [
+        'id'       => (int)$i['id'],
+        'name'     => $i['name'],
+        'type'     => $i['type'],
+        'lat'      => (float)$i['gps_lat'],
+        'lng'      => (float)$i['gps_lng'],
+        'photo_id' => $i['photo_id'] ? (int)$i['photo_id'] : null,
+    ], $gpsItems)) ?>;
+
+    var TYPE_EMOJI = { olive_tree:'🫒',tree:'🌳',vine:'🍇',almond_tree:'🌰',garden:'🌿',zone:'🛖',orchard:'🏕',bed:'🌱',line:'〰️',prep_zone:'🟫',mobile_coop:'🐓',building:'🏠',water_point:'💧' };
+    var TYPE_COLOR = { olive_tree:'#2d6a4f',tree:'#166534',vine:'#6d28d9',almond_tree:'#92400e',garden:'#0369a1',bed:'#0369a1',orchard:'#c2410c',zone:'#4338ca',prep_zone:'#b45309',mobile_coop:'#991b1b',building:'#374151',water_point:'#0284c7' };
+
+    function haversineM(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+    function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
+
+    function renderNearest(lat, lng) {
+        document.getElementById('nearbyStatus').style.display = 'none';
+        document.getElementById('nearbyEmpty').style.display  = 'none';
+
+        var sorted = GPS_ITEMS.map(function(item) {
+            return Object.assign({}, item, { dist: haversineM(lat, lng, item.lat, item.lng) });
+        }).sort(function(a,b){return a.dist-b.dist;}).slice(0,5);
+
+        var html = '';
+        sorted.forEach(function(item) {
+            var emoji  = TYPE_EMOJI[item.type] || '📦';
+            var color  = TYPE_COLOR[item.type] || '#2d6a4f';
+            var label  = item.type.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+            var itemUrl   = BASE + 'items/' + item.id;
+            var photosUrl = BASE + 'items/' + item.id + '/photos';
+            var harvestUrl= BASE + 'harvest/quick';
+            var bgStyle   = item.photo_id
+                ? 'background-image:url(' + BASE + 'attachments/' + item.photo_id + '/download);'
+                : 'background:' + color + '22;';
+
+            html += '<div class="nearby-card" style="' + bgStyle + '">';
+            html += '  <div class="nearby-card-gradient"></div>';
+            html += '  <a href="' + itemUrl + '" class="nearby-card-inner">';
+            html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
+            html += '    <div class="nearby-card-info">';
+            html += '      <div class="nearby-card-name">' + item.name + '</div>';
+            html += '      <div class="nearby-card-sub"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
+            html += '    </div>';
+            html += '  </a>';
+            html += '  <div class="nearby-card-btns">';
+            html += '    <a href="' + photosUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Photos">📷</a>';
+            html += '    <a href="' + harvestUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Harvest">🌾</a>';
+            html += '    <a href="' + itemUrl + '#actions" class="nearby-card-btn" onclick="event.stopPropagation()" title="Add note">➕</a>';
+            html += '  </div>';
+            html += '</div>';
+        });
+
+        document.getElementById('nearbyList').innerHTML = html;
+    }
+
+    function detect(forceRefresh) {
+        var last = RootedGPS.last();
+        var maxAge = forceRefresh ? 0 : 60000;
+        if (!forceRefresh && last && (Date.now() - last.timestamp) < maxAge) {
+            renderNearest(last.lat, last.lng);
+            return;
+        }
+        var statusEl = document.getElementById('nearbyStatus');
+        statusEl.textContent = '📡 Finding your location…';
+        statusEl.style.display = 'block';
+        RootedGPS.get(function(pos) {
+            statusEl.style.display = 'none';
+            if (!pos) {
+                document.getElementById('nearbyEmpty').style.display = 'block';
+                return;
+            }
+            renderNearest(pos.lat, pos.lng);
+        }, forceRefresh ? 0 : 30000);
+    }
+
+    detect(false);
+    document.getElementById('nearbyRefresh').addEventListener('click', function() { detect(true); });
+    document.getElementById('nearbyTryBtn').addEventListener('click', function() { detect(true); });
+}());
+</script>
+<?php endif; ?>
+
+<!-- ============================================================
      QUICK ACTION STRIP
      ============================================================ -->
 <div class="quick-actions-strip">
@@ -184,114 +287,6 @@ $currentYear = date('Y');
 <?php endif; ?>
 
 <!-- ============================================================
-     NEARBY ITEMS
-     ============================================================ -->
-<?php if (!empty($gpsItems)): ?>
-<section class="dash-section" id="nearbySection">
-    <h2 class="dash-section-title">
-        📍 Nearest to You
-        <button class="nearby-refresh-btn" id="nearbyRefresh" title="Refresh location">↺</button>
-    </h2>
-    <div id="nearbyStatus" class="nearby-status" style="display:none"></div>
-    <div id="nearbyList" class="nearby-list"></div>
-    <div id="nearbyEmpty" class="text-muted" style="display:none;text-align:center;padding:var(--spacing-4);font-style:italic">
-        Enable location access to see nearby items.
-        <br><button class="btn btn-primary btn-sm" style="margin-top:var(--spacing-3)" id="nearbyTryBtn">📍 Detect My Location</button>
-    </div>
-</section>
-
-<script>
-(function () {
-    var GPS_ITEMS = <?= json_encode(array_map(fn($i) => [
-        'id'   => (int)$i['id'],
-        'name' => $i['name'],
-        'type' => $i['type'],
-        'lat'  => (float)$i['gps_lat'],
-        'lng'  => (float)$i['gps_lng'],
-    ], $gpsItems)) ?>;
-
-    var TYPE_EMOJI = {
-        olive_tree:'🫒', tree:'🌳', vine:'🍇', almond_tree:'🌰',
-        garden:'🌿', zone:'🛖', orchard:'🏕', bed:'🌱',
-        line:'〰️', prep_zone:'🟫', mobile_coop:'🐓',
-        building:'🏠', water_point:'💧',
-    };
-    var TYPE_COLOR = {
-        olive_tree:'#4a7c43', tree:'#2d5a27', vine:'#8b3d9e',
-        almond_tree:'#8b5e3c', garden:'#1a5fa6', bed:'#1a5fa6',
-        orchard:'#3d7a3d', zone:'#888', mobile_coop:'#795548',
-        building:'#607d8b', water_point:'#2196f3',
-    };
-
-    function haversine(lat1, lon1, lat2, lon2) {
-        var R = 6371000;
-        var d1 = (lat2 - lat1) * Math.PI / 180;
-        var d2 = (lon2 - lon1) * Math.PI / 180;
-        var a  = Math.sin(d1/2)*Math.sin(d1/2) +
-                 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-                 Math.sin(d2/2)*Math.sin(d2/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    function fmtDist(m) {
-        return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(1) + ' km';
-    }
-
-    function showNearest(lat, lng) {
-        document.getElementById('nearbyStatus').style.display = 'none';
-        document.getElementById('nearbyEmpty').style.display  = 'none';
-
-        var sorted = GPS_ITEMS.map(function(item) {
-            return Object.assign({}, item, { dist: haversine(lat, lng, item.lat, item.lng) });
-        }).sort(function(a, b) { return a.dist - b.dist; }).slice(0, 5);
-
-        var html = '';
-        sorted.forEach(function(item) {
-            var emoji = TYPE_EMOJI[item.type] || '📦';
-            var color = TYPE_COLOR[item.type] || '#888';
-            var label = item.type.replace(/_/g,' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
-            html += '<a href="<?= url('/items/') ?>' + item.id + '" class="nearby-card">';
-            html += '<div class="nearby-card-icon" style="background:' + color + '20;color:' + color + '">' + emoji + '</div>';
-            html += '<div class="nearby-card-body">';
-            html += '<div class="nearby-card-name">' + item.name + '</div>';
-            html += '<div class="nearby-card-meta"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
-            html += '</div>';
-            html += '<div class="nearby-card-actions">';
-            html += '<a href="<?= url('/items/') ?>' + item.id + '/photos" class="nearby-action-btn" title="Photos">📷</a>';
-            html += '<a href="<?= url('/harvest/quick?item_id=') ?>' + item.id + '" class="nearby-action-btn" title="Harvest">🌾</a>';
-            html += '</div>';
-            html += '</a>';
-        });
-
-        document.getElementById('nearbyList').innerHTML = html;
-    }
-
-    function detect(showError) {
-        if (!navigator.geolocation) {
-            if (showError) document.getElementById('nearbyEmpty').style.display = 'block';
-            return;
-        }
-        var statusEl = document.getElementById('nearbyStatus');
-        statusEl.textContent = '📡 Finding your location…';
-        statusEl.style.display = 'block';
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            showNearest(pos.coords.latitude, pos.coords.longitude);
-        }, function(err) {
-            statusEl.style.display = 'none';
-            document.getElementById('nearbyEmpty').style.display = 'block';
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
-    }
-
-    // Auto-detect silently on load
-    detect(false);
-
-    document.getElementById('nearbyRefresh').addEventListener('click', function() { detect(true); });
-    document.getElementById('nearbyTryBtn').addEventListener('click', function() { detect(true); });
-}());
-</script>
-<?php endif; ?>
-
-<!-- ============================================================
      TWO-COLUMN: REMINDERS + ACTIVITY
      ============================================================ -->
 <div class="dash-two-col">
@@ -348,14 +343,11 @@ $currentYear = date('Y');
    ----------------------------------------------- */
 .quick-actions-strip {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-3);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
     padding-bottom: var(--spacing-2);
     margin-bottom: var(--spacing-5);
 }
-.quick-actions-strip::-webkit-scrollbar { display: none; }
 
 .quick-action-btn {
     display: flex;
@@ -577,7 +569,86 @@ $currentYear = date('Y');
 .dash-type-card--line        { border-left-color: #2c5faa; }
 
 /* -----------------------------------------------
-   Nearby Items
+   Nearby Hero Section
+   ----------------------------------------------- */
+.nearby-hero {
+    margin-bottom: var(--spacing-5);
+    min-height: 80dvh;
+    display: flex;
+    flex-direction: column;
+}
+@media (min-width: 768px) {
+    .nearby-hero { min-height: unset; }
+}
+.nearby-hero-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--spacing-3);
+}
+.nearby-hero-title {
+    font-size: 1rem; font-weight: 700; color: var(--color-text);
+}
+.nearby-refresh-btn {
+    background: none; border: none; font-size: 1.1rem;
+    color: var(--color-primary); cursor: pointer;
+    padding: 4px 8px; border-radius: var(--radius); line-height: 1;
+}
+.nearby-refresh-btn:hover { background: var(--color-border); }
+
+.nearby-status-bar {
+    font-size: 0.85rem; color: var(--color-text-muted);
+    padding: var(--spacing-2) 0; text-align: center;
+}
+
+.nearby-cards {
+    display: flex; flex-direction: column; gap: var(--spacing-3); flex: 1;
+}
+
+/* Each nearby card */
+.nearby-card {
+    position: relative; border-radius: var(--radius-xl); overflow: hidden;
+    min-height: 110px; display: flex; flex-direction: column;
+    background-size: cover; background-position: center; background-color: var(--color-border);
+    box-shadow: var(--shadow);
+    flex: 1;
+}
+.nearby-card-gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.20) 100%);
+}
+.nearby-card-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: var(--spacing-3);
+    padding: var(--spacing-4); flex: 1;
+    text-decoration: none; color: #fff;
+}
+.nearby-card-inner:hover { text-decoration: none; color: #fff; }
+.nearby-card-emoji {
+    width: 52px; height: 52px; border-radius: var(--radius);
+    font-size: 1.6rem; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; backdrop-filter: blur(8px);
+}
+.nearby-card-info { flex: 1; min-width: 0; }
+.nearby-card-name { font-size: 1.05rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nearby-card-sub  { display: flex; gap: var(--spacing-3); margin-top: 3px; align-items: center; }
+.nearby-card-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,0.8); }
+.nearby-card-dist { font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.95); }
+
+.nearby-card-btns {
+    position: relative; z-index: 1;
+    display: flex; gap: var(--spacing-2);
+    padding: 0 var(--spacing-4) var(--spacing-3); justify-content: flex-end;
+}
+.nearby-card-btn {
+    width: 40px; height: 40px; border-radius: var(--radius);
+    background: rgba(255,255,255,0.18); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; text-decoration: none; border: 1px solid rgba(255,255,255,0.25);
+    transition: background 0.15s;
+}
+.nearby-card-btn:hover { background: rgba(255,255,255,0.32); text-decoration: none; }
+
+/* -----------------------------------------------
+   Nearby Items (old, kept for reference)
    ----------------------------------------------- */
 .nearby-status {
     font-size: 0.85rem;

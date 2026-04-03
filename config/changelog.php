@@ -8,6 +8,30 @@
  */
 return [
 
+    '1.4.2' => [
+        'date'  => '2026-04-03',
+        'title' => 'GPS Service, Harvest Slider & UI Overhaul',
+        'new' => [
+            'Unified GPS service (gps.js) — warms up on every page load so location is instant when you need it',
+            'Dashboard: Nearest to You is now the hero section (80vh mobile) with photo backgrounds and action buttons',
+            'Quick Harvest: distance-sorted trees, basket/wheelbarrow slider 0-5 in 0.25 steps, tap Harvest it!',
+            'Map: fullscreen button (⛶), no more accidental item creation on map tap',
+            'Image upload: client-side compression to ~400KB before sending — phone photos no longer fail',
+        ],
+        'improved' => [
+            'Items page: clean full-width list layout with sort-by-distance button — grid split bug fixed',
+            'Mobile nav menu: z-index fix — drawer now appears above the blur overlay',
+            'Dashboard quick-actions strip: wraps to second row instead of scrolling off-screen',
+            'Roadmap: all features (including released) now individually toggleable (○ → ✅ → ❌)',
+            'GPS on Add Item page: uses shared service, no HTTPS block, map pin moves correctly',
+        ],
+        'fixed' => [
+            'Stray ?> at top of item detail page',
+            'Upload errors now stay visible until dismissed — no more 8-second auto-hide',
+            'Items grid rendered card content and actions in separate cells on desktop — now a proper list',
+        ],
+    ],
+
     '1.4.1' => [
         'date'     => '2026-04-03',
         'title'    => 'Nearby Items & GPS Fixes',

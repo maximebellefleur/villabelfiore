@@ -63,10 +63,15 @@ class DashboardController
         );
 
         $gpsItems = $db->fetchAll(
-            "SELECT id, name, type, gps_lat, gps_lng FROM items
-             WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL
-             AND status = 'active' AND deleted_at IS NULL
-             ORDER BY name"
+            "SELECT i.id, i.name, i.type, i.gps_lat, i.gps_lng,
+                    (SELECT a.id FROM attachments a
+                     WHERE a.item_id = i.id AND a.category = 'identification_photo'
+                     AND a.deleted_at IS NULL AND a.mime_type LIKE 'image/%'
+                     ORDER BY a.id DESC LIMIT 1) AS photo_id
+             FROM items i
+             WHERE i.gps_lat IS NOT NULL AND i.gps_lng IS NOT NULL
+             AND i.status = 'active' AND i.deleted_at IS NULL
+             ORDER BY i.name"
         );
 
         Response::render('dashboard/index', [

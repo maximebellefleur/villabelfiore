@@ -279,65 +279,26 @@
     var addOpenFull     = document.getElementById('mapAddOpenFull');
 
     // -------------------------------------------------------------------------
-    // Shared GPS helper — robust with retry + watchPosition fallback
+    // Shared GPS helper — delegates to the unified RootedGPS service
     // -------------------------------------------------------------------------
-    var GPS_MAX_RETRIES = 2;
-
     function detectGps(onSuccess, statusEl, btn) {
         if (!navigator.geolocation) {
             showGpsStatus(statusEl, '⚠️ Geolocation not supported by your browser.', 'error');
             return;
         }
-        // HTTPS check (skip for localhost)
-        var host = location.hostname;
-        if (location.protocol !== 'https:' && host !== 'localhost' && host !== '127.0.0.1') {
-            showGpsStatus(statusEl, '⚠️ GPS requires HTTPS. Tap the map to place a pin instead.', 'error');
-            return;
-        }
         var origText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
-        showGpsStatus(statusEl, '📡 Requesting location…', 'info');
-        _gpsAttempt(onSuccess, statusEl, btn, origText, 0);
-    }
+        showGpsStatus(statusEl, '📡 Locating…', 'info');
 
-    function _gpsAttempt(onSuccess, statusEl, btn, origText, attempt) {
-        // Strategy: first try high-accuracy, fallback to low-accuracy on retry
-        var opts = attempt === 0
-            ? { enableHighAccuracy: true,  timeout: 10000, maximumAge: 5000 }
-            : { enableHighAccuracy: false, timeout: 8000,  maximumAge: 30000 };
-
-        if (attempt > 0) {
-            showGpsStatus(statusEl, '📡 Retrying (' + attempt + '/' + GPS_MAX_RETRIES + ')…', 'info');
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                if (btn) { btn.disabled = false; btn.textContent = origText; }
-                hideGpsStatus(statusEl);
-                onSuccess(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-            },
-            function (err) {
-                if (err.code === 1) {
-                    // Permission denied — no retry will help
-                    if (btn) { btn.disabled = false; btn.textContent = origText; }
-                    showGpsStatus(statusEl, '🔒 Location access denied. Enable it in browser settings, then tap again.', 'error');
-                    return;
-                }
-                if (attempt < GPS_MAX_RETRIES) {
-                    setTimeout(function () {
-                        _gpsAttempt(onSuccess, statusEl, btn, origText, attempt + 1);
-                    }, 1500);
-                } else {
-                    if (btn) { btn.disabled = false; btn.textContent = origText; }
-                    var msgs = {
-                        2: '⚠️ Position unavailable — move outdoors or tap the map to place a pin.',
-                        3: '⚠️ GPS timed out — tap the map to place a pin manually.',
-                    };
-                    showGpsStatus(statusEl, msgs[err.code] || '⚠️ Could not detect location — tap the map instead.', 'error');
-                }
-            },
-            opts
-        );
+        RootedGPS.get(function (pos) {
+            if (btn) { btn.disabled = false; btn.textContent = origText; }
+            if (!pos) {
+                showGpsStatus(statusEl, '🔒 Location unavailable — check browser permissions.', 'error');
+                return;
+            }
+            hideGpsStatus(statusEl);
+            onSuccess(pos.lat, pos.lng, pos.accuracy);
+        }, 15000); // accept a fix up to 15 seconds old (already warming since page load)
     }
 
     function showGpsStatus(el, msg, type) {
@@ -968,29 +929,8 @@
             return;
         }
 
-        // Direct click: open add sheet (only if sheet not already open, and not a control click)
-        if (!addItemMode && !drawingActive && !landDrawActive) {
-            // Ignore clicks on map controls, buttons, or if sheet is already open
-            var oe = e.originalEvent;
-            if (oe && oe.target) {
-                var t = oe.target;
-                if (t.closest && t.closest('.leaflet-control')) return;
-                if (t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'LABEL') return;
-            }
-            if (addSheet.classList.contains('open')) return;
-
-            if (addItemMarker) map.removeLayer(addItemMarker);
-            addItemMarker = L.marker([e.latlng.lat, e.latlng.lng], {
-                icon: makeIcon('zone', 30),
-                draggable: true,
-            }).addTo(map);
-            addItemMarker.on('dragend', function (ev) {
-                var ll = ev.target.getLatLng();
-                addItemLat = ll.lat; addItemLng = ll.lng;
-                addCoordsText.textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
-            });
-            openAddSheet(e.latlng.lat, e.latlng.lng);
-        }
+        // Direct click on map: only place a pin when "+ Add Item" mode is active.
+        // (Accidental taps no longer open the sheet unexpectedly.)
     });
 
     map.on('dblclick', function (e) {

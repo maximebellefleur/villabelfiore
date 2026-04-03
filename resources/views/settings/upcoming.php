@@ -37,13 +37,9 @@ foreach ($roadmap as $version => $block):
         <?php foreach ($block['features'] as $fi => $f): ?>
         <?php $ckId = 'rm_' . $version . '_' . $fi; ?>
         <div class="roadmap-feature" id="<?= e($ckId) ?>">
-            <?php if ($block['status'] === 'released'): ?>
-            <div class="roadmap-feature-check" style="color:var(--color-primary);font-size:1.1rem">✅</div>
-            <?php else: ?>
-            <button type="button" class="roadmap-feature-toggle btn-link" data-key="<?= e($ckId) ?>" title="Click to cycle: none → done → problem">
+            <button type="button" class="roadmap-feature-toggle btn-link" data-key="<?= e($ckId) ?>" title="Tap to cycle: blank → ✅ done → ❌ problem → blank">
                 <span class="roadmap-toggle-icon">○</span>
             </button>
-            <?php endif; ?>
             <div class="roadmap-feature-body">
                 <div class="roadmap-feature-title"><?= e($f['title']) ?></div>
                 <div class="roadmap-feature-detail"><?= e($f['detail']) ?></div>

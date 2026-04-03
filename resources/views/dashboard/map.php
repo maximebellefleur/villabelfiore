@@ -3,6 +3,7 @@
     <h1 class="page-title">Land Map</h1>
     <div class="page-header-actions">
         <span class="text-muted" id="mapItemCount">Loading…</span>
+        <button class="btn btn-secondary btn-sm" id="mapFullscreenBtn" title="Fullscreen">⛶</button>
         <button class="btn btn-secondary" id="mapDrawLandToggle">🗺 Set Land Boundary</button>
         <button class="btn btn-primary" id="mapAddItem">+ Add Item</button>
     </div>
@@ -133,3 +134,38 @@ var MAP_LAND_NAME         = '<?= e($landName) ?>';
 var MAP_HAS_LAND_BOUNDARY = <?= $hasLandBoundary ? 'true' : 'false' ?>;
 var MAP_LAND_BOUNDARY     = <?= $landBoundaryJson ?>;
 </script>
+<script>
+(function () {
+    var btn   = document.getElementById('mapFullscreenBtn');
+    var wrap  = document.getElementById('mapWrap');
+    if (!btn || !wrap) return;
+
+    btn.addEventListener('click', function () {
+        if (!document.fullscreenElement) {
+            (wrap.requestFullscreen || wrap.webkitRequestFullscreen || wrap.mozRequestFullScreen).call(wrap);
+        } else {
+            (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen).call(document);
+        }
+    });
+
+    function onFsChange() {
+        var isFull = !!document.fullscreenElement;
+        btn.textContent = isFull ? '✕' : '⛶';
+        btn.title = isFull ? 'Exit fullscreen' : 'Fullscreen';
+        // Tell Leaflet the container resized
+        setTimeout(function () {
+            if (window.map && map.invalidateSize) map.invalidateSize();
+        }, 200);
+    }
+
+    document.addEventListener('fullscreenchange',       onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    document.addEventListener('mozfullscreenchange',    onFsChange);
+}());
+</script>
+<style>
+#mapWrap:fullscreen       { width:100vw !important; height:100vh !important; }
+#mapWrap:-webkit-full-screen { width:100vw !important; height:100vh !important; }
+#mapWrap:-moz-full-screen { width:100vw !important; height:100vh !important; }
+#mapWrap:fullscreen #map  { height:100vh !important; border-radius:0 !important; }
+</style>

@@ -85,6 +85,21 @@ return [
         ],
     ],
 
+    '1.4.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-03',
+        'title'    => 'GPS Service, Harvest Slider & UI Overhaul',
+        'features' => [
+            ['title' => 'Unified GPS service',           'detail' => 'Single watchPosition singleton (gps.js) shared across all pages. Position warms up on page load — no more waiting when you tap a GPS button.'],
+            ['title' => 'Dashboard Nearest to You hero', 'detail' => '80vh hero section on mobile, photo backgrounds on cards, action buttons (📷 🌾 ➕).'],
+            ['title' => 'Quick Harvest slider',          'detail' => '0-5 basket/wheelbarrow slider in 0.25 increments. Auto-records current time. Tap Harvest it!'],
+            ['title' => 'Map fullscreen',                'detail' => '⛶ button in map header. No more accidental item-add on casual map tap.'],
+            ['title' => 'Image compression',             'detail' => 'Canvas-based resize to 1920px max / 82% JPEG before upload. Phone photos no longer fail.'],
+            ['title' => 'Items list layout',             'detail' => 'Clean full-width rows with sort-by-distance. Grid split bug eliminated.'],
+            ['title' => 'Mobile nav fix',                'detail' => 'Drawer z-index raised above blur overlay — menu is now visible when opened.'],
+        ],
+    ],
+
     '1.4.1' => [
         'status'   => 'released',
         'released' => '2026-04-03',

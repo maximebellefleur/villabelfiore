@@ -25,6 +25,7 @@
     <?= $content ?>
 </main>
 <script>window.APP_BASE = <?= json_encode(defined('APP_BASE') ? APP_BASE : '') ?>;</script>
+<script src="<?= url('/assets/js/gps.js') ?>"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
 <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>

@@ -33,7 +33,8 @@ class HarvestController
         $id         = (int) ($params['id'] ?? 0);
         $quantity   = (float) $request->post('quantity', 0);
         $unit       = trim((string) $request->post('unit', ''));
-        $recordedAt = trim((string) $request->post('recorded_at', date('Y-m-d H:i:s')));
+        $rawDate    = trim((string) $request->post('recorded_at', ''));
+        $recordedAt = $rawDate ?: date('Y-m-d H:i:s');
 
         if ($quantity <= 0 || empty($unit)) {
             flash('error', 'Quantity and unit are required.');
@@ -97,7 +98,7 @@ class HarvestController
         } else {
             $placeholders = implode(',', array_fill(0, count($harvestTypes), '?'));
             $items = $db->fetchAll(
-                "SELECT id, name, type FROM items WHERE type IN ($placeholders) AND status = 'active' AND deleted_at IS NULL ORDER BY type, name",
+                "SELECT id, name, type, gps_lat, gps_lng FROM items WHERE type IN ($placeholders) AND status = 'active' AND deleted_at IS NULL ORDER BY type, name",
                 $harvestTypes
             );
         }

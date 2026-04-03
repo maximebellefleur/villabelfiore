@@ -101,33 +101,55 @@ $csrfToken  = e(\App\Support\CSRF::getToken());
     var uploadUrl  = <?= json_encode($uploadUrl) ?>;
     var csrfToken  = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
 
-    document.querySelectorAll('.photo-file-input').forEach(function(input) {
-        input.addEventListener('change', function() {
-            var file     = input.files[0];
-            if (!file) return;
+    // Compress image using Canvas before upload
+    // Resizes to max 1920px, converts to JPEG at 82% quality
+    // Typical phone photo: 8MB → ~400KB
+    function compressImage(file, callback) {
+        var isImage = file.type.indexOf('image/') === 0;
+        if (!isImage || file.type === 'image/gif') { callback(file); return; }
 
-            var catKey   = input.dataset.category;
-            var card     = document.getElementById('card_' + catKey);
-            var progress = document.getElementById('progress_' + catKey);
-            var errEl    = document.getElementById('err_' + catKey);
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var MAX = 1920;
+                var w = img.width, h = img.height;
+                var ratio = Math.min(MAX / w, MAX / h, 1);
+                var cw = Math.round(w * ratio), ch = Math.round(h * ratio);
+                var canvas = document.createElement('canvas');
+                canvas.width = cw; canvas.height = ch;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, cw, ch);
+                canvas.toBlob(function(blob) {
+                    if (!blob) { callback(file); return; }
+                    var compressed = new File([blob],
+                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
+                        { type: 'image/jpeg', lastModified: Date.now() });
+                    callback(compressed);
+                }, 'image/jpeg', 0.82);
+            };
+            img.onerror = function() { callback(file); };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() { callback(file); };
+        reader.readAsDataURL(file);
+    }
 
-            // Clear previous error
-            errEl.textContent = '';
-            errEl.style.display = 'none';
+    function doUpload(file, catKey) {
+        var card     = document.getElementById('card_' + catKey);
+        var progress = document.getElementById('progress_' + catKey);
+        var input    = card.querySelector('.photo-file-input');
 
-            // Client-side size check (25 MB)
-            if (file.size > 25 * 1024 * 1024) {
-                showError(catKey, 'Photo too large (max 25 MB). Try compressing it first.');
-                input.value = '';
-                return;
-            }
+        clearError(catKey);
+        progress.style.display = 'flex';
+        progress.querySelector('span').textContent = 'Compressing…';
+        card.classList.add('photo-card--uploading');
 
-            // Show progress
-            progress.style.display = 'flex';
-            card.classList.add('photo-card--uploading');
+        compressImage(file, function(compressed) {
+            progress.querySelector('span').textContent = 'Uploading…';
 
             var fd = new FormData();
-            fd.append('file', file);
+            fd.append('file', compressed);
             fd.append('category', catKey);
             fd.append('_token', csrfToken);
             fd.append('_ajax', '1');
@@ -148,61 +170,67 @@ $csrfToken  = e(\App\Support\CSRF::getToken());
                 card.classList.remove('photo-card--uploading');
 
                 var res;
-                try { res = JSON.parse(xhr.responseText); } catch(e) { res = null; }
+                try { res = JSON.parse(xhr.responseText); } catch(ex) { res = null; }
 
                 if (xhr.status === 200 && res && res.success) {
-                    // Update the card image instantly — no page reload
                     var zone  = card.querySelector('.photo-card-zone');
                     var imgEl = card.querySelector('.photo-card-img');
-
                     if (imgEl) {
                         imgEl.src = res.data.url + '?v=' + Date.now();
                     } else {
-                        // Replace placeholder with image
                         var newImg = document.createElement('img');
                         newImg.src = res.data.url + '?v=' + Date.now();
                         newImg.className = 'photo-card-img';
                         newImg.alt = catKey;
-                        var placeholder = zone.querySelector('.photo-card-placeholder');
-                        if (placeholder) placeholder.replaceWith(newImg);
-
-                        // Add overlay
+                        var ph = zone.querySelector('.photo-card-placeholder');
+                        if (ph) ph.replaceWith(newImg);
                         var ov = document.createElement('div');
                         ov.className = 'photo-card-overlay';
                         ov.innerHTML = '<span class="photo-card-overlay-icon">🔄</span><span>Replace</span>';
                         zone.appendChild(ov);
-
                         card.classList.remove('photo-card--empty');
                         card.classList.add('photo-card--filled');
                     }
-
                     showSuccess(catKey);
                 } else {
-                    var errMsg = (res && res.error) ? res.error : 'Upload failed. Please try again.';
-                    showError(catKey, errMsg);
+                    var msg = (res && res.message) ? res.message : (res && res.error) ? res.error : 'Upload failed — please try again.';
+                    showError(catKey, msg);
                 }
-                input.value = '';
+                if (input) input.value = '';
             });
 
             xhr.addEventListener('error', function() {
                 progress.style.display = 'none';
                 card.classList.remove('photo-card--uploading');
                 showError(catKey, 'Network error — check your connection and try again.');
-                input.value = '';
+                if (input) input.value = '';
             });
 
             xhr.send(fd);
         });
+    }
+
+    document.querySelectorAll('.photo-file-input').forEach(function(input) {
+        input.addEventListener('change', function() {
+            var file = input.files[0];
+            if (!file) return;
+            doUpload(file, input.dataset.category);
+        });
     });
+
+    function clearError(catKey) {
+        var errEl = document.getElementById('err_' + catKey);
+        if (errEl) { errEl.innerHTML = ''; errEl.style.display = 'none'; }
+    }
 
     function showError(catKey, msg) {
         var errEl = document.getElementById('err_' + catKey);
-        errEl.textContent = msg;
-        errEl.style.display = 'block';
-        // Auto-hide after 8 seconds
-        setTimeout(function() {
-            errEl.style.display = 'none';
-        }, 8000);
+        if (!errEl) return;
+        // Error stays until user dismisses it with ✕
+        errEl.innerHTML = '<span>' + msg + '</span><button onclick="this.parentElement.style.display=\'none\'" style="margin-left:8px;background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;color:inherit;padding:0" title="Dismiss">✕</button>';
+        errEl.style.display = 'flex';
+        errEl.style.alignItems = 'center';
+        errEl.style.justifyContent = 'space-between';
     }
 
     function showSuccess(catKey) {
