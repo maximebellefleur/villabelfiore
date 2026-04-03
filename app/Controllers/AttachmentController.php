@@ -141,6 +141,25 @@ class AttachmentController
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 
+    public function quickPhotos(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+
+        // All active items sorted by name; GPS items first for client-side distance sort
+        $items = $db->fetchAll(
+            "SELECT i.id, i.name, i.type, i.gps_lat, i.gps_lng
+             FROM items i
+             WHERE i.status = 'active' AND i.deleted_at IS NULL
+             ORDER BY (i.gps_lat IS NOT NULL) DESC, i.name ASC"
+        );
+
+        Response::render('photos/quick', [
+            'title' => 'Quick Photos',
+            'items' => $items,
+        ]);
+    }
+
     public function download(Request $request, array $params = []): void
     {
         $this->requireAuth();

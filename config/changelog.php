@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.4.3' => [
+        'date'  => '2026-04-03',
+        'title' => 'Bottom Nav, Quick Photos & Bug Fixes',
+        'new' => [
+            'Bottom nav now: Home · Map · + · Harvest · Photos — harvest and photos both in quick mode',
+            'Quick Photos page (/photos/quick) — nearest trees first, one tap to upload with category select',
+            'Photos page redesigned — one big + Add Photo button, category dropdown, gallery with fullscreen lightbox and delete',
+        ],
+        'improved' => [
+            'GPS Locate Me button: longer patience window (15s) and direct high-accuracy fallback shot — more reliable first fix',
+        ],
+        'fixed' => [
+            'Dashboard crash — attachments subquery used deleted_at (column does not exist), now uses status',
+        ],
+    ],
+
     '1.4.2' => [
         'date'  => '2026-04-03',
         'title' => 'GPS Service, Harvest Slider & UI Overhaul',

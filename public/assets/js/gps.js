@@ -76,14 +76,18 @@ window.RootedGPS = (function () {
         _pending.push(resolve);
         start(); // ensure watch is running
 
-        // 10-second patience window, then fall back to single shot
+        // 15-second patience window for watchPosition, then force a direct shot
         timer = setTimeout(function () {
             navigator.geolocation.getCurrentPosition(
                 function (pos) { _store(pos); resolve(_pos); },
-                function ()    { resolve(_pos || null); },
-                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+                function (err) {
+                    if (err.code === 1) { resolve(null); return; } // denied
+                    // timeout/unavailable — return whatever we have
+                    resolve(_pos || null);
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
             );
-        }, 10000);
+        }, 15000);
     }
 
     /** Last known position, may be null or stale */

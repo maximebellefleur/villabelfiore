@@ -36,13 +36,13 @@
     <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" id="bottomFab" aria-label="Add item">
         <span style="line-height:1;font-size:1.7rem">+</span>
     </a>
-    <a href="<?= url('/items') ?>" class="bottom-nav-item" data-bnav="items">
-        <span class="bottom-nav-icon">🌿</span>
-        <span class="bottom-nav-label">Items</span>
+    <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
+        <span class="bottom-nav-icon">🌾</span>
+        <span class="bottom-nav-label">Harvest</span>
     </a>
-    <a href="<?= url('/settings') ?>" class="bottom-nav-item" data-bnav="settings">
-        <span class="bottom-nav-icon">⚙️</span>
-        <span class="bottom-nav-label">Settings</span>
+    <a href="<?= url('/photos/quick') ?>" class="bottom-nav-item" data-bnav="photos">
+        <span class="bottom-nav-icon">📷</span>
+        <span class="bottom-nav-label">Photos</span>
     </a>
 </nav>
 <script>

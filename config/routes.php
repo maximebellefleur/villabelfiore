@@ -92,6 +92,7 @@ $router->post('/reminders/{id}/dismiss',       'ReminderController@dismiss');
 // Harvests
 // -------------------------------------------------------------------------
 $router->get('/harvest/quick',                 'HarvestController@quickEntry');
+$router->get('/photos/quick',                  'AttachmentController@quickPhotos');
 $router->get('/items/{id}/harvests',           'HarvestController@index');
 $router->post('/items/{id}/harvests',          'HarvestController@store');
 $router->post('/harvests/{id}/update',         'HarvestController@update');
