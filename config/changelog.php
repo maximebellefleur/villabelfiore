@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.4.1' => [
+        'date'     => '2026-04-03',
+        'title'    => 'Nearby Items & GPS Fixes',
+        'new' => [
+            'Dashboard: "Nearest to You" — auto-detects your location and shows the 5 closest items with distance, Photos and Harvest quick-action buttons',
+        ],
+        'improved' => [
+            'Upgrade page: one big "Update Now" button — no more choosing between two options',
+        ],
+        'fixed' => [
+            'GPS on Add Item page: removed false HTTPS block that prevented location detection',
+            'GPS on Add Item page: map pin now moves correctly when GPS fires (native event dispatch fix)',
+        ],
+    ],
+
     '1.3.0' => [
         'date'     => '2026-04-02',
         'title'    => 'Mobile UX, Map Improvements & UI Revamp',

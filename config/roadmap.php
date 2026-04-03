@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-03',
+        'title'    => 'Nearby Items & GPS Fixes',
+        'features' => [
+            ['title' => 'Dashboard nearest items widget',    'detail' => 'Auto-detects location on dashboard load and lists the 5 closest items with distance and quick-action buttons.'],
+            ['title' => 'GPS fix on Add Item page',          'detail' => 'Removed false HTTPS block; map pin now moves when GPS fires via correct native event dispatch.'],
+            ['title' => 'Simplified upgrade page',           'detail' => 'One big Update Now button — no more choosing between GitHub and manual upload.'],
+        ],
+    ],
+
     '1.4.0' => [
         'status'   => 'released',
         'released' => '2026-04-02',
@@ -102,7 +113,7 @@ return [
         ],
     ],
 
-    '1.4.0' => [
+    '1.5.0' => [
         'status'   => 'future',
         'released' => null,
         'title'    => 'Scale & Integrations',
