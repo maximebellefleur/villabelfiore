@@ -34,6 +34,15 @@ class UpgradeController
         $currentVersion = $defaults['version'] ?? '1.0.0';
         $upgradeLog     = $this->readUpgradeLog();
         $zipSupported   = class_exists('ZipArchive');
+        $zipUrl         = $defaults['update_zip_url'] ?? '';
+
+        // Quick check: peek at the remote ZIP to get the latest available version.
+        // Uses a HEAD+Range request so we only pull the first ~8KB (enough for defaults.php).
+        $latestVersion  = null;
+        $latestName     = null;
+        if ($zipUrl && $zipSupported && function_exists('curl_init')) {
+            $latestVersion = $this->fetchLatestVersion($zipUrl);
+        }
 
         Response::render('settings/upgrade', [
             'title'          => 'Upgrade',
@@ -42,6 +51,7 @@ class UpgradeController
             'changelog'      => $changelog,
             'upgradeLog'     => $upgradeLog,
             'zipSupported'   => $zipSupported,
+            'latestVersion'  => $latestVersion,
         ]);
     }
 
@@ -336,5 +346,52 @@ class UpgradeController
         $path = BASE_PATH . '/storage/upgrade.log';
         $line = date('Y-m-d H:i:s') . '|' . $from . '|' . $to . PHP_EOL;
         file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Download the remote ZIP and read the version from rooted-files/config/defaults.php inside it.
+     * Returns the version string or null on failure.
+     */
+    private function fetchLatestVersion(string $zipUrl): ?string
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'rooted_ver_check_');
+        if (!$tmp) return null;
+
+        $token = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
+
+        $ch = curl_init($zipUrl);
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
+        ];
+        if ($token) {
+            $opts[CURLOPT_HTTPHEADER] = ['Authorization: token ' . $token];
+        }
+        curl_setopt_array($ch, $opts);
+        $data     = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($data === false || $httpCode !== 200 || strlen($data) < 1000) {
+            @unlink($tmp);
+            return null;
+        }
+
+        file_put_contents($tmp, $data);
+
+        try {
+            $zip = new \ZipArchive();
+            if ($zip->open($tmp) !== true) { @unlink($tmp); return null; }
+            $arr = $this->readPhpArrayFromZip($zip, 'rooted-files/config/defaults.php');
+            $zip->close();
+            @unlink($tmp);
+            return $arr['version'] ?? null;
+        } catch (\Throwable $e) {
+            @unlink($tmp);
+            return null;
+        }
     }
 }

@@ -39,6 +39,11 @@ unset($_SESSION['upgrade_result']);
     <div class="upg-version-label">Current version</div>
     <div class="upg-version-number">v<?= e($currentVersion) ?></div>
     <div class="upg-version-name"><?= e($currentName) ?></div>
+    <?php if (!empty($latestVersion) && version_compare($latestVersion, $currentVersion, '>')): ?>
+    <div class="upg-latest-badge">🆕 v<?= e($latestVersion) ?> available — click Update Now below</div>
+    <?php elseif (!empty($latestVersion) && $latestVersion === $currentVersion): ?>
+    <div class="upg-latest-ok">✅ You are up to date</div>
+    <?php endif; ?>
 </div>
 
 <?php if (!$zipSupported): ?>
@@ -152,6 +157,19 @@ unset($_SESSION['upgrade_result']);
 }
 .upg-version-name {
     font-size: .95rem; color: var(--color-text-muted); margin-top: var(--spacing-1);
+}
+.upg-latest-badge {
+    margin-top: var(--spacing-3);
+    display: inline-block;
+    background: #fef3c7; color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: .82rem; font-weight: 700;
+}
+.upg-latest-ok {
+    margin-top: var(--spacing-3);
+    font-size: .82rem; color: var(--color-primary); font-weight: 600;
 }
 
 /* ── Update Now card ── */
