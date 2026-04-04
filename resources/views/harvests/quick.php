@@ -1,7 +1,10 @@
 <?php
+// Custom SVG wheelbarrow (no emoji exists in Unicode)
+$wheelbarrowSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24" width="26" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block"><circle cx="5" cy="18" r="4"/><line x1="5" y1="14" x2="9" y2="13"/><path d="M9 13 L8 5 L25 5 L25 13 Z"/><line x1="25" y1="5" x2="31" y2="1"/><line x1="25" y1="12" x2="31" y2="8"/><line x1="31" y1="1" x2="31" y2="8"/><line x1="19" y1="13" x2="19" y2="19"/></svg>';
+
 $harvestIcon = [
     'olive_tree'  => '🧺',
-    'almond_tree' => '🪣',
+    'almond_tree' => $wheelbarrowSvg,
     'vine'        => '🍇',
     'tree'        => '🌳',
 ];
@@ -12,10 +15,10 @@ $harvestColor = [
     'tree'        => '#166534',
 ];
 $harvestUnit = [
-    'olive_tree'  => ['label' => 'baskets', 'icon' => '🧺'],
-    'almond_tree' => ['label' => 'buckets', 'icon' => '🪣'],
-    'vine'        => ['label' => 'kg', 'icon' => '⚖️'],
-    'tree'        => ['label' => 'kg', 'icon' => '⚖️'],
+    'olive_tree'  => ['label' => 'baskets',      'icon' => '🧺'],
+    'almond_tree' => ['label' => 'wheelbarrows',  'icon' => $wheelbarrowSvg],
+    'vine'        => ['label' => 'kg',            'icon' => '⚖️'],
+    'tree'        => ['label' => 'kg',            'icon' => '⚖️'],
 ];
 ?>
 <div class="qh-page">

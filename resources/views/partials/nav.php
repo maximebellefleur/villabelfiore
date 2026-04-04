@@ -1,102 +1,128 @@
-<nav class="nav">
-    <div class="nav-brand">
-        <a href="<?= url('/dashboard') ?>" class="nav-logo">🌿 Rooted</a>
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">
-            <span id="navToggleIcon">&#9776;</span>
-        </button>
-    </div>
-    <ul class="nav-links" id="navLinks" role="navigation">
-        <li><a href="<?= url('/dashboard') ?>" class="nav-link">Dashboard</a></li>
-        <li><a href="<?= url('/dashboard/map') ?>" class="nav-link">Map</a></li>
-        <li><a href="<?= url('/items') ?>" class="nav-link">Items</a></li>
-        <li><a href="<?= url('/reminders') ?>" class="nav-link">Reminders</a></li>
-        <li><a href="<?= url('/finance') ?>" class="nav-link">Finance</a></li>
-        <li><a href="<?= url('/activity-log') ?>" class="nav-link">Activity</a></li>
-        <li><a href="<?= url('/settings') ?>" class="nav-link">Settings</a></li>
+<?php
+$navLinks = [
+    ['href' => '/dashboard',      'label' => 'Dashboard'],
+    ['href' => '/dashboard/map',  'label' => 'Map'],
+    ['href' => '/items',          'label' => 'Items'],
+    ['href' => '/reminders',      'label' => 'Reminders'],
+    ['href' => '/finance',        'label' => 'Finance'],
+    ['href' => '/activity-log',   'label' => 'Activity'],
+    ['href' => '/settings',       'label' => 'Settings'],
+];
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+?>
+
+<!-- ─── Top nav bar ───────────────────────────────────────────────── -->
+<nav class="nav" id="mainNav">
+    <a href="<?= url('/dashboard') ?>" class="nav-logo">🌿 Rooted</a>
+
+    <!-- Desktop inline links -->
+    <ul class="nav-desktop">
+        <?php foreach ($navLinks as $nl):
+            $active = ($currentPath === url($nl['href'])) ? ' nav-link--active' : '';
+        ?>
+        <li><a href="<?= url($nl['href']) ?>" class="nav-link<?= $active ?>"><?= $nl['label'] ?></a></li>
+        <?php endforeach; ?>
         <li>
-            <form method="POST" action="<?= url('/logout') ?>" style="display:block;width:100%">
+            <form method="POST" action="<?= url('/logout') ?>">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button type="submit" class="nav-link btn-link">Sign Out</button>
+                <button type="submit" class="nav-link nav-signout">Sign Out</button>
             </form>
         </li>
     </ul>
-</nav>
-<div class="nav-overlay" id="navOverlay" aria-hidden="true"></div>
 
-<!-- Bottom Navigation (mobile only) -->
-<nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
-    <a href="<?= url('/dashboard') ?>" class="bottom-nav-item" data-bnav="dashboard">
-        <span class="bottom-nav-icon">🏠</span>
-        <span class="bottom-nav-label">Home</span>
+    <!-- Hamburger (mobile only) -->
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="2" y1="5"  x2="20" y2="5"/>
+            <line x1="2" y1="11" x2="20" y2="11"/>
+            <line x1="2" y1="17" x2="20" y2="17"/>
+        </svg>
+    </button>
+</nav>
+
+<!-- ─── Mobile drawer — OUTSIDE nav to avoid stacking context ──────── -->
+<!-- z-index: 9999 in root stacking context, nothing can hide it -->
+<div class="nav-drawer" id="navDrawer" aria-hidden="true">
+    <div class="nav-drawer-head">
+        <span class="nav-drawer-brand">🌿 Rooted</span>
+        <button class="nav-drawer-close" id="navDrawerClose" aria-label="Close menu">✕</button>
+    </div>
+    <ul class="nav-drawer-list">
+        <?php foreach ($navLinks as $nl):
+            $active = ($currentPath === url($nl['href'])) ? ' class="active"' : '';
+        ?>
+        <li><a href="<?= url($nl['href']) ?>"<?= $active ?>><?= $nl['label'] ?></a></li>
+        <?php endforeach; ?>
+        <li class="nav-drawer-signout-row">
+            <form method="POST" action="<?= url('/logout') ?>">
+                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                <button type="submit">Sign Out</button>
+            </form>
+        </li>
+    </ul>
+</div>
+
+<!-- Dark backdrop -->
+<div class="nav-overlay" id="navOverlay"></div>
+
+<!-- ─── Bottom nav ───────────────────────────────────────────────── -->
+<nav class="bottom-nav" aria-label="Main navigation">
+    <a href="<?= url('/dashboard') ?>"    class="bottom-nav-item" data-bnav="dashboard">
+        <span class="bottom-nav-icon">🏠</span><span class="bottom-nav-label">Home</span>
     </a>
     <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
-        <span class="bottom-nav-icon">🗺</span>
-        <span class="bottom-nav-label">Map</span>
+        <span class="bottom-nav-icon">🗺</span><span class="bottom-nav-label">Map</span>
     </a>
-    <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" id="bottomFab" aria-label="Add item">
+    <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
         <span style="line-height:1;font-size:1.7rem">+</span>
     </a>
     <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
-        <span class="bottom-nav-icon">🌾</span>
-        <span class="bottom-nav-label">Harvest</span>
+        <span class="bottom-nav-icon">🌾</span><span class="bottom-nav-label">Harvest</span>
     </a>
-    <a href="<?= url('/photos/quick') ?>" class="bottom-nav-item" data-bnav="photos">
-        <span class="bottom-nav-icon">📷</span>
-        <span class="bottom-nav-label">Photos</span>
+    <a href="<?= url('/photos/quick') ?>"  class="bottom-nav-item" data-bnav="photos">
+        <span class="bottom-nav-icon">📷</span><span class="bottom-nav-label">Photos</span>
     </a>
 </nav>
+
 <script>
-(function() {
+(function () {
+    /* Bottom nav active state */
     var path = window.location.pathname;
-    document.querySelectorAll('.bottom-nav-item[data-bnav]').forEach(function(el) {
+    document.querySelectorAll('.bottom-nav-item[data-bnav]').forEach(function (el) {
         var href = el.getAttribute('href');
-        if (href && (path === href || (href !== '/' && path.startsWith(href)))) {
+        if (href && (path === href || (href.length > 1 && path.startsWith(href)))) {
             el.classList.add('active');
         }
     });
-})();
-</script>
 
-<script>
-(function() {
-    var toggle  = document.getElementById('navToggle');
-    var links   = document.getElementById('navLinks');
-    var overlay = document.getElementById('navOverlay');
-    var icon    = document.getElementById('navToggleIcon');
+    /* Drawer */
+    var hamburger = document.getElementById('navHamburger');
+    var drawer    = document.getElementById('navDrawer');
+    var overlay   = document.getElementById('navOverlay');
+    var closeBtn  = document.getElementById('navDrawerClose');
 
     function openMenu() {
-        links.classList.add('open');
+        drawer.classList.add('open');
         overlay.classList.add('open');
-        toggle.setAttribute('aria-expanded', 'true');
-        icon.innerHTML = '&#10005;'; /* × close icon */
         document.body.style.overflow = 'hidden';
+        hamburger.setAttribute('aria-expanded', 'true');
+        drawer.setAttribute('aria-hidden', 'false');
     }
-
     function closeMenu() {
-        links.classList.remove('open');
+        drawer.classList.remove('open');
         overlay.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        icon.innerHTML = '&#9776;'; /* ☰ hamburger */
         document.body.style.overflow = '';
+        hamburger.setAttribute('aria-expanded', 'false');
+        drawer.setAttribute('aria-hidden', 'true');
     }
 
-    toggle.addEventListener('click', function() {
-        if (links.classList.contains('open')) { closeMenu(); } else { openMenu(); }
+    hamburger.addEventListener('click', function () {
+        drawer.classList.contains('open') ? closeMenu() : openMenu();
     });
-
+    closeBtn.addEventListener('click', closeMenu);
     overlay.addEventListener('click', closeMenu);
-
-    /* Close on Escape */
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && links.classList.contains('open')) { closeMenu(); }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeMenu();
     });
-
-    /* Mark active link */
-    var path = window.location.pathname;
-    document.querySelectorAll('.nav-link').forEach(function(a) {
-        if (a.getAttribute('href') && path === a.getAttribute('href')) {
-            a.classList.add('active');
-        }
-    });
-})();
+}());
 </script>

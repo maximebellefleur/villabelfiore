@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.10' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'Nav Drawer Fix & Wheelbarrow Icon',
+        'features' => [
+            ['title' => 'Mobile nav drawer — complete rewrite', 'detail' => 'Drawer moved outside <nav> element. z-index:9999 in root stacking context. No more CSS stacking context trap.'],
+            ['title' => 'Wheelbarrow SVG icon for almond harvest', 'detail' => 'Custom SVG wheelbarrow replaces bucket emoji.'],
+        ],
+    ],
+
     '1.4.9' => [
         'status'   => 'released',
         'released' => '2026-04-04',

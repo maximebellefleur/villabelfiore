@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.4.10' => [
+        'date'  => '2026-04-04',
+        'title' => 'Nav Drawer Fix & Wheelbarrow Icon',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'Mobile nav drawer completely rewritten — moved outside <nav> element so it is no longer trapped inside a CSS stacking context. Drawer now uses z-index:9999 in the root stacking context and is always visible above the overlay.',
+            'Wheelbarrow SVG icon added for almond tree harvest — replaces the bucket emoji since no wheelbarrow emoji exists in Unicode.',
+        ],
+    ],
+
     '1.4.9' => [
         'date'  => '2026-04-04',
         'title' => 'jQuery Load Order Fix — Locate Me & Upload',
