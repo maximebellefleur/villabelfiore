@@ -85,6 +85,15 @@ return [
         ],
     ],
 
+    '1.4.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'Harvest Delete Inline Confirm',
+        'features' => [
+            ['title' => 'Harvest delete confirmation', 'detail' => 'Replaced window.confirm() with inline Yes/No buttons — works in all contexts including PWA standalone mode.'],
+        ],
+    ],
+
     '1.4.6' => [
         'status'   => 'released',
         'released' => '2026-04-04',

@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.4.7' => [
+        'date'  => '2026-04-04',
+        'title' => 'Harvest Delete Inline Confirm',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'Harvest delete ✕ button now uses inline Yes/No confirm instead of window.confirm() — works correctly in PWA/standalone mode where native dialogs are suppressed',
+        ],
+    ],
+
     '1.4.6' => [
         'date'  => '2026-04-04',
         'title' => 'Nav Fix, Photo Upload & CSRF JSON',

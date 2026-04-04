@@ -105,11 +105,14 @@ $harvestUnit = [
         <div class="qh-entry-row">
             <span class="qh-entry-qty"><?= $unitInfo['icon'] ?> <?= number_format((float)$entry['quantity'], 2) ?> <?= e($entry['unit']) ?></span>
             <span class="qh-entry-date"><?= date('M j', strtotime($entry['recorded_at'])) ?></span>
-            <form method="POST" action="<?= url('/harvests/' . (int)$entry['id'] . '/trash') ?>" class="qh-entry-del"
-                  onsubmit="return confirm('Delete this harvest entry?')">
+            <form method="POST" action="<?= url('/harvests/' . (int)$entry['id'] . '/trash') ?>" class="qh-entry-del qh-del-form">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <input type="hidden" name="_redirect" value="<?= url('/harvest/quick') ?>">
-                <button type="submit" class="qh-del-btn" title="Delete">✕</button>
+                <span class="qh-del-confirm" style="display:none">
+                    <button type="submit" class="qh-del-yes">✓ Yes</button>
+                    <button type="button" class="qh-del-no">✕ No</button>
+                </span>
+                <button type="button" class="qh-del-btn qh-del-trigger" title="Delete">✕</button>
             </form>
         </div>
         <?php endforeach; ?>
@@ -178,6 +181,25 @@ $harvestUnit = [
 
     function hav(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
     function fmt(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
+
+    // Inline delete confirmation (replaces window.confirm which breaks in PWA mode)
+    document.querySelectorAll('.qh-del-trigger').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var form    = btn.closest('.qh-del-form');
+            var confirm = form.querySelector('.qh-del-confirm');
+            btn.style.display = 'none';
+            confirm.style.display = 'inline-flex';
+        });
+    });
+    document.querySelectorAll('.qh-del-no').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var form    = btn.closest('.qh-del-form');
+            var trigger = form.querySelector('.qh-del-trigger');
+            form.querySelector('.qh-del-confirm').style.display = 'none';
+            trigger.style.display = '';
+        });
+    });
 }());
 </script>
 
@@ -293,4 +315,14 @@ $harvestUnit = [
     transition:background .15s, color .15s;
 }
 .qh-del-btn:hover { background:#fde8e8; color:#922b21; }
+.qh-del-confirm { display:none; align-items:center; gap:4px; }
+.qh-del-yes {
+    background:#c0392b; color:#fff; border:none; border-radius:6px;
+    font-size:.75rem; font-weight:700; padding:4px 8px; cursor:pointer;
+}
+.qh-del-no {
+    background:var(--color-surface); color:var(--color-text-muted);
+    border:1px solid var(--color-border); border-radius:6px;
+    font-size:.75rem; font-weight:700; padding:4px 8px; cursor:pointer;
+}
 </style>
