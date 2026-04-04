@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="<?= url('/assets/css/map.css') ?>">
     <?php endif; ?>
+    <!-- GPS service must load before page content so inline scripts can call RootedGPS -->
+    <script src="<?= url('/assets/js/gps.js') ?>"></script>
 </head>
 <body>
 <?php include BASE_PATH . '/resources/views/partials/nav.php'; ?>
@@ -25,7 +27,6 @@
     <?= $content ?>
 </main>
 <script>window.APP_BASE = <?= json_encode(defined('APP_BASE') ? APP_BASE : '') ?>;</script>
-<script src="<?= url('/assets/js/gps.js') ?>"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
 <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
