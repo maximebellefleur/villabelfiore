@@ -125,11 +125,17 @@ $currentYear = date('Y');
             return;
         }
         var last = RootedGPS.last();
-        var maxAge = forceRefresh ? 0 : 60000;
-        if (!forceRefresh && last && (Date.now() - last.timestamp) < maxAge) {
+        // Always render cached position immediately — never make the user wait
+        if (last) {
             renderNearest(last.lat, last.lng);
+            if (!forceRefresh) return;
+            // Background-refresh silently: re-render when fresh fix arrives
+            RootedGPS.get(function(pos) {
+                if (pos) renderNearest(pos.lat, pos.lng);
+            }, 0);
             return;
         }
+        // No cached position yet — show spinner and wait
         var statusEl = document.getElementById('nearbyStatus');
         statusEl.textContent = '📡 Finding your location…';
         statusEl.style.display = 'block';
@@ -140,7 +146,7 @@ $currentYear = date('Y');
                 return;
             }
             renderNearest(pos.lat, pos.lng);
-        }, forceRefresh ? 0 : 30000);
+        }, 0);
     }
 
     detect(false);

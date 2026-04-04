@@ -282,23 +282,32 @@
     // Shared GPS helper — delegates to the unified RootedGPS service
     // -------------------------------------------------------------------------
     function detectGps(onSuccess, statusEl, btn) {
+        // Use cached position immediately — never make the user wait if we already have a fix
+        var cached = RootedGPS.last();
+        if (cached) {
+            hideGpsStatus(statusEl);
+            onSuccess(cached.lat, cached.lng, cached.accuracy);
+            return;
+        }
+        // No cached fix yet — wait for one
         if (!navigator.geolocation) {
             showGpsStatus(statusEl, '⚠️ Geolocation not supported by your browser.', 'error');
             return;
         }
-        var origText = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+        // Store innerHTML so SVG icons are preserved after restore
+        var origHTML = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
         showGpsStatus(statusEl, '📡 Locating…', 'info');
 
         RootedGPS.get(function (pos) {
-            if (btn) { btn.disabled = false; btn.textContent = origText; }
+            if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
             if (!pos) {
                 showGpsStatus(statusEl, '🔒 Location unavailable — check browser permissions.', 'error');
                 return;
             }
             hideGpsStatus(statusEl);
             onSuccess(pos.lat, pos.lng, pos.accuracy);
-        }, 15000); // accept a fix up to 15 seconds old (already warming since page load)
+        }, 0); // wait for any fresh fix from watchPosition
     }
 
     function showGpsStatus(el, msg, type) {

@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.4.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'GPS Reliability, Photos & Harvest Overhaul',
+        'features' => [
+            ['title' => 'GPS instant response everywhere',    'detail' => 'All GPS buttons (Locate Me, Detect GPS, Nearest to You, Harvest/Photo sort) use cached position immediately. No waiting.'],
+            ['title' => 'Harvest year limit enforcement',     'detail' => 'Each item type has a max harvests per year (default 1). Quick harvest page shows count badge and locks the button when maxed.'],
+            ['title' => 'Harvest year entries with delete',   'detail' => 'Quick harvest page lists all this-year entries per item. One-tap delete per entry.'],
+            ['title' => 'Quick Photos reliable upload',       'detail' => 'Removed capture="environment" — native media picker fires change event reliably on all devices. Auto-uploads on selection.'],
+            ['title' => 'Harvest page stays on harvest page', 'detail' => 'After saving or deleting a harvest, page redirects back to Quick Harvest instead of the item detail page.'],
+        ],
+    ],
+
     '1.4.4' => [
         'status'   => 'released',
         'released' => '2026-04-04',

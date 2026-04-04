@@ -59,20 +59,15 @@ $categories = [
         </select>
     </div>
 
-    <!-- Upload zone / confirm row -->
-    <div class="qp-upload-row" id="uploadRow_<?= (int)$item['id'] ?>">
-        <label class="qp-choose-btn" id="zone_<?= (int)$item['id'] ?>">
-            📷 Choose Photo
-            <input type="file" accept="image/*" capture="environment"
-                   class="qp-file-input"
-                   data-item="<?= (int)$item['id'] ?>"
-                   data-upload-url="<?= e($uploadUrl) ?>">
-        </label>
-        <button class="qp-upload-btn" id="qpUploadBtn_<?= (int)$item['id'] ?>" style="display:none" data-item="<?= (int)$item['id'] ?>">
-            📤 Upload
-        </button>
-    </div>
-    <div class="qp-file-name" id="qpFileName_<?= (int)$item['id'] ?>" style="display:none"></div>
+    <!-- Upload zone: tap → pick photo → auto-uploads -->
+    <label class="qp-choose-btn" id="zone_<?= (int)$item['id'] ?>">
+        <span class="qp-choose-icon">📷</span>
+        <span class="qp-choose-text">Tap to add photo</span>
+        <input type="file" accept="image/*"
+               class="qp-file-input"
+               data-item="<?= (int)$item['id'] ?>"
+               data-upload-url="<?= e($uploadUrl) ?>">
+    </label>
 
     <!-- Progress -->
     <div class="qp-upload-progress" id="qpProg_<?= (int)$item['id'] ?>" style="display:none">
@@ -147,39 +142,24 @@ $categories = [
         reader.readAsDataURL(file);
     }
 
-    // Step 1: file selected → show filename + Upload button
+    // File selected → auto-upload immediately
     document.querySelectorAll('.qp-file-input').forEach(function(input) {
         input.addEventListener('change', function() {
             var file = input.files[0];
             if (!file) return;
-            var itemId   = input.dataset.item;
-            var fileNameEl = document.getElementById('qpFileName_' + itemId);
-            var uploadBtn  = document.getElementById('qpUploadBtn_' + itemId);
-            fileNameEl.textContent = '📎 ' + file.name;
-            fileNameEl.style.display = 'block';
-            uploadBtn.style.display = 'inline-flex';
-        });
-    });
-
-    // Step 2: Upload button tapped → compress + send
-    document.querySelectorAll('.qp-upload-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var itemId  = btn.dataset.item;
-            var input   = document.querySelector('.qp-file-input[data-item="' + itemId + '"]');
-            var file    = input.files[0];
-            if (!file) return;
+            var itemId  = input.dataset.item;
             var url     = input.dataset.uploadUrl;
+            var zone    = document.getElementById('zone_' + itemId);
             var progEl  = document.getElementById('qpProg_' + itemId);
             var progTxt = document.getElementById('qpProgText_' + itemId);
             var errEl   = document.getElementById('qpErr_' + itemId);
             var okEl    = document.getElementById('qpOk_' + itemId);
             var catEl   = document.getElementById('qpCat_' + itemId);
-            var fileNameEl = document.getElementById('qpFileName_' + itemId);
 
             errEl.textContent = ''; errEl.style.display = 'none';
             okEl.style.display = 'none';
-            fileNameEl.style.display = 'none';
-            btn.style.display = 'none';
+            zone.style.opacity = '0.5';
+            zone.style.pointerEvents = 'none';
             progEl.style.display = 'flex';
             progTxt.textContent = 'Compressing…';
 
@@ -187,19 +167,24 @@ $categories = [
                 progTxt.textContent = 'Uploading…';
                 var fd = new FormData();
                 fd.append('file', compressed);
-                fd.append('category', catEl.value);
+                fd.append('category', catEl ? catEl.value : 'general_attachment');
                 fd.append('_token', CSRF);
                 fd.append('_ajax', '1');
-                fd.append('_redirect', window.location.pathname);
 
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
                 xhr.addEventListener('load', function() {
                     progEl.style.display = 'none';
+                    zone.style.opacity = '';
+                    zone.style.pointerEvents = '';
                     var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
                     if (xhr.status === 200 && res && res.success) {
+                        zone.querySelector('.qp-choose-text').textContent = 'Tap to add another';
                         okEl.style.display = 'block';
-                        setTimeout(function(){ okEl.style.display='none'; }, 3000);
+                        setTimeout(function(){
+                            okEl.style.display = 'none';
+                            zone.querySelector('.qp-choose-text').textContent = 'Tap to add photo';
+                        }, 3000);
                     } else {
                         var msg = (res && (res.error || res.message)) ? (res.error || res.message) : 'Upload failed — try again.';
                         errEl.textContent = msg + ' ✕';
@@ -210,6 +195,8 @@ $categories = [
                 });
                 xhr.addEventListener('error', function() {
                     progEl.style.display = 'none';
+                    zone.style.opacity = '';
+                    zone.style.pointerEvents = '';
                     errEl.textContent = 'Network error — try again. ✕';
                     errEl.style.display = 'block';
                     errEl.onclick = function(){ errEl.style.display='none'; };
@@ -266,26 +253,18 @@ $categories = [
 .qp-card-meta { display:flex; gap:var(--spacing-2); align-items:center; margin-top:2px; }
 .qp-card-dist { font-size:.72rem; color:var(--color-text-muted); }
 
-/* Upload row */
-.qp-upload-row { display:flex; gap:var(--spacing-2); padding:0 var(--spacing-3) var(--spacing-2); align-items:center; }
+/* Upload zone */
 .qp-choose-btn {
-    flex:1; display:flex; align-items:center; justify-content:center;
-    gap:var(--spacing-2); padding:12px;
-    border-radius:var(--radius-pill); border:2px dashed var(--color-primary);
+    display:flex; align-items:center; justify-content:center; gap:var(--spacing-2);
+    margin:0 var(--spacing-3) var(--spacing-2);
+    padding:14px; border-radius:12px;
+    border:2px dashed var(--color-primary);
     background:rgba(45,106,79,.06); color:var(--color-primary);
-    font-size:.88rem; font-weight:700; cursor:pointer;
-    transition:background .2s;
+    font-size:.92rem; font-weight:700; cursor:pointer;
+    transition:background .2s, opacity .2s;
 }
-.qp-choose-btn:hover { background:rgba(45,106,79,.12); }
-.qp-upload-btn {
-    padding:12px 18px; border-radius:var(--radius-pill);
-    background:var(--color-primary); color:#fff;
-    border:none; font-size:.88rem; font-weight:700; cursor:pointer;
-    display:inline-flex; align-items:center; gap:var(--spacing-1);
-    white-space:nowrap; transition:opacity .15s;
-}
-.qp-upload-btn:hover { opacity:.88; }
-.qp-file-name { font-size:.75rem; color:var(--color-text-muted); padding:0 var(--spacing-3) var(--spacing-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.qp-choose-btn:active { background:rgba(45,106,79,.14); }
+.qp-choose-icon { font-size:1.4rem; }
 .qp-file-input { display:none; }
 .qp-upload-progress {
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -293,7 +272,7 @@ $categories = [
     padding:var(--spacing-3);
 }
 .qp-spinner {
-    width:32px; height:32px; border:3px solid var(--color-border);
+    width:28px; height:28px; border:3px solid var(--color-border);
     border-top-color:var(--color-primary); border-radius:50%;
     animation:spin .8s linear infinite;
 }

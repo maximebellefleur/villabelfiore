@@ -8,6 +8,28 @@
  */
 return [
 
+    '1.4.5' => [
+        'date'  => '2026-04-04',
+        'title' => 'GPS Reliability, Photos & Harvest Overhaul',
+        'new' => [
+            'Harvest quick page shows year count per item (e.g. 1/1 this year) and locks out further harvests once the annual max is reached',
+            'Harvest entries listed per item with year history and one-tap delete',
+            'harvest_max_per_year setting per item type (default 1) — overridable via settings table',
+        ],
+        'improved' => [
+            'GPS: all Locate Me / Detect GPS / Nearest to You use cached position instantly — no more 15-27 second waits',
+            'Dashboard ↺ refresh shows cached cards immediately then updates silently in background',
+            'Quick Photos: removed capture="environment" — uses native media picker for reliable change event; auto-uploads on selection',
+            'Harvest quick page redirects back to itself after save/delete instead of item detail page',
+            'Map Locate Me button icon (SVG) now correctly restored after GPS resolves',
+        ],
+        'fixed' => [
+            'Dashboard Nearest to You never rendered because RootedGPS was called before gps.js loaded (now in <head>)',
+            'Locate Me button became blank after first use (textContent wiped SVG; now uses innerHTML)',
+            'Quick Photos upload button never appeared — change event unreliable with capture="environment"',
+        ],
+    ],
+
     '1.4.4' => [
         'date'  => '2026-04-04',
         'title' => 'AI Prompt, Map Fix & UX Polish',

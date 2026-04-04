@@ -35,10 +35,11 @@ class HarvestController
         $unit       = trim((string) $request->post('unit', ''));
         $rawDate    = trim((string) $request->post('recorded_at', ''));
         $recordedAt = $rawDate ?: date('Y-m-d H:i:s');
+        $redirect   = $request->post('_redirect', '/items/' . $id);
 
         if ($quantity <= 0 || empty($unit)) {
             flash('error', 'Quantity and unit are required.');
-            Response::redirect('/items/' . $id);
+            Response::redirect($redirect);
         }
 
         DB::getInstance()->execute(
@@ -47,7 +48,7 @@ class HarvestController
         );
 
         flash('success', 'Harvest recorded.');
-        Response::redirect('/items/' . $id);
+        Response::redirect($redirect);
     }
 
     public function update(Request $request, array $params = []): void
@@ -67,10 +68,11 @@ class HarvestController
     {
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
-        $id = (int) ($params['id'] ?? 0);
+        $id       = (int) ($params['id'] ?? 0);
+        $redirect = $request->post('_redirect', $_SERVER['HTTP_REFERER'] ?? '/items');
         DB::getInstance()->execute('DELETE FROM harvest_entries WHERE id=?', [$id]);
         flash('success', 'Harvest entry removed.');
-        Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
+        Response::redirect($redirect);
     }
 
     public function apiStore(Request $request, array $params = []): void
@@ -84,12 +86,24 @@ class HarvestController
         $this->requireAuth();
         $db = DB::getInstance();
 
-        // All item types that have harvest_enabled = true
-        $harvestTypes = [];
         $itemTypesConfig = require BASE_PATH . '/config/item_types.php';
+
+        // Harvest-enabled types + their max-per-year
+        $harvestTypes  = [];
+        $maxPerYearMap = []; // typeKey => int
         foreach ($itemTypesConfig as $typeKey => $typeCfg) {
             if (!empty($typeCfg['harvest_enabled'])) {
-                $harvestTypes[] = $typeKey;
+                $harvestTypes[]           = $typeKey;
+                $maxPerYearMap[$typeKey]  = (int) ($typeCfg['harvest_max_per_year'] ?? 1);
+            }
+        }
+
+        // Allow per-type override stored in settings table
+        $overrideRow = $db->fetchOne("SELECT value FROM settings WHERE `key` = 'harvest_max_per_year_json' LIMIT 1");
+        if ($overrideRow && !empty($overrideRow['value'])) {
+            $overrides = json_decode($overrideRow['value'], true) ?: [];
+            foreach ($overrides as $k => $v) {
+                $maxPerYearMap[$k] = (int) $v;
             }
         }
 
@@ -103,15 +117,40 @@ class HarvestController
             );
         }
 
-        // Fetch recent harvest entries for this session (today)
-        $recentHarvests = $db->fetchAll(
-            "SELECT h.*, i.name AS item_name FROM harvest_entries h JOIN items i ON i.id = h.item_id WHERE DATE(h.created_at) = CURDATE() ORDER BY h.created_at DESC LIMIT 20"
-        );
+        // Year harvest counts per item
+        $year       = date('Y');
+        $yearCounts = []; // item_id => count
+        if (!empty($items)) {
+            $itemIds  = array_column($items, 'id');
+            $ph       = implode(',', array_fill(0, count($itemIds), '?'));
+            $rows     = $db->fetchAll(
+                "SELECT item_id, COUNT(*) AS cnt FROM harvest_entries WHERE item_id IN ($ph) AND YEAR(recorded_at) = ? GROUP BY item_id",
+                array_merge($itemIds, [$year])
+            );
+            foreach ($rows as $r) { $yearCounts[(int)$r['item_id']] = (int)$r['cnt']; }
+        }
+
+        // Year harvest entries per item (for display/delete)
+        $yearHarvests = [];
+        if (!empty($items)) {
+            $itemIds = array_column($items, 'id');
+            $ph      = implode(',', array_fill(0, count($itemIds), '?'));
+            $rows    = $db->fetchAll(
+                "SELECT h.*, i.name AS item_name FROM harvest_entries h JOIN items i ON i.id = h.item_id WHERE h.item_id IN ($ph) AND YEAR(h.recorded_at) = ? ORDER BY h.recorded_at DESC",
+                array_merge($itemIds, [$year])
+            );
+            foreach ($rows as $r) {
+                $yearHarvests[(int)$r['item_id']][] = $r;
+            }
+        }
 
         Response::render('harvests/quick', [
-            'title'          => 'Quick Harvest',
-            'items'          => $items,
-            'recentHarvests' => $recentHarvests,
+            'title'         => 'Quick Harvest',
+            'items'         => $items,
+            'maxPerYearMap' => $maxPerYearMap,
+            'yearCounts'    => $yearCounts,
+            'yearHarvests'  => $yearHarvests,
+            'year'          => $year,
         ]);
     }
 }
