@@ -45,7 +45,6 @@ $currentYear = date('Y');
 <!-- ============================================================
      NEAREST TO YOU — hero section, first thing on mobile
      ============================================================ -->
-<?php if (!empty($gpsItems)): ?>
 <section class="nearby-hero" id="nearbySection">
     <div class="nearby-hero-head">
         <div class="nearby-hero-title">📍 Nearest to You</div>
@@ -55,7 +54,7 @@ $currentYear = date('Y');
     <div class="nearby-cards" id="nearbyList"></div>
     <div id="nearbyEmpty" style="display:none;text-align:center;padding:var(--spacing-6)">
         <div style="font-size:2rem;margin-bottom:var(--spacing-3)">📍</div>
-        <div style="color:var(--color-text-muted);margin-bottom:var(--spacing-3)">Enable location to see nearby items</div>
+        <div id="nearbyEmptyMsg" style="color:var(--color-text-muted);margin-bottom:var(--spacing-3)">Enable location to see nearby items</div>
         <button class="btn btn-primary" id="nearbyTryBtn">Detect My Location</button>
     </div>
 </section>
@@ -119,6 +118,12 @@ $currentYear = date('Y');
     }
 
     function detect(forceRefresh) {
+        if (!GPS_ITEMS.length) {
+            document.getElementById('nearbyEmptyMsg').textContent = 'Add GPS coordinates to items to see them here.';
+            document.getElementById('nearbyEmpty').style.display = 'block';
+            document.getElementById('nearbyTryBtn').style.display = 'none';
+            return;
+        }
         var last = RootedGPS.last();
         var maxAge = forceRefresh ? 0 : 60000;
         if (!forceRefresh && last && (Date.now() - last.timestamp) < maxAge) {
@@ -143,7 +148,6 @@ $currentYear = date('Y');
     document.getElementById('nearbyTryBtn').addEventListener('click', function() { detect(true); });
 }());
 </script>
-<?php endif; ?>
 
 <!-- ============================================================
      QUICK ACTION STRIP

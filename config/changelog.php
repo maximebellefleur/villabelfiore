@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.4.4' => [
+        'date'  => '2026-04-04',
+        'title' => 'AI Prompt, Map Fix & UX Polish',
+        'new' => [
+            'AI Prompt button on every item page — one tap builds a full history prompt (details, actions, harvests, finance, reminders) and copies it to clipboard, ready to paste into any AI chatbot',
+        ],
+        'improved' => [
+            'Map now goes full-screen on all screens up to 900px wide (was 768px) — fixes white sidebar column on many phones',
+            'Quick Photos redesigned as two-step: choose photo first, then tap Upload — no more silent auto-upload confusion',
+            'Nearest to You section always visible on dashboard — shows helpful message if no GPS items or location unavailable',
+        ],
+        'fixed' => [
+            'Mobile nav hamburger menu — backdrop-filter blur on overlay created CSS stacking context that hid the drawer',
+        ],
+    ],
+
     '1.4.3' => [
         'date'  => '2026-04-03',
         'title' => 'Bottom Nav, Quick Photos & Bug Fixes',

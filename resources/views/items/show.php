@@ -81,8 +81,43 @@ foreach ($attachments as $att) {
             <span>Finance</span>
         </a>
         <?php endif; ?>
+        <button class="show-action-btn" id="aiPromptBtn"
+                data-url="<?= url('/items/' . (int)$item['id'] . '/ai-prompt') ?>">
+            <span class="show-action-icon" id="aiPromptIcon">🤖</span>
+            <span id="aiPromptLabel">AI Prompt</span>
+        </button>
     </div>
 </div>
+
+<script>
+(function() {
+    var btn = document.getElementById('aiPromptBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+        var icon  = document.getElementById('aiPromptIcon');
+        var label = document.getElementById('aiPromptLabel');
+        icon.textContent = '⏳'; label.textContent = 'Building…';
+        fetch(btn.dataset.url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.prompt) throw new Error('empty');
+                return navigator.clipboard.writeText(data.prompt);
+            })
+            .then(function() {
+                icon.textContent = '✅'; label.textContent = 'Copied!';
+                setTimeout(function() {
+                    icon.textContent = '🤖'; label.textContent = 'AI Prompt';
+                }, 2500);
+            })
+            .catch(function() {
+                icon.textContent = '❌'; label.textContent = 'Error';
+                setTimeout(function() {
+                    icon.textContent = '🤖'; label.textContent = 'AI Prompt';
+                }, 2000);
+            });
+    });
+}());
+</script>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 

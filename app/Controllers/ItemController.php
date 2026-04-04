@@ -171,6 +171,106 @@ class ItemController
         ]);
     }
 
+    public function aiPrompt(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $id   = (int) ($params['id'] ?? 0);
+        $db   = DB::getInstance();
+        $item = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
+
+        if (!$item) {
+            header('Content-Type: application/json');
+            http_response_code(404);
+            echo json_encode(['error' => 'Item not found']);
+            return;
+        }
+
+        $meta     = $db->fetchAll('SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?', [$id]);
+        $metaMap  = [];
+        foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
+
+        $actions  = $db->fetchAll('SELECT * FROM activity_log WHERE item_id = ? ORDER BY performed_at DESC', [$id]);
+        $harvests = $db->fetchAll('SELECT * FROM harvest_entries WHERE item_id = ? ORDER BY recorded_at DESC', [$id]);
+        $finances = $db->fetchAll('SELECT * FROM finance_entries WHERE item_id = ? ORDER BY entry_date DESC', [$id]);
+        $reminders= $db->fetchAll('SELECT * FROM reminders WHERE item_id = ? ORDER BY due_at DESC', [$id]);
+
+        $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
+
+        $lines = [];
+        $lines[] = 'You are an agricultural assistant. Below is the complete recorded history of one item on my land. Use it as context when I ask you questions.';
+        $lines[] = '';
+        $lines[] = '=== ITEM: ' . $item['name'] . ' ===';
+        $lines[] = 'Type: ' . $typeLabel;
+        if (!empty($metaMap['variety']))              $lines[] = 'Variety: '      . $metaMap['variety'];
+        if (!empty($metaMap['latin_name']))           $lines[] = 'Latin name: '   . $metaMap['latin_name'];
+        if (!empty($metaMap['estimated_age_years']))  $lines[] = 'Estimated age: '. $metaMap['estimated_age_years'] . ' years';
+        if (!empty($item['gps_lat']))                 $lines[] = 'GPS: '          . $item['gps_lat'] . ', ' . $item['gps_lng'];
+        if (!empty($metaMap['soil_type']))            $lines[] = 'Soil: '         . $metaMap['soil_type'];
+        if (!empty($metaMap['irrigation_type']))      $lines[] = 'Irrigation: '   . $metaMap['irrigation_type'];
+        if (!empty($metaMap['sun_exposure']))         $lines[] = 'Sun exposure: '  . $metaMap['sun_exposure'];
+        if (!empty($item['notes']))                   $lines[] = 'Notes: '        . $item['notes'];
+
+        $lines[] = '';
+        $lines[] = '=== ACTIONS & OBSERVATIONS ===';
+        if (empty($actions)) {
+            $lines[] = 'No actions recorded.';
+        } else {
+            foreach ($actions as $a) {
+                $date = date('Y-m-d', strtotime($a['performed_at']));
+                $line = $date . ' | ' . ($a['action_label'] ?? $a['action_type']);
+                if (!empty($a['description'])) $line .= ' — ' . $a['description'];
+                $lines[] = $line;
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '=== HARVEST RECORDS ===';
+        if (empty($harvests)) {
+            $lines[] = 'No harvest records.';
+        } else {
+            foreach ($harvests as $h) {
+                $date = date('Y-m-d', strtotime($h['recorded_at']));
+                $line = $date . ' | ' . $h['quantity'] . ' ' . $h['unit'];
+                if (!empty($h['quality_grade']))  $line .= ' | Grade: ' . $h['quality_grade'];
+                if (!empty($h['harvest_type']))   $line .= ' | Type: '  . $h['harvest_type'];
+                if (!empty($h['notes']))          $line .= ' | '        . $h['notes'];
+                $lines[] = $line;
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '=== FINANCE ===';
+        if (empty($finances)) {
+            $lines[] = 'No finance records.';
+        } else {
+            foreach ($finances as $f) {
+                $date = date('Y-m-d', strtotime($f['entry_date']));
+                $type = ucfirst($f['entry_type'] ?? 'entry');
+                $line = $date . ' | ' . $type . ' ' . ($f['currency'] ?? 'EUR') . ' ' . $f['amount'];
+                if (!empty($f['label']))  $line .= ' — ' . $f['label'];
+                if (!empty($f['notes'])) $line .= ' (' . $f['notes'] . ')';
+                $lines[] = $line;
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '=== REMINDERS ===';
+        if (empty($reminders)) {
+            $lines[] = 'No reminders recorded.';
+        } else {
+            foreach ($reminders as $r) {
+                $date   = date('Y-m-d', strtotime($r['due_at']));
+                $status = strtoupper($r['status'] ?? 'pending');
+                $line   = '[' . $status . '] ' . $date . ' — ' . ($r['title'] ?? '');
+                if (!empty($r['description'])) $line .= ' — ' . $r['description'];
+                $lines[] = $line;
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['prompt' => implode("\n", $lines)]);
+    }
+
     public function edit(Request $request, array $params = []): void
     {
         $this->requireAuth();

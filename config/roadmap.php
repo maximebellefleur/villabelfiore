@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.4.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'AI Prompt, Map Fix & UX Polish',
+        'features' => [
+            ['title' => 'AI Prompt button on item pages',    'detail' => 'Tap 🤖 AI Prompt on any item to copy a full history context block to clipboard — paste into any AI chatbot for instant agronomic advice.'],
+            ['title' => 'Map full-screen fix on phones',     'detail' => 'Mobile breakpoint raised from 768px to 900px — sidebar now correctly stacks below the map on all phones.'],
+            ['title' => 'Quick Photos two-step upload',      'detail' => 'Choose photo first, then tap Upload — removes silent auto-upload confusion.'],
+            ['title' => 'Nearest to You always visible',     'detail' => 'Dashboard section always shows, with helpful guidance when GPS or item coordinates are missing.'],
+            ['title' => 'Nav hamburger blur fix',            'detail' => 'Removed backdrop-filter from overlay — CSS stacking context was hiding the drawer behind the blur.'],
+        ],
+    ],
+
     '1.4.3' => [
         'status'   => 'released',
         'released' => '2026-04-03',
