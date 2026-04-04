@@ -8,6 +8,18 @@
  */
 return [
 
+    '1.4.8' => [
+        'date'  => '2026-04-04',
+        'title' => 'AJAX Error Handling & Upload Diagnostics',
+        'new' => [],
+        'improved' => [
+            'Global exception handler now returns JSON for AJAX requests — upload errors show real message instead of "Upload failed — try again."',
+            'Router 404/405 handlers also return JSON for AJAX requests',
+            'Almond tree harvest unit changed from "wheelbarrows" to "buckets" to match the 🪣 icon',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.7' => [
         'date'  => '2026-04-04',
         'title' => 'Harvest Delete Inline Confirm',

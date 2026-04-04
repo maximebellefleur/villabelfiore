@@ -13,7 +13,7 @@ $harvestColor = [
 ];
 $harvestUnit = [
     'olive_tree'  => ['label' => 'baskets', 'icon' => '🧺'],
-    'almond_tree' => ['label' => 'wheelbarrows', 'icon' => '🪣'],
+    'almond_tree' => ['label' => 'buckets', 'icon' => '🪣'],
     'vine'        => ['label' => 'kg', 'icon' => '⚖️'],
     'tree'        => ['label' => 'kg', 'icon' => '⚖️'],
 ];

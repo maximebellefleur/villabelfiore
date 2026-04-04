@@ -155,9 +155,20 @@ class Router
     // Error responses
     // -------------------------------------------------------------------------
 
+    private function isAjax(): bool
+    {
+        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
+            || ($_POST['_ajax'] ?? '') === '1';
+    }
+
     private function notFound(): void
     {
         http_response_code(404);
+        if ($this->isAjax()) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Not found.']);
+            return;
+        }
         if (file_exists(BASE_PATH . '/resources/views/errors/404.php')) {
             include BASE_PATH . '/resources/views/errors/404.php';
         } else {
@@ -171,6 +182,11 @@ class Router
     private function methodNotAllowed(): void
     {
         http_response_code(405);
+        if ($this->isAjax()) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
+            return;
+        }
         echo '<!DOCTYPE html><html><head><title>405 Method Not Allowed</title></head><body>';
         echo '<h1>405 &mdash; Method Not Allowed</h1>';
         echo '</body></html>';

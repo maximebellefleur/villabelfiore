@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'AJAX Error Handling & Upload Diagnostics',
+        'features' => [
+            ['title' => 'AJAX-aware error responses', 'detail' => 'Exception handler and Router return JSON instead of HTML for AJAX requests — upload errors now show real messages.'],
+            ['title' => 'Almond harvest unit fix',    'detail' => 'Changed "wheelbarrows" → "buckets" to match the 🪣 bucket icon.'],
+        ],
+    ],
+
     '1.4.7' => [
         'status'   => 'released',
         'released' => '2026-04-04',

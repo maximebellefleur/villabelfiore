@@ -104,10 +104,19 @@ set_exception_handler(function (Throwable $e): void {
         'trace' => substr($e->getTraceAsString(), 0, 2000),
     ]);
 
-    if ((bool) env('APP_DEBUG', false)) {
+    $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
+           || ($_POST['_ajax'] ?? '') === '1';
+
+    http_response_code(500);
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        $msg = (bool) env('APP_DEBUG', false)
+            ? $e->getMessage()
+            : 'Server error — please try again.';
+        echo json_encode(['success' => false, 'error' => $msg]);
+    } elseif ((bool) env('APP_DEBUG', false)) {
         echo '<pre>' . htmlspecialchars((string) $e, ENT_QUOTES) . '</pre>';
     } else {
-        http_response_code(500);
         echo '<h1>Something went wrong. Please try again.</h1>';
     }
     exit(1);
