@@ -85,6 +85,15 @@ return [
         ],
     ],
 
+    '1.4.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'jQuery Load Order Fix',
+        'features' => [
+            ['title' => 'Locate Me button fixed on Add/Edit Item', 'detail' => 'jQuery was loaded after page content — $() calls in inline scripts failed silently. Moved jQuery before content so all GPS buttons work correctly.'],
+        ],
+    ],
+
     '1.4.8' => [
         'status'   => 'released',
         'released' => '2026-04-04',

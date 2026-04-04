@@ -21,13 +21,13 @@
     <script src="<?= url('/assets/js/gps.js') ?>"></script>
 </head>
 <body>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+<script>window.APP_BASE = <?= json_encode(defined('APP_BASE') ? APP_BASE : '') ?>;</script>
 <?php include BASE_PATH . '/resources/views/partials/nav.php'; ?>
 <main class="main-content<?= !empty($mapEnabled) ? ' main-content--map' : '' ?>">
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
     <?= $content ?>
 </main>
-<script>window.APP_BASE = <?= json_encode(defined('APP_BASE') ? APP_BASE : '') ?>;</script>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
 <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 <?php endif; ?>

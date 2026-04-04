@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.4.9' => [
+        'date'  => '2026-04-04',
+        'title' => 'jQuery Load Order Fix — Locate Me & Upload',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'jQuery was loaded AFTER page content in the layout — all inline scripts using $() (Locate Me button, GPS detection on create/edit item) crashed silently and never registered their click handlers. jQuery is now loaded before the page content.',
+        ],
+    ],
+
     '1.4.8' => [
         'date'  => '2026-04-04',
         'title' => 'AJAX Error Handling & Upload Diagnostics',
