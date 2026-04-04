@@ -173,6 +173,7 @@ $categories = [
 
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 xhr.addEventListener('load', function() {
                     progEl.style.display = 'none';
                     zone.style.opacity = '';

@@ -41,7 +41,7 @@ $gallery = array_values($gallery);
             <div class="photos-spinner"></div>
             <span id="photosProgressText">Compressing…</span>
         </div>
-        <input type="file" id="photosFileInput" accept="image/*,application/pdf" capture="environment" style="display:none">
+        <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
     </label>
     <div class="photos-upload-controls">
         <label class="photos-cat-label">Category</label>
@@ -160,6 +160,7 @@ $gallery = array_values($gallery);
                 fileInput.value = '';
             });
             xhr.open('POST', uploadUrl, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.send(fd);
         });
     });

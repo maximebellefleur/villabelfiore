@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-04',
+        'title'    => 'Nav Fix, Photo Upload & CSRF JSON',
+        'features' => [
+            ['title' => 'Nav menu drawer visible again',       'detail' => 'Nav z-index raised above overlay — menu items no longer hidden behind the backdrop when hamburger is opened.'],
+            ['title' => 'Photo upload AJAX error messages',    'detail' => 'CSRF validation returns JSON for AJAX requests — upload errors now display the real message instead of "Something went wrong".'],
+            ['title' => 'Reliable file input on all phones',   'detail' => 'Removed capture="environment" from file inputs on both Quick Photos and item Photos pages — change event fires correctly on all mobile browsers.'],
+        ],
+    ],
+
     '1.4.5' => [
         'status'   => 'released',
         'released' => '2026-04-04',

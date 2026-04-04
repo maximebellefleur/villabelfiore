@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.4.6' => [
+        'date'  => '2026-04-04',
+        'title' => 'Nav Fix, Photo Upload & CSRF JSON',
+        'new' => [],
+        'improved' => [
+            'CSRF validation now returns JSON (not HTML) when request is AJAX — photo upload error messages now display correctly instead of "Something went wrong"',
+            'Photo upload XHR now sends X-Requested-With header — AJAX detection is reliable even when PHP post_max_size is exceeded',
+        ],
+        'fixed' => [
+            'Nav drawer (menu items) was invisible when hamburger was opened — nav z-index raised above overlay so links are visible',
+            'Item Photos page: removed capture="environment" from file input — change event now fires reliably on all mobile browsers',
+            'Quick Photos: added X-Requested-With header to upload XHR — same fix as item photos',
+        ],
+    ],
+
     '1.4.5' => [
         'date'  => '2026-04-04',
         'title' => 'GPS Reliability, Photos & Harvest Overhaul',

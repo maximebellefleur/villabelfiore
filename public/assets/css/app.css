@@ -133,7 +133,7 @@ h3 { font-size: 1.1rem;  font-weight: 600; line-height: 1.3; }
 .nav {
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: 1050;
   background: var(--color-primary-dark);
   color: #fff;
   height: var(--nav-height);

@@ -61,7 +61,14 @@ class CSRF
     {
         if (!self::validateToken($token)) {
             http_response_code(403);
-            echo '<h1>403 — Invalid or missing CSRF token.</h1>';
+            $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
+                   || ($_POST['_ajax'] ?? '') === '1';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Session expired — please refresh the page.']);
+            } else {
+                echo '<h1>403 — Invalid or missing CSRF token.</h1>';
+            }
             exit;
         }
     }
