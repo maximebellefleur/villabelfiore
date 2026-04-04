@@ -99,9 +99,9 @@ class HarvestController
         }
 
         // Allow per-type override stored in settings table
-        $overrideRow = $db->fetchOne("SELECT value FROM settings WHERE `key` = 'harvest_max_per_year_json' LIMIT 1");
-        if ($overrideRow && !empty($overrideRow['value'])) {
-            $overrides = json_decode($overrideRow['value'], true) ?: [];
+        $overrideRow = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'harvest_max_per_year_json' LIMIT 1");
+        if ($overrideRow && !empty($overrideRow['setting_value_json'])) {
+            $overrides = json_decode($overrideRow['setting_value_json'], true) ?: [];
             foreach ($overrides as $k => $v) {
                 $maxPerYearMap[$k] = (int) $v;
             }
