@@ -7,21 +7,30 @@
 window.RootedGPS = (function () {
     'use strict';
 
-    var _pos     = null;   // { lat, lng, accuracy, timestamp }
-    var _watchId = null;
-    var _pending = [];     // waiting callbacks
+    var _pos              = null;      // { lat, lng, accuracy, timestamp }
+    var _watchId          = null;
+    var _pending          = [];        // waiting callbacks (first-fix)
+    var _accuracyWatchers = [];        // callbacks that fire when accuracy improves
+    var _bestAccuracy     = Infinity;  // best accuracy seen so far (m)
 
     function _store(pos) {
+        var newAcc = pos.coords.accuracy;
         _pos = {
             lat:       pos.coords.latitude,
             lng:       pos.coords.longitude,
-            accuracy:  pos.coords.accuracy,
+            accuracy:  newAcc,
             timestamp: Date.now(),
         };
         // Flush first-fix waiters
         if (_pending.length) {
             var cbs = _pending.slice(); _pending = [];
             cbs.forEach(function (fn) { fn(_pos); });
+        }
+        // Fire accuracy-improve watchers when signal gets meaningfully better
+        // (first fix counts as infinite improvement; subsequent: ≥30% gain)
+        if (newAcc < _bestAccuracy * 0.7) {
+            _bestAccuracy = newAcc;
+            _accuracyWatchers.forEach(function (fn) { fn(_pos); });
         }
     }
 
@@ -93,6 +102,15 @@ window.RootedGPS = (function () {
     /** Last known position, may be null or stale */
     function last() { return _pos; }
 
+    /**
+     * Register a callback that fires whenever GPS accuracy meaningfully improves
+     * (≥30% gain over the best seen so far, including the very first fix).
+     * cb(pos) receives { lat, lng, accuracy, timestamp }.
+     */
+    function onAccuracyImprove(cb) {
+        _accuracyWatchers.push(cb);
+    }
+
     // Boot immediately — gives the browser time to warm up the GPS chip
     // before the user taps any button
     if (navigator.geolocation) {
@@ -103,5 +121,5 @@ window.RootedGPS = (function () {
         }
     }
 
-    return { start: start, get: get, last: last };
+    return { start: start, get: get, last: last, onAccuracyImprove: onAccuracyImprove };
 }());

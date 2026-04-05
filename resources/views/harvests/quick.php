@@ -182,6 +182,9 @@ $harvestUnit = [
     var last = RootedGPS.last();
     if (last) doSort(last);
 
+    // Re-sort automatically as GPS accuracy improves
+    RootedGPS.onAccuracyImprove(function(pos) { doSort(pos); });
+
     function hav(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
     function fmt(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
 

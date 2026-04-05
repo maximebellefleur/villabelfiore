@@ -137,6 +137,30 @@ $typeColor = [
 </div>
 
 <script>
+var _distSortActive = false;
+
+function doDistanceSort(pos) {
+    var list = document.getElementById('itemsList');
+    if (!list) return;
+    var rows = Array.from(list.querySelectorAll('.item-row'));
+    rows.forEach(function(row) {
+        var lat = parseFloat(row.dataset.lat);
+        var lng = parseFloat(row.dataset.lng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            row._dist = haversineM(pos.lat, pos.lng, lat, lng);
+        } else {
+            row._dist = Infinity;
+        }
+        var distEl = row.querySelector('.item-row-dist');
+        if (row._dist < Infinity) {
+            distEl.textContent = fmtDist(row._dist);
+            distEl.style.display = '';
+        }
+    });
+    rows.sort(function(a, b) { return a._dist - b._dist; });
+    rows.forEach(function(row) { list.appendChild(row); });
+}
+
 // Sort by distance using RootedGPS
 document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -144,6 +168,7 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
         btn.classList.add('active');
 
         if (btn.dataset.sort === 'default') {
+            _distSortActive = false;
             // Restore original DOM order
             var list = document.getElementById('itemsList');
             Array.from(list.children).sort(function(a, b) {
@@ -154,37 +179,23 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
         }
 
         // Sort by distance
+        _distSortActive = true;
         btn.textContent = '⏳ Locating…';
         RootedGPS.get(function(pos) {
             btn.textContent = '📍 Distance';
-            if (!pos) { btn.textContent = '📍 Distance (unavailable)'; return; }
-
-            var list  = document.getElementById('itemsList');
-            var rows  = Array.from(list.querySelectorAll('.item-row'));
-
-            rows.forEach(function(row) {
-                var lat = parseFloat(row.dataset.lat);
-                var lng = parseFloat(row.dataset.lng);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    row._dist = haversineM(pos.lat, pos.lng, lat, lng);
-                } else {
-                    row._dist = Infinity;
-                }
-                var distEl = row.querySelector('.item-row-dist');
-                if (row._dist < Infinity) {
-                    distEl.textContent = fmtDist(row._dist);
-                    distEl.style.display = '';
-                }
-            });
-
-            rows.sort(function(a, b) { return a._dist - b._dist; });
-            rows.forEach(function(row) { list.appendChild(row); });
+            if (!pos) { btn.textContent = '📍 Distance (unavailable)'; _distSortActive = false; return; }
+            doDistanceSort(pos);
         }, 5000);
     });
 });
 
 // Tag each row with its original index for restoring order
 document.querySelectorAll('.item-row').forEach(function(row, i) { row.dataset.origIndex = i; });
+
+// Auto-resort by distance as GPS accuracy improves (only when distance sort is active)
+RootedGPS.onAccuracyImprove(function(pos) {
+    if (_distSortActive) doDistanceSort(pos);
+});
 
 function haversineM(lat1, lon1, lat2, lon2) {
     var R = 6371000, d1 = (lat2-lat1)*Math.PI/180, d2 = (lon2-lon1)*Math.PI/180;

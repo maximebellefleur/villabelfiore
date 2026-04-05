@@ -85,6 +85,27 @@ return [
         ],
     ],
 
+    '1.4.13' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'GPS Accuracy Auto-Refresh',
+        'features' => [
+            ['title' => 'Auto-refresh nearest items as GPS improves',  'detail' => 'Dashboard, Quick Harvest, and Items list all re-sort automatically when location accuracy gains ≥30%.'],
+            ['title' => 'RootedGPS.onAccuracyImprove(cb)',             'detail' => 'New GPS service method — register any callback to run whenever the device GPS signal meaningfully sharpens.'],
+        ],
+    ],
+
+    '1.4.12' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'Better Wheelbarrow, Camera Fix, Photos Split Buttons',
+        'features' => [
+            ['title' => 'Wheelbarrow SVG redrawn',                      'detail' => 'Colored filled tray (amber/brown), gray spoked wheel, wood handles, support leg.'],
+            ['title' => 'Android camera change event fix',               'detail' => 'window.focus fallback triggers upload when Android does not fire change event after camera confirm.'],
+            ['title' => 'Camera + Gallery split buttons on item Photos', 'detail' => 'Item Photos page now matches Quick Photos with dedicated Camera and Gallery inputs.'],
+        ],
+    ],
+
     '1.4.11' => [
         'status'   => 'released',
         'released' => '2026-04-05',

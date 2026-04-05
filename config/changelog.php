@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.4.13' => [
+        'date'  => '2026-04-05',
+        'title' => 'GPS Accuracy Auto-Refresh — Nearest, Harvest & Items',
+        'new' => [
+            'GPS now automatically re-sorts nearest items as signal improves — no manual refresh needed',
+            'Dashboard "Nearest to You" re-renders with updated distances whenever GPS accuracy gains ≥30%',
+            'Quick Harvest cards re-sort by distance automatically as location sharpens',
+            'Items list re-sorts by distance automatically when distance sort is active and accuracy improves',
+        ],
+        'improved' => [
+            'RootedGPS now exposes onAccuracyImprove(cb) — fires callback on every meaningful accuracy gain (≥30% improvement over best seen so far)',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.12' => [
         'date'  => '2026-04-05',
         'title' => 'Better Wheelbarrow, Camera Fix, Photos Split Buttons',

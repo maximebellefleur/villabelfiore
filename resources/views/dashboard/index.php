@@ -152,6 +152,11 @@ $currentYear = date('Y');
     detect(false);
     document.getElementById('nearbyRefresh').addEventListener('click', function() { detect(true); });
     document.getElementById('nearbyTryBtn').addEventListener('click', function() { detect(true); });
+
+    // Auto-refresh nearest cards as GPS accuracy improves
+    RootedGPS.onAccuracyImprove(function(pos) {
+        if (GPS_ITEMS.length) renderNearest(pos.lat, pos.lng);
+    });
 }());
 </script>
 
