@@ -1,6 +1,28 @@
 <?php
-// Proper wheelbarrow SVG — colored, filled tray, spoked wheel, wood handles
-$wheelbarrowSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 30" width="36" height="24" style="vertical-align:middle;display:inline-block"><!-- wheel --><circle cx="8" cy="23" r="7" fill="#6B7280" stroke="#374151" stroke-width="1"/><circle cx="8" cy="23" r="2" fill="#D1D5DB"/><line x1="8" y1="16.5" x2="8" y2="19" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="27" x2="8" y2="29.5" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/><line x1="1.5" y1="23" x2="6" y2="23" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="23" x2="14.5" y2="23" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/><!-- axle arm --><line x1="8" y1="16.5" x2="15" y2="19.5" stroke="#4B5563" stroke-width="2" stroke-linecap="round"/><!-- tray --><path d="M15 5 L34 5 L35 20 L16 20 Z" fill="#B45309" stroke="#92400E" stroke-width="1.5" stroke-linejoin="round"/><!-- inner shadow --><path d="M17 7.5 L33 7.5 L34 18 L18 18 Z" fill="rgba(0,0,0,.13)"/><!-- top rim --><rect x="14.5" y="3.5" width="20" height="3" rx="1.2" fill="#D97706" stroke="#B45309" stroke-width=".5"/><!-- handles --><line x1="34" y1="5" x2="42" y2="1" stroke="#92400E" stroke-width="2.5" stroke-linecap="round"/><line x1="35" y1="19.5" x2="42" y2="15.5" stroke="#92400E" stroke-width="2.5" stroke-linecap="round"/><line x1="42" y1="1" x2="42" y2="15.5" stroke="#78350F" stroke-width="3" stroke-linecap="round"/><!-- leg --><line x1="27" y1="20" x2="27" y2="27" stroke="#4B5563" stroke-width="2.5" stroke-linecap="round"/></svg>';
+// Wheelbarrow SVG — side view, large spoked wheel, amber tray, wood handles, support leg
+$wheelbarrowSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 48" width="48" height="32" style="vertical-align:middle;display:inline-block" aria-label="wheelbarrow">'
+    . '<!-- wheel -->'
+    . '<circle cx="14" cy="36" r="11" fill="#374151" stroke="#111827" stroke-width="1.5"/>'
+    . '<line x1="14" y1="25.5" x2="14" y2="33" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<line x1="14" y1="39" x2="14" y2="46.5" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<line x1="3.5" y1="36" x2="11" y2="36" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<line x1="17" y1="36" x2="24.5" y2="36" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<line x1="6.2" y1="28.2" x2="11" y2="33" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<line x1="17" y1="39" x2="21.8" y2="43.8" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>'
+    . '<circle cx="14" cy="36" r="3" fill="#D1D5DB"/>'
+    . '<!-- axle arm -->'
+    . '<line x1="14" y1="25.5" x2="22" y2="27" stroke="#4B5563" stroke-width="3" stroke-linecap="round"/>'
+    . '<!-- tray -->'
+    . '<path d="M20 9 L56 9 L56 27 L24 27 Z" fill="#D97706" stroke="#92400E" stroke-width="1.5" stroke-linejoin="round"/>'
+    . '<path d="M22 11 L54 11 L54 25 L26 25 Z" fill="rgba(0,0,0,.1)"/>'
+    . '<rect x="19" y="7" width="38" height="4" rx="2" fill="#FBBF24" stroke="#B45309" stroke-width=".8"/>'
+    . '<!-- leg -->'
+    . '<line x1="38" y1="27" x2="36" y2="44" stroke="#6B7280" stroke-width="2.5" stroke-linecap="round"/>'
+    . '<!-- handles -->'
+    . '<line x1="56" y1="9" x2="70" y2="2" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>'
+    . '<line x1="56" y1="27" x2="70" y2="18" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>'
+    . '<line x1="70" y1="2" x2="70" y2="18" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>'
+    . '</svg>';
 
 $harvestIcon = [
     'olive_tree'  => '🧺',
@@ -19,6 +41,14 @@ $harvestUnit = [
     'almond_tree' => ['label' => 'wheelbarrows',  'icon' => $wheelbarrowSvg],
     'vine'        => ['label' => 'kg',            'icon' => '⚖️'],
     'tree'        => ['label' => 'kg',            'icon' => '⚖️'],
+];
+// Slider: display_max = highest value shown, step = smallest increment
+// input[range] max = display_max / step (integer steps)
+$harvestSlider = [
+    'olive_tree'  => ['display_max' => 2.0,  'step' => 0.25],  // 0–2 baskets
+    'almond_tree' => ['display_max' => 5.0,  'step' => 0.25],  // 0–5 wheelbarrows
+    'vine'        => ['display_max' => 50.0, 'step' => 1.0 ],  // 0–50 kg
+    'tree'        => ['display_max' => 20.0, 'step' => 1.0 ],  // 0–20 kg
 ];
 ?>
 <div class="qh-page">
@@ -72,7 +102,18 @@ $harvestUnit = [
 
     <?php if ($maxed): ?>
     <div class="qh-maxed-msg">✅ Harvest complete for <?= e($year) ?></div>
-    <?php else: ?>
+    <?php else:
+        $sliderCfg    = $harvestSlider[$item['type']] ?? ['display_max' => 5.0, 'step' => 0.25];
+        $sliderMax    = $sliderCfg['display_max'];
+        $sliderStep   = $sliderCfg['step'];
+        $sliderSteps  = (int) round($sliderMax / $sliderStep);  // input[max]
+        // 5 tick labels: 0, 25%, 50%, 75%, 100% of display_max
+        $ticks = [];
+        for ($t = 0; $t <= 4; $t++) {
+            $v = $sliderMax * $t / 4;
+            $ticks[] = ($v == (int)$v) ? (int)$v : rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
+        }
+    ?>
     <!-- Slider -->
     <div class="qh-slider-wrap">
         <div class="qh-slider-labels">
@@ -81,10 +122,11 @@ $harvestUnit = [
             <span class="qh-unit-label"><?= $unitInfo['label'] ?></span>
         </div>
         <input type="range" class="qh-slider" id="slider_<?= (int)$item['id'] ?>"
-               min="0" max="20" step="1" value="0"
-               data-item="<?= (int)$item['id'] ?>">
+               min="0" max="<?= $sliderSteps ?>" step="1" value="0"
+               data-item="<?= (int)$item['id'] ?>"
+               data-step="<?= $sliderStep ?>">
         <div class="qh-slider-ticks">
-            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+            <?php foreach ($ticks as $tick): ?><span><?= $tick ?></span><?php endforeach; ?>
         </div>
     </div>
 
@@ -131,15 +173,16 @@ $harvestUnit = [
 
 <script>
 (function () {
-    // Slider: value 0-20 maps to 0.00-5.00 in 0.25 steps
+    // Slider: integer steps × data-step = actual value
     document.querySelectorAll('.qh-slider').forEach(function(slider) {
         var itemId = slider.dataset.item;
+        var step   = parseFloat(slider.dataset.step) || 0.25;
         var valEl  = document.getElementById('val_' + itemId);
         var qtyEl  = document.getElementById('qty_' + itemId);
         var btnEl  = document.getElementById('btn_' + itemId);
 
         slider.addEventListener('input', function() {
-            var v = parseFloat(slider.value) * 0.25;
+            var v = parseFloat(slider.value) * step;
             valEl.textContent = v % 1 === 0 ? v : v.toFixed(2);
             qtyEl.value = v;
             btnEl.disabled = (v <= 0);

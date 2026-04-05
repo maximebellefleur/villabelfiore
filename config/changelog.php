@@ -8,6 +8,23 @@
  */
 return [
 
+    '1.4.14' => [
+        'date'  => '2026-04-05',
+        'title' => 'Photo Upload Polish, Harvest Scale & Reminder Fix',
+        'new' => [],
+        'improved' => [
+            'Photo upload: single "Add Photo" button (native OS picker — camera + gallery + files) replaces split camera/gallery buttons — no more double-upload',
+            'Photo upload: fill progress bar shows real percentage (5% → 95% during XHR upload) instead of spinning circle',
+            'Quick Photos success state shows "Photo saved! See all photos →" link and stays visible',
+            'Item Photos success flashes "✅ Photo saved!" briefly before reloading gallery',
+            'Harvest slider scale is now defined per item type: olive trees 0–2 baskets, almond 0–5 wheelbarrows, vine 0–50 kg, tree 0–20 kg',
+            'Wheelbarrow SVG redrawn — larger canvas (72×48), bigger spoked wheel, cleaner tray trapezoid with rim, parallel handles and grip bar',
+        ],
+        'fixed' => [
+            'Reminder quick-action button on dashboard returned 404 — route /reminders/create does not exist; link now correctly goes to /reminders',
+        ],
+    ],
+
     '1.4.13' => [
         'date'  => '2026-04-05',
         'title' => 'GPS Accuracy Auto-Refresh — Nearest, Harvest & Items',

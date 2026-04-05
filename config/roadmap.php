@@ -85,6 +85,18 @@ return [
         ],
     ],
 
+    '1.4.14' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'Photo Upload Polish, Harvest Scale & Reminder Fix',
+        'features' => [
+            ['title' => 'Single "Add Photo" button — no double upload', 'detail' => 'Native OS picker gives camera + gallery + files in one tap. Removes window.focus hack and the double-upload race condition.'],
+            ['title' => 'Real progress bar on photo upload',             'detail' => 'Fill bar shows XHR upload percentage. No more spinning circle with no feedback.'],
+            ['title' => 'Per-type harvest slider range',                 'detail' => 'Olive 0–2 baskets, almond 0–5 wheelbarrows, vine 0–50 kg, tree 0–20 kg.'],
+            ['title' => 'Reminder quick-action 404 fixed',              'detail' => '/reminders/create did not exist; link now goes to /reminders.'],
+        ],
+    ],
+
     '1.4.13' => [
         'status'   => 'released',
         'released' => '2026-04-05',

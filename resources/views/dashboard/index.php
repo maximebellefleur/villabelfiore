@@ -180,7 +180,7 @@ $currentYear = date('Y');
         <span class="quick-action-icon">📷</span>
         <span class="quick-action-label">Photos</span>
     </a>
-    <a href="<?= url('/reminders/create') ?>" class="quick-action-btn">
+    <a href="<?= url('/reminders') ?>" class="quick-action-btn">
         <span class="quick-action-icon">🔔</span>
         <span class="quick-action-label">Reminder</span>
     </a>

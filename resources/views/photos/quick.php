@@ -33,6 +33,7 @@ $categories = [
     $color = $typeColor[$item['type']] ?? '#2d6a4f';
     $hasGps = !empty($item['gps_lat']) && !empty($item['gps_lng']);
     $uploadUrl = url('/items/' . (int)$item['id'] . '/attachments');
+    $photosUrl = url('/items/' . (int)$item['id'] . '/photos');
 ?>
 <div class="qp-card" id="qpCard_<?= (int)$item['id'] ?>"
      data-lat="<?= $hasGps ? e($item['gps_lat']) : '' ?>"
@@ -49,44 +50,36 @@ $categories = [
         </div>
     </div>
 
-    <!-- Category select FIRST -->
-    <div class="qp-category-wrap">
-        <label class="qp-category-label">Category</label>
+    <!-- Category + single upload button -->
+    <div class="qp-bottom-row">
         <select class="qp-category-select" id="qpCat_<?= (int)$item['id'] ?>">
             <?php foreach ($categories as $key => $label): ?>
             <option value="<?= e($key) ?>"><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
-    </div>
-
-    <!-- Upload buttons: camera + gallery -->
-    <div class="qp-upload-btns" id="zone_<?= (int)$item['id'] ?>">
-        <label class="qp-choose-btn qp-choose-camera">
-            <span class="qp-choose-icon">📸</span>
-            <span class="qp-choose-text">Camera</span>
-            <input type="file" accept="image/*" capture="environment"
-                   class="qp-file-input"
-                   data-item="<?= (int)$item['id'] ?>"
-                   data-upload-url="<?= e($uploadUrl) ?>">
-        </label>
-        <label class="qp-choose-btn qp-choose-gallery">
-            <span class="qp-choose-icon">🖼️</span>
-            <span class="qp-choose-text">Gallery</span>
+        <label class="qp-add-btn" id="zone_<?= (int)$item['id'] ?>">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.5" cy="7.5" r="1"/></svg>
+            Add Photo
             <input type="file" accept="image/*"
                    class="qp-file-input"
                    data-item="<?= (int)$item['id'] ?>"
-                   data-upload-url="<?= e($uploadUrl) ?>">
+                   data-upload-url="<?= e($uploadUrl) ?>"
+                   data-photos-url="<?= e($photosUrl) ?>">
         </label>
     </div>
 
-    <!-- Progress -->
-    <div class="qp-upload-progress" id="qpProg_<?= (int)$item['id'] ?>" style="display:none">
-        <div class="qp-spinner"></div>
-        <span id="qpProgText_<?= (int)$item['id'] ?>">Compressing…</span>
+    <!-- Progress bar -->
+    <div class="qp-progress-wrap" id="qpProg_<?= (int)$item['id'] ?>" style="display:none">
+        <div class="qp-progress-bar-outer">
+            <div class="qp-progress-bar-fill" id="qpFill_<?= (int)$item['id'] ?>" style="width:0%"></div>
+        </div>
+        <span class="qp-progress-label" id="qpProgText_<?= (int)$item['id'] ?>">Compressing…</span>
     </div>
 
     <div class="qp-card-error" id="qpErr_<?= (int)$item['id'] ?>"></div>
-    <div class="qp-card-success" id="qpOk_<?= (int)$item['id'] ?>" style="display:none">✅ Photo uploaded!</div>
+    <div class="qp-card-success" id="qpOk_<?= (int)$item['id'] ?>" style="display:none">
+        ✅ Photo saved! &nbsp;<a class="qp-ok-link" href="<?= e($photosUrl) ?>">See all photos →</a>
+    </div>
 </div>
 <?php endforeach; ?>
 </div>
@@ -125,10 +118,30 @@ $categories = [
     var last = RootedGPS.last();
     if (last) document.getElementById('qpSortBtn').click();
 
+    // Re-sort as accuracy improves
+    RootedGPS.onAccuracyImprove(function(pos) {
+        var list = document.getElementById('qpList');
+        if (!list) return;
+        var cards = Array.from(list.children);
+        var anyGps = cards.some(function(c){ return c.dataset.lat && c.dataset.lng; });
+        if (!anyGps) return;
+        cards.forEach(function(c) {
+            var lat = parseFloat(c.dataset.lat), lng = parseFloat(c.dataset.lng);
+            c._dist = (lat && lng) ? haversineM(pos.lat, pos.lng, lat, lng) : Infinity;
+            var distEl = c.querySelector('.qp-card-dist');
+            if (distEl && c._dist < Infinity) {
+                distEl.textContent = '📍 ' + fmtDist(c._dist);
+                distEl.style.display = 'inline';
+            }
+        });
+        cards.sort(function(a,b){return a._dist-b._dist;});
+        cards.forEach(function(c){list.appendChild(c);});
+    });
+
     function haversineM(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
     function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
 
-    // Compression
+    // Image compression
     function compressImage(file, callback) {
         if (file.type.indexOf('image/') !== 0) { callback(file); return; }
         var reader = new FileReader();
@@ -152,28 +165,33 @@ $categories = [
         reader.readAsDataURL(file);
     }
 
-    // Shared upload handler
+    // Upload handler
     function handleFileInput(input) {
         var file = input.files[0];
         if (!file) return;
-        var itemId  = input.dataset.item;
-        var url     = input.dataset.uploadUrl;
-        var zone    = document.getElementById('zone_' + itemId);
-        var progEl  = document.getElementById('qpProg_' + itemId);
-        var progTxt = document.getElementById('qpProgText_' + itemId);
-        var errEl   = document.getElementById('qpErr_' + itemId);
-        var okEl    = document.getElementById('qpOk_' + itemId);
-        var catEl   = document.getElementById('qpCat_' + itemId);
+        var itemId    = input.dataset.item;
+        var uploadUrl = input.dataset.uploadUrl;
+        var photosUrl = input.dataset.photosUrl;
+        var zone      = document.getElementById('zone_' + itemId);
+        var progWrap  = document.getElementById('qpProg_' + itemId);
+        var fillEl    = document.getElementById('qpFill_' + itemId);
+        var progTxt   = document.getElementById('qpProgText_' + itemId);
+        var errEl     = document.getElementById('qpErr_' + itemId);
+        var okEl      = document.getElementById('qpOk_' + itemId);
+        var catEl     = document.getElementById('qpCat_' + itemId);
 
         errEl.textContent = ''; errEl.style.display = 'none';
         okEl.style.display = 'none';
-        zone.style.opacity = '0.5';
+        zone.style.opacity = '0.4';
         zone.style.pointerEvents = 'none';
-        progEl.style.display = 'flex';
+        fillEl.style.width = '0%';
+        progWrap.style.display = 'block';
         progTxt.textContent = 'Compressing…';
 
         compressImage(file, function(compressed) {
+            fillEl.style.width = '5%';
             progTxt.textContent = 'Uploading…';
+
             var fd = new FormData();
             fd.append('file', compressed);
             fd.append('category', catEl ? catEl.value : 'general_attachment');
@@ -181,60 +199,56 @@ $categories = [
             fd.append('_ajax', '1');
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', url, true);
+            xhr.open('POST', uploadUrl, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.addEventListener('load', function() {
-                progEl.style.display = 'none';
-                zone.style.opacity = '';
-                zone.style.pointerEvents = '';
-                var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
-                if (xhr.status === 200 && res && res.success) {
-                    okEl.style.display = 'block';
-                    setTimeout(function(){ okEl.style.display = 'none'; }, 3000);
-                } else {
-                    var msg = (res && (res.error || res.message))
-                        ? (res.error || res.message)
-                        : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0, 120).replace(/<[^>]+>/g,'').trim());
-                    errEl.textContent = msg + ' ✕';
-                    errEl.style.display = 'block';
-                    errEl.onclick = function(){ errEl.style.display='none'; };
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    var pct = Math.min(95, Math.round(e.loaded / e.total * 95) + 5);
+                    fillEl.style.width = pct + '%';
+                    progTxt.textContent = pct < 95 ? pct + '%' : 'Saving…';
                 }
-                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
             });
+
+            xhr.addEventListener('load', function() {
+                fillEl.style.width = '100%';
+                var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
+                setTimeout(function() {
+                    progWrap.style.display = 'none';
+                    fillEl.style.width = '0%';
+                    zone.style.opacity = '';
+                    zone.style.pointerEvents = '';
+                    if (xhr.status === 200 && res && res.success) {
+                        okEl.style.display = 'block';
+                    } else {
+                        var msg = (res && (res.error || res.message))
+                            ? (res.error || res.message)
+                            : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0, 120).replace(/<[^>]+>/g,'').trim());
+                        errEl.textContent = msg + ' ✕';
+                        errEl.style.display = 'block';
+                        errEl.onclick = function(){ errEl.style.display='none'; };
+                    }
+                    input.value = '';
+                }, 300);
+            });
+
             xhr.addEventListener('error', function() {
-                progEl.style.display = 'none';
+                progWrap.style.display = 'none';
                 zone.style.opacity = '';
                 zone.style.pointerEvents = '';
                 errEl.textContent = 'Network error — try again. ✕';
                 errEl.style.display = 'block';
                 errEl.onclick = function(){ errEl.style.display='none'; };
-                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
+                input.value = '';
             });
+
             xhr.send(fd);
         });
     }
 
-    // Wire up all file inputs — change event + window-focus fallback for capture inputs
+    // Wire up file inputs — single change event, no capture / no focus fallback needed
     document.querySelectorAll('.qp-file-input').forEach(function(input) {
         input.addEventListener('change', function() { handleFileInput(input); });
-
-        // Android bug: capture="environment" often doesn't fire 'change' after confirm.
-        // When the input is clicked, watch for window regaining focus (camera app closing)
-        // and check manually if a file was selected.
-        if (input.hasAttribute('capture')) {
-            input.addEventListener('click', function() {
-                var before = input.files.length;
-                function onFocus() {
-                    window.removeEventListener('focus', onFocus);
-                    setTimeout(function() {
-                        if (input.files.length !== before) {
-                            handleFileInput(input);
-                        }
-                    }, 400);
-                }
-                window.addEventListener('focus', onFocus);
-            });
-        }
     });
 }());
 </script>
@@ -273,7 +287,7 @@ $categories = [
 }
 .qp-card-head {
     display:flex; align-items:center; gap:var(--spacing-3);
-    padding:var(--spacing-3) var(--spacing-3) 0;
+    padding:var(--spacing-3) var(--spacing-3) var(--spacing-2);
 }
 .qp-card-icon {
     width:44px; height:44px; border-radius:12px; font-size:1.5rem;
@@ -283,46 +297,43 @@ $categories = [
 .qp-card-meta { display:flex; gap:var(--spacing-2); align-items:center; margin-top:2px; }
 .qp-card-dist { font-size:.72rem; color:var(--color-text-muted); }
 
-/* Upload buttons */
-.qp-upload-btns {
-    display:flex; gap:var(--spacing-2);
-    margin:0 var(--spacing-3) var(--spacing-2);
-}
-.qp-choose-btn {
-    flex:1; display:flex; align-items:center; justify-content:center;
-    gap:var(--spacing-1); padding:12px 8px; border-radius:12px;
-    border:2px dashed var(--color-primary);
-    background:rgba(45,106,79,.06); color:var(--color-primary);
-    font-size:.85rem; font-weight:700; cursor:pointer;
-    transition:background .2s, opacity .2s; flex-direction:column;
-}
-.qp-choose-btn:active { background:rgba(45,106,79,.14); }
-.qp-choose-icon { font-size:1.5rem; }
-.qp-file-input { display:none; }
-.qp-upload-progress {
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:var(--spacing-2); font-size:.82rem; font-weight:700;
-    padding:var(--spacing-3);
-}
-.qp-spinner {
-    width:28px; height:28px; border:3px solid var(--color-border);
-    border-top-color:var(--color-primary); border-radius:50%;
-    animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Category */
-.qp-category-wrap {
+/* Bottom row: category + add button */
+.qp-bottom-row {
     display:flex; align-items:center; gap:var(--spacing-2);
     padding:0 var(--spacing-3) var(--spacing-3);
 }
-.qp-category-label { font-size:.75rem; font-weight:700; color:var(--color-text-muted); white-space:nowrap; }
 .qp-category-select {
-    flex:1; padding:8px 12px; border:1.5px solid var(--color-border);
+    flex:1; padding:9px 12px; border:1.5px solid var(--color-border);
     border-radius:var(--radius-pill); font-size:.82rem; font-family:inherit;
     background:var(--color-surface); color:var(--color-text); cursor:pointer;
 }
 .qp-category-select:focus { outline:none; border-color:var(--color-primary); }
+.qp-add-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 16px; border-radius:var(--radius-pill);
+    background:var(--color-primary); color:#fff;
+    font-size:.82rem; font-weight:700; cursor:pointer;
+    white-space:nowrap; transition:opacity .2s;
+    border:none; flex-shrink:0;
+}
+.qp-add-btn:active { opacity:.8; }
+.qp-file-input { display:none; }
+
+/* Progress bar */
+.qp-progress-wrap {
+    padding:0 var(--spacing-3) var(--spacing-3);
+}
+.qp-progress-bar-outer {
+    height:6px; background:var(--color-border); border-radius:3px; overflow:hidden;
+    margin-bottom:5px;
+}
+.qp-progress-bar-fill {
+    height:100%; background:var(--color-primary); border-radius:3px;
+    transition:width .25s ease;
+}
+.qp-progress-label {
+    font-size:.72rem; font-weight:700; color:var(--color-text-muted);
+}
 
 /* Feedback */
 .qp-card-error {
@@ -333,6 +344,10 @@ $categories = [
 .qp-card-success {
     margin:0 var(--spacing-3) var(--spacing-3);
     background:#e8f5e1; color:#276749; font-size:.82rem; font-weight:700;
-    padding:8px 12px; border-radius:8px; text-align:center;
+    padding:10px 14px; border-radius:8px;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.qp-ok-link {
+    color:var(--color-primary); font-weight:700; text-decoration:underline;
 }
 </style>

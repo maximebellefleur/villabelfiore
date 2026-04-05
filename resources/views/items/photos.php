@@ -34,29 +34,27 @@ $gallery = array_values($gallery);
 
 <!-- ── UPLOAD BUTTONS ── -->
 <div class="photos-upload-card">
-    <div class="photos-upload-btns" id="photosUploadZone">
-        <label class="photos-upload-btn">
-            <span class="photos-upload-btn-icon">📸</span>
-            <span class="photos-upload-btn-label">Camera</span>
-            <input type="file" id="photosCameraInput" accept="image/*" capture="environment" style="display:none">
-        </label>
-        <label class="photos-upload-btn">
-            <span class="photos-upload-btn-icon">🖼️</span>
-            <span class="photos-upload-btn-label">Gallery</span>
-            <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
-        </label>
-    </div>
-    <div class="photos-upload-progress" id="photosProgress" style="display:none">
-        <div class="photos-spinner"></div>
-        <span id="photosProgressText">Compressing…</span>
-    </div>
-    <div class="photos-upload-controls">
-        <label class="photos-cat-label">Category</label>
+    <div class="photos-upload-controls" id="photosUploadZone">
         <select class="photos-cat-select" id="photosCatSelect">
             <?php foreach ($categories as $key => $cat): ?>
             <option value="<?= e($key) ?>"><?= $cat['icon'] ?> <?= e($cat['label']) ?></option>
             <?php endforeach; ?>
         </select>
+        <label class="photos-add-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.5" cy="7.5" r="1"/></svg>
+            Add Photo
+            <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
+        </label>
+    </div>
+    <!-- Progress bar -->
+    <div class="photos-progress-wrap" id="photosProgress" style="display:none">
+        <div class="photos-progress-bar-outer">
+            <div class="photos-progress-bar-fill" id="photosProgressFill" style="width:0%"></div>
+        </div>
+        <span class="photos-progress-label" id="photosProgressText">Compressing…</span>
+    </div>
+    <div class="photos-upload-success" id="photosSuccess" style="display:none">
+        ✅ Photo saved!
     </div>
     <div class="photos-upload-error" id="photosError"></div>
 </div>
@@ -116,18 +114,25 @@ $gallery = array_values($gallery);
     var zone       = document.getElementById('photosUploadZone');
     var catSelect  = document.getElementById('photosCatSelect');
     var progEl     = document.getElementById('photosProgress');
+    var fillEl     = document.getElementById('photosProgressFill');
     var progText   = document.getElementById('photosProgressText');
     var errorEl    = document.getElementById('photosError');
+    var successEl  = document.getElementById('photosSuccess');
 
     function doUpload(file) {
         if (!file) return;
         errorEl.textContent = ''; errorEl.style.display = 'none';
-        progEl.style.display = 'flex';
+        successEl.style.display = 'none';
+        fillEl.style.width = '0%';
+        progEl.style.display = 'block';
         progText.textContent = 'Compressing…';
         zone.style.pointerEvents = 'none';
+        zone.style.opacity = '0.5';
 
         compressImage(file, function(compressed) {
+            fillEl.style.width = '5%';
             progText.textContent = 'Uploading…';
+
             var fd = new FormData();
             fd.append('file', compressed);
             fd.append('category', catSelect.value);
@@ -138,29 +143,36 @@ $gallery = array_values($gallery);
             var xhr = new XMLHttpRequest();
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
-                    var pct = Math.round(e.loaded/e.total*100);
-                    progText.textContent = pct < 100 ? pct + '%…' : 'Saving…';
+                    var pct = Math.min(95, Math.round(e.loaded / e.total * 95) + 5);
+                    fillEl.style.width = pct + '%';
+                    progText.textContent = pct < 95 ? pct + '%' : 'Saving…';
                 }
             });
             xhr.addEventListener('load', function() {
-                progEl.style.display = 'none';
-                zone.style.pointerEvents = '';
+                fillEl.style.width = '100%';
                 var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
-                if (xhr.status === 200 && res && res.success) {
-                    window.location.reload();
-                } else {
-                    var msg = (res && (res.error || res.message))
-                        ? (res.error || res.message)
-                        : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0,120).replace(/<[^>]+>/g,'').trim());
-                    showError(msg);
-                }
-                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
+                setTimeout(function() {
+                    progEl.style.display = 'none';
+                    zone.style.pointerEvents = '';
+                    zone.style.opacity = '';
+                    if (xhr.status === 200 && res && res.success) {
+                        successEl.style.display = 'block';
+                        setTimeout(function() { window.location.reload(); }, 800);
+                    } else {
+                        var msg = (res && (res.error || res.message))
+                            ? (res.error || res.message)
+                            : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0,120).replace(/<[^>]+>/g,'').trim());
+                        showError(msg);
+                    }
+                    document.getElementById('photosFileInput').value = '';
+                }, 300);
             });
             xhr.addEventListener('error', function() {
                 progEl.style.display = 'none';
                 zone.style.pointerEvents = '';
+                zone.style.opacity = '';
                 showError('Network error — check connection and try again.');
-                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
+                document.getElementById('photosFileInput').value = '';
             });
             xhr.open('POST', uploadUrl, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
@@ -168,21 +180,9 @@ $gallery = array_values($gallery);
         });
     }
 
-    // Wire both inputs: change event + window-focus fallback for capture (Android bug)
-    zone.querySelectorAll('input[type=file]').forEach(function(input) {
-        input.addEventListener('change', function() { doUpload(input.files[0]); });
-        if (input.hasAttribute('capture')) {
-            input.addEventListener('click', function() {
-                var before = input.files.length;
-                function onFocus() {
-                    window.removeEventListener('focus', onFocus);
-                    setTimeout(function() {
-                        if (input.files.length !== before) doUpload(input.files[0]);
-                    }, 400);
-                }
-                window.addEventListener('focus', onFocus);
-            });
-        }
+    // Single input, single change event — no capture / no focus fallback
+    document.getElementById('photosFileInput').addEventListener('change', function() {
+        doUpload(this.files[0]);
     });
 
     function showError(msg) {
@@ -240,18 +240,16 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeLigh
 .photos-subtitle { font-size:.8rem;color:var(--color-text-muted);margin:0; }
 
 .photos-upload-card { background:var(--color-surface-raised);border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;margin-bottom:var(--spacing-5); }
-.photos-upload-btns { display:flex;gap:var(--spacing-2);padding:var(--spacing-3);border-bottom:1px solid var(--color-border); }
-.photos-upload-btn { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 8px;border-radius:14px;border:2px dashed var(--color-primary);background:rgba(45,106,79,.05);color:var(--color-primary);cursor:pointer;transition:background .2s; }
-.photos-upload-btn:active { background:rgba(45,106,79,.15); }
-.photos-upload-btn-icon { font-size:2rem; }
-.photos-upload-btn-label { font-size:.82rem;font-weight:700; }
-.photos-upload-progress { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--spacing-2);font-size:.85rem;font-weight:700;padding:var(--spacing-4);border-bottom:1px solid var(--color-border); }
-.photos-spinner { width:36px;height:36px;border:3px solid var(--color-border);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite; }
-@keyframes spin{to{transform:rotate(360deg)}}
-.photos-upload-controls { display:flex;align-items:center;gap:var(--spacing-3);padding:var(--spacing-3) var(--spacing-4); }
-.photos-cat-label { font-size:.78rem;font-weight:700;color:var(--color-text-muted);white-space:nowrap; }
+.photos-upload-controls { display:flex;align-items:center;gap:var(--spacing-2);padding:var(--spacing-3);transition:opacity .2s; }
 .photos-cat-select { flex:1;padding:10px 14px;border:1.5px solid var(--color-border);border-radius:var(--radius-pill);font-size:.88rem;font-family:inherit;background:var(--color-surface);cursor:pointer; }
 .photos-cat-select:focus { outline:none;border-color:var(--color-primary); }
+.photos-add-btn { display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:var(--radius-pill);background:var(--color-primary);color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0; }
+.photos-add-btn:active { opacity:.8; }
+.photos-progress-wrap { padding:var(--spacing-2) var(--spacing-3) var(--spacing-3); }
+.photos-progress-bar-outer { height:7px;background:var(--color-border);border-radius:4px;overflow:hidden;margin-bottom:5px; }
+.photos-progress-bar-fill { height:100%;background:var(--color-primary);border-radius:4px;transition:width .25s ease; }
+.photos-progress-label { font-size:.72rem;font-weight:700;color:var(--color-text-muted); }
+.photos-upload-success { display:none;padding:var(--spacing-2) var(--spacing-4);background:#e8f5e1;color:#276749;font-size:.82rem;font-weight:700;border-top:1px solid #c3e6c8; }
 .photos-upload-error { display:none;padding:var(--spacing-2) var(--spacing-4);background:#fde8e8;color:#922b21;font-size:.78rem;cursor:pointer;border-top:1px solid #f5b7b1; }
 
 .photos-gallery-head { font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:var(--spacing-3); }
