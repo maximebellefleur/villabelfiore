@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.4.12' => [
+        'date'  => '2026-04-05',
+        'title' => 'Better Wheelbarrow, Camera Fix, Photos Split Buttons',
+        'fixed' => [
+            'Wheelbarrow SVG redrawn — colored filled tray (amber/brown), gray spoked wheel, wood handles, support leg',
+            'Camera capture change event not firing on Android after photo confirm — window focus fallback now triggers upload correctly',
+            'Item Photos page now has Camera + Gallery split buttons matching Quick Photos',
+        ],
+    ],
+
     '1.4.11' => [
         'date'  => '2026-04-05',
         'title' => 'Photo Upload Fix & Camera+Gallery Buttons',

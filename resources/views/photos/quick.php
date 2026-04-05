@@ -152,69 +152,89 @@ $categories = [
         reader.readAsDataURL(file);
     }
 
-    // File selected → auto-upload immediately
-    document.querySelectorAll('.qp-file-input').forEach(function(input) {
-        input.addEventListener('change', function() {
-            var file = input.files[0];
-            if (!file) return;
-            var itemId  = input.dataset.item;
-            var url     = input.dataset.uploadUrl;
-            var zone    = document.getElementById('zone_' + itemId);
-            var progEl  = document.getElementById('qpProg_' + itemId);
-            var progTxt = document.getElementById('qpProgText_' + itemId);
-            var errEl   = document.getElementById('qpErr_' + itemId);
-            var okEl    = document.getElementById('qpOk_' + itemId);
-            var catEl   = document.getElementById('qpCat_' + itemId);
+    // Shared upload handler
+    function handleFileInput(input) {
+        var file = input.files[0];
+        if (!file) return;
+        var itemId  = input.dataset.item;
+        var url     = input.dataset.uploadUrl;
+        var zone    = document.getElementById('zone_' + itemId);
+        var progEl  = document.getElementById('qpProg_' + itemId);
+        var progTxt = document.getElementById('qpProgText_' + itemId);
+        var errEl   = document.getElementById('qpErr_' + itemId);
+        var okEl    = document.getElementById('qpOk_' + itemId);
+        var catEl   = document.getElementById('qpCat_' + itemId);
 
-            errEl.textContent = ''; errEl.style.display = 'none';
-            okEl.style.display = 'none';
-            zone.style.opacity = '0.5';
-            zone.style.pointerEvents = 'none';
-            progEl.style.display = 'flex';
-            progTxt.textContent = 'Compressing…';
+        errEl.textContent = ''; errEl.style.display = 'none';
+        okEl.style.display = 'none';
+        zone.style.opacity = '0.5';
+        zone.style.pointerEvents = 'none';
+        progEl.style.display = 'flex';
+        progTxt.textContent = 'Compressing…';
 
-            compressImage(file, function(compressed) {
-                progTxt.textContent = 'Uploading…';
-                var fd = new FormData();
-                fd.append('file', compressed);
-                fd.append('category', catEl ? catEl.value : 'general_attachment');
-                fd.append('_token', CSRF);
-                fd.append('_ajax', '1');
+        compressImage(file, function(compressed) {
+            progTxt.textContent = 'Uploading…';
+            var fd = new FormData();
+            fd.append('file', compressed);
+            fd.append('category', catEl ? catEl.value : 'general_attachment');
+            fd.append('_token', CSRF);
+            fd.append('_ajax', '1');
 
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', url, true);
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.addEventListener('load', function() {
-                    progEl.style.display = 'none';
-                    zone.style.opacity = '';
-                    zone.style.pointerEvents = '';
-                    var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
-                    if (xhr.status === 200 && res && res.success) {
-                        okEl.style.display = 'block';
-                        setTimeout(function(){ okEl.style.display = 'none'; }, 3000);
-                    } else {
-                        var msg = (res && (res.error || res.message))
-                            ? (res.error || res.message)
-                            : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0, 120).replace(/<[^>]+>/g,'').trim());
-                        errEl.textContent = msg + ' ✕';
-                        errEl.style.display = 'block';
-                        errEl.onclick = function(){ errEl.style.display='none'; };
-                    }
-                    // reset all inputs for this item
-                    zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
-                });
-                xhr.addEventListener('error', function() {
-                    progEl.style.display = 'none';
-                    zone.style.opacity = '';
-                    zone.style.pointerEvents = '';
-                    errEl.textContent = 'Network error — try again. ✕';
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.addEventListener('load', function() {
+                progEl.style.display = 'none';
+                zone.style.opacity = '';
+                zone.style.pointerEvents = '';
+                var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
+                if (xhr.status === 200 && res && res.success) {
+                    okEl.style.display = 'block';
+                    setTimeout(function(){ okEl.style.display = 'none'; }, 3000);
+                } else {
+                    var msg = (res && (res.error || res.message))
+                        ? (res.error || res.message)
+                        : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0, 120).replace(/<[^>]+>/g,'').trim());
+                    errEl.textContent = msg + ' ✕';
                     errEl.style.display = 'block';
                     errEl.onclick = function(){ errEl.style.display='none'; };
-                    input.value = '';
-                });
-                xhr.send(fd);
+                }
+                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
             });
+            xhr.addEventListener('error', function() {
+                progEl.style.display = 'none';
+                zone.style.opacity = '';
+                zone.style.pointerEvents = '';
+                errEl.textContent = 'Network error — try again. ✕';
+                errEl.style.display = 'block';
+                errEl.onclick = function(){ errEl.style.display='none'; };
+                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
+            });
+            xhr.send(fd);
         });
+    }
+
+    // Wire up all file inputs — change event + window-focus fallback for capture inputs
+    document.querySelectorAll('.qp-file-input').forEach(function(input) {
+        input.addEventListener('change', function() { handleFileInput(input); });
+
+        // Android bug: capture="environment" often doesn't fire 'change' after confirm.
+        // When the input is clicked, watch for window regaining focus (camera app closing)
+        // and check manually if a file was selected.
+        if (input.hasAttribute('capture')) {
+            input.addEventListener('click', function() {
+                var before = input.files.length;
+                function onFocus() {
+                    window.removeEventListener('focus', onFocus);
+                    setTimeout(function() {
+                        if (input.files.length !== before) {
+                            handleFileInput(input);
+                        }
+                    }, 400);
+                }
+                window.addEventListener('focus', onFocus);
+            });
+        }
     });
 }());
 </script>

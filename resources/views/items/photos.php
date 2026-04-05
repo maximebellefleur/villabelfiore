@@ -32,17 +32,24 @@ $gallery = array_values($gallery);
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
-<!-- ── BIG UPLOAD BUTTON ── -->
+<!-- ── UPLOAD BUTTONS ── -->
 <div class="photos-upload-card">
-    <label class="photos-upload-zone" id="photosUploadZone">
-        <div class="photos-upload-icon">📷</div>
-        <div class="photos-upload-text">Add Photo</div>
-        <div class="photos-upload-progress" id="photosProgress" style="display:none">
-            <div class="photos-spinner"></div>
-            <span id="photosProgressText">Compressing…</span>
-        </div>
-        <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
-    </label>
+    <div class="photos-upload-btns" id="photosUploadZone">
+        <label class="photos-upload-btn">
+            <span class="photos-upload-btn-icon">📸</span>
+            <span class="photos-upload-btn-label">Camera</span>
+            <input type="file" id="photosCameraInput" accept="image/*" capture="environment" style="display:none">
+        </label>
+        <label class="photos-upload-btn">
+            <span class="photos-upload-btn-icon">🖼️</span>
+            <span class="photos-upload-btn-label">Gallery</span>
+            <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
+        </label>
+    </div>
+    <div class="photos-upload-progress" id="photosProgress" style="display:none">
+        <div class="photos-spinner"></div>
+        <span id="photosProgressText">Compressing…</span>
+    </div>
     <div class="photos-upload-controls">
         <label class="photos-cat-label">Category</label>
         <select class="photos-cat-select" id="photosCatSelect">
@@ -104,21 +111,15 @@ $gallery = array_values($gallery);
 
 <script>
 (function() {
-    var uploadUrl = <?= json_encode($uploadUrl) ?>;
-    var csrfToken = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
-    var zone      = document.getElementById('photosUploadZone');
-    var fileInput = document.getElementById('photosFileInput');
-    var catSelect = document.getElementById('photosCatSelect');
-    var progEl    = document.getElementById('photosProgress');
-    var progText  = document.getElementById('photosProgressText');
-    var errorEl   = document.getElementById('photosError');
+    var uploadUrl  = <?= json_encode($uploadUrl) ?>;
+    var csrfToken  = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+    var zone       = document.getElementById('photosUploadZone');
+    var catSelect  = document.getElementById('photosCatSelect');
+    var progEl     = document.getElementById('photosProgress');
+    var progText   = document.getElementById('photosProgressText');
+    var errorEl    = document.getElementById('photosError');
 
-    zone.addEventListener('click', function(e) {
-        if (e.target !== fileInput) fileInput.click();
-    });
-
-    fileInput.addEventListener('change', function() {
-        var file = fileInput.files[0];
+    function doUpload(file) {
         if (!file) return;
         errorEl.textContent = ''; errorEl.style.display = 'none';
         progEl.style.display = 'flex';
@@ -148,21 +149,40 @@ $gallery = array_values($gallery);
                 if (xhr.status === 200 && res && res.success) {
                     window.location.reload();
                 } else {
-                    var msg = (res && (res.error || res.message)) ? (res.error || res.message) : 'Upload failed — try again.';
+                    var msg = (res && (res.error || res.message))
+                        ? (res.error || res.message)
+                        : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0,120).replace(/<[^>]+>/g,'').trim());
                     showError(msg);
                 }
-                fileInput.value = '';
+                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
             });
             xhr.addEventListener('error', function() {
                 progEl.style.display = 'none';
                 zone.style.pointerEvents = '';
                 showError('Network error — check connection and try again.');
-                fileInput.value = '';
+                zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
             });
             xhr.open('POST', uploadUrl, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.send(fd);
         });
+    }
+
+    // Wire both inputs: change event + window-focus fallback for capture (Android bug)
+    zone.querySelectorAll('input[type=file]').forEach(function(input) {
+        input.addEventListener('change', function() { doUpload(input.files[0]); });
+        if (input.hasAttribute('capture')) {
+            input.addEventListener('click', function() {
+                var before = input.files.length;
+                function onFocus() {
+                    window.removeEventListener('focus', onFocus);
+                    setTimeout(function() {
+                        if (input.files.length !== before) doUpload(input.files[0]);
+                    }, 400);
+                }
+                window.addEventListener('focus', onFocus);
+            });
+        }
     });
 
     function showError(msg) {
@@ -220,12 +240,12 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeLigh
 .photos-subtitle { font-size:.8rem;color:var(--color-text-muted);margin:0; }
 
 .photos-upload-card { background:var(--color-surface-raised);border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;margin-bottom:var(--spacing-5); }
-.photos-upload-zone { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;cursor:pointer;gap:var(--spacing-2);background:linear-gradient(135deg,rgba(45,106,79,.04),rgba(45,106,79,.02));border-bottom:1px solid var(--color-border);transition:background .2s;position:relative;overflow:hidden; }
-.photos-upload-zone:hover { background:linear-gradient(135deg,rgba(45,106,79,.1),rgba(45,106,79,.05)); }
-.photos-upload-icon { font-size:2.8rem;transition:transform .2s; }
-.photos-upload-zone:hover .photos-upload-icon { transform:scale(1.15); }
-.photos-upload-text { font-size:1rem;font-weight:700;color:var(--color-primary); }
-.photos-upload-progress { position:absolute;inset:0;background:rgba(255,255,255,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--spacing-2);font-size:.85rem;font-weight:700; }
+.photos-upload-btns { display:flex;gap:var(--spacing-2);padding:var(--spacing-3);border-bottom:1px solid var(--color-border); }
+.photos-upload-btn { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 8px;border-radius:14px;border:2px dashed var(--color-primary);background:rgba(45,106,79,.05);color:var(--color-primary);cursor:pointer;transition:background .2s; }
+.photos-upload-btn:active { background:rgba(45,106,79,.15); }
+.photos-upload-btn-icon { font-size:2rem; }
+.photos-upload-btn-label { font-size:.82rem;font-weight:700; }
+.photos-upload-progress { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--spacing-2);font-size:.85rem;font-weight:700;padding:var(--spacing-4);border-bottom:1px solid var(--color-border); }
 .photos-spinner { width:36px;height:36px;border:3px solid var(--color-border);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite; }
 @keyframes spin{to{transform:rotate(360deg)}}
 .photos-upload-controls { display:flex;align-items:center;gap:var(--spacing-3);padding:var(--spacing-3) var(--spacing-4); }
