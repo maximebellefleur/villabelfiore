@@ -20,7 +20,8 @@ class ReminderController
         $db       = DB::getInstance();
         $overdue  = $db->fetchAll("SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at < NOW() ORDER BY r.due_at ASC");
         $upcoming = $db->fetchAll("SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at >= NOW() ORDER BY r.due_at ASC");
-        Response::render('reminders/index', ['title' => 'Reminders', 'overdue' => $overdue, 'upcoming' => $upcoming]);
+        $items    = $db->fetchAll("SELECT id, name, type, gps_lat, gps_lng FROM items WHERE status='active' ORDER BY name ASC");
+        Response::render('reminders/index', ['title' => 'Reminders', 'overdue' => $overdue, 'upcoming' => $upcoming, 'items' => $items]);
     }
 
     public function store(Request $request, array $params = []): void

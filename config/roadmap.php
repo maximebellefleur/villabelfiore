@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.16' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'Reminder Item Association',
+        'features' => [
+            ['title' => 'GPS-sorted item picker on reminder form', 'detail' => 'Items sorted nearest first as GPS fixes arrive. Re-sorts on accuracy improvement.'],
+            ['title' => 'Item name badge on item-detail reminder form', 'detail' => 'Visually confirms which item the reminder is being added to.'],
+        ],
+    ],
+
     '1.4.15' => [
         'status'   => 'released',
         'released' => '2026-04-05',

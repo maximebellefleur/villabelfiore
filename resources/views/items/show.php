@@ -242,9 +242,12 @@ window.MINI_MAP_READONLY = true;
         <form method="POST" action="<?= url('/reminders') ?>">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <input type="hidden" name="item_id" value="<?= (int)$item['id'] ?>">
+            <div class="show-reminder-for-badge">
+                <?= $emoji ?> <?= e($item['name']) ?>
+            </div>
             <div class="show-form-row">
                 <input type="text" name="title" class="form-input form-input--touch"
-                       placeholder="Reminder title" required style="flex:1">
+                       placeholder="What to do?" required style="flex:1">
                 <input type="datetime-local" name="due_at" class="form-input form-input--touch"
                        required style="flex:1">
                 <button type="submit" class="btn btn-secondary">Add</button>
@@ -562,4 +565,10 @@ function expandSection(id) {
 
 /* Inline forms */
 .show-form-row { display:flex;gap:var(--spacing-2);flex-wrap:wrap;align-items:center; }
+.show-reminder-for-badge {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 12px;border-radius:var(--radius-pill);
+    background:var(--color-primary-soft);color:var(--color-primary);
+    font-size:.78rem;font-weight:700;margin-bottom:var(--spacing-2);
+}
 </style>

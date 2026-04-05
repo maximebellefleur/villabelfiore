@@ -1,74 +1,243 @@
+<?php
+$typeEmoji = [
+    'olive_tree'=>'🫒','tree'=>'🌳','vine'=>'🍇','almond_tree'=>'🌰',
+    'garden'=>'🌿','zone'=>'🛖','orchard'=>'🏕','bed'=>'🌱','line'=>'〰️',
+    'prep_zone'=>'🟫','mobile_coop'=>'🐓','building'=>'🏠','water_point'=>'💧',
+];
+// Items with GPS for JS sorting
+$gpsItems = array_map(fn($i) => [
+    'id'   => (int)$i['id'],
+    'name' => $i['name'],
+    'type' => $i['type'],
+    'lat'  => $i['gps_lat'] ? (float)$i['gps_lat'] : null,
+    'lng'  => $i['gps_lng'] ? (float)$i['gps_lng'] : null,
+], $items);
+?>
 <div class="page-header">
-    <h1 class="page-title">Reminders</h1>
+    <h1 class="page-title">🔔 Reminders</h1>
 </div>
+
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
-<?php if (!empty($overdue)): ?>
-<section class="section">
-    <h2 class="section-title text-danger">Overdue (<?= count($overdue) ?>)</h2>
-    <?php foreach ($overdue as $r): ?>
-    <div class="card card--warning">
-        <div class="card-body">
-            <strong><?= e($r['title']) ?></strong>
-            <span class="text-muted text-sm"><?= e(date('d M Y H:i', strtotime($r['due_at']))) ?></span>
-            <?php if ($r['item_name']): ?><a href="<?= url('/items/' . ((int)$r['item_id'])) ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
+<!-- =========================================================
+     NEW REMINDER FORM — GPS-sorted item picker
+     ========================================================= -->
+<div class="rem-new-card">
+    <div class="rem-new-title">Add a Reminder</div>
+    <form method="POST" action="<?= url('/reminders') ?>" class="rem-form" id="reminderForm">
+        <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+
+        <!-- Item picker (GPS-sorted) -->
+        <div class="rem-field">
+            <label class="rem-label">
+                For which item?
+                <span class="rem-gps-badge" id="remGpsBadge" style="display:none">📡 Sorted nearest first</span>
+            </label>
+            <select name="item_id" id="remItemSelect" class="rem-select">
+                <option value="">— No specific item —</option>
+                <?php foreach ($items as $i):
+                    $emoji = $typeEmoji[$i['type']] ?? '📦';
+                ?>
+                <option value="<?= (int)$i['id'] ?>"
+                        data-name="<?= e($i['name']) ?>"
+                        data-emoji="<?= $emoji ?>"
+                        data-lat="<?= $i['gps_lat'] ? e($i['gps_lat']) : '' ?>"
+                        data-lng="<?= $i['gps_lng'] ? e($i['gps_lng']) : '' ?>">
+                    <?= $emoji ?> <?= e($i['name']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
         </div>
-        <div class="card-actions">
-            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
+
+        <!-- Title + date on one row -->
+        <div class="rem-row">
+            <div class="rem-field rem-field--grow">
+                <label class="rem-label">Reminder</label>
+                <input type="text" name="title" class="rem-input"
+                       placeholder="What to do?" required>
+            </div>
+            <div class="rem-field">
+                <label class="rem-label">Due</label>
+                <input type="datetime-local" name="due_at" class="rem-input" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Add Reminder</button>
+    </form>
+</div>
+
+<!-- =========================================================
+     OVERDUE
+     ========================================================= -->
+<?php if (!empty($overdue)): ?>
+<div class="rem-section-title rem-section-title--danger">⚠️ Overdue (<?= count($overdue) ?>)</div>
+<div class="rem-list">
+    <?php foreach ($overdue as $r): ?>
+    <div class="rem-item rem-item--overdue">
+        <div class="rem-item-body">
+            <div class="rem-item-title"><?= e($r['title']) ?></div>
+            <div class="rem-item-meta">
+                <?= e(date('d M Y', strtotime($r['due_at']))) ?>
+                <?php if ($r['item_name']): ?>
+                · <a href="<?= url('/items/' . (int)$r['item_id']) ?>" class="rem-item-link"><?= e($r['item_name']) ?> →</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="rem-item-actions">
+            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/complete') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="btn btn-sm btn-success">Done</button>
+                <button class="rem-btn rem-btn--done">✓</button>
             </form>
-            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/dismiss') ?>" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/dismiss') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="btn btn-sm btn-secondary">Dismiss</button>
+                <button class="rem-btn rem-btn--dismiss">✕</button>
             </form>
         </div>
     </div>
     <?php endforeach; ?>
-</section>
+</div>
 <?php endif; ?>
 
-<section class="section">
-    <h2 class="section-title">Upcoming</h2>
-    <?php if (empty($upcoming)): ?>
-    <p class="text-muted">No upcoming reminders.</p>
-    <?php else: ?>
+<!-- =========================================================
+     UPCOMING
+     ========================================================= -->
+<div class="rem-section-title">📅 Upcoming (<?= count($upcoming) ?>)</div>
+<?php if (empty($upcoming)): ?>
+<p class="text-muted" style="padding:var(--spacing-4) 0">No upcoming reminders.</p>
+<?php else: ?>
+<div class="rem-list">
     <?php foreach ($upcoming as $r): ?>
-    <div class="card">
-        <div class="card-body">
-            <strong><?= e($r['title']) ?></strong>
-            <span class="text-muted text-sm"><?= e(date('d M Y H:i', strtotime($r['due_at']))) ?></span>
-            <?php if ($r['item_name']): ?><a href="<?= url('/items/' . ((int)$r['item_id'])) ?>" class="link-small"><?= e($r['item_name']) ?></a><?php endif; ?>
+    <div class="rem-item">
+        <div class="rem-item-body">
+            <div class="rem-item-title"><?= e($r['title']) ?></div>
+            <div class="rem-item-meta">
+                <?= e(date('d M Y', strtotime($r['due_at']))) ?>
+                <?php if ($r['item_name']): ?>
+                · <a href="<?= url('/items/' . (int)$r['item_id']) ?>" class="rem-item-link"><?= e($r['item_name']) ?> →</a>
+                <?php endif; ?>
+            </div>
         </div>
-        <div class="card-actions">
-            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
+        <div class="rem-item-actions">
+            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/complete') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="btn btn-sm btn-success">Done</button>
+                <button class="rem-btn rem-btn--done">✓</button>
             </form>
-            <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/dismiss') ?>" style="display:inline">
+            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/dismiss') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="btn btn-sm btn-secondary">Dismiss</button>
+                <button class="rem-btn rem-btn--dismiss">✕</button>
             </form>
         </div>
     </div>
     <?php endforeach; ?>
-    <?php endif; ?>
-</section>
-
-<div class="card">
-    <div class="card-body">
-        <h3>New Reminder</h3>
-        <form method="POST" action="<?= url('/reminders') ?>" class="form">
-            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-            <div class="form-group">
-                <label class="form-label">Title</label>
-                <input type="text" name="title" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Due At</label>
-                <input type="datetime-local" name="due_at" class="form-input" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Create Reminder</button>
-        </form>
-    </div>
 </div>
+<?php endif; ?>
+
+<script>
+(function() {
+    var GPS_ITEMS = <?= json_encode($gpsItems) ?>;
+    var sel   = document.getElementById('remItemSelect');
+    var badge = document.getElementById('remGpsBadge');
+
+    function hav(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+    function fmt(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
+
+    function sortByDistance(pos) {
+        var current = sel.value;
+        // Collect all item options (skip the blank first one)
+        var opts = Array.from(sel.querySelectorAll('option[data-lat]'));
+        opts.forEach(function(opt) {
+            var lat = parseFloat(opt.dataset.lat);
+            var lng = parseFloat(opt.dataset.lng);
+            if (lat && lng) {
+                var d = hav(pos.lat, pos.lng, lat, lng);
+                opt._dist = d;
+                opt.textContent = opt.dataset.emoji + ' ' + opt.dataset.name + '  —  ' + fmt(d);
+            } else {
+                opt._dist = Infinity;
+                opt.textContent = opt.dataset.emoji + ' ' + opt.dataset.name;
+            }
+        });
+        opts.sort(function(a, b){ return a._dist - b._dist; });
+        var blank = sel.querySelector('option[value=""]');
+        // Rebuild
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+        if (blank) sel.appendChild(blank);
+        opts.forEach(function(o){ sel.appendChild(o); });
+        // Restore selection
+        sel.value = current;
+        badge.style.display = 'inline';
+    }
+
+    // Sort immediately if GPS warm
+    var last = RootedGPS.last();
+    if (last) {
+        sortByDistance(last);
+    } else {
+        RootedGPS.get(function(pos) { if (pos) sortByDistance(pos); }, 20000);
+    }
+
+    // Re-sort as accuracy improves
+    RootedGPS.onAccuracyImprove(function(pos) { sortByDistance(pos); });
+}());
+</script>
+
+<style>
+/* New reminder card */
+.rem-new-card {
+    background:var(--color-surface-raised);border-radius:18px;
+    box-shadow:0 2px 12px rgba(0,0,0,.08);padding:var(--spacing-4);
+    margin-bottom:var(--spacing-5);
+}
+.rem-new-title {
+    font-size:.8rem;font-weight:800;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--color-text-muted);margin-bottom:var(--spacing-3);
+}
+.rem-form { display:flex;flex-direction:column;gap:var(--spacing-3); }
+.rem-field { display:flex;flex-direction:column;gap:4px; }
+.rem-field--grow { flex:1;min-width:0; }
+.rem-row { display:flex;gap:var(--spacing-2);flex-wrap:wrap;align-items:flex-end; }
+.rem-label { font-size:.75rem;font-weight:700;color:var(--color-text-muted);display:flex;align-items:center;gap:6px; }
+.rem-gps-badge {
+    font-size:.68rem;font-weight:700;padding:2px 8px;
+    background:var(--color-primary-soft);color:var(--color-primary);
+    border-radius:var(--radius-pill);
+}
+.rem-select, .rem-input {
+    width:100%;padding:10px 14px;border:1.5px solid var(--color-border);
+    border-radius:var(--radius-pill);font-size:.88rem;font-family:inherit;
+    background:var(--color-surface);color:var(--color-text);
+}
+.rem-select:focus, .rem-input:focus { outline:none;border-color:var(--color-primary); }
+
+/* Section titles */
+.rem-section-title {
+    font-size:.75rem;font-weight:800;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--color-text-muted);
+    margin:var(--spacing-4) 0 var(--spacing-2);
+}
+.rem-section-title--danger { color:var(--color-danger,#c0392b); }
+
+/* Reminder list */
+.rem-list { display:flex;flex-direction:column;gap:6px; }
+.rem-item {
+    display:flex;align-items:center;gap:var(--spacing-3);
+    padding:var(--spacing-3) var(--spacing-3);
+    background:var(--color-surface-raised);border-radius:var(--radius-lg);
+    border:1px solid var(--color-border);box-shadow:var(--shadow-sm);
+}
+.rem-item--overdue { border-left:3px solid var(--color-danger,#c0392b);background:#fff8f8; }
+.rem-item-body { flex:1;min-width:0; }
+.rem-item-title { font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.rem-item-meta { font-size:.72rem;color:var(--color-text-muted);margin-top:2px; }
+.rem-item-link { color:var(--color-primary);font-weight:700;text-decoration:none; }
+.rem-item-link:hover { text-decoration:underline; }
+.rem-item-actions { display:flex;gap:4px;flex-shrink:0; }
+.rem-btn {
+    width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;
+    font-weight:800;font-size:.85rem;transition:background .15s;
+}
+.rem-btn--done { background:var(--color-primary-soft);color:var(--color-primary); }
+.rem-btn--done:hover { background:var(--color-primary);color:#fff; }
+.rem-btn--dismiss { background:rgba(0,0,0,.06);color:var(--color-text-muted); }
+.rem-btn--dismiss:hover { background:rgba(0,0,0,.12); }
+</style>

@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.4.16' => [
+        'date'  => '2026-04-05',
+        'title' => 'Reminder Item Association — GPS-Sorted Picker',
+        'new' => [
+            'Reminder form on /reminders now has a GPS-sorted item picker — items sorted nearest first as soon as location is available; re-sorts as accuracy improves',
+            'Item detail reminder form shows the item name badge so it\'s clear which item the reminder is for',
+        ],
+        'improved' => [
+            'Reminders page completely redesigned — clean card layout, ✓ Done and ✕ Dismiss buttons per reminder, linked item name on each entry',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.15' => [
         'date'  => '2026-04-05',
         'title' => 'Item Detail Redesign — Quick Actions, Photo Preview & Activity Feed',
