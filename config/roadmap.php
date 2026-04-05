@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.15' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'Item Detail Redesign',
+        'features' => [
+            ['title' => '4-button quick action strip',  'detail' => 'Add Photo, Reminder, Note, and AI prompt — always one tap away at the top of every item.'],
+            ['title' => 'Photo preview masonry strip',  'detail' => 'Latest photos shown inline with See all link. No tab-switching needed.'],
+            ['title' => 'Recent activity feed',         'detail' => 'Last 3 log entries and pending reminders with inline Done button.'],
+        ],
+    ],
+
     '1.4.14' => [
         'status'   => 'released',
         'released' => '2026-04-05',

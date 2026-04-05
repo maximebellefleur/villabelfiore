@@ -8,6 +8,23 @@
  */
 return [
 
+    '1.4.15' => [
+        'date'  => '2026-04-05',
+        'title' => 'Item Detail Redesign — Quick Actions, Photo Preview & Activity Feed',
+        'new' => [
+            'Quick-action strip on every item page — 4 one-tap buttons: Add Photo, Reminder, Note, AI (scroll to matching form)',
+            'Photo preview masonry strip — shows last 4 photos with "See all X →" link',
+            'Recent activity feed — last 3 log entries and pending reminders shown inline with one-tap Done',
+        ],
+        'improved' => [
+            'Item page layout reordered: quick actions → photos → activity → details → location → harvests → finance → full log',
+            'Hero simplified — back button and edit button both in top bar, no embedded action strip',
+            'Reminder and Note forms always visible as anchored sections (no more hidden in tabs)',
+            'Harvest and Finance show inline tables without tabs',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.14' => [
         'date'  => '2026-04-05',
         'title' => 'Photo Upload Polish, Harvest Scale & Reminder Fix',
