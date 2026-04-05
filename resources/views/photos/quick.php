@@ -59,15 +59,25 @@ $categories = [
         </select>
     </div>
 
-    <!-- Upload zone: tap → pick photo → auto-uploads -->
-    <label class="qp-choose-btn" id="zone_<?= (int)$item['id'] ?>">
-        <span class="qp-choose-icon">📷</span>
-        <span class="qp-choose-text">Tap to add photo</span>
-        <input type="file" accept="image/*"
-               class="qp-file-input"
-               data-item="<?= (int)$item['id'] ?>"
-               data-upload-url="<?= e($uploadUrl) ?>">
-    </label>
+    <!-- Upload buttons: camera + gallery -->
+    <div class="qp-upload-btns" id="zone_<?= (int)$item['id'] ?>">
+        <label class="qp-choose-btn qp-choose-camera">
+            <span class="qp-choose-icon">📸</span>
+            <span class="qp-choose-text">Camera</span>
+            <input type="file" accept="image/*" capture="environment"
+                   class="qp-file-input"
+                   data-item="<?= (int)$item['id'] ?>"
+                   data-upload-url="<?= e($uploadUrl) ?>">
+        </label>
+        <label class="qp-choose-btn qp-choose-gallery">
+            <span class="qp-choose-icon">🖼️</span>
+            <span class="qp-choose-text">Gallery</span>
+            <input type="file" accept="image/*"
+                   class="qp-file-input"
+                   data-item="<?= (int)$item['id'] ?>"
+                   data-upload-url="<?= e($uploadUrl) ?>">
+        </label>
+    </div>
 
     <!-- Progress -->
     <div class="qp-upload-progress" id="qpProg_<?= (int)$item['id'] ?>" style="display:none">
@@ -180,19 +190,18 @@ $categories = [
                     zone.style.pointerEvents = '';
                     var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
                     if (xhr.status === 200 && res && res.success) {
-                        zone.querySelector('.qp-choose-text').textContent = 'Tap to add another';
                         okEl.style.display = 'block';
-                        setTimeout(function(){
-                            okEl.style.display = 'none';
-                            zone.querySelector('.qp-choose-text').textContent = 'Tap to add photo';
-                        }, 3000);
+                        setTimeout(function(){ okEl.style.display = 'none'; }, 3000);
                     } else {
-                        var msg = (res && (res.error || res.message)) ? (res.error || res.message) : 'Upload failed — try again.';
+                        var msg = (res && (res.error || res.message))
+                            ? (res.error || res.message)
+                            : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0, 120).replace(/<[^>]+>/g,'').trim());
                         errEl.textContent = msg + ' ✕';
                         errEl.style.display = 'block';
                         errEl.onclick = function(){ errEl.style.display='none'; };
                     }
-                    input.value = '';
+                    // reset all inputs for this item
+                    zone.querySelectorAll('input[type=file]').forEach(function(i){ i.value=''; });
                 });
                 xhr.addEventListener('error', function() {
                     progEl.style.display = 'none';
@@ -254,18 +263,21 @@ $categories = [
 .qp-card-meta { display:flex; gap:var(--spacing-2); align-items:center; margin-top:2px; }
 .qp-card-dist { font-size:.72rem; color:var(--color-text-muted); }
 
-/* Upload zone */
-.qp-choose-btn {
-    display:flex; align-items:center; justify-content:center; gap:var(--spacing-2);
+/* Upload buttons */
+.qp-upload-btns {
+    display:flex; gap:var(--spacing-2);
     margin:0 var(--spacing-3) var(--spacing-2);
-    padding:14px; border-radius:12px;
+}
+.qp-choose-btn {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    gap:var(--spacing-1); padding:12px 8px; border-radius:12px;
     border:2px dashed var(--color-primary);
     background:rgba(45,106,79,.06); color:var(--color-primary);
-    font-size:.92rem; font-weight:700; cursor:pointer;
-    transition:background .2s, opacity .2s;
+    font-size:.85rem; font-weight:700; cursor:pointer;
+    transition:background .2s, opacity .2s; flex-direction:column;
 }
 .qp-choose-btn:active { background:rgba(45,106,79,.14); }
-.qp-choose-icon { font-size:1.4rem; }
+.qp-choose-icon { font-size:1.5rem; }
 .qp-file-input { display:none; }
 .qp-upload-progress {
     display:flex; flex-direction:column; align-items:center; justify-content:center;

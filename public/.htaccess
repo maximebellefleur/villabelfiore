@@ -22,7 +22,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
 
 # Deny access to sensitive files
-<FilesMatch "\.(env|log|sql|sh|bak|md)$">
+<FilesMatch "\.(env|log|sql|sh|bak|md|user\.ini)$">
     Order allow,deny
     Deny from all
 </FilesMatch>

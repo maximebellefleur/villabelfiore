@@ -5,20 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= e(\App\Support\CSRF::getToken()) ?>">
     <title><?= e($title ?? 'Rooted') ?> — Rooted</title>
-    <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>">
-    <link rel="stylesheet" href="<?= url('/assets/css/admin.css') ?>">
+    <?php $av = filemtime(PUBLIC_PATH . '/assets/css/app.css'); ?>
+    <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>?v=<?= $av ?>">
+    <link rel="stylesheet" href="<?= url('/assets/css/admin.css') ?>?v=<?= $av ?>">
     <link rel="manifest" href="<?= url('/manifest.json') ?>">
     <meta name="theme-color" content="#2d5a27">
-    <?php if (!empty($mapEnabled)): ?>
+    <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="<?= url('/assets/css/map.css') ?>">
-    <?php endif; ?>
-    <?php if (!empty($miniMapEnabled)): ?>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="<?= url('/assets/css/map.css') ?>">
+    <link rel="stylesheet" href="<?= url('/assets/css/map.css') ?>?v=<?= filemtime(PUBLIC_PATH . '/assets/css/map.css') ?>">
     <?php endif; ?>
     <!-- GPS service must load before page content so inline scripts can call RootedGPS -->
-    <script src="<?= url('/assets/js/gps.js') ?>"></script>
+    <script src="<?= url('/assets/js/gps.js') ?>?v=<?= filemtime(PUBLIC_PATH . '/assets/js/gps.js') ?>"></script>
 </head>
 <body>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>

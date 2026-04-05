@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.4.11' => [
+        'date'  => '2026-04-05',
+        'title' => 'Photo Upload Fix & Camera+Gallery Buttons',
+        'new' => [],
+        'improved' => [
+            'Quick Photos now has separate Camera and Gallery buttons — Camera uses device camera directly, Gallery opens photo library',
+            'Upload error messages now show the real server error (DB error, folder not writable, file too large, etc.) instead of generic "server error"',
+        ],
+        'fixed' => [
+            'AttachmentController wrapped in try/catch — finfo extension failure and DB errors now return a readable error instead of crashing',
+            'MIME detection falls back to file extension if finfo PHP extension is unavailable on the host',
+            'post_max_size overflow now detected and returns a clear "photo too large" message',
+            'Added .user.ini to set upload_max_filesize=25M for PHP-FPM hosts (htaccess php_value is ignored on PHP-FPM)',
+        ],
+    ],
+
     '1.4.10' => [
         'date'  => '2026-04-04',
         'title' => 'Nav Drawer Fix & Wheelbarrow Icon',

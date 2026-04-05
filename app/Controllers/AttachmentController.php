@@ -30,84 +30,104 @@ class AttachmentController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
 
-        $itemId   = (int) ($params['id'] ?? 0);
-        $file     = $request->file('file');
-        $isAjax   = $request->isAjax() || $request->post('_ajax', '') === '1';
+        $itemId  = (int) ($params['id'] ?? 0);
+        $isAjax  = $request->isAjax() || $request->post('_ajax', '') === '1';
         $redirect = $request->post('_redirect', '/items/' . $itemId . '/photos');
 
+        // Detect post_max_size overflow (PHP empties $_FILES when exceeded)
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $postMax       = $this->iniBytes(ini_get('post_max_size'));
+        if ($contentLength > 0 && $postMax > 0 && $contentLength > $postMax) {
+            $mb = round($postMax / 1048576);
+            $msg = "Photo exceeds server limit ({$mb} MB). It was compressed — try a lower-resolution image.";
+            if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
+            flash('error', $msg); Response::redirect($redirect);
+        }
+
+        $file = $request->file('file');
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
             $errMsgs = [
-                UPLOAD_ERR_INI_SIZE   => 'The photo is too large (server limit). Try a smaller image.',
-                UPLOAD_ERR_FORM_SIZE  => 'The photo exceeds the allowed size.',
-                UPLOAD_ERR_PARTIAL    => 'Upload was interrupted. Please try again.',
-                UPLOAD_ERR_NO_FILE    => 'No file was selected.',
+                UPLOAD_ERR_INI_SIZE   => 'Photo too large for server. Try a smaller image.',
+                UPLOAD_ERR_FORM_SIZE  => 'Photo exceeds allowed size.',
+                UPLOAD_ERR_PARTIAL    => 'Upload interrupted — please try again.',
+                UPLOAD_ERR_NO_FILE    => 'No file received.',
                 UPLOAD_ERR_NO_TMP_DIR => 'Server error: missing temp folder.',
-                UPLOAD_ERR_CANT_WRITE => 'Server error: cannot write file.',
-                UPLOAD_ERR_EXTENSION  => 'Upload blocked by server extension.',
+                UPLOAD_ERR_CANT_WRITE => 'Server error: cannot write to disk.',
+                UPLOAD_ERR_EXTENSION  => 'Upload blocked by server.',
             ];
-            $msg = $errMsgs[$file['error'] ?? -1] ?? 'Upload failed. Please try again.';
+            $code = $file['error'] ?? -1;
+            $msg  = $errMsgs[$code] ?? "Upload error (code {$code}).";
             if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
-            flash('error', $msg);
-            Response::redirect($redirect);
+            flash('error', $msg); Response::redirect($redirect);
         }
 
-        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($file['tmp_name']);
+        // MIME detection — finfo preferred, extension fallback
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        try {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime  = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
+        } catch (\Throwable $e) {
+            $extMap = ['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png',
+                       'gif'=>'image/gif','webp'=>'image/webp','pdf'=>'application/pdf'];
+            $mime = $extMap[$ext] ?? 'application/octet-stream';
+        }
 
-        if (!in_array($mime, $allowedMimes, true)) {
+        $allowed = ['image/jpeg','image/png','image/gif','image/webp','application/pdf'];
+        if (!in_array($mime, $allowed, true)) {
             $msg = 'File type not allowed. Upload a JPEG, PNG, WebP, or PDF.';
             if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
-            flash('error', $msg);
-            Response::redirect($redirect);
+            flash('error', $msg); Response::redirect($redirect);
         }
 
-        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $uuid     = sprintf('%08x-%04x-%04x-%04x-%012s',
-            random_int(0, 0xffffffff),
-            random_int(0, 0xffff),
-            random_int(0x4000, 0x4fff),
-            random_int(0x8000, 0xbfff),
-            bin2hex(random_bytes(6))
-        );
-        $stored   = date('Ymd_Hi') . '_' . $itemId . '_' . substr($uuid, 0, 8) . '.' . $ext;
+        // Storage
         $dir      = STORAGE_PATH . '/uploads/items/';
+        $uuid     = bin2hex(random_bytes(16));
+        $stored   = date('Ymd_Hi') . '_' . $itemId . '_' . substr($uuid, 0, 8) . '.' . ($ext ?: 'jpg');
         $destPath = $dir . $stored;
 
-        if (!is_dir($dir)) { mkdir($dir, 0755, true); }
-        if (!is_writable($dir)) {
-            $msg = 'Server error: uploads directory is not writable.';
+        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+            $msg = 'Server error: could not create uploads folder. Contact admin.';
             if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
-            flash('error', $msg);
-            Response::redirect($redirect);
+            flash('error', $msg); Response::redirect($redirect);
+        }
+        if (!is_writable($dir)) {
+            $msg = 'Server error: uploads folder is not writable. Contact admin.';
+            if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
+            flash('error', $msg); Response::redirect($redirect);
         }
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            $msg = 'Could not save the file. Please try again.';
+            $msg = 'Could not save the file — please try again.';
             if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
-            flash('error', $msg);
-            Response::redirect($redirect);
+            flash('error', $msg); Response::redirect($redirect);
         }
 
-        $db = DB::getInstance();
-        $db->execute(
-            'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
-            [
-                $uuid, $itemId,
-                $request->post('category', 'general_attachment'),
-                $file['name'], $stored, $mime, $ext,
-                'local', 'uploads/items/' . $stored,
-                $file['size'],
-                0, $_SESSION['user_id'], 'active',
-            ]
-        );
+        // Database
+        try {
+            $db = DB::getInstance();
+            $db->execute(
+                'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
+                [
+                    $uuid, $itemId,
+                    $request->post('category', 'general_attachment'),
+                    $file['name'], $stored, $mime, $ext,
+                    'local', 'uploads/items/' . $stored,
+                    $file['size'], 0, $_SESSION['user_id'], 'active',
+                ]
+            );
+            $db->execute(
+                'INSERT INTO activity_log (item_id, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,NOW())',
+                [$itemId, 'image_uploaded', 'Image Uploaded', 'File "' . $file['name'] . '" uploaded.', $_SESSION['user_id']]
+            );
+            $attId = $db->lastInsertId();
+        } catch (\Throwable $e) {
+            \App\Support\Logger::critical('Attachment DB insert failed: ' . $e->getMessage(), ['item' => $itemId]);
+            @unlink($destPath); // clean up the saved file
+            $msg = 'Database error saving photo: ' . $e->getMessage();
+            if ($isAjax) { Response::json(['success' => false, 'error' => $msg]); }
+            flash('error', $msg); Response::redirect($redirect);
+        }
 
-        $db->execute(
-            'INSERT INTO activity_log (item_id, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,NOW())',
-            [$itemId, 'image_uploaded', 'Image Uploaded', 'File "' . $file['name'] . '" uploaded.', $_SESSION['user_id']]
-        );
-
-        $attId = $db->lastInsertId();
         if ($isAjax) {
             Response::json(['success' => true, 'message' => 'Photo uploaded.', 'data' => [
                 'id'       => $attId,
@@ -119,6 +139,14 @@ class AttachmentController
         }
         flash('success', 'Photo uploaded successfully.');
         Response::redirect($redirect);
+    }
+
+    private function iniBytes(string $val): int
+    {
+        $val  = trim($val);
+        $last = strtolower($val[-1] ?? '');
+        $num  = (int) $val;
+        return match($last) { 'g' => $num * 1073741824, 'm' => $num * 1048576, 'k' => $num * 1024, default => $num };
     }
 
     public function trash(Request $request, array $params = []): void

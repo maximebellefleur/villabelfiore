@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.11' => [
+        'status'   => 'released',
+        'released' => '2026-04-05',
+        'title'    => 'Photo Upload Fix & Camera+Gallery Buttons',
+        'features' => [
+            ['title' => 'Camera + Gallery buttons on Quick Photos', 'detail' => 'Two explicit buttons instead of one ambiguous tap zone.'],
+            ['title' => 'Real upload error messages',               'detail' => 'DB errors, missing finfo extension, unwritable folder now surface the actual error text.'],
+            ['title' => '.user.ini for PHP-FPM upload limits',      'detail' => 'htaccess php_value is silently ignored on PHP-FPM. .user.ini sets 25M upload limit correctly.'],
+        ],
+    ],
+
     '1.4.10' => [
         'status'   => 'released',
         'released' => '2026-04-04',
