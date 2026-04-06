@@ -169,6 +169,27 @@ class AttachmentController
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 
+    public function updateCategory(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $isAjax = ($request->header('X-Requested-With') === 'XMLHttpRequest')
+               || ($request->post('_ajax') === '1');
+        CSRF::validate($request->post('_token', ''));
+        $id       = (int) ($params['id'] ?? 0);
+        $category = trim((string) $request->post('category', ''));
+        $allowed  = ['identification_photo','yearly_refresh_north','yearly_refresh_south',
+                     'yearly_refresh_east','yearly_refresh_west','harvest_photo','general_attachment'];
+        if (!in_array($category, $allowed, true)) {
+            if ($isAjax) { Response::json(['success' => false, 'error' => 'Invalid category']); }
+            flash('error', 'Invalid category.');
+            Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
+        }
+        DB::getInstance()->execute("UPDATE attachments SET category=? WHERE id=?", [$category, $id]);
+        if ($isAjax) { Response::json(['success' => true]); }
+        flash('success', 'Category updated.');
+        Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
+    }
+
     public function quickPhotos(Request $request, array $params = []): void
     {
         $this->requireAuth();

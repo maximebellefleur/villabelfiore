@@ -79,6 +79,7 @@ $router->get('/items/{id}/attachments',        'AttachmentController@index');
 $router->post('/items/{id}/attachments',       'AttachmentController@store');
 $router->post('/attachments/{id}/trash',       'AttachmentController@trash');
 $router->post('/attachments/{id}/restore',     'AttachmentController@restore');
+$router->post('/attachments/{id}/category',    'AttachmentController@updateCategory');
 $router->get('/attachments/{id}/download',     'AttachmentController@download');
 
 // -------------------------------------------------------------------------

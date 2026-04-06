@@ -67,31 +67,60 @@ $gallery = array_values($gallery);
 <div class="photos-gallery">
 <?php foreach ($gallery as $att):
     $isImg    = str_starts_with($att['mime_type'] ?? '', 'image/');
-    $catLabel = $categories[$att['category'] ?? '']['label'] ?? ucwords(str_replace('_',' ',$att['category'] ?? ''));
-    $catIcon  = $categories[$att['category'] ?? '']['icon'] ?? '📎';
+    $catKey   = $att['category'] ?? 'general_attachment';
+    $catLabel = $categories[$catKey]['label'] ?? ucwords(str_replace('_',' ',$catKey));
+    $catIcon  = $categories[$catKey]['icon'] ?? '📎';
     $dateStr  = date('M Y', strtotime($att['uploaded_at']));
+    $attId    = (int)$att['id'];
 ?>
-<div class="photos-gallery-item" id="gitem_<?= (int)$att['id'] ?>">
+<div class="photos-gallery-item" id="gitem_<?= $attId ?>">
     <?php if ($isImg): ?>
-    <div class="photos-gallery-img-wrap" onclick="openFullscreen('<?= url('/attachments/' . (int)$att['id'] . '/download') ?>')">
-        <img src="<?= url('/attachments/' . (int)$att['id'] . '/download') ?>"
+    <div class="photos-gallery-img-wrap" onclick="openFullscreen('<?= url('/attachments/' . $attId . '/download') ?>')">
+        <img src="<?= url('/attachments/' . $attId . '/download') ?>"
              class="photos-gallery-img" loading="lazy" alt="<?= e($catLabel) ?>">
         <div class="photos-gallery-zoom">🔍</div>
     </div>
     <?php else: ?>
     <div class="photos-gallery-file">📎</div>
     <?php endif; ?>
+
+    <!-- Category (tap to change) -->
     <div class="photos-gallery-meta">
-        <span class="photos-gallery-cat"><?= $catIcon ?> <?= e($catLabel) ?></span>
+        <span class="photos-gallery-cat photos-cat-trigger"
+              data-att-id="<?= $attId ?>"
+              data-current="<?= e($catKey) ?>"
+              title="Tap to change category">
+            <?= $catIcon ?> <?= e($catLabel) ?> ✎
+        </span>
         <span class="photos-gallery-date"><?= $dateStr ?></span>
     </div>
-    <form method="POST" action="<?= url('/attachments/' . (int)$att['id'] . '/trash') ?>"
-          onsubmit="return confirm('Remove this photo?')">
-        <input type="hidden" name="_token" value="<?= $csrf ?>">
-        <button type="submit" class="photos-gallery-del" title="Delete">
+
+    <!-- Inline category selector (hidden by default) -->
+    <div class="photos-cat-edit" id="catEdit_<?= $attId ?>" style="display:none">
+        <select class="photos-cat-inline-select" data-att-id="<?= $attId ?>">
+            <?php foreach ($categories as $key => $cat): ?>
+            <option value="<?= e($key) ?>" <?= ($key === $catKey) ? 'selected' : '' ?>>
+                <?= $cat['icon'] ?> <?= e($cat['label']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <button type="button" class="photos-cat-cancel" data-att-id="<?= $attId ?>">✕</button>
+    </div>
+
+    <!-- Delete with inline Yes/No (no window.confirm — broken in PWA) -->
+    <div class="photos-gallery-footer">
+        <button type="button" class="photos-del-trigger" data-att-id="<?= $attId ?>" title="Delete">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            Delete
         </button>
-    </form>
+        <span class="photos-del-confirm" id="delConfirm_<?= $attId ?>" style="display:none">
+            <form method="POST" action="<?= url('/attachments/' . $attId . '/trash') ?>" style="display:inline">
+                <input type="hidden" name="_token" value="<?= $csrf ?>">
+                <button type="submit" class="photos-del-yes">✓ Yes</button>
+            </form>
+            <button type="button" class="photos-del-no" data-att-id="<?= $attId ?>">✕ No</button>
+        </span>
+    </div>
 </div>
 <?php endforeach; ?>
 </div>
@@ -227,6 +256,73 @@ function closeLightbox() {
     document.body.style.overflow = '';
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeLightbox(); });
+
+// ── Delete confirm (no window.confirm — broken in PWA)
+document.querySelectorAll('.photos-del-trigger').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.attId;
+        btn.style.display = 'none';
+        document.getElementById('delConfirm_' + id).style.display = 'inline-flex';
+    });
+});
+document.querySelectorAll('.photos-del-no').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.attId;
+        document.getElementById('delConfirm_' + id).style.display = 'none';
+        document.querySelector('.photos-del-trigger[data-att-id="' + id + '"]').style.display = '';
+    });
+});
+
+// ── Category tap-to-edit
+var CSRF_TOKEN = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+document.querySelectorAll('.photos-cat-trigger').forEach(function(span) {
+    span.addEventListener('click', function() {
+        var id = span.dataset.attId;
+        span.closest('.photos-gallery-meta').style.display = 'none';
+        document.getElementById('catEdit_' + id).style.display = 'flex';
+    });
+});
+document.querySelectorAll('.photos-cat-cancel').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.attId;
+        document.getElementById('catEdit_' + id).style.display = 'none';
+        document.querySelector('.photos-cat-trigger[data-att-id="' + id + '"]')
+            .closest('.photos-gallery-meta').style.display = '';
+    });
+});
+document.querySelectorAll('.photos-cat-inline-select').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+        var id  = sel.dataset.attId;
+        var cat = sel.value;
+        var fd  = new FormData();
+        fd.append('category', cat);
+        fd.append('_token', CSRF_TOKEN);
+        fd.append('_ajax', '1');
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/category', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.addEventListener('load', function() {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e){}
+            var editEl = document.getElementById('catEdit_' + id);
+            var metaEl = editEl.previousElementSibling; // .photos-gallery-meta
+            if (res && res.success) {
+                // Update visible label
+                var catLabels = {
+                    identification_photo:'🪪 ID / Main',yearly_refresh_north:'⬆️ North',
+                    yearly_refresh_south:'⬇️ South',yearly_refresh_east:'➡️ East',
+                    yearly_refresh_west:'⬅️ West',harvest_photo:'🌾 Harvest',
+                    general_attachment:'📎 General'
+                };
+                metaEl.querySelector('.photos-cat-trigger').innerHTML =
+                    (catLabels[cat] || cat) + ' ✎';
+                metaEl.querySelector('.photos-cat-trigger').dataset.current = cat;
+            }
+            editEl.style.display = 'none';
+            metaEl.style.display = '';
+        });
+        xhr.send(fd);
+    });
+});
 </script>
 
 <style>
@@ -268,9 +364,24 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeLigh
 .photos-gallery-meta { padding:6px 8px 2px;flex:1; }
 .photos-gallery-cat { font-size:.72rem;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .photos-gallery-date { font-size:.65rem;color:var(--color-text-muted);display:block; }
-.photos-gallery-item form { padding:0 6px 6px;text-align:right; }
-.photos-gallery-del { background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px;border-radius:6px;transition:color .15s,background .15s; }
-.photos-gallery-del:hover { color:var(--color-danger,#c0392b);background:rgba(192,57,43,.08); }
+
+/* Category tap-to-edit */
+.photos-cat-trigger { cursor:pointer;text-decoration:none;transition:color .15s; }
+.photos-cat-trigger:hover { color:var(--color-primary); }
+.photos-cat-edit { display:flex;align-items:center;gap:4px;padding:4px 8px 4px; }
+.photos-cat-inline-select { flex:1;padding:4px 8px;border:1.5px solid var(--color-primary);border-radius:var(--radius-pill);font-size:.72rem;font-family:inherit;background:var(--color-surface);cursor:pointer; }
+.photos-cat-cancel { background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:.85rem;padding:2px 4px;border-radius:4px;flex-shrink:0; }
+.photos-cat-cancel:hover { color:var(--color-danger,#c0392b); }
+
+/* Gallery footer: delete */
+.photos-gallery-footer { padding:4px 8px 8px;display:flex;align-items:center;gap:4px; }
+.photos-del-trigger { display:inline-flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:.7rem;font-weight:600;padding:3px 6px;border-radius:6px;transition:color .15s,background .15s; }
+.photos-del-trigger:hover { color:var(--color-danger,#c0392b);background:rgba(192,57,43,.08); }
+.photos-del-confirm { display:inline-flex;align-items:center;gap:4px; }
+.photos-del-yes { background:var(--color-danger,#c0392b);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);transition:opacity .15s; }
+.photos-del-yes:hover { opacity:.85; }
+.photos-del-no { background:rgba(0,0,0,.07);color:var(--color-text-muted);border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);transition:background .15s; }
+.photos-del-no:hover { background:rgba(0,0,0,.12); }
 
 .photos-lightbox { position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out; }
 .photos-lightbox-close { position:absolute;top:16px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1.3rem;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s; }

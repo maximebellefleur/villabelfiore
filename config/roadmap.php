@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.17' => [
+        'status'   => 'released',
+        'released' => '2026-04-06',
+        'title'    => 'Photo Edit & Delete',
+        'features' => [
+            ['title' => 'Inline category edit on photos',       'detail' => 'Tap the category label on any photo to change it. Saves via AJAX with no page reload.'],
+            ['title' => 'PWA-safe photo delete confirm',        'detail' => 'Replaced window.confirm() with inline Yes/No buttons — works in standalone PWA mode.'],
+        ],
+    ],
+
     '1.4.16' => [
         'status'   => 'released',
         'released' => '2026-04-05',

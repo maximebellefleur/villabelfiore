@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.4.17' => [
+        'date'  => '2026-04-06',
+        'title' => 'Photo Edit & Delete — Inline Category Change, PWA-Safe Confirm',
+        'new' => [
+            'Tap a photo\'s category label to edit it inline — select from the dropdown, saves instantly via AJAX',
+            'New POST /attachments/{id}/category route and AttachmentController::updateCategory() method',
+        ],
+        'improved' => [
+            'Photo delete no longer uses window.confirm() (broken in PWA/standalone mode) — replaced with inline ✓ Yes / ✕ No buttons, same pattern as harvest delete',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.16' => [
         'date'  => '2026-04-05',
         'title' => 'Reminder Item Association — GPS-Sorted Picker',
