@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.18' => [
+        'status'   => 'released',
+        'released' => '2026-04-06',
+        'title'    => 'Harvest Settings, Photos Gallery Fix & Action Types Mobile',
+        'features' => [
+            ['title' => 'Harvest Settings page',                    'detail' => 'Settings → Harvest: enable/disable harvest per type, set max per year, unit label, slider max and step. Drives Quick Harvest immediately.'],
+            ['title' => 'Photos gallery fixed',                     'detail' => 'Fixed a bug where the photos page showed "No photos yet" even when the item had existing photos.'],
+            ['title' => 'Action Types mobile scroll fix',           'detail' => 'Action types table was overflowing on mobile — now horizontally scrollable with a clear page description.'],
+        ],
+    ],
+
     '1.4.17' => [
         'status'   => 'released',
         'released' => '2026-04-06',

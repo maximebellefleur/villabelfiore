@@ -8,6 +8,23 @@
  */
 return [
 
+    '1.4.18' => [
+        'date'  => '2026-04-06',
+        'title' => 'Harvest Settings, Photos Gallery Fix & Action Types Mobile',
+        'new' => [
+            'Harvest Settings page at Settings → Harvest — configure which item types are harvest-enabled, max harvests per year, unit label, slider max and step per type',
+            'HarvestConfig helper class drives both the Settings form and Quick Harvest page — single source of truth for all harvest configuration',
+        ],
+        'improved' => [
+            'Quick Harvest slider range and unit labels now come from Settings instead of being hardcoded — changes take effect immediately after saving',
+            'Action Types settings page now has the full tab nav, horizontal scroll for the table on mobile, and a clear description of what the page is for',
+            'Settings tab nav updated — Harvest tab added for direct access from General settings',
+        ],
+        'fixed' => [
+            'Photos page (/items/{id}/photos) was showing "No photos yet" even for items with existing photos — controller was rendering the wrong legacy view',
+        ],
+    ],
+
     '1.4.17' => [
         'date'  => '2026-04-06',
         'title' => 'Photo Edit & Delete — Inline Category Change, PWA-Safe Confirm',

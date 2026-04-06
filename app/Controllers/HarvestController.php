@@ -6,6 +6,7 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Support\HarvestConfig;
 
 class HarvestController
 {
@@ -86,24 +87,16 @@ class HarvestController
         $this->requireAuth();
         $db = DB::getInstance();
 
-        $itemTypesConfig = require BASE_PATH . '/config/item_types.php';
+        // Load merged harvest config (DB overrides + item_types.php defaults)
+        $harvestConfig = HarvestConfig::get();
 
         // Harvest-enabled types + their max-per-year
         $harvestTypes  = [];
-        $maxPerYearMap = []; // typeKey => int
-        foreach ($itemTypesConfig as $typeKey => $typeCfg) {
-            if (!empty($typeCfg['harvest_enabled'])) {
-                $harvestTypes[]           = $typeKey;
-                $maxPerYearMap[$typeKey]  = (int) ($typeCfg['harvest_max_per_year'] ?? 1);
-            }
-        }
-
-        // Allow per-type override stored in settings table
-        $overrideRow = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'harvest_max_per_year_json' LIMIT 1");
-        if ($overrideRow && !empty($overrideRow['setting_value_json'])) {
-            $overrides = json_decode($overrideRow['setting_value_json'], true) ?: [];
-            foreach ($overrides as $k => $v) {
-                $maxPerYearMap[$k] = (int) $v;
+        $maxPerYearMap = [];
+        foreach ($harvestConfig as $typeKey => $cfg) {
+            if (!empty($cfg['enabled'])) {
+                $harvestTypes[]          = $typeKey;
+                $maxPerYearMap[$typeKey] = (int) $cfg['max_per_year'];
             }
         }
 
@@ -148,6 +141,7 @@ class HarvestController
             'title'         => 'Quick Harvest',
             'items'         => $items,
             'maxPerYearMap' => $maxPerYearMap,
+            'harvestConfig' => $harvestConfig,
             'yearCounts'    => $yearCounts,
             'yearHarvests'  => $yearHarvests,
             'year'          => $year,

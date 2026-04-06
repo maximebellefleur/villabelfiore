@@ -36,19 +36,12 @@ $harvestColor = [
     'vine'        => '#6d28d9',
     'tree'        => '#166534',
 ];
-$harvestUnit = [
-    'olive_tree'  => ['label' => 'baskets',      'icon' => '🧺'],
-    'almond_tree' => ['label' => 'wheelbarrows',  'icon' => $wheelbarrowSvg],
-    'vine'        => ['label' => 'kg',            'icon' => '⚖️'],
-    'tree'        => ['label' => 'kg',            'icon' => '⚖️'],
-];
-// Slider: display_max = highest value shown, step = smallest increment
-// input[range] max = display_max / step (integer steps)
-$harvestSlider = [
-    'olive_tree'  => ['display_max' => 2.0,  'step' => 0.25],  // 0–2 baskets
-    'almond_tree' => ['display_max' => 5.0,  'step' => 0.25],  // 0–5 wheelbarrows
-    'vine'        => ['display_max' => 50.0, 'step' => 1.0 ],  // 0–50 kg
-    'tree'        => ['display_max' => 20.0, 'step' => 1.0 ],  // 0–20 kg
+// Unit info: label from harvestConfig, icon hardcoded per type
+$harvestUnitIcon = [
+    'olive_tree'  => '🧺',
+    'almond_tree' => $wheelbarrowSvg,
+    'vine'        => '⚖️',
+    'tree'        => '⚖️',
 ];
 ?>
 <div class="qh-page">
@@ -74,7 +67,8 @@ $harvestSlider = [
 <?php foreach ($items as $item):
     $icon      = $harvestIcon[$item['type']] ?? '🌾';
     $color     = $harvestColor[$item['type']] ?? '#2d6a4f';
-    $unitInfo  = $harvestUnit[$item['type']] ?? ['label' => 'units', 'icon' => '📦'];
+    $typeCfg   = $harvestConfig[$item['type']] ?? [];
+    $unitInfo  = ['label' => $typeCfg['unit'] ?? 'units', 'icon' => $harvestUnitIcon[$item['type']] ?? '📦'];
     $hasGps    = !empty($item['gps_lat']) && !empty($item['gps_lng']);
     $count     = $yearCounts[(int)$item['id']] ?? 0;
     $maxYear   = $maxPerYearMap[$item['type']] ?? 1;
@@ -103,9 +97,8 @@ $harvestSlider = [
     <?php if ($maxed): ?>
     <div class="qh-maxed-msg">✅ Harvest complete for <?= e($year) ?></div>
     <?php else:
-        $sliderCfg    = $harvestSlider[$item['type']] ?? ['display_max' => 5.0, 'step' => 0.25];
-        $sliderMax    = $sliderCfg['display_max'];
-        $sliderStep   = $sliderCfg['step'];
+        $sliderMax    = (float) ($typeCfg['slider_max']  ?? 5.0);
+        $sliderStep   = (float) ($typeCfg['slider_step'] ?? 0.25);
         $sliderSteps  = (int) round($sliderMax / $sliderStep);  // input[max]
         // 5 tick labels: 0, 25%, 50%, 75%, 100% of display_max
         $ticks = [];

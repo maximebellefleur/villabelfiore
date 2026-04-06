@@ -7,7 +7,8 @@
 
     <!-- Tab nav — horizontal scrollable pill strip -->
     <nav class="settings-tab-nav" role="tablist">
-        <a href="<?= url('/settings') ?>"        class="settings-tab settings-tab--active" role="tab">General</a>
+        <a href="<?= url('/settings') ?>"               class="settings-tab settings-tab--active" role="tab">General</a>
+        <a href="<?= url('/settings/harvest') ?>"      class="settings-tab" role="tab">🌾 Harvest</a>
         <a href="<?= url('/settings/storage') ?>"      class="settings-tab" role="tab">Storage</a>
         <a href="<?= url('/settings/action-types') ?>" class="settings-tab" role="tab">Action Types</a>
         <a href="<?= url('/settings/calendar') ?>"     class="settings-tab" role="tab">📅 Calendar</a>

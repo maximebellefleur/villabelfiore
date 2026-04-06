@@ -6,6 +6,7 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Support\HarvestConfig;
 
 class SettingsController
 {
@@ -54,6 +55,52 @@ class SettingsController
         flash('success', 'Settings saved.');
         Response::redirect('/settings');
     }
+
+    // ── Harvest settings ──────────────────────────────────────────────────────
+
+    public function harvest(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $itemTypes     = require BASE_PATH . '/config/item_types.php';
+        $harvestConfig = HarvestConfig::get();
+
+        Response::render('settings/harvest', [
+            'title'         => 'Harvest Settings',
+            'itemTypes'     => $itemTypes,
+            'harvestConfig' => $harvestConfig,
+        ]);
+    }
+
+    public function updateHarvest(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $itemTypes = require BASE_PATH . '/config/item_types.php';
+        $config    = [];
+
+        foreach ($itemTypes as $typeKey => $typeCfg) {
+            $config[$typeKey] = [
+                'enabled'      => $request->post('enabled_' . $typeKey) === '1' ? 1 : 0,
+                'max_per_year' => max(1,    (int)   $request->post('max_per_year_' . $typeKey, 1)),
+                'unit'         => (trim((string) $request->post('unit_' . $typeKey, 'units')) ?: 'units'),
+                'slider_max'   => max(0.25, (float) $request->post('slider_max_'  . $typeKey, 5)),
+                'slider_step'  => max(0.05, (float) $request->post('slider_step_' . $typeKey, 0.25)),
+            ];
+        }
+
+        DB::getInstance()->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES (?, ?, 'json', 0, NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json=VALUES(setting_value_json), updated_at=NOW()",
+            ['harvest.type_config', json_encode($config)]
+        );
+
+        flash('success', 'Harvest settings saved.');
+        Response::redirect('/settings/harvest');
+    }
+
+    // ── Other settings pages ──────────────────────────────────────────────────
 
     public function storage(Request $request, array $params = []): void
     {

@@ -22,7 +22,7 @@ class AttachmentController
         $item        = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
         if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
         $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY uploaded_at DESC", [$id]);
-        Response::render('items/attachments', ['title' => 'Attachments', 'item' => $item, 'attachments' => $attachments]);
+        Response::render('items/photos', ['title' => 'Photos', 'item' => $item, 'attachments' => $attachments]);
     }
 
     public function store(Request $request, array $params = []): void

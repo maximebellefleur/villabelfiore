@@ -116,6 +116,8 @@ $router->get('/settings',                      'SettingsController@index');
 $router->post('/settings/update',              'SettingsController@update');
 $router->get('/settings/storage',              'SettingsController@storage');
 $router->post('/settings/storage',             'SettingsController@updateStorage');
+$router->get('/settings/harvest',              'SettingsController@harvest');
+$router->post('/settings/harvest',             'SettingsController@updateHarvest');
 $router->get('/settings/action-types',         'SettingsController@actionTypes');
 $router->post('/settings/action-types',        'SettingsController@updateActionTypes');
 $router->get('/settings/upgrade',              'UpgradeController@index');
