@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.4.19' => [
+        'status'   => 'released',
+        'released' => '2026-04-08',
+        'title'    => 'Photos Fix, Custom Tree Types, Log Delete & Dashboard Photo',
+        'features' => [
+            ['title' => 'Custom tree types',               'detail' => 'Select Other on Add Item, enter a name, save via AJAX. Persists for all future items in the tree_type dropdown.'],
+            ['title' => 'Activity log delete',             'detail' => 'Tap ✕ on any log entry to remove it with inline Yes/No confirm.'],
+            ['title' => 'Photos page fully fixed',         'detail' => 'Fixed wrong variable passed to view and status=NULL exclusion — all existing photos now show correctly.'],
+            ['title' => 'Dashboard photo improvement',     'detail' => 'Taller cards (170px), top-center anchor — shows much more of the tree, not just a zoomed-in crop.'],
+            ['title' => 'Treatment photo category',        'detail' => 'New 💊 Treatment category in the photo upload and category-change dropdowns.'],
+        ],
+    ],
+
     '1.4.18' => [
         'status'   => 'released',
         'released' => '2026-04-06',

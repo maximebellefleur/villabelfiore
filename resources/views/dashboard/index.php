@@ -621,8 +621,8 @@ $currentYear = date('Y');
 /* Each nearby card */
 .nearby-card {
     position: relative; border-radius: var(--radius-xl); overflow: hidden;
-    min-height: 110px; display: flex; flex-direction: column;
-    background-size: cover; background-position: center; background-color: var(--color-border);
+    min-height: 170px; display: flex; flex-direction: column;
+    background-size: cover; background-position: center top; background-color: var(--color-border);
     box-shadow: var(--shadow);
     flex: 1;
 }

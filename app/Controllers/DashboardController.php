@@ -66,7 +66,7 @@ class DashboardController
             "SELECT i.id, i.name, i.type, i.gps_lat, i.gps_lng,
                     (SELECT a.id FROM attachments a
                      WHERE a.item_id = i.id AND a.category = 'identification_photo'
-                     AND a.status = 'active' AND a.mime_type LIKE 'image/%'
+                     AND (a.status = 'active' OR a.status IS NULL) AND a.mime_type LIKE 'image/%'
                      ORDER BY a.id DESC LIMIT 1) AS photo_id
              FROM items i
              WHERE i.gps_lat IS NOT NULL AND i.gps_lng IS NOT NULL

@@ -364,14 +364,27 @@ window.MINI_MAP_READONLY = true;
         <?php if (empty($activityLog)): ?>
         <p class="text-muted">No activity recorded yet.</p>
         <?php else: ?>
-        <table class="table" style="font-size:.82rem">
-            <thead><tr><th>Date</th><th>Action</th><th>Description</th></tr></thead>
+        <?php $logCsrf = e(\App\Support\CSRF::getToken()); ?>
+        <table class="table show-log-table">
+            <thead><tr><th>Date</th><th>Action</th><th>Description</th><th></th></tr></thead>
             <tbody>
-                <?php foreach ($activityLog as $a): ?>
-                <tr>
+                <?php foreach ($activityLog as $a):
+                    $logId = (int)$a['id'];
+                ?>
+                <tr id="logrow_<?= $logId ?>">
                     <td class="text-sm text-muted" style="white-space:nowrap"><?= e(date('d M Y', strtotime($a['performed_at']))) ?></td>
                     <td><span class="badge"><?= e($a['action_label']) ?></span></td>
-                    <td><?= e($a['description']) ?></td>
+                    <td class="show-log-desc"><?= e($a['description']) ?></td>
+                    <td class="show-log-del-cell">
+                        <button type="button" class="show-log-del-btn" data-log-id="<?= $logId ?>" title="Delete">✕</button>
+                        <span class="show-log-del-confirm" id="logdel_<?= $logId ?>" style="display:none">
+                            <form method="POST" action="<?= url('/activity-log/' . $logId . '/trash') ?>" style="display:inline">
+                                <input type="hidden" name="_token" value="<?= $logCsrf ?>">
+                                <button type="submit" class="show-log-del-yes">✓</button>
+                            </form>
+                            <button type="button" class="show-log-del-no" data-log-id="<?= $logId ?>">✕</button>
+                        </span>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -380,7 +393,33 @@ window.MINI_MAP_READONLY = true;
     </div>
 </div>
 
+<style>
+.show-log-table { font-size:.82rem; width:100%; }
+.show-log-desc { word-break:break-word; overflow-wrap:anywhere; max-width:180px; }
+.show-log-del-cell { white-space:nowrap; text-align:right; padding-right:4px; }
+.show-log-del-btn { background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:.8rem;padding:2px 6px;border-radius:4px;opacity:.5;transition:opacity .15s,color .15s; }
+.show-log-del-btn:hover { opacity:1;color:var(--color-danger,#c0392b); }
+.show-log-del-confirm { display:inline-flex;align-items:center;gap:3px; }
+.show-log-del-yes { background:var(--color-danger,#c0392b);color:#fff;border:none;border-radius:4px;font-size:.72rem;font-weight:700;padding:2px 7px;cursor:pointer; }
+.show-log-del-no  { background:var(--color-border);color:var(--color-text-muted);border:none;border-radius:4px;font-size:.72rem;font-weight:700;padding:2px 7px;cursor:pointer; }
+</style>
 <script>
+// Log delete inline confirm
+document.querySelectorAll('.show-log-del-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.logId;
+        btn.style.display = 'none';
+        document.getElementById('logdel_' + id).style.display = 'inline-flex';
+    });
+});
+document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.logId;
+        document.getElementById('logdel_' + id).style.display = 'none';
+        document.querySelector('.show-log-del-btn[data-log-id="' + id + '"]').style.display = '';
+    });
+});
+
 // AI Prompt
 (function() {
     var btn = document.getElementById('aiPromptBtn');

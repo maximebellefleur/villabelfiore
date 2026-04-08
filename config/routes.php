@@ -71,6 +71,8 @@ $router->get('/items/{id}/photos',        'ItemController@photos');
 $router->get('/items/{id}/ai-prompt',     'ItemController@aiPrompt');
 $router->get('/items/{id}/actions',       'ItemController@actions');
 $router->post('/items/{id}/actions',      'ItemController@addAction');
+$router->post('/activity-log/{id}/trash', 'ItemController@deleteLog');
+$router->post('/settings/tree-types/add',  'SettingsController@addTreeType');
 
 // -------------------------------------------------------------------------
 // Attachments

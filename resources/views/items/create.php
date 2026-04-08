@@ -82,6 +82,10 @@ var itemTypeMeta = <?= json_encode(array_map(fn($t) => [
     'meta_options'  => $t['meta_options'] ?? [],
 ], $itemTypes)) ?>;
 
+// Custom tree types from DB — merged into tree_type select options
+var CUSTOM_TREE_TYPES = <?= json_encode(array_map(fn($t) => ['key' => $t['key'], 'label' => $t['label']], $customTypes ?? [])) ?>;
+var CSRF_TOKEN_ITEM = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+
 // Update the coords display whenever lat/lng change
 function updateCoordsDisplay() {
     var lat = $('#gpsLat').val();
@@ -116,19 +120,46 @@ $('#itemType').on('change', function() {
         html += '<div class="form-group"><label class="form-label">' + label + '</label>';
         var opts = metaOpts[key];
         if (opts && opts.length) {
-            html += '<select name="meta[' + key + ']" class="form-input form-input--touch">';
+            html += '<select name="meta[' + key + ']" class="form-input form-input--touch" id="metaSelect_' + key + '">';
             html += '<option value="">— Select —</option>';
             opts.forEach(function(opt) {
                 var oLabel = opt.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-                html += '<option value="' + opt + '">' + oLabel + '</option>';
+                // Skip "other" — we'll add it after custom types
+                if (opt !== 'other') {
+                    html += '<option value="' + opt + '">' + oLabel + '</option>';
+                }
             });
+            // For tree_type: inject custom types before "Other"
+            if (key === 'tree_type' && CUSTOM_TREE_TYPES.length) {
+                html += '<optgroup label="Custom">';
+                CUSTOM_TREE_TYPES.forEach(function(ct) {
+                    html += '<option value="' + ct.key + '">' + ct.label + '</option>';
+                });
+                html += '</optgroup>';
+            }
+            // Always add Other last
+            if (opts.indexOf('other') !== -1) {
+                html += '<option value="other">Other (specify below)</option>';
+            }
             html += '</select>';
+            // For tree_type: add "Other" text input + save-as-new button
+            if (key === 'tree_type') {
+                html += '<div id="customTreeWrap" style="display:none;margin-top:8px">'
+                      + '<input type="text" id="customTreeLabel" class="form-input form-input--touch" placeholder="Enter tree type name…" style="margin-bottom:6px">'
+                      + '<button type="button" id="customTreeSave" class="btn btn-secondary btn-sm">💾 Save as new type</button>'
+                      + '<span id="customTreeMsg" style="font-size:.78rem;margin-left:8px"></span>'
+                      + '</div>';
+            }
         } else {
             html += '<input type="text" name="meta[' + key + ']" class="form-input form-input--touch" placeholder="' + label + '">';
         }
         html += '</div>';
     });
-    if (html) { $('#metaFieldsInner').html(html); $('#metaFields').show(); }
+    if (html) {
+        $('#metaFieldsInner').html(html);
+        $('#metaFields').show();
+        wireCustomTreeType();
+    }
     else { $('#metaFields').hide(); }
 });
 
@@ -164,4 +195,63 @@ $('#detectGps').on('click', function() {
         applyGpsPosition(pos);
     }, 20000); // accept up to 20s old (GPS has been warming since page load)
 });
+
+function wireCustomTreeType() {
+    var sel   = document.getElementById('metaSelect_tree_type');
+    var wrap  = document.getElementById('customTreeWrap');
+    var input = document.getElementById('customTreeLabel');
+    var saveBtn = document.getElementById('customTreeSave');
+    var msg   = document.getElementById('customTreeMsg');
+    if (!sel || !wrap) return;
+
+    sel.addEventListener('change', function() {
+        wrap.style.display = sel.value === 'other' ? 'block' : 'none';
+        if (sel.value !== 'other') msg.textContent = '';
+    });
+
+    saveBtn.addEventListener('click', function() {
+        var label = input.value.trim();
+        if (!label) { msg.textContent = '⚠️ Enter a name first.'; return; }
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Saving…';
+        msg.textContent = '';
+
+        var fd = new FormData();
+        fd.append('label', label);
+        fd.append('_token', CSRF_TOKEN_ITEM);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', window.APP_BASE + 'settings/tree-types/add', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.addEventListener('load', function() {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) {}
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save as new type';
+            if (res && res.success) {
+                // Add to select if not already present
+                if (!sel.querySelector('option[value="' + res.key + '"]')) {
+                    var opt = document.createElement('option');
+                    opt.value = res.key;
+                    opt.textContent = res.label;
+                    // Insert before "other" option
+                    var otherOpt = sel.querySelector('option[value="other"]');
+                    sel.insertBefore(opt, otherOpt);
+                    // Also push into CUSTOM_TREE_TYPES for future rebuilds
+                    CUSTOM_TREE_TYPES.push({key: res.key, label: res.label});
+                }
+                sel.value = res.key;
+                wrap.style.display = 'none';
+                msg.textContent = '';
+                input.value = '';
+            } else {
+                msg.textContent = '⚠️ ' + (res && res.error ? res.error : 'Save failed.');
+            }
+        });
+        xhr.addEventListener('error', function() {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save as new type';
+            msg.textContent = '⚠️ Network error.';
+        });
+        xhr.send(fd);
+    });
+}
 </script>

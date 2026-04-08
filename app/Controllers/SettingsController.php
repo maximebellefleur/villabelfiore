@@ -100,6 +100,46 @@ class SettingsController
         Response::redirect('/settings/harvest');
     }
 
+    // ── Custom tree types ─────────────────────────────────────────────────────
+
+    public function addTreeType(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $label = trim((string) $request->post('label', ''));
+        if (strlen($label) < 2 || strlen($label) > 64) {
+            Response::json(['success' => false, 'error' => 'Name must be 2–64 characters.']);
+        }
+
+        // Generate slug: lowercase, letters/digits only, underscores
+        $slug = 'custom_' . preg_replace('/[^a-z0-9]+/', '_', strtolower($label));
+        $slug = trim($slug, '_');
+
+        $db  = DB::getInstance();
+        $row = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
+        $existing = ($row && !empty($row['setting_value_json']))
+            ? (json_decode($row['setting_value_json'], true) ?: [])
+            : [];
+
+        // Check for duplicate slug
+        foreach ($existing as $t) {
+            if ($t['key'] === $slug) {
+                Response::json(['success' => true, 'key' => $slug, 'label' => $t['label'], 'existed' => true]);
+            }
+        }
+
+        $existing[] = ['key' => $slug, 'label' => $label];
+        $db->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES ('tree_types.custom', ?, 'json', 0, NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json=VALUES(setting_value_json), updated_at=NOW()",
+            [json_encode($existing)]
+        );
+
+        Response::json(['success' => true, 'key' => $slug, 'label' => $label]);
+    }
+
     // ── Other settings pages ──────────────────────────────────────────────────
 
     public function storage(Request $request, array $params = []): void

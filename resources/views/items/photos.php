@@ -1,12 +1,13 @@
 <?php
 $categories = [
-    'identification_photo' => ['label' => 'ID / Main',  'icon' => '🪪'],
-    'yearly_refresh_north' => ['label' => 'North',       'icon' => '⬆️'],
-    'yearly_refresh_south' => ['label' => 'South',       'icon' => '⬇️'],
-    'yearly_refresh_east'  => ['label' => 'East',        'icon' => '➡️'],
-    'yearly_refresh_west'  => ['label' => 'West',        'icon' => '⬅️'],
-    'harvest_photo'        => ['label' => 'Harvest',     'icon' => '🌾'],
-    'general_attachment'   => ['label' => 'General',     'icon' => '📎'],
+    'identification_photo' => ['label' => 'ID / Main',   'icon' => '🪪'],
+    'yearly_refresh_north' => ['label' => 'North',        'icon' => '⬆️'],
+    'yearly_refresh_south' => ['label' => 'South',        'icon' => '⬇️'],
+    'yearly_refresh_east'  => ['label' => 'East',         'icon' => '➡️'],
+    'yearly_refresh_west'  => ['label' => 'West',         'icon' => '⬅️'],
+    'harvest_photo'        => ['label' => 'Harvest',      'icon' => '🌾'],
+    'treatment_photo'      => ['label' => 'Treatment',    'icon' => '💊'],
+    'general_attachment'   => ['label' => 'General',      'icon' => '📎'],
 ];
 $uploadUrl = url('/items/' . (int)$item['id'] . '/attachments');
 $csrf      = e(\App\Support\CSRF::getToken());

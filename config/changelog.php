@@ -8,6 +8,24 @@
  */
 return [
 
+    '1.4.19' => [
+        'date'  => '2026-04-08',
+        'title' => 'Photos Fix, Custom Tree Types, Log Delete & Dashboard Photo',
+        'new' => [
+            'Custom tree type: selecting "Other" on the Add Item form reveals a text field — type a name, click Save, and it persists as a new option for all future items',
+            'Activity log: delete any log entry directly from the item detail page — inline Yes/No confirm, no window.confirm needed',
+            'Photo category: added Treatment (💊) option to the photo category selector on the item photos page',
+        ],
+        'improved' => [
+            'Dashboard nearest-card: identification photo now shows at 170px height (was 110px) and anchored top-center — shows significantly more of the tree rather than a zoomed-in crop',
+            'Activity log: long filenames and descriptions now word-wrap instead of overflowing the table',
+        ],
+        'fixed' => [
+            'Photos page still showed "No photos yet" — ItemController::photos() was passing the wrong variable ($byCategory instead of $attachments) to the view',
+            'Photos uploaded before the status column existed (status = NULL) were excluded by the active filter — all queries now include status IS NULL as fallback',
+        ],
+    ],
+
     '1.4.18' => [
         'date'  => '2026-04-06',
         'title' => 'Harvest Settings, Photos Gallery Fix & Action Types Mobile',

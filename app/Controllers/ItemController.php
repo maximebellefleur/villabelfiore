@@ -62,8 +62,16 @@ class ItemController
     public function create(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $itemTypes = require BASE_PATH . '/config/item_types.php';
-        Response::render('items/create', ['title' => 'Add Item', 'itemTypes' => $itemTypes]);
+        $itemTypes   = require BASE_PATH . '/config/item_types.php';
+        $row         = DB::getInstance()->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
+        $customTypes = ($row && !empty($row['setting_value_json']))
+            ? (json_decode($row['setting_value_json'], true) ?: [])
+            : [];
+        Response::render('items/create', [
+            'title'       => 'Add Item',
+            'itemTypes'   => $itemTypes,
+            'customTypes' => $customTypes,
+        ]);
     }
 
     public function store(Request $request, array $params = []): void
@@ -149,7 +157,7 @@ class ItemController
         }
 
         $meta        = $db->fetchAll('SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?', [$id]);
-        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND status = 'active'", [$id]);
+        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL)", [$id]);
         $activityLog = $db->fetchAll('SELECT * FROM activity_log WHERE item_id = ? ORDER BY performed_at DESC LIMIT 20', [$id]);
         $reminders   = $db->fetchAll("SELECT * FROM reminders WHERE item_id = ? AND status = 'pending' ORDER BY due_at ASC", [$id]);
         $harvests    = $db->fetchAll('SELECT * FROM harvest_entries WHERE item_id = ? ORDER BY recorded_at DESC LIMIT 10', [$id]);
@@ -500,22 +508,25 @@ class ItemController
         if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
 
         $attachments = $db->fetchAll(
-            "SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY uploaded_at DESC",
+            "SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL) ORDER BY uploaded_at DESC",
             [$id]
         );
-        // Keep only the latest attachment per category
-        $byCategory = [];
-        foreach ($attachments as $att) {
-            if (!isset($byCategory[$att['category']])) {
-                $byCategory[$att['category']] = $att;
-            }
-        }
 
         Response::render('items/photos', [
-            'title'      => 'Photos — ' . $item['name'],
-            'item'       => $item,
-            'byCategory' => $byCategory,
+            'title'       => 'Photos — ' . $item['name'],
+            'item'        => $item,
+            'attachments' => $attachments,
         ]);
+    }
+
+    public function deleteLog(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id = (int) ($params['id'] ?? 0);
+        DB::getInstance()->execute('DELETE FROM activity_log WHERE id = ?', [$id]);
+        flash('success', 'Log entry deleted.');
+        Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 
     // -------------------------------------------------------------------------

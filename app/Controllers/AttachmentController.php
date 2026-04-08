@@ -21,7 +21,7 @@ class AttachmentController
         $db          = DB::getInstance();
         $item        = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
         if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
-        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND status = 'active' ORDER BY uploaded_at DESC", [$id]);
+        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL) ORDER BY uploaded_at DESC", [$id]);
         Response::render('items/photos', ['title' => 'Photos', 'item' => $item, 'attachments' => $attachments]);
     }
 
@@ -178,7 +178,8 @@ class AttachmentController
         $id       = (int) ($params['id'] ?? 0);
         $category = trim((string) $request->post('category', ''));
         $allowed  = ['identification_photo','yearly_refresh_north','yearly_refresh_south',
-                     'yearly_refresh_east','yearly_refresh_west','harvest_photo','general_attachment'];
+                     'yearly_refresh_east','yearly_refresh_west','harvest_photo',
+                     'treatment_photo','general_attachment'];
         if (!in_array($category, $allowed, true)) {
             if ($isAjax) { Response::json(['success' => false, 'error' => 'Invalid category']); }
             flash('error', 'Invalid category.');
