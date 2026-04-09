@@ -139,15 +139,28 @@
   margin-top: 4px;
 }
 
+/* Sidebar hidden state (toggle) */
+#mapSidebar.map-sidebar--hidden {
+  display: none;
+}
+
+/* Layers toggle button — active = sidebar is hidden, show as "show" state */
+.map-layers-toggle--active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary) !important;
+}
+
 /* Responsive: full-screen map on mobile — kicks in at 900px */
 @media (max-width: 900px) {
-  /* Remove padding so map fills edge-to-edge */
+  /* Prevent horizontal overflow at page level */
   .main-content--map {
     padding: 0 !important;
     max-width: 100%;
+    overflow-x: hidden;
   }
 
-  /* The page-header on map becomes a compact floating bar */
+  /* Compact sticky header — fixed width, no overflow */
   .main-content--map .page-header {
     position: sticky;
     top: 0;
@@ -160,20 +173,35 @@
     flex-wrap: nowrap;
     gap: var(--spacing-2);
     align-items: center;
+    overflow: hidden;
   }
 
   .main-content--map .page-title {
-    font-size: 1rem;
+    font-size: 0.9rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex: 1;
+    min-width: 0;
   }
 
   .main-content--map .page-header-actions {
     display: flex;
-    gap: var(--spacing-2);
+    gap: 6px;
     flex-shrink: 0;
+    align-items: center;
+  }
+
+  /* On mobile: hide text labels inside buttons, show icons only */
+  .map-btn-text { display: none; }
+  .map-item-count-label { display: none; }
+  .map-hide-mobile { display: none !important; }
+
+  /* Icon-only buttons — compact square */
+  .main-content--map .page-header-actions .btn {
+    padding: 6px 10px;
+    font-size: 1rem;
+    min-width: 36px;
   }
 
   /* Map wrap fills remaining screen height, sidebar stacks below */

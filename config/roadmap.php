@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.25' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'Map Overflow Fix & Layers Toggle',
+        'features' => [
+            ['title' => 'Layers/filter panel toggle', 'detail' => 'New ☰ Layers button in the map header collapses or expands the sidebar. Sidebar starts collapsed on mobile to give the map more space.'],
+            ['title' => 'Map header overflow fix',    'detail' => 'Mobile map header now shows icon-only buttons — no more horizontal page scroll. body overflow-x:hidden added as global guard.'],
+        ],
+    ],
+
     '1.4.24' => [
         'status'   => 'released',
         'released' => '2026-04-09',

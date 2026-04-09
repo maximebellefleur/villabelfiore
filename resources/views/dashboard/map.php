@@ -2,10 +2,17 @@
 <div class="page-header">
     <h1 class="page-title">Land Map</h1>
     <div class="page-header-actions">
-        <span class="text-muted" id="mapItemCount">Loading…</span>
-        <button class="btn btn-secondary btn-sm" id="mapFullscreenBtn" title="Fullscreen">⛶</button>
-        <button class="btn btn-secondary" id="mapDrawLandToggle">🗺 Set Land Boundary</button>
-        <button class="btn btn-primary" id="mapAddItem">+ Add Item</button>
+        <span class="text-muted map-item-count-label" id="mapItemCount">Loading…</span>
+        <button class="btn btn-secondary btn-sm map-hide-mobile" id="mapFullscreenBtn" title="Fullscreen">⛶</button>
+        <button class="btn btn-secondary map-boundary-btn" id="mapDrawLandToggle" title="Set Land Boundary">
+            <span class="map-btn-icon">🗺</span><span class="map-btn-text"> Set Land Boundary</span>
+        </button>
+        <button class="btn btn-secondary map-layers-toggle" id="mapLayersToggle" title="Toggle layers">
+            <span class="map-btn-icon">☰</span><span class="map-btn-text"> Layers</span>
+        </button>
+        <button class="btn btn-primary" id="mapAddItem">
+            <span class="map-btn-icon">+</span><span class="map-btn-text"> Add Item</span>
+        </button>
     </div>
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
@@ -161,6 +168,25 @@ var MAP_LAND_BOUNDARY     = <?= $landBoundaryJson ?>;
     document.addEventListener('fullscreenchange',       onFsChange);
     document.addEventListener('webkitfullscreenchange', onFsChange);
     document.addEventListener('mozfullscreenchange',    onFsChange);
+}());
+</script>
+<script>
+// Layers toggle
+(function () {
+    var btn     = document.getElementById('mapLayersToggle');
+    var sidebar = document.getElementById('mapSidebar');
+    if (!btn || !sidebar) return;
+    // Collapse by default on mobile
+    if (window.innerWidth < 900) {
+        sidebar.classList.add('map-sidebar--hidden');
+        btn.classList.add('map-layers-toggle--active');
+    }
+    btn.addEventListener('click', function () {
+        var hidden = sidebar.classList.toggle('map-sidebar--hidden');
+        btn.classList.toggle('map-layers-toggle--active', hidden);
+        // Let Leaflet recalculate after transition
+        setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 320);
+    });
 }());
 </script>
 <style>

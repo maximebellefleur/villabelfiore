@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.4.25' => [
+        'date'  => '2026-04-09',
+        'title' => 'Map Overflow Fix & Layers Toggle',
+        'new' => [
+            'Map page: Layers toggle button — tap ☰ Layers to collapse/expand the sidebar panel; sidebar starts collapsed on mobile',
+        ],
+        'improved' => [
+            'Map page header on mobile: button labels hidden (icon-only), fullscreen button hidden — all 4 buttons now fit without overflowing the screen width',
+            'body: overflow-x:hidden prevents any page-level horizontal scroll across the app',
+        ],
+        'fixed' => [
+            'Map page: horizontal overflow on mobile — header buttons caused page to scroll sideways',
+        ],
+    ],
+
     '1.4.24' => [
         'date'  => '2026-04-09',
         'title' => 'Lunar Calendar Dark Mode & Spacing',
