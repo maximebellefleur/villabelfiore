@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.20' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'ID Photos in Items List & Zoom Fix Everywhere',
+        'features' => [
+            ['title' => 'Items list ID photo backgrounds',      'detail' => 'Each item row shows its identification photo on the right with a gradient overlay so name/type remain readable.'],
+            ['title' => 'Photo zoom fix — dashboard cards',     'detail' => 'background-size: 100% auto anchored top — full width visible, no lateral crop. Cards now 180px tall.'],
+            ['title' => 'Photo zoom fix — item detail hero',    'detail' => 'Hero switches to object-fit: contain with dark background — complete tree visible, no crop.'],
+        ],
+    ],
+
     '1.4.19' => [
         'status'   => 'released',
         'released' => '2026-04-08',

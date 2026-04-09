@@ -47,6 +47,21 @@ class ItemController
 
         $itemTypes = require BASE_PATH . '/config/item_types.php';
 
+        // Load identification photo IDs for all items on this page in one query
+        $photoMap = [];
+        if (!empty($items)) {
+            $itemIds = array_column($items, 'id');
+            $ph      = implode(',', array_fill(0, count($itemIds), '?'));
+            $photos  = $db->fetchAll(
+                "SELECT item_id, MIN(id) AS photo_id FROM attachments
+                 WHERE item_id IN ({$ph}) AND category = 'identification_photo'
+                 AND (status = 'active' OR status IS NULL) AND mime_type LIKE 'image/%'
+                 GROUP BY item_id",
+                $itemIds
+            );
+            foreach ($photos as $p) { $photoMap[(int)$p['item_id']] = (int)$p['photo_id']; }
+        }
+
         Response::render('items/index', [
             'title'     => 'Items',
             'items'     => $items,
@@ -56,6 +71,7 @@ class ItemController
             'lastPage'  => (int) ceil($total / $perPage),
             'filters'   => compact('type', 'status', 'search'),
             'itemTypes' => $itemTypes,
+            'photoMap'  => $photoMap,
         ]);
     }
 

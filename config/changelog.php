@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.4.20' => [
+        'date'  => '2026-04-09',
+        'title' => 'ID Photos in Items List & Zoom Fix Everywhere',
+        'new' => [
+            'Items list now shows the identification photo as a background on each row — gradient overlay keeps the name and type text readable',
+        ],
+        'improved' => [
+            'Dashboard nearest cards: photo no longer crops — uses full-width scale (100% wide, natural height) anchored top-center; card taller at 180px',
+            'Item detail hero photo: switched to object-fit:contain with dark background — shows the full tree, no lateral cropping',
+            'Items list photo query uses a single IN() for the whole page — no N+1 queries',
+        ],
+        'fixed' => [
+            'Photos with status=NULL (old uploads) excluded from identification photo lookup in dashboard and items list — now included',
+        ],
+    ],
+
     '1.4.19' => [
         'date'  => '2026-04-08',
         'title' => 'Photos Fix, Custom Tree Types, Log Delete & Dashboard Photo',
