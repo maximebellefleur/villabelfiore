@@ -222,9 +222,9 @@ for ($i = 0; $i < 7; $i++) {
 <!-- ============================================================
      LUNAR CALENDAR
      ============================================================ -->
-<section class="dash-section">
-    <div class="nearby-hero-head">
-        <div class="nearby-hero-title">🌙 Lunar Garden Calendar</div>
+<section class="dash-section lunar-section">
+    <div class="lunar-section-head">
+        <span class="lunar-section-title">🌙 Lunar Garden Calendar</span>
     </div>
     <div class="lunar-today">
         <div class="lunar-today-left">
@@ -922,39 +922,51 @@ for ($i = 0; $i < 7; $i++) {
 .dash-activity-desc { font-size: 0.83rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dash-activity-time { font-size: 0.72rem; }
 
-/* Lunar calendar */
+/* Lunar calendar — dark section */
+.lunar-section {
+    background: #1a2e1f;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+}
+.lunar-section-head { margin-bottom: var(--spacing-4); }
+.lunar-section-title { font-size: 1rem; font-weight: 700; color: #d1fae5; letter-spacing: .01em; }
 .lunar-today {
     display: flex; gap: var(--spacing-3); margin-bottom: var(--spacing-4);
-    background: var(--color-surface-raised); border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border); padding: var(--spacing-4);
+    background: rgba(255,255,255,0.07); border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.10); padding: var(--spacing-4);
 }
 .lunar-today-left, .lunar-today-right {
-    display: flex; align-items: center; gap: var(--spacing-3); flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: var(--spacing-4); flex: 1; min-width: 0;
 }
-.lunar-today-right { border-left: 1px solid var(--color-border); padding-left: var(--spacing-3); }
-.lunar-phase-big { font-size: 2.2rem; line-height: 1; flex-shrink: 0; }
-.lunar-phase-name { font-size: 0.88rem; font-weight: 700; color: var(--color-text); }
-.lunar-phase-sub  { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px; }
-.lunar-type-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
-.lunar-type-name  { font-size: 0.88rem; font-weight: 700; color: var(--color-text); }
-.lunar-type-desc  { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px; }
+.lunar-today-right { border-left: 1px solid rgba(255,255,255,0.12); padding-left: var(--spacing-4); }
+.lunar-phase-big { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+.lunar-phase-name { font-size: 0.9rem; font-weight: 700; color: #f0fdf4; }
+.lunar-phase-sub  { font-size: 0.72rem; color: rgba(255,255,255,0.55); margin-top: 3px; }
+.lunar-type-emoji { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.lunar-type-name  { font-size: 0.9rem; font-weight: 700; color: #f0fdf4; }
+.lunar-type-desc  { font-size: 0.72rem; color: rgba(255,255,255,0.55); margin-top: 3px; }
 .lunar-week {
     display: grid; grid-template-columns: repeat(7,1fr); gap: 4px;
 }
 .lunar-day {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 6px 2px; border-radius: var(--radius); font-size: 0.65rem;
-    text-align: center; border: 1px solid transparent;
+    padding: 7px 2px; border-radius: var(--radius);
+    text-align: center; border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.04);
 }
-.lunar-day--today { border-color: var(--color-primary); background: rgba(45,106,79,0.06); font-weight: 700; }
-.lunar-day-label  { font-size: 0.6rem; text-transform: uppercase; letter-spacing: .04em; color: var(--color-text-muted); }
-.lunar-day-num    { font-size: 0.8rem; font-weight: 700; color: var(--color-text); }
+.lunar-day--today {
+    border-color: rgba(134,239,172,0.6);
+    background: rgba(134,239,172,0.10);
+    font-weight: 700;
+}
+.lunar-day-label  { font-size: 0.58rem; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,0.45); }
+.lunar-day-num    { font-size: 0.8rem; font-weight: 700; color: #f0fdf4; }
 .lunar-day-moon   { font-size: 1rem; line-height: 1; }
 .lunar-day-emoji  { font-size: 0.9rem; line-height: 1; }
-.lunar-day-type   { font-size: 0.58rem; font-weight: 600; color: var(--color-text-muted); }
-.lunar-elem-fire  { --elem-color: #c2410c; }
-.lunar-elem-earth { --elem-color: #92400e; }
-.lunar-elem-air   { --elem-color: #0369a1; }
-.lunar-elem-water { --elem-color: #1d4ed8; }
-.lunar-day-type   { color: var(--elem-color, var(--color-text-muted)); }
+.lunar-day-type   { font-size: 0.58rem; font-weight: 600; }
+.lunar-elem-fire  { --elem-color: #fb923c; }
+.lunar-elem-earth { --elem-color: #d97706; }
+.lunar-elem-air   { --elem-color: #38bdf8; }
+.lunar-elem-water { --elem-color: #818cf8; }
+.lunar-day-type   { color: var(--elem-color, rgba(255,255,255,0.5)); }
 </style>

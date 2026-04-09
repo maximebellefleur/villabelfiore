@@ -85,6 +85,15 @@ return [
         ],
     ],
 
+    '1.4.24' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'Lunar Calendar Dark Mode & Spacing',
+        'features' => [
+            ['title' => 'Lunar section dark mode', 'detail' => 'Deep green-black (#1a2e1f) background with frosted-glass today card and dark week strip — clearly separated from the light dashboard.'],
+        ],
+    ],
+
     '1.4.23' => [
         'status'   => 'released',
         'released' => '2026-04-09',

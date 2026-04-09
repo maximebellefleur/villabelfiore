@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.4.24' => [
+        'date'  => '2026-04-09',
+        'title' => 'Lunar Calendar Dark Mode & Spacing',
+        'new' => [],
+        'improved' => [
+            'Lunar calendar section redesigned in dark mode (#1a2e1f background) — visually separated from the rest of the dashboard',
+            'More spacing between moon phase icon and text (gap increased), larger emoji sizes',
+            'Week strip: day cells use dark glass styling with element colours (fire/earth/air/water) adapted for dark background',
+            'Today cell highlighted with a soft green border on the dark background',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.23' => [
         'date'  => '2026-04-09',
         'title' => 'Dashboard Card Photo BG & Badge Position Fix',
