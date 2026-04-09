@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.4.21' => [
+        'date'  => '2026-04-09',
+        'title' => 'Map Nav Fix, List Photo Fit & Dashboard Avatar Photos',
+        'new' => [],
+        'improved' => [
+            'Items list photo: switched to auto 100% background-size — image scales to row height so 40–50% of the full photo is visible in the thumbnail, not a zoomed-in crop',
+            'Dashboard nearest cards: photo shown as circular avatar icon (52×52 object-fit:cover) instead of full-card background — easy to identify at a glance without overwhelming the card',
+        ],
+        'fixed' => [
+            'Map page: bottom navigation bar now sits above all Leaflet layers (z-index raised from 150 to 1000) — map controls and tiles no longer overlap the nav bar',
+        ],
+    ],
+
     '1.4.20' => [
         'date'  => '2026-04-09',
         'title' => 'ID Photos in Items List & Zoom Fix Everywhere',

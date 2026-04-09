@@ -274,7 +274,7 @@ function fmtDist(m) { return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(
 .item-row {
     display: flex; align-items: stretch; position: relative;
     border-bottom: 1px solid var(--color-border); transition: background 0.12s;
-    background-size: 100% auto; background-position: top right;
+    background-size: auto 100%; background-position: right center;
     background-repeat: no-repeat;
 }
 .item-row:last-child { border-bottom: none; }

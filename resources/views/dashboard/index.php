@@ -93,14 +93,16 @@ $currentYear = date('Y');
             var itemUrl   = BASE + 'items/' + item.id;
             var photosUrl = BASE + 'items/' + item.id + '/photos';
             var harvestUrl= BASE + 'harvest/quick';
-            var bgStyle   = item.photo_id
-                ? 'background-image:url(' + BASE + 'attachments/' + item.photo_id + '/download);'
-                : 'background:' + color + '22;';
+            var bgStyle = 'background:' + color + '22;';
 
             html += '<div class="nearby-card" style="' + bgStyle + '">';
             html += '  <div class="nearby-card-gradient"></div>';
             html += '  <a href="' + itemUrl + '" class="nearby-card-inner">';
-            html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
+            if (item.photo_id) {
+                html += '    <div class="nearby-card-emoji nearby-card-avatar"><img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo"></div>';
+            } else {
+                html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
+            }
             html += '    <div class="nearby-card-info">';
             html += '      <div class="nearby-card-name">' + item.name + '</div>';
             html += '      <div class="nearby-card-sub"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
@@ -622,11 +624,11 @@ $currentYear = date('Y');
 .nearby-card {
     position: relative; border-radius: var(--radius-xl); overflow: hidden;
     min-height: 180px; display: flex; flex-direction: column;
-    background-size: 100% auto; background-position: top center;
-    background-repeat: no-repeat; background-color: #111;
     box-shadow: var(--shadow);
     flex: 1;
 }
+.nearby-card-avatar { padding: 0 !important; overflow: hidden; }
+.nearby-card-photo { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
 .nearby-card-gradient {
     position: absolute; inset: 0;
     background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.20) 100%);
