@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.4.22' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'Photo Icons, Hero Cover, Dashboard Badge & Lunar Calendar',
+        'features' => [
+            ['title' => 'Lunar biodynamic calendar',         'detail' => 'Moon phase, zodiac sign, and day type (Root/Leaf/Flower/Fruit) for today plus a 7-day week strip. Calculated in PHP using astronomical algorithms — no external API.'],
+            ['title' => 'Items list photo icons',            'detail' => 'Left type icon replaced with the actual ID photo (cover-fit rounded square) when one exists — each row is instantly recognizable.'],
+            ['title' => 'Item detail hero full-cover',       'detail' => 'Hero image reverted to object-fit:cover (300px fixed height). Small circular avatar above the type badge for quick ID alongside the title.'],
+            ['title' => 'Dashboard nearest card photo badge','detail' => 'Emoji always visible in the 52px avatar; ID photo shown as a 26px circular badge at bottom-right corner — type and photo both visible.'],
+            ['title' => 'Map/mini-map nav overlap fixes',    'detail' => 'mapWrap height on mobile accounts for bottom nav; mini map uses isolation:isolate to contain Leaflet z-indexes.'],
+        ],
+    ],
+
     '1.4.21' => [
         'status'   => 'released',
         'released' => '2026-04-09',

@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.4.22' => [
+        'date'  => '2026-04-09',
+        'title' => 'Photo Icons, Hero Cover, Dashboard Badge & Lunar Calendar',
+        'new' => [
+            'Lunar biodynamic calendar on dashboard — shows moon phase, zodiac sign, and day type (Root/Leaf/Flower/Fruit) for today + 7-day week strip; fully calculated in PHP, no API key required',
+        ],
+        'improved' => [
+            'Items list: left type icon now shows the actual ID photo (object-fit:cover) when one exists, instantly recognizable — no more raw emoji for photo-tagged items',
+            'Item detail hero: switched back to full-cover background (object-fit:cover, 300px height) — no more black letterbox bars; small circular avatar added above the type badge for extra quick ID',
+            'Dashboard nearest cards: emoji icon always visible in the avatar circle; ID photo shown as a small circular badge (26px) overlaid at bottom-right — both type and photo visible at a glance',
+            'Map page: mapWrap height on mobile now subtracts bottom nav height — map no longer extends behind the nav bar',
+            'Item detail mini map: isolation:isolate contains all Leaflet z-indexes within the map — no pane elements can render above the fixed bottom nav',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.21' => [
         'date'  => '2026-04-09',
         'title' => 'Map Nav Fix, List Photo Fit & Dashboard Avatar Photos',

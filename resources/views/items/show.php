@@ -67,6 +67,11 @@ $recentReminders = array_slice($reminders, 0, 3);
                 Edit
             </a>
         </div>
+        <?php if ($idPhoto): ?>
+        <div class="show-hero-avatar">
+            <img src="<?= url('/attachments/' . (int)$idPhoto['id'] . '/download') ?>" alt="">
+        </div>
+        <?php endif; ?>
         <div class="show-hero-badge"><?= $emoji ?> <?= e($typeLabel) ?></div>
         <h1 class="show-hero-name"><?= e($item['name']) ?></h1>
         <?php if ($item['status'] !== 'active'): ?>
@@ -222,7 +227,7 @@ $recentReminders = array_slice($reminders, 0, 3);
     <div class="show-section-head">
         <span class="show-section-title">📍 Location</span>
     </div>
-    <div id="miniMap" style="height:200px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border)"></div>
+    <div id="miniMap" style="height:200px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border);isolation:isolate;position:relative;z-index:0"></div>
 </div>
 <script>
 window.MINI_MAP_LAT = <?= (float)$item['gps_lat'] ?>;
@@ -472,12 +477,14 @@ function expandSection(id) {
     box-shadow: 0 4px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
 }
 .show-hero-photo {
-    width: 100%;
+    width: 100%; height: 300px;
     position: relative; overflow: hidden;
     background: #111;
 }
-.show-hero-photo img { width:100%;height:auto;display:block;max-height:320px;object-fit:contain;object-position:top center; }
-.show-hero-photo-overlay { position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.05) 0%,rgba(0,0,0,.50) 100%); }
+.show-hero-photo img { width:100%;height:100%;display:block;object-fit:cover;object-position:center; }
+.show-hero-photo-overlay { position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.05) 0%,rgba(0,0,0,.60) 100%); }
+.show-hero-avatar { width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid rgba(255,255,255,0.75);margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.35);flex-shrink:0; }
+.show-hero-avatar img { width:100%;height:100%;object-fit:cover;display:block; }
 .show-hero-photo--placeholder { height:200px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--item-color,#2d6a4f),color-mix(in srgb,var(--item-color,#2d6a4f) 60%,#000)); }
 .show-hero-placeholder-emoji { font-size:5rem;opacity:.45; }
 

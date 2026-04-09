@@ -33,6 +33,61 @@ $maxMonthly = max($monthlyTotals) ?: 1;
 $hasHarvest = max($monthlyTotals) > 0;
 $monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 $currentYear = date('Y');
+
+// ── Lunar / biodynamic calendar ─────────────────────────────────────────
+function rooted_moon_info(int $ts): array {
+    $knownNewMoon = 947182440; // Jan 6, 2000 18:14 UTC (Unix)
+    $synodic = 29.53059;
+    $phase = fmod(($ts - $knownNewMoon) / 86400.0, $synodic);
+    if ($phase < 0) $phase += $synodic;
+
+    if ($phase < 1.85)      $pn = 'New Moon';
+    elseif ($phase < 7.38)  $pn = 'Waxing Crescent';
+    elseif ($phase < 9.22)  $pn = 'First Quarter';
+    elseif ($phase < 14.77) $pn = 'Waxing Gibbous';
+    elseif ($phase < 16.61) $pn = 'Full Moon';
+    elseif ($phase < 22.15) $pn = 'Waning Gibbous';
+    elseif ($phase < 23.99) $pn = 'Last Quarter';
+    else                    $pn = 'Waning Crescent';
+
+    $pe = match($pn) {
+        'New Moon' => '🌑', 'Waxing Crescent' => '🌒', 'First Quarter' => '🌓',
+        'Waxing Gibbous' => '🌔', 'Full Moon' => '🌕', 'Waning Gibbous' => '🌖',
+        'Last Quarter' => '🌗', default => '🌘',
+    };
+
+    // Moon longitude (J2000.0 = Jan 1, 2000 12:00 UTC = 946728000)
+    $d = ($ts - 946728000) / 86400.0;
+    $L  = 218.316 + 13.176396 * $d;
+    $M  = deg2rad(134.963 + 13.064993 * $d);
+    $D  = deg2rad(297.850 + 12.190749 * $d);
+    $Ms = deg2rad(357.529 +  0.985600 * $d);
+    $lon = fmod($L + 6.289*sin($M) - 1.274*sin(2*$D-$M) + 0.658*sin(2*$D)
+                   - 0.186*sin($Ms) - 0.059*sin(2*$M-2*$D) + 0.053*sin($M+2*$D), 360.0);
+    if ($lon < 0) $lon += 360.0;
+
+    $signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    $sign  = $signs[(int)floor($lon / 30)];
+    $elem  = match(true) {
+        in_array($sign, ['Aries','Leo','Sagittarius'])       => 'Fire',
+        in_array($sign, ['Taurus','Virgo','Capricorn'])      => 'Earth',
+        in_array($sign, ['Gemini','Libra','Aquarius'])       => 'Air',
+        default                                               => 'Water',
+    };
+    $dt = match($elem) {
+        'Fire'  => ['Fruit/Seed', '🍎', 'Best for fruits, seeds, harvesting'],
+        'Earth' => ['Root',       '🥕', 'Plant or harvest root crops'],
+        'Air'   => ['Flower',     '🌸', 'Tend flowers, light pruning'],
+        'Water' => ['Leaf',       '🥬', 'Leafy greens, watering, transplanting'],
+    };
+    return ['phase'=>$phase,'phaseName'=>$pn,'phaseEmoji'=>$pe,'sign'=>$sign,
+            'element'=>$elem,'waxing'=>$phase<14.77,'dayType'=>$dt[0],'dayEmoji'=>$dt[1],'dayDesc'=>$dt[2]];
+}
+$moonToday = rooted_moon_info((int)date('U', mktime(12,0,0,(int)date('n'),(int)date('j'),(int)date('Y'))));
+$moonWeek  = [];
+for ($i = 0; $i < 7; $i++) {
+    $moonWeek[] = rooted_moon_info((int)mktime(12,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+}
 ?>
 
 <div class="page-header">
@@ -98,11 +153,11 @@ $currentYear = date('Y');
             html += '<div class="nearby-card" style="' + bgStyle + '">';
             html += '  <div class="nearby-card-gradient"></div>';
             html += '  <a href="' + itemUrl + '" class="nearby-card-inner">';
+            html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji;
             if (item.photo_id) {
-                html += '    <div class="nearby-card-emoji nearby-card-avatar"><img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo"></div>';
-            } else {
-                html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
+                html += '<img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
             }
+            html += '</div>';
             html += '    <div class="nearby-card-info">';
             html += '      <div class="nearby-card-name">' + item.name + '</div>';
             html += '      <div class="nearby-card-sub"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
@@ -161,6 +216,46 @@ $currentYear = date('Y');
     });
 }());
 </script>
+
+<!-- ============================================================
+     LUNAR CALENDAR
+     ============================================================ -->
+<section class="dash-section">
+    <div class="nearby-hero-head">
+        <div class="nearby-hero-title">🌙 Lunar Garden Calendar</div>
+    </div>
+    <div class="lunar-today">
+        <div class="lunar-today-left">
+            <span class="lunar-phase-big"><?= $moonToday['phaseEmoji'] ?></span>
+            <div>
+                <div class="lunar-phase-name"><?= $moonToday['phaseName'] ?></div>
+                <div class="lunar-phase-sub"><?= $moonToday['waxing'] ? '↑ Waxing' : '↓ Waning' ?> · <?= $moonToday['sign'] ?></div>
+            </div>
+        </div>
+        <div class="lunar-today-right">
+            <span class="lunar-type-emoji"><?= $moonToday['dayEmoji'] ?></span>
+            <div>
+                <div class="lunar-type-name"><?= $moonToday['dayType'] ?> Day</div>
+                <div class="lunar-type-desc"><?= $moonToday['dayDesc'] ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="lunar-week">
+        <?php foreach ($moonWeek as $i => $m):
+            $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $elemClass = 'lunar-elem-' . strtolower($m['element']);
+        ?>
+        <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?> <?= $elemClass ?>">
+            <div class="lunar-day-label"><?= $dayLabel ?></div>
+            <div class="lunar-day-num"><?= $dayNum ?></div>
+            <div class="lunar-day-moon"><?= $m['phaseEmoji'] ?></div>
+            <div class="lunar-day-emoji"><?= $m['dayEmoji'] ?></div>
+            <div class="lunar-day-type"><?= $m['dayType'] ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</section>
 
 <!-- ============================================================
      QUICK ACTION STRIP
@@ -627,8 +722,6 @@ $currentYear = date('Y');
     box-shadow: var(--shadow);
     flex: 1;
 }
-.nearby-card-avatar { padding: 0 !important; overflow: hidden; }
-.nearby-card-photo { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
 .nearby-card-gradient {
     position: absolute; inset: 0;
     background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.20) 100%);
@@ -643,7 +736,14 @@ $currentYear = date('Y');
 .nearby-card-emoji {
     width: 52px; height: 52px; border-radius: var(--radius);
     font-size: 1.6rem; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; backdrop-filter: blur(8px);
+    flex-shrink: 0; backdrop-filter: blur(8px); position: relative;
+}
+.nearby-card-photo-badge {
+    position: absolute; bottom: -3px; right: -3px;
+    width: 26px; height: 26px; border-radius: 50%;
+    object-fit: cover; display: block;
+    border: 2px solid rgba(255,255,255,0.85);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
 }
 .nearby-card-info { flex: 1; min-width: 0; }
 .nearby-card-name { font-size: 1.05rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -819,4 +919,40 @@ $currentYear = date('Y');
 }
 .dash-activity-desc { font-size: 0.83rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dash-activity-time { font-size: 0.72rem; }
+
+/* Lunar calendar */
+.lunar-today {
+    display: flex; gap: var(--spacing-3); margin-bottom: var(--spacing-4);
+    background: var(--color-surface-raised); border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border); padding: var(--spacing-4);
+}
+.lunar-today-left, .lunar-today-right {
+    display: flex; align-items: center; gap: var(--spacing-3); flex: 1; min-width: 0;
+}
+.lunar-today-right { border-left: 1px solid var(--color-border); padding-left: var(--spacing-3); }
+.lunar-phase-big { font-size: 2.2rem; line-height: 1; flex-shrink: 0; }
+.lunar-phase-name { font-size: 0.88rem; font-weight: 700; color: var(--color-text); }
+.lunar-phase-sub  { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px; }
+.lunar-type-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.lunar-type-name  { font-size: 0.88rem; font-weight: 700; color: var(--color-text); }
+.lunar-type-desc  { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px; }
+.lunar-week {
+    display: grid; grid-template-columns: repeat(7,1fr); gap: 4px;
+}
+.lunar-day {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 2px; border-radius: var(--radius); font-size: 0.65rem;
+    text-align: center; border: 1px solid transparent;
+}
+.lunar-day--today { border-color: var(--color-primary); background: rgba(45,106,79,0.06); font-weight: 700; }
+.lunar-day-label  { font-size: 0.6rem; text-transform: uppercase; letter-spacing: .04em; color: var(--color-text-muted); }
+.lunar-day-num    { font-size: 0.8rem; font-weight: 700; color: var(--color-text); }
+.lunar-day-moon   { font-size: 1rem; line-height: 1; }
+.lunar-day-emoji  { font-size: 0.9rem; line-height: 1; }
+.lunar-day-type   { font-size: 0.58rem; font-weight: 600; color: var(--color-text-muted); }
+.lunar-elem-fire  { --elem-color: #c2410c; }
+.lunar-elem-earth { --elem-color: #92400e; }
+.lunar-elem-air   { --elem-color: #0369a1; }
+.lunar-elem-water { --elem-color: #1d4ed8; }
+.lunar-day-type   { color: var(--elem-color, var(--color-text-muted)); }
 </style>

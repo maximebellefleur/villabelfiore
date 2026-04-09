@@ -88,21 +88,19 @@ $typeColor = [
         $hasGps  = !empty($item['gps_lat']) && !empty($item['gps_lng']);
         $photoId = $photoMap[(int)$item['id']] ?? null;
     ?>
-    <div class="item-row <?= $item['status'] !== 'active' ? 'item-row--inactive' : '' ?> <?= $photoId ? 'item-row--has-photo' : '' ?>"
+    <div class="item-row <?= $item['status'] !== 'active' ? 'item-row--inactive' : '' ?>"
          data-lat="<?= $hasGps ? e($item['gps_lat']) : '' ?>"
-         data-lng="<?= $hasGps ? e($item['gps_lng']) : '' ?>"
-         <?php if ($photoId): ?>
-         style="background-image:url('<?= url('/attachments/' . $photoId . '/download') ?>')"
-         <?php endif; ?>>
+         data-lng="<?= $hasGps ? e($item['gps_lng']) : '' ?>">
 
         <!-- Left accent bar -->
         <div class="item-row-accent" style="background:<?= $color ?>"></div>
-        <?php if ($photoId): ?><div class="item-row-photo-overlay"></div><?php endif; ?>
 
         <!-- Main clickable area -->
         <a href="<?= url('/items/' . (int)$item['id']) ?>" class="item-row-main">
             <?php if ($photoId): ?>
-            <div class="item-row-icon" style="background:rgba(0,0,0,0.35);color:#fff"><?= $emoji ?></div>
+            <div class="item-row-icon item-row-icon--photo">
+                <img src="<?= url('/attachments/' . $photoId . '/download') ?>" alt="">
+            </div>
             <?php else: ?>
             <div class="item-row-icon" style="background:<?= $color ?>18;color:<?= $color ?>"><?= $emoji ?></div>
             <?php endif; ?>
@@ -274,19 +272,12 @@ function fmtDist(m) { return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(
 .item-row {
     display: flex; align-items: stretch; position: relative;
     border-bottom: 1px solid var(--color-border); transition: background 0.12s;
-    background-size: auto 100%; background-position: right center;
-    background-repeat: no-repeat;
 }
 .item-row:last-child { border-bottom: none; }
 .item-row:hover { background-color: var(--color-surface); }
 .item-row--inactive { opacity: 0.6; }
-/* Photo overlay — dark-to-transparent gradient so text stays readable */
-.item-row-photo-overlay {
-    position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(to right, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.80) 55%, rgba(255,255,255,0.10) 100%);
-}
-.item-row--has-photo .item-row-main,
-.item-row--has-photo .item-row-actions { position: relative; z-index: 1; }
+.item-row-icon--photo { overflow: hidden; padding: 0; }
+.item-row-icon--photo img { width:100%;height:100%;object-fit:cover;display:block; }
 .item-row--has-photo .item-row-accent   { position: relative; z-index: 1; }
 
 .item-row-accent { width: 4px; flex-shrink: 0; }
