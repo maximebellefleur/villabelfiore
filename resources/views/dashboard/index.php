@@ -148,7 +148,9 @@ for ($i = 0; $i < 7; $i++) {
             var itemUrl   = BASE + 'items/' + item.id;
             var photosUrl = BASE + 'items/' + item.id + '/photos';
             var harvestUrl= BASE + 'harvest/quick';
-            var bgStyle = 'background:' + color + '22;';
+            var bgStyle = item.photo_id
+                ? 'background-image:url(' + BASE + 'attachments/' + item.photo_id + '/download);background-size:cover;background-position:center;'
+                : 'background:' + color + '22;';
 
             html += '<div class="nearby-card" style="' + bgStyle + '">';
             html += '  <div class="nearby-card-gradient"></div>';
@@ -719,8 +721,8 @@ for ($i = 0; $i < 7; $i++) {
 .nearby-card {
     position: relative; border-radius: var(--radius-xl); overflow: hidden;
     min-height: 180px; display: flex; flex-direction: column;
-    box-shadow: var(--shadow);
-    flex: 1;
+    background-color: #111; background-size: cover; background-position: center;
+    box-shadow: var(--shadow); flex: 1;
 }
 .nearby-card-gradient {
     position: absolute; inset: 0;
@@ -739,7 +741,7 @@ for ($i = 0; $i < 7; $i++) {
     flex-shrink: 0; backdrop-filter: blur(8px); position: relative;
 }
 .nearby-card-photo-badge {
-    position: absolute; bottom: -3px; right: -3px;
+    position: absolute; bottom: -3px; left: -3px;
     width: 26px; height: 26px; border-radius: 50%;
     object-fit: cover; display: block;
     border: 2px solid rgba(255,255,255,0.85);

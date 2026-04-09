@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.4.23' => [
+        'date'  => '2026-04-09',
+        'title' => 'Dashboard Card Photo BG & Badge Position Fix',
+        'new' => [],
+        'improved' => [
+            'Dashboard nearest cards: ID photo used as full card background (cover) when available — the card itself IS the photo',
+            'Dashboard nearest cards: circular photo badge on the emoji icon moved to bottom-left',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.22' => [
         'date'  => '2026-04-09',
         'title' => 'Photo Icons, Hero Cover, Dashboard Badge & Lunar Calendar',

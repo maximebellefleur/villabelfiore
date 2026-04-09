@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.4.23' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'Dashboard Card Photo BG & Badge Position Fix',
+        'features' => [
+            ['title' => 'Dashboard card photo background', 'detail' => 'ID photo used as full cover background on nearest cards when available. Emoji icon + gradient overlay still legible on top.'],
+            ['title' => 'Badge moved to bottom-left',      'detail' => 'Circular photo badge on the emoji avatar repositioned to bottom-left corner.'],
+        ],
+    ],
+
     '1.4.22' => [
         'status'   => 'released',
         'released' => '2026-04-09',
