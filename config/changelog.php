@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.4.26' => [
+        'date'  => '2026-04-09',
+        'title' => 'Map Attribution Z-Index, Fullscreen Restored & Lunar Spacing',
+        'new' => [],
+        'improved' => [
+            'Lunar calendar week strip: 10px margin between moon phase emoji and day-type emoji — no more touching icons',
+        ],
+        'fixed' => [
+            'Map page: Leaflet attribution no longer overlaps the bottom nav — main-content--map is now a flex column so #mapWrap fills exact remaining height (no overflow behind nav)',
+            'Map page: fullscreen button restored on mobile (was accidentally hidden in v1.4.25)',
+        ],
+    ],
+
     '1.4.25' => [
         'date'  => '2026-04-09',
         'title' => 'Map Overflow Fix & Layers Toggle',

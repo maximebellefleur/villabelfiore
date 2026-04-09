@@ -962,7 +962,7 @@ for ($i = 0; $i < 7; $i++) {
 .lunar-day-label  { font-size: 0.58rem; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,0.45); }
 .lunar-day-num    { font-size: 0.8rem; font-weight: 700; color: #f0fdf4; }
 .lunar-day-moon   { font-size: 1rem; line-height: 1; }
-.lunar-day-emoji  { font-size: 0.9rem; line-height: 1; }
+.lunar-day-emoji  { font-size: 0.9rem; line-height: 1; margin-top: 10px; }
 .lunar-day-type   { font-size: 0.58rem; font-weight: 600; }
 .lunar-elem-fire  { --elem-color: #fb923c; }
 .lunar-elem-earth { --elem-color: #d97706; }

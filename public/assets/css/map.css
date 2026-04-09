@@ -158,6 +158,11 @@
     padding: 0 !important;
     max-width: 100%;
     overflow-x: hidden;
+    /* Flex column so mapWrap fills exact remaining height */
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 56px - var(--bottom-nav-height));
+    overflow-y: hidden;
   }
 
   /* Compact sticky header — fixed width, no overflow */
@@ -195,7 +200,6 @@
   /* On mobile: hide text labels inside buttons, show icons only */
   .map-btn-text { display: none; }
   .map-item-count-label { display: none; }
-  .map-hide-mobile { display: none !important; }
 
   /* Icon-only buttons — compact square */
   .main-content--map .page-header-actions .btn {
@@ -207,7 +211,9 @@
   /* Map wrap fills remaining screen height, sidebar stacks below */
   #mapWrap {
     flex-direction: column;
-    height: calc(100dvh - 56px - var(--bottom-nav-height));
+    flex: 1;
+    min-height: 0;
+    height: auto;
     border-radius: 0;
     margin-top: 0;
     border: none;

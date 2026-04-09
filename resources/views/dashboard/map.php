@@ -3,7 +3,7 @@
     <h1 class="page-title">Land Map</h1>
     <div class="page-header-actions">
         <span class="text-muted map-item-count-label" id="mapItemCount">Loading…</span>
-        <button class="btn btn-secondary btn-sm map-hide-mobile" id="mapFullscreenBtn" title="Fullscreen">⛶</button>
+        <button class="btn btn-secondary btn-sm" id="mapFullscreenBtn" title="Fullscreen">⛶</button>
         <button class="btn btn-secondary map-boundary-btn" id="mapDrawLandToggle" title="Set Land Boundary">
             <span class="map-btn-icon">🗺</span><span class="map-btn-text"> Set Land Boundary</span>
         </button>

@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.4.26' => [
+        'status'   => 'released',
+        'released' => '2026-04-09',
+        'title'    => 'Map Attribution Z-Index, Fullscreen Restored & Lunar Spacing',
+        'features' => [
+            ['title' => 'Map attribution z-index fix', 'detail' => 'main-content--map is now a flex column; #mapWrap uses flex:1 so its height is exactly the remaining space — Leaflet attribution stays inside the map, never over the nav.'],
+            ['title' => 'Fullscreen button restored',  'detail' => 'Fullscreen button visible again on mobile.'],
+            ['title' => 'Lunar week spacing',          'detail' => '10px margin between moon emoji and day-type emoji in the week strip.'],
+        ],
+    ],
+
     '1.4.25' => [
         'status'   => 'released',
         'released' => '2026-04-09',

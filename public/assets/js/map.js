@@ -156,7 +156,7 @@
             '<div class="map-popup-type">' + typeLabel(item.type) + '</div>',
             item.gps_accuracy ? '<div class="map-popup-acc">GPS ±' + Math.round(item.gps_accuracy) + 'm</div>' : '',
             '<div class="map-popup-actions">',
-            '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-xs">View</a>',
+            '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-secondary btn-xs">View</a>',
             ALL_DRAWABLE.indexOf(item.type) >= 0
                 ? ' <button class="btn btn-secondary btn-xs" onclick="window.mapDrawForItem(' + item.id + ')">' + (LINE_TYPES.indexOf(item.type) >= 0 ? 'Draw row' : 'Draw boundary') + '</button>'
                 : '',
