@@ -93,7 +93,7 @@ for ($i = 0; $i < 7; $i++) {
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <!-- ============================================================
-     WELCOME + QUOTE
+     WELCOME + QUOTE + WEATHER (seamless)
      ============================================================ -->
 <div class="dash-welcome">
     <div class="dash-welcome-greeting">
@@ -104,63 +104,99 @@ for ($i = 0; $i < 7; $i++) {
         "<?= e(mb_strimwidth($quote['text'], 0, 160, '…')) ?>"<?php if (!empty($quote['author'])): ?> — <?= e($quote['author']) ?><?php endif; ?>
     </div>
     <?php endif; ?>
-</div>
-
-<!-- ============================================================
-     WEATHER WIDGET — full width
-     ============================================================ -->
-<?php if (!empty($weather)): ?>
-<div class="dash-weather-widget">
-    <div class="dash-weather-main">
-        <span class="dash-weather-icon"><?= $weather['icon'] ?></span>
-        <div class="dash-weather-temps">
-            <span class="dash-weather-temp"><?= $weather['temp'] ?>°</span>
-            <span class="dash-weather-feels">Feels <?= $weather['feels'] ?>°</span>
+    <?php if (!empty($weather)): ?>
+    <div class="dash-weather-widget">
+        <div class="dash-weather-main">
+            <span class="dash-weather-icon"><?= $weather['icon'] ?></span>
+            <div class="dash-weather-temps">
+                <span class="dash-weather-temp"><?= $weather['temp'] ?>°</span>
+                <span class="dash-weather-feels">Feels <?= $weather['feels'] ?>°</span>
+            </div>
+            <div class="dash-weather-center">
+                <span class="dash-weather-desc"><?= e($weather['desc']) ?></span>
+                <?php if (!empty($weatherCity)): ?>
+                <span class="dash-weather-city">📍 <?= e($weatherCity) ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="dash-weather-meta">
+                <span class="dash-weather-detail">💧 <?= $weather['humidity'] ?>%</span>
+                <span class="dash-weather-detail">🌡 <?= $weather['pressure'] ?> hPa</span>
+                <?php if (!empty($weather['sunset'])): ?>
+                <span class="dash-weather-detail">🌅 <?= e($weather['sunset']) ?></span>
+                <?php endif; ?>
+            </div>
         </div>
-        <div class="dash-weather-center">
-            <span class="dash-weather-desc"><?= e($weather['desc']) ?></span>
-            <?php if (!empty($weatherCity)): ?>
-            <span class="dash-weather-city">📍 <?= e($weatherCity) ?></span>
+        <?php if (!empty($weather['hours']) || !empty($weather['daily'])): ?>
+        <div class="dash-weather-hours">
+            <?php foreach (($weather['hours'] ?? []) as $h): ?>
+            <div class="dash-weather-hour">
+                <span class="dash-weather-hour-time"><?= e($h['time']) ?></span>
+                <span class="dash-weather-hour-icon"><?= $h['icon'] ?></span>
+                <span class="dash-weather-hour-temp"><?= $h['temp'] ?>°</span>
+            </div>
+            <?php endforeach; ?>
+            <?php if (!empty($weather['hours']) && !empty($weather['daily'])): ?>
+            <div class="dash-weather-hours-divider"></div>
             <?php endif; ?>
+            <?php foreach (($weather['daily'] ?? []) as $d): ?>
+            <div class="dash-weather-hour dash-weather-day">
+                <span class="dash-weather-hour-time"><?= e($d['label']) ?></span>
+                <span class="dash-weather-hour-icon"><?= $d['icon'] ?></span>
+                <span class="dash-weather-hour-temp"><?= $d['max'] ?>°</span>
+                <span class="dash-weather-day-min"><?= $d['min'] ?>°</span>
+            </div>
+            <?php endforeach; ?>
         </div>
-        <div class="dash-weather-meta">
-            <span class="dash-weather-detail">💧 <?= $weather['humidity'] ?>%</span>
-            <span class="dash-weather-detail">🌡 <?= $weather['pressure'] ?> hPa</span>
-            <?php if (!empty($weather['sunset'])): ?>
-            <span class="dash-weather-detail">🌅 <?= e($weather['sunset']) ?></span>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php if (!empty($weather['hours']) || !empty($weather['daily'])): ?>
-    <div class="dash-weather-hours">
-        <?php foreach (($weather['hours'] ?? []) as $h): ?>
-        <div class="dash-weather-hour">
-            <span class="dash-weather-hour-time"><?= e($h['time']) ?></span>
-            <span class="dash-weather-hour-icon"><?= $h['icon'] ?></span>
-            <span class="dash-weather-hour-temp"><?= $h['temp'] ?>°</span>
-        </div>
-        <?php endforeach; ?>
-        <?php if (!empty($weather['hours']) && !empty($weather['daily'])): ?>
-        <div class="dash-weather-hours-divider"></div>
         <?php endif; ?>
-        <?php foreach (($weather['daily'] ?? []) as $d): ?>
-        <div class="dash-weather-hour dash-weather-day">
-            <span class="dash-weather-hour-time"><?= e($d['label']) ?></span>
-            <span class="dash-weather-hour-icon"><?= $d['icon'] ?></span>
-            <span class="dash-weather-hour-temp"><?= $d['max'] ?>°</span>
-            <span class="dash-weather-day-min"><?= $d['min'] ?>°</span>
+        <?php if (!empty($forecastUrl)): ?>
+        <a href="<?= e($forecastUrl) ?>" target="_blank" rel="noopener" class="dash-weather-forecast-link">Full Forecast →</a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- ============================================================
+     LUNAR CALENDAR
+     ============================================================ -->
+<section class="dash-section lunar-section">
+    <div class="lunar-section-head">
+        <span class="lunar-section-title">🌙 Lunar Garden Calendar</span>
+    </div>
+    <div class="lunar-today">
+        <div class="lunar-today-left">
+            <span class="lunar-phase-big"><?= $moonToday['phaseEmoji'] ?></span>
+            <div>
+                <div class="lunar-phase-name"><?= $moonToday['phaseName'] ?></div>
+                <div class="lunar-phase-sub"><?= $moonToday['waxing'] ? '↑ Waxing' : '↓ Waning' ?> · <?= $moonToday['sign'] ?></div>
+            </div>
+        </div>
+        <div class="lunar-today-right">
+            <span class="lunar-type-emoji"><?= $moonToday['dayEmoji'] ?></span>
+            <div>
+                <div class="lunar-type-name"><?= $moonToday['dayType'] ?> Day</div>
+                <div class="lunar-type-desc"><?= $moonToday['dayDesc'] ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="lunar-week">
+        <?php foreach ($moonWeek as $i => $m):
+            $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $elemClass = 'lunar-elem-' . strtolower($m['element']);
+        ?>
+        <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?> <?= $elemClass ?>">
+            <div class="lunar-day-label"><?= $dayLabel ?></div>
+            <div class="lunar-day-num"><?= $dayNum ?></div>
+            <div class="lunar-day-moon"><?= $m['phaseEmoji'] ?></div>
+            <div class="lunar-day-emoji"><?= $m['dayEmoji'] ?></div>
+            <div class="lunar-day-type"><?= $m['dayType'] ?></div>
         </div>
         <?php endforeach; ?>
     </div>
-    <?php endif; ?>
-    <?php if (!empty($forecastUrl)): ?>
-    <a href="<?= e($forecastUrl) ?>" target="_blank" rel="noopener" class="dash-weather-forecast-link">Full Forecast →</a>
-    <?php endif; ?>
-</div>
-<?php endif; ?>
+</section>
 
 <!-- ============================================================
-     NEAREST TO YOU — hero section, first thing on mobile
+     NEAREST TO YOU — hero section
      ============================================================ -->
 <section class="nearby-hero" id="nearbySection">
     <div class="nearby-hero-head">
@@ -225,15 +261,11 @@ for ($i = 0; $i < 7; $i++) {
             html += '  </a>';
             html += '  <div class="nearby-card-btns">';
             if (item.photo_id) {
-                html += '  <img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
-            } else {
-                html += '  <div class="nearby-card-photo-placeholder" style="background:' + color + '40;color:' + color + '">' + emoji + '</div>';
+                html += '    <img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
             }
-            html += '    <div class="nearby-card-btn-group">';
-            html += '      <a href="' + photosUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Photos">📷</a>';
-            html += '      <a href="' + harvestUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Harvest">🌾</a>';
-            html += '      <a href="' + itemUrl + '#actions" class="nearby-card-btn" onclick="event.stopPropagation()" title="Add note">➕</a>';
-            html += '    </div>';
+            html += '    <a href="' + photosUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Photos">📷</a>';
+            html += '    <a href="' + harvestUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Harvest">🌾</a>';
+            html += '    <a href="' + itemUrl + '#actions" class="nearby-card-btn" onclick="event.stopPropagation()" title="Add note">➕</a>';
             html += '  </div>';
             html += '</div>';
         });
@@ -283,46 +315,6 @@ for ($i = 0; $i < 7; $i++) {
     });
 }());
 </script>
-
-<!-- ============================================================
-     LUNAR CALENDAR
-     ============================================================ -->
-<section class="dash-section lunar-section">
-    <div class="lunar-section-head">
-        <span class="lunar-section-title">🌙 Lunar Garden Calendar</span>
-    </div>
-    <div class="lunar-today">
-        <div class="lunar-today-left">
-            <span class="lunar-phase-big"><?= $moonToday['phaseEmoji'] ?></span>
-            <div>
-                <div class="lunar-phase-name"><?= $moonToday['phaseName'] ?></div>
-                <div class="lunar-phase-sub"><?= $moonToday['waxing'] ? '↑ Waxing' : '↓ Waning' ?> · <?= $moonToday['sign'] ?></div>
-            </div>
-        </div>
-        <div class="lunar-today-right">
-            <span class="lunar-type-emoji"><?= $moonToday['dayEmoji'] ?></span>
-            <div>
-                <div class="lunar-type-name"><?= $moonToday['dayType'] ?> Day</div>
-                <div class="lunar-type-desc"><?= $moonToday['dayDesc'] ?></div>
-            </div>
-        </div>
-    </div>
-    <div class="lunar-week">
-        <?php foreach ($moonWeek as $i => $m):
-            $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
-            $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
-            $elemClass = 'lunar-elem-' . strtolower($m['element']);
-        ?>
-        <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?> <?= $elemClass ?>">
-            <div class="lunar-day-label"><?= $dayLabel ?></div>
-            <div class="lunar-day-num"><?= $dayNum ?></div>
-            <div class="lunar-day-moon"><?= $m['phaseEmoji'] ?></div>
-            <div class="lunar-day-emoji"><?= $m['dayEmoji'] ?></div>
-            <div class="lunar-day-type"><?= $m['dayType'] ?></div>
-        </div>
-        <?php endforeach; ?>
-    </div>
-</section>
 
 <!-- ============================================================
      QUICK ACTION STRIP
@@ -820,25 +812,17 @@ for ($i = 0; $i < 7; $i++) {
 
 .nearby-card-btns {
     position: relative; z-index: 1;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center;
     padding: 0 var(--spacing-3) var(--spacing-3);
     gap: var(--spacing-2);
+    justify-content: flex-end;
 }
 .nearby-card-photo-badge {
-    width: 48px; height: 48px; border-radius: 50%;
+    width: 44px; height: 44px; border-radius: 50%;
     object-fit: cover; flex-shrink: 0;
     border: 2.5px solid rgba(255,255,255,0.9);
     box-shadow: 0 2px 6px rgba(0,0,0,0.45);
-}
-.nearby-card-photo-placeholder {
-    width: 48px; height: 48px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; flex-shrink: 0;
-    border: 2px solid rgba(255,255,255,0.25);
-    backdrop-filter: blur(8px);
-}
-.nearby-card-btn-group {
-    display: flex; gap: var(--spacing-2);
+    margin-right: auto;
 }
 .nearby-card-btn {
     width: 42px; height: 42px; border-radius: var(--radius);
@@ -1053,11 +1037,11 @@ for ($i = 0; $i < 7; $i++) {
 .lunar-day-type   { color: var(--elem-color, rgba(255,255,255,0.5)); }
 
 /* -----------------------------------------------
-   Welcome greeting + quote
+   Welcome greeting + quote + weather (unified)
    ----------------------------------------------- */
 .dash-welcome {
-    margin-bottom: var(--spacing-4);
-    padding: var(--spacing-4) 0 var(--spacing-3);
+    margin-bottom: var(--spacing-5);
+    padding: var(--spacing-4) 0 0;
 }
 .dash-welcome-greeting {
     font-size: 1.6rem;
@@ -1075,72 +1059,68 @@ for ($i = 0; $i < 7; $i++) {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    margin-bottom: var(--spacing-3);
 }
 
-/* -----------------------------------------------
-   Weather widget — full width
-   ----------------------------------------------- */
+/* Weather — no card, flows with welcome */
 .dash-weather-widget {
-    background: #1a2433;
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-4);
-    color: #e2e8f0;
+    background: transparent;
+    padding: var(--spacing-3) 0 0;
+    border-top: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
-    margin-bottom: var(--spacing-5);
-    box-shadow: var(--shadow);
-    overflow: hidden;
 }
 .dash-weather-main {
     display: flex;
     align-items: center;
     gap: var(--spacing-3);
 }
-.dash-weather-icon   { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+.dash-weather-icon   { font-size: 2rem; line-height: 1; flex-shrink: 0; }
 .dash-weather-temps  { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
-.dash-weather-temp   { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
-.dash-weather-feels  { font-size: 0.7rem; color: #94a3b8; }
-.dash-weather-center { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; padding: 0 var(--spacing-2); }
-.dash-weather-desc   { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
-.dash-weather-city   { font-size: 0.72rem; color: #64748b; }
-.dash-weather-meta   { display: flex; flex-direction: column; gap: 3px; text-align: right; flex-shrink: 0; }
-.dash-weather-detail { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; }
+.dash-weather-temp   { font-size: 1.8rem; font-weight: 800; color: var(--color-text); line-height: 1; }
+.dash-weather-feels  { font-size: 0.7rem; color: var(--color-text-muted); }
+.dash-weather-center { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; padding: 0 var(--spacing-2); }
+.dash-weather-desc   { font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
+.dash-weather-city   { font-size: 0.72rem; color: var(--color-text-muted); }
+.dash-weather-meta   { display: flex; flex-direction: column; gap: 2px; text-align: right; flex-shrink: 0; }
+.dash-weather-detail { font-size: 0.7rem; color: var(--color-text-muted); white-space: nowrap; }
 
-/* Hourly forecast strip */
+/* Hourly + daily forecast strip */
 .dash-weather-hours {
     display: flex;
     gap: var(--spacing-2);
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid var(--color-border);
     padding-top: var(--spacing-2);
     overflow-x: auto;
 }
 .dash-weather-hour {
     display: flex; flex-direction: column; align-items: center;
-    gap: 2px; min-width: 44px;
+    gap: 2px; min-width: 40px;
 }
-.dash-weather-hour-time { font-size: 0.62rem; color: #64748b; }
+.dash-weather-hour-time { font-size: 0.62rem; color: var(--color-text-muted); }
 .dash-weather-hour-icon { font-size: 1rem; line-height: 1; }
-.dash-weather-hour-temp { font-size: 0.72rem; font-weight: 700; color: #e2e8f0; }
+.dash-weather-hour-temp { font-size: 0.72rem; font-weight: 700; color: var(--color-text); }
 
-/* Daily forecast items (different shade) */
+/* Daily forecast items — tinted pill */
 .dash-weather-day {
-    background: rgba(255,255,255,0.07);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    padding: 4px 6px;
-    min-width: 52px;
+    padding: 4px 8px;
+    min-width: 54px;
 }
-.dash-weather-day .dash-weather-hour-time { color: #94a3b8; font-weight: 600; }
-.dash-weather-day-min { font-size: 0.65rem; color: #64748b; }
+.dash-weather-day .dash-weather-hour-time { color: var(--color-text-muted); font-weight: 600; }
+.dash-weather-day-min { font-size: 0.65rem; color: var(--color-text-muted); }
 .dash-weather-hours-divider {
-    width: 1px; background: rgba(255,255,255,0.12);
-    align-self: stretch; flex-shrink: 0; margin: 0 var(--spacing-1);
+    width: 1px; background: var(--color-border);
+    align-self: stretch; flex-shrink: 0; margin: 0 2px;
 }
 
 /* Forecast link */
 .dash-weather-forecast-link {
-    font-size: 0.72rem; font-weight: 600; color: #60a5fa;
-    text-decoration: none; align-self: flex-end;
+    font-size: 0.72rem; font-weight: 600; color: var(--color-primary);
+    text-decoration: none; align-self: flex-end; padding-bottom: var(--spacing-1);
 }
-.dash-weather-forecast-link:hover { color: #93c5fd; text-decoration: none; }
+.dash-weather-forecast-link:hover { text-decoration: underline; }
 </style>

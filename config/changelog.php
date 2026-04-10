@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.5.2' => [
+        'date'  => '2026-04-10',
+        'title' => 'Dashboard Layout Refinements',
+        'new' => [],
+        'improved' => [
+            'Weather widget: removed dark card background — now flows seamlessly below the welcome greeting as a transparent section separated by a light border',
+            'Nearby card action row: photo badge now sits to the left of all three action buttons (📷🌾➕) — camera icon always visible regardless of whether a photo exists',
+            'Nearby card: removed emoji placeholder when no photo — buttons are right-aligned cleanly with no gap filler',
+            'Dashboard order: Lunar Calendar moved directly after weather/welcome, Nearest to You section follows below it',
+        ],
+        'fixed' => [],
+    ],
+
     '1.5.1' => [
         'date'  => '2026-04-10',
         'title' => 'Welcome Greeting, Quote of the Day & Weather City',

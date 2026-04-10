@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.5.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'Dashboard Layout Refinements',
+        'features' => [
+            ['title' => 'Weather widget no background card',        'detail' => 'Weather info now renders transparently below the greeting — no dark box, feels like one unified section with the welcome header.'],
+            ['title' => 'Nearby card: photo badge beside 📷 button','detail' => 'When an ID photo exists, the round badge appears to the left of the three action buttons. Camera icon is always visible and tappable. No emoji placeholder when no photo.'],
+            ['title' => 'Lunar calendar moved up',                  'detail' => 'Lunar Garden Calendar now appears immediately after the welcome/weather section, before Nearest to You.'],
+        ],
+    ],
+
     '1.5.1' => [
         'status'   => 'released',
         'released' => '2026-04-10',
