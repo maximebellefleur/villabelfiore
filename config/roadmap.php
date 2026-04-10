@@ -85,6 +85,21 @@ return [
         ],
     ],
 
+    '1.6.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'PWA, Brand Identity & Offline Support',
+        'features' => [
+            ['title' => 'Full PWA — installable home-screen app',         'detail' => 'Service worker v2, manifest.json, install prompt. Works on Android (Chrome/Edge/Samsung) and iOS (Add to Home Screen).'],
+            ['title' => 'PWA Settings page',                               'detail' => 'Settings → PWA: enable/disable, app name, short name, description, theme color, background color, display mode, orientation, start URL. Saves and regenerates manifest.json on the fly.'],
+            ['title' => 'Icon upload & auto-generation',                   'detail' => 'Upload any PNG/JPG source image (≥512px); Rooted resizes it to 512, 192, 180 (Apple touch), and 32px using PHP GD.'],
+            ['title' => 'Default branded icons (Deep Moss + tree)',        'detail' => 'Pre-generated icons using the Rooted brand: Deep Moss rounded-square background, hexagon geometric frame, white tree silhouette with roots and leaf detail.'],
+            ['title' => 'Dedicated offline page',                          'detail' => 'Branded /offline page with retry button. Pre-cached by service worker. Shown when navigation fails offline instead of showing a stale /dashboard.'],
+            ['title' => 'New brand palette — Minimalist Earth',            'detail' => 'CSS custom properties updated: Deep Moss (#29402B) primary, Umber Earth (#A66141) accent, Slate Grey (#637380) muted, warm cream (#F5F0EA) surfaces.'],
+            ['title' => 'Apple PWA meta tags',                             'detail' => 'apple-touch-icon, apple-mobile-web-app-capable, apple-mobile-web-app-status-bar-style, apple-mobile-web-app-title added to the main layout for iOS add-to-home-screen support.'],
+        ],
+    ],
+
     '1.5.3' => [
         'status'   => 'released',
         'released' => '2026-04-10',

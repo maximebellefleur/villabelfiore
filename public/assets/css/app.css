@@ -4,33 +4,33 @@
    Design Tokens
    ========================================================= */
 :root {
-  /* Brand */
-  --color-primary:        #2d6a4f;
-  --color-primary-light:  #40916c;
-  --color-primary-dark:   #1b4332;
-  --color-primary-soft:   rgba(45, 106, 79, 0.10);
+  /* Brand — Rooted palette derived from logo (Deep Moss + Umber Earth + Slate Grey) */
+  --color-primary:        #29402B;   /* Deep Moss */
+  --color-primary-light:  #3D6642;   /* Lighter forest green */
+  --color-primary-dark:   #1A2B1C;   /* Deep shadow green */
+  --color-primary-soft:   rgba(41, 64, 43, 0.10);
 
-  /* Accent */
-  --color-accent:         #d4a017;
-  --color-accent-soft:    rgba(212, 160, 23, 0.12);
+  /* Accent — Umber Earth terracotta */
+  --color-accent:         #A66141;
+  --color-accent-soft:    rgba(166, 97, 65, 0.12);
 
-  /* Surface */
-  --color-bg:             #f2f7f4;
-  --color-surface:        #f8fdf9;
-  --color-surface-raised: #ffffff;
-  --color-border:         #e2ede6;
-  --color-border-strong:  #c8dece;
+  /* Surface — warm cream tones */
+  --color-bg:             #F5F0EA;
+  --color-surface:        #FAF7F4;
+  --color-surface-raised: #FFFFFF;
+  --color-border:         #E0D5CA;
+  --color-border-strong:  #C8B9AE;
 
   /* Text */
-  --color-text:           #1a2e22;
-  --color-text-muted:     #5a7565;
-  --color-text-subtle:    #8aaa90;
+  --color-text:           #1E2E20;
+  --color-text-muted:     #637380;   /* Slate Grey */
+  --color-text-subtle:    #96A3AB;
 
   /* Semantic */
   --color-danger:         #dc2626;
   --color-danger-soft:    rgba(220,38,38,0.10);
-  --color-success:        #16a34a;
-  --color-success-soft:   rgba(22,163,74,0.10);
+  --color-success:        #2F7A35;
+  --color-success-soft:   rgba(47,122,53,0.10);
   --color-warning:        #d97706;
   --color-warning-soft:   rgba(217,119,6,0.10);
   --color-info:           #0284c7;

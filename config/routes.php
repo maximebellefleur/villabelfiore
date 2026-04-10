@@ -15,6 +15,7 @@ use App\Controllers\MapController;
 use App\Controllers\UpgradeController;
 use App\Controllers\CalendarController;
 use App\Controllers\PublicController;
+use App\Controllers\PwaController;
 
 /** @var \App\Support\Router $router */
 
@@ -128,6 +129,10 @@ $router->get('/settings/upgrade',              'UpgradeController@index');
 $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
 $router->post('/settings/upgrade/github',      'UpgradeController@applyFromGitHub');
 $router->get('/settings/upcoming',             'SettingsController@upcoming');
+$router->get('/settings/pwa',                  'PwaController@pwa');
+$router->post('/settings/pwa',                 'PwaController@updatePwa');
+$router->post('/settings/pwa/upload-icon',     'PwaController@uploadIcon');
+$router->get('/offline',                       'PublicController@offline');
 $router->get('/settings/calendar',             'CalendarController@index');
 $router->post('/settings/calendar/save',       'CalendarController@save');
 $router->get('/settings/calendar/connect',     'CalendarController@connect');

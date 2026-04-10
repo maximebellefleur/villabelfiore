@@ -8,6 +8,27 @@
  */
 return [
 
+    '1.6.0' => [
+        'date'  => '2026-04-10',
+        'title' => 'PWA, Brand Identity & Offline Support',
+        'new' => [
+            'Full PWA support: installable app with manifest, service worker v2, and branded home-screen icons',
+            'PWA Settings page (Settings → PWA): enable/disable PWA, set app name/short name/description, theme & background color pickers, start URL, display mode, orientation',
+            'Icon upload in PWA settings: upload a PNG/JPG source image and Rooted auto-generates all required sizes (512px, 192px, 180px Apple touch, 32px favicon) using GD',
+            'In-page install prompt on PWA settings page (works on Chrome, Edge, Samsung Internet; iOS instructions included)',
+            'Dedicated offline fallback page (/offline): branded "You\'re Offline" screen with retry button — replaces plain /dashboard cache fallback',
+            'Service worker bumped to v2: old cache evicted on activate; offline page pre-cached during install; non-GET requests explicitly excluded from caching',
+            'Apple PWA meta tags in main layout: apple-touch-icon, apple-mobile-web-app-capable, apple-mobile-web-app-status-bar-style, apple-mobile-web-app-title',
+        ],
+        'improved' => [
+            'New brand palette applied to CSS custom properties: Deep Moss (#29402B) primary, Umber Earth (#A66141) accent, Slate Grey (#637380) muted text, warm cream (#F5F0EA) surfaces',
+            'Manifest theme_color and background_color updated to match brand palette (#29402B / #F5F0EA)',
+            'PWA tab added to all settings tab navs (General, Harvest, Action Types, Weather)',
+            'Generated icons: Deep Moss rounded-square background + hexagon geometric frame + white tree silhouette (trunk, roots, 3-circle canopy with leaf detail)',
+        ],
+        'fixed' => [],
+    ],
+
     '1.5.3' => [
         'date'  => '2026-04-10',
         'title' => 'Dashboard Section Order & 3-Day Forecast',

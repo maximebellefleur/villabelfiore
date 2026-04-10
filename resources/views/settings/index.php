@@ -13,6 +13,7 @@
         <a href="<?= url('/settings/action-types') ?>" class="settings-tab" role="tab">Action Types</a>
         <a href="<?= url('/settings/weather') ?>"      class="settings-tab" role="tab">🌤️ Weather</a>
         <a href="<?= url('/settings/calendar') ?>"     class="settings-tab" role="tab">📅 Calendar</a>
+        <a href="<?= url('/settings/pwa') ?>"          class="settings-tab" role="tab">📱 PWA</a>
         <a href="<?= url('/logs/errors') ?>"           class="settings-tab" role="tab">Error Logs</a>
         <a href="<?= url('/settings/upcoming') ?>"     class="settings-tab" role="tab">🗺 Roadmap</a>
         <a href="<?= url('/settings/upgrade') ?>"      class="settings-tab" role="tab">⬆️ Upgrade</a>

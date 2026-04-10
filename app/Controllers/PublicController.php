@@ -27,4 +27,12 @@ class PublicController
             'layout' => 'public',
         ]);
     }
+
+    public function offline(Request $request, array $params = []): void
+    {
+        http_response_code(200);
+        $path = BASE_PATH . '/resources/views/offline.php';
+        readfile($path);
+        exit;
+    }
 }

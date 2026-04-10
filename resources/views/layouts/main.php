@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>?v=<?= $av ?>">
     <link rel="stylesheet" href="<?= url('/assets/css/admin.css') ?>?v=<?= $av ?>">
     <link rel="manifest" href="<?= url('/manifest.json') ?>">
-    <meta name="theme-color" content="#2d5a27">
+    <meta name="theme-color" content="#29402B">
+    <link rel="apple-touch-icon" href="<?= url('/assets/images/apple-touch-icon.png') ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rooted">
     <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="<?= url('/assets/css/map.css') ?>?v=<?= filemtime(PUBLIC_PATH . '/assets/css/map.css') ?>">
