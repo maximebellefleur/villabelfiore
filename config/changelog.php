@@ -8,6 +8,18 @@
  */
 return [
 
+    '1.5.3' => [
+        'date'  => '2026-04-10',
+        'title' => 'Dashboard Section Order & 3-Day Forecast',
+        'new' => [],
+        'improved' => [
+            'Weather forecast strip now shows 3 days ahead (today+3) — one extra daily pill added',
+            'Upcoming Reminders moved directly under the Lunar Calendar — visible before the Nearest to You section',
+            'Recent Activity is now a standalone full-width section at the bottom (no longer paired in a two-column layout)',
+        ],
+        'fixed' => [],
+    ],
+
     '1.5.2' => [
         'date'  => '2026-04-10',
         'title' => 'Dashboard Layout Refinements',

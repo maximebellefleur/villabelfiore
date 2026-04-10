@@ -157,7 +157,7 @@ class DashboardController
         $url = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lng}"
              . "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m"
              . "&hourly=temperature_2m,weather_code"
-             . "&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FRome&forecast_days=3";
+             . "&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FRome&forecast_days=4";
 
         $json = $this->httpGet($url);
         if (!$json) return null;
@@ -192,7 +192,7 @@ class DashboardController
         $dailyMax    = $raw['daily']['temperature_2m_max'] ?? [];
         $dailyMin    = $raw['daily']['temperature_2m_min'] ?? [];
         $dailyCodes  = $raw['daily']['weather_code'] ?? [];
-        foreach ([1, 2] as $di) {
+        foreach ([1, 2, 3] as $di) {
             if (empty($dailyTimes[$di])) continue;
             [$di_icon] = $this->weatherCode((int)($dailyCodes[$di] ?? 0));
             $ts = strtotime($dailyTimes[$di]);

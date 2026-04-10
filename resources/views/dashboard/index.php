@@ -196,6 +196,31 @@ for ($i = 0; $i < 7; $i++) {
 </section>
 
 <!-- ============================================================
+     UPCOMING REMINDERS
+     ============================================================ -->
+<?php if (!empty($upcomingReminders)): ?>
+<section class="dash-widget dash-upcoming-widget">
+    <div class="dash-widget-header">
+        <span>📅 Upcoming Reminders</span>
+        <a href="<?= url('/reminders') ?>" class="dash-widget-link">All &rarr;</a>
+    </div>
+    <div class="dash-widget-body">
+        <ul class="dash-reminder-list">
+            <?php foreach ($upcomingReminders as $r): ?>
+            <li class="dash-reminder-item">
+                <span class="dash-reminder-dot"></span>
+                <div class="dash-reminder-body">
+                    <span class="dash-reminder-title"><?= e($r['title']) ?></span>
+                    <span class="text-muted text-sm"><?= e(date('d M', strtotime($r['due_at']))) ?></span>
+                </div>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- ============================================================
      NEAREST TO YOU — hero section
      ============================================================ -->
 <section class="nearby-hero" id="nearbySection">
@@ -458,55 +483,29 @@ for ($i = 0; $i < 7; $i++) {
 <?php endif; ?>
 
 <!-- ============================================================
-     TWO-COLUMN: REMINDERS + ACTIVITY
+     RECENT ACTIVITY
      ============================================================ -->
-<div class="dash-two-col">
-    <section class="dash-widget">
-        <div class="dash-widget-header">
-            <span>📅 Upcoming Reminders</span>
-            <a href="<?= url('/reminders') ?>" class="dash-widget-link">All &rarr;</a>
-        </div>
-        <div class="dash-widget-body">
-            <?php if (empty($upcomingReminders)): ?>
-            <p class="text-muted dash-widget-empty">No upcoming reminders.</p>
-            <?php else: ?>
-            <ul class="dash-reminder-list">
-                <?php foreach ($upcomingReminders as $r): ?>
-                <li class="dash-reminder-item">
-                    <span class="dash-reminder-dot"></span>
-                    <div class="dash-reminder-body">
-                        <span class="dash-reminder-title"><?= e($r['title']) ?></span>
-                        <span class="text-muted text-sm"><?= e(date('d M', strtotime($r['due_at']))) ?></span>
-                    </div>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-            <?php endif; ?>
-        </div>
-    </section>
-
-    <section class="dash-widget">
-        <div class="dash-widget-header">
-            <span>⚡ Recent Activity</span>
-            <a href="<?= url('/activity-log') ?>" class="dash-widget-link">Full log &rarr;</a>
-        </div>
-        <div class="dash-widget-body">
-            <?php if (empty($recentActivity)): ?>
-            <p class="text-muted dash-widget-empty">No recent activity.</p>
-            <?php else: ?>
-            <ul class="dash-activity-list">
-                <?php foreach ($recentActivity as $a): ?>
-                <li class="dash-activity-item">
-                    <span class="dash-activity-badge"><?= e($a['action_label']) ?></span>
-                    <span class="dash-activity-desc text-muted"><?= e(mb_strimwidth($a['description'], 0, 55, '…')) ?></span>
-                    <span class="dash-activity-time text-muted text-sm"><?= e(date('d M H:i', strtotime($a['performed_at']))) ?></span>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-            <?php endif; ?>
-        </div>
-    </section>
-</div>
+<section class="dash-widget">
+    <div class="dash-widget-header">
+        <span>⚡ Recent Activity</span>
+        <a href="<?= url('/activity-log') ?>" class="dash-widget-link">Full log &rarr;</a>
+    </div>
+    <div class="dash-widget-body">
+        <?php if (empty($recentActivity)): ?>
+        <p class="text-muted dash-widget-empty">No recent activity.</p>
+        <?php else: ?>
+        <ul class="dash-activity-list">
+            <?php foreach ($recentActivity as $a): ?>
+            <li class="dash-activity-item">
+                <span class="dash-activity-badge"><?= e($a['action_label']) ?></span>
+                <span class="dash-activity-desc text-muted"><?= e(mb_strimwidth($a['description'], 0, 55, '…')) ?></span>
+                <span class="dash-activity-time text-muted text-sm"><?= e(date('d M H:i', strtotime($a['performed_at']))) ?></span>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+    </div>
+</section>
 
 <style>
 /* -----------------------------------------------
@@ -943,6 +942,9 @@ for ($i = 0; $i < 7; $i++) {
 }
 .dash-widget-body { padding: var(--spacing-3) var(--spacing-4); }
 .dash-widget-empty { padding: var(--spacing-4) 0; text-align: center; font-style: italic; }
+
+/* Upcoming widget — sits right under lunar */
+.dash-upcoming-widget { margin-bottom: var(--spacing-5); }
 
 /* Reminder List */
 .dash-reminder-list { list-style: none; padding: 0; margin: 0; }

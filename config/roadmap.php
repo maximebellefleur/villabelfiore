@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.5.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'Dashboard Section Order & 3-Day Forecast',
+        'features' => [
+            ['title' => '3-day weather forecast',          'detail' => 'Daily forecast strip now shows tomorrow + 2 more days (4 forecast days total fetched from Open-Meteo).'],
+            ['title' => 'Upcoming Reminders repositioned', 'detail' => 'Upcoming Reminders section moved directly under the Lunar Calendar, above Nearest to You.'],
+        ],
+    ],
+
     '1.5.2' => [
         'status'   => 'released',
         'released' => '2026-04-10',
