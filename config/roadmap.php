@@ -85,6 +85,18 @@ return [
         ],
     ],
 
+    '1.5.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'Weather Widget & Nearby Card Photo Badge',
+        'features' => [
+            ['title' => 'Live weather widget on dashboard',   'detail' => 'Current temperature, weather icon, description, humidity, atmospheric pressure, sunset time, and 4-hour forecast strip displayed in the dashboard top strip. Powered by Open-Meteo (free, no API key) or your own weather station JSON feed.'],
+            ['title' => 'Dashboard top strip layout',         'detail' => 'Add Item button and weather widget share a 50/50 grid in the dashboard header — visible immediately when you open the app.'],
+            ['title' => 'Weather settings page',              'detail' => 'Settings → Weather: enable/disable widget, configure latitude/longitude, link a personal weather station, and set the external forecast URL. Weather cache cleared on save.'],
+            ['title' => 'Nearby card photo badge repositioned','detail' => 'ID photo badge (48px) moved from absolute corner into the action button row as the leftmost item — visually aligned with the 📷 🌾 ➕ buttons at the same height.'],
+        ],
+    ],
+
     '1.4.27' => [
         'status'   => 'released',
         'released' => '2026-04-10',

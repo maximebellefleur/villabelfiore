@@ -8,6 +8,24 @@
  */
 return [
 
+    '1.5.0' => [
+        'date'  => '2026-04-10',
+        'title' => 'Weather Widget & Nearby Card Photo Badge',
+        'new' => [
+            'Dashboard: live weather widget showing current temperature, icon, description, humidity, atmospheric pressure, sunset time, and next 4-hour forecast strip',
+            'Dashboard: Add Item button and weather widget displayed side-by-side in a 50/50 top strip',
+            'Weather settings page (Settings → Weather): enable/disable widget, configure coordinates for Open-Meteo, link a personal weather station JSON URL, and set external forecast link',
+            'Weather data cached for 30 minutes in the database to avoid excessive API calls',
+            'Support for custom weather station JSON feeds (EcoWitt-compatible and generic formats)',
+        ],
+        'improved' => [
+            'Dashboard nearest-to-you cards: circular ID photo badge moved into the action buttons row as the leftmost item, size increased to 48px — aligns with action icons at the same height',
+            'Nearby card action buttons grouped on the right with photo badge on the far left for a cleaner layout',
+            'Settings tab navigation updated to include Weather tab across all settings pages',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.27' => [
         'date'  => '2026-04-10',
         'title' => 'Dashboard Card Photo Badge Bottom-Left of Card',

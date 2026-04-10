@@ -178,4 +178,40 @@ class SettingsController
         $roadmap = require BASE_PATH . '/config/roadmap.php';
         Response::render('settings/upcoming', ['title' => 'Upcoming Features', 'roadmap' => $roadmap]);
     }
+
+    // ── Weather settings ─────────────────────────────────────────────────────
+
+    public function weather(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+        $ws = [];
+        foreach ($db->fetchAll("SELECT setting_key, setting_value_text FROM settings WHERE setting_key LIKE 'weather.%'") as $r) {
+            $ws[$r['setting_key']] = $r['setting_value_text'];
+        }
+        Response::render('settings/weather', ['title' => 'Weather Settings', 'ws' => $ws]);
+    }
+
+    public function updateWeather(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+
+        $keys = ['weather.enabled','weather.lat','weather.lng','weather.station_url','weather.forecast_url'];
+        foreach ($keys as $key) {
+            $value = $request->post(str_replace('.','_',$key), '');
+            $db->execute(
+                "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+                 VALUES (?,?,'text',0,NOW())
+                 ON DUPLICATE KEY UPDATE setting_value_text=VALUES(setting_value_text),updated_at=NOW()",
+                [$key, $value]
+            );
+        }
+        // Clear weather cache so next load re-fetches
+        $db->execute("DELETE FROM settings WHERE setting_key = 'weather.cache'");
+
+        flash('success', 'Weather settings saved.');
+        Response::redirect('/settings/weather');
+    }
 }

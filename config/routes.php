@@ -122,6 +122,8 @@ $router->get('/settings/harvest',              'SettingsController@harvest');
 $router->post('/settings/harvest',             'SettingsController@updateHarvest');
 $router->get('/settings/action-types',         'SettingsController@actionTypes');
 $router->post('/settings/action-types',        'SettingsController@updateActionTypes');
+$router->get('/settings/weather',              'SettingsController@weather');
+$router->post('/settings/weather',             'SettingsController@updateWeather');
 $router->get('/settings/upgrade',              'UpgradeController@index');
 $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
 $router->post('/settings/upgrade/github',      'UpgradeController@applyFromGitHub');

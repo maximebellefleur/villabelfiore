@@ -90,12 +90,59 @@ for ($i = 0; $i < 7; $i++) {
 }
 ?>
 
-<div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-    <a href="<?= url('/items/create') ?>" class="btn btn-primary">+ Add Item</a>
-</div>
-
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
+
+<!-- ============================================================
+     TOP STRIP — Add Item (left) + Weather (right)
+     ============================================================ -->
+<div class="dash-top-strip">
+
+    <!-- Add Item half -->
+    <a href="<?= url('/items/create') ?>" class="dash-add-item-btn">
+        <span class="dash-add-item-icon">➕</span>
+        <span class="dash-add-item-label">Add Item</span>
+    </a>
+
+    <!-- Weather half -->
+    <?php if (!empty($weather)): ?>
+    <div class="dash-weather-widget">
+        <div class="dash-weather-main">
+            <span class="dash-weather-icon"><?= $weather['icon'] ?></span>
+            <div class="dash-weather-temps">
+                <span class="dash-weather-temp"><?= $weather['temp'] ?>°</span>
+                <span class="dash-weather-feels">Feels <?= $weather['feels'] ?>°</span>
+            </div>
+            <div class="dash-weather-meta">
+                <span class="dash-weather-desc"><?= e($weather['desc']) ?></span>
+                <span class="dash-weather-detail">💧 <?= $weather['humidity'] ?>% &nbsp;·&nbsp; 🌡 <?= $weather['pressure'] ?> hPa</span>
+                <?php if (!empty($weather['sunset'])): ?>
+                <span class="dash-weather-detail">🌅 <?= e($weather['sunset']) ?></span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php if (!empty($weather['hours'])): ?>
+        <div class="dash-weather-hours">
+            <?php foreach ($weather['hours'] as $h): ?>
+            <div class="dash-weather-hour">
+                <span class="dash-weather-hour-time"><?= e($h['time']) ?></span>
+                <span class="dash-weather-hour-icon"><?= $h['icon'] ?></span>
+                <span class="dash-weather-hour-temp"><?= $h['temp'] ?>°</span>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($forecastUrl)): ?>
+        <a href="<?= e($forecastUrl) ?>" target="_blank" rel="noopener" class="dash-weather-forecast-link">Full Forecast →</a>
+        <?php endif; ?>
+    </div>
+    <?php else: ?>
+    <a href="<?= url('/settings/weather') ?>" class="dash-weather-widget dash-weather-widget--empty">
+        <span class="dash-weather-empty-icon">🌤️</span>
+        <span class="dash-weather-empty-text">Enable weather</span>
+    </a>
+    <?php endif; ?>
+
+</div>
 
 <!-- ============================================================
      NEAREST TO YOU — hero section, first thing on mobile
@@ -156,18 +203,22 @@ for ($i = 0; $i < 7; $i++) {
             html += '  <div class="nearby-card-gradient"></div>';
             html += '  <a href="' + itemUrl + '" class="nearby-card-inner">';
             html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
-            if (item.photo_id) {
-                html += '<img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
-            }
             html += '    <div class="nearby-card-info">';
             html += '      <div class="nearby-card-name">' + item.name + '</div>';
             html += '      <div class="nearby-card-sub"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
             html += '    </div>';
             html += '  </a>';
             html += '  <div class="nearby-card-btns">';
-            html += '    <a href="' + photosUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Photos">📷</a>';
-            html += '    <a href="' + harvestUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Harvest">🌾</a>';
-            html += '    <a href="' + itemUrl + '#actions" class="nearby-card-btn" onclick="event.stopPropagation()" title="Add note">➕</a>';
+            if (item.photo_id) {
+                html += '  <img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
+            } else {
+                html += '  <div class="nearby-card-photo-placeholder" style="background:' + color + '40;color:' + color + '">' + emoji + '</div>';
+            }
+            html += '    <div class="nearby-card-btn-group">';
+            html += '      <a href="' + photosUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Photos">📷</a>';
+            html += '      <a href="' + harvestUrl + '" class="nearby-card-btn" onclick="event.stopPropagation()" title="Harvest">🌾</a>';
+            html += '      <a href="' + itemUrl + '#actions" class="nearby-card-btn" onclick="event.stopPropagation()" title="Add note">➕</a>';
+            html += '    </div>';
             html += '  </div>';
             html += '</div>';
         });
@@ -754,11 +805,28 @@ for ($i = 0; $i < 7; $i++) {
 
 .nearby-card-btns {
     position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 var(--spacing-3) var(--spacing-3);
+    gap: var(--spacing-2);
+}
+.nearby-card-photo-badge {
+    width: 48px; height: 48px; border-radius: 50%;
+    object-fit: cover; flex-shrink: 0;
+    border: 2.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+}
+.nearby-card-photo-placeholder {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(8px);
+}
+.nearby-card-btn-group {
     display: flex; gap: var(--spacing-2);
-    padding: 0 var(--spacing-4) var(--spacing-3); justify-content: flex-end;
 }
 .nearby-card-btn {
-    width: 40px; height: 40px; border-radius: var(--radius);
+    width: 42px; height: 42px; border-radius: var(--radius);
     background: rgba(255,255,255,0.18); backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
     font-size: 1.1rem; text-decoration: none; border: 1px solid rgba(255,255,255,0.25);
@@ -968,4 +1036,103 @@ for ($i = 0; $i < 7; $i++) {
 .lunar-elem-air   { --elem-color: #38bdf8; }
 .lunar-elem-water { --elem-color: #818cf8; }
 .lunar-day-type   { color: var(--elem-color, rgba(255,255,255,0.5)); }
+
+/* -----------------------------------------------
+   Top Strip — Add Item + Weather (50/50)
+   ----------------------------------------------- */
+.dash-top-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-5);
+    align-items: stretch;
+}
+@media (max-width: 480px) {
+    .dash-top-strip { grid-template-columns: 1fr; }
+}
+
+/* Add Item half */
+.dash-add-item-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-5) var(--spacing-4);
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    font-weight: 700;
+    transition: opacity .15s, transform .1s;
+    box-shadow: var(--shadow);
+    min-height: 100px;
+}
+.dash-add-item-btn:hover { opacity: .9; transform: translateY(-2px); text-decoration: none; color: #fff; }
+.dash-add-item-icon  { font-size: 2rem; line-height: 1; }
+.dash-add-item-label { font-size: 1rem; letter-spacing: .01em; }
+
+/* Weather widget half */
+.dash-weather-widget {
+    background: #1a2433;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    min-height: 100px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.dash-weather-widget--empty {
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    gap: var(--spacing-2);
+    opacity: .7;
+    transition: opacity .15s;
+}
+.dash-weather-widget--empty:hover { opacity: 1; text-decoration: none; }
+.dash-weather-empty-icon { font-size: 2rem; line-height: 1; }
+.dash-weather-empty-text { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
+
+.dash-weather-main {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    flex: 1;
+}
+.dash-weather-icon   { font-size: 2.4rem; line-height: 1; flex-shrink: 0; }
+.dash-weather-temps  { display: flex; flex-direction: column; gap: 1px; }
+.dash-weather-temp   { font-size: 2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
+.dash-weather-feels  { font-size: 0.7rem; color: #94a3b8; }
+.dash-weather-meta   { display: flex; flex-direction: column; gap: 2px; margin-left: auto; text-align: right; }
+.dash-weather-desc   { font-size: 0.78rem; font-weight: 600; color: #cbd5e1; }
+.dash-weather-detail { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
+
+/* Hourly forecast strip */
+.dash-weather-hours {
+    display: flex;
+    gap: var(--spacing-2);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: var(--spacing-2);
+    overflow-x: auto;
+}
+.dash-weather-hour {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; min-width: 42px;
+}
+.dash-weather-hour-time { font-size: 0.62rem; color: #64748b; }
+.dash-weather-hour-icon { font-size: 1rem; line-height: 1; }
+.dash-weather-hour-temp { font-size: 0.72rem; font-weight: 700; color: #e2e8f0; }
+
+/* Forecast link */
+.dash-weather-forecast-link {
+    font-size: 0.7rem; font-weight: 600; color: #60a5fa;
+    text-decoration: none; text-align: right;
+    margin-top: auto;
+    align-self: flex-end;
+}
+.dash-weather-forecast-link:hover { color: #93c5fd; text-decoration: none; }
 </style>

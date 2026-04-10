@@ -83,7 +83,136 @@ class DashboardController
             'harvestByTypeMap'  => $harvestByTypeMap,
             'monthlyHarvest'    => $monthlyHarvest,
             'gpsItems'          => $gpsItems,
+            'weather'           => $this->fetchWeather($db),
+            'forecastUrl'       => $this->getSetting($db, 'weather.forecast_url', 'https://www.ilmeteo.it/meteo/rosolini'),
         ]);
+    }
+
+    // ── Weather helpers ──────────────────────────────────────────────────────
+
+    private function getSetting(\App\Support\DB $db, string $key, string $default = ''): string {
+        $row = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = ?", [$key]);
+        return $row['setting_value_text'] ?? $default;
+    }
+
+    private function fetchWeather(\App\Support\DB $db): ?array {
+        if ($this->getSetting($db, 'weather.enabled') !== '1') return null;
+
+        // 30-min cache
+        $cache = $db->fetchOne("SELECT setting_value_json, updated_at FROM settings WHERE setting_key = 'weather.cache'");
+        if ($cache && !empty($cache['setting_value_json'])) {
+            $age = time() - (int)strtotime($cache['updated_at'] . ' UTC');
+            if ($age < 1800) {
+                $d = json_decode($cache['setting_value_json'], true);
+                if ($d) return $d;
+            }
+        }
+
+        $stationUrl = $this->getSetting($db, 'weather.station_url');
+        if ($stationUrl) {
+            $json = $this->httpGet($stationUrl);
+            if ($json) {
+                $raw = json_decode($json, true);
+                if ($raw) { $parsed = $this->parseStationData($raw); $this->cacheWeather($db, $parsed); return $parsed; }
+            }
+            return null;
+        }
+
+        $lat = $this->getSetting($db, 'weather.lat', '36.82');
+        $lng = $this->getSetting($db, 'weather.lng', '14.95');
+        $url = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lng}"
+             . "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m"
+             . "&hourly=temperature_2m,weather_code"
+             . "&daily=sunrise,sunset&timezone=Europe%2FRome&forecast_days=1";
+
+        $json = $this->httpGet($url);
+        if (!$json) return null;
+        $raw = json_decode($json, true);
+        if (!$raw || empty($raw['current'])) return null;
+
+        $parsed = $this->parseOpenMeteo($raw);
+        $this->cacheWeather($db, $parsed);
+        return $parsed;
+    }
+
+    private function parseOpenMeteo(array $raw): array {
+        $cur  = $raw['current'];
+        $code = (int)($cur['weather_code'] ?? 0);
+        [$icon, $desc] = $this->weatherCode($code);
+
+        $nowH   = (int)date('G');
+        $times  = $raw['hourly']['time'] ?? [];
+        $temps  = $raw['hourly']['temperature_2m'] ?? [];
+        $codes  = $raw['hourly']['weather_code'] ?? [];
+        $hours  = [];
+        foreach ($times as $i => $t) {
+            $h = (int)substr($t, 11, 2);
+            if ($h > $nowH && count($hours) < 4) {
+                [$hi] = $this->weatherCode((int)($codes[$i] ?? 0));
+                $hours[] = ['time' => substr($t, 11, 5), 'temp' => round($temps[$i] ?? 0), 'icon' => $hi];
+            }
+        }
+        return [
+            'temp'    => round((float)($cur['temperature_2m'] ?? 0)),
+            'feels'   => round((float)($cur['apparent_temperature'] ?? 0)),
+            'humidity'=> (int)($cur['relative_humidity_2m'] ?? 0),
+            'pressure'=> round((float)($cur['surface_pressure'] ?? 0)),
+            'wind'    => round((float)($cur['wind_speed_10m'] ?? 0)),
+            'icon'    => $icon, 'desc' => $desc,
+            'sunset'  => substr($raw['daily']['sunset'][0] ?? '', 11, 5),
+            'hours'   => $hours, 'source' => 'open-meteo',
+        ];
+    }
+
+    private function parseStationData(array $raw): array {
+        $temp = (float)($raw['temp'] ?? $raw['temperature'] ?? $raw['outdoor']['temperature']['value'] ?? 0);
+        $code = (int)($raw['weather_code'] ?? 0);
+        [$icon, $desc] = $this->weatherCode($code);
+        return [
+            'temp'    => round($temp), 'feels' => round($temp),
+            'humidity'=> (int)($raw['humidity'] ?? $raw['outdoor']['humidity']['value'] ?? 0),
+            'pressure'=> round((float)($raw['pressure'] ?? $raw['baromabs'] ?? 0)),
+            'wind'    => round((float)($raw['windspeed'] ?? $raw['wind_speed'] ?? 0)),
+            'icon'    => $icon, 'desc' => $desc,
+            'sunset'  => '', 'hours' => [], 'source' => 'station',
+        ];
+    }
+
+    private function weatherCode(int $code): array {
+        return match(true) {
+            $code === 0  => ['☀️', 'Clear sky'],
+            $code <= 2   => ['🌤️', 'Partly cloudy'],
+            $code === 3  => ['☁️', 'Overcast'],
+            $code <= 48  => ['🌫️', 'Foggy'],
+            $code <= 55  => ['🌦️', 'Drizzle'],
+            $code <= 65  => ['🌧️', 'Rain'],
+            $code <= 75  => ['🌨️', 'Snow'],
+            $code <= 82  => ['🌦️', 'Showers'],
+            $code <= 86  => ['❄️', 'Snow showers'],
+            $code <= 99  => ['⛈️', 'Thunderstorm'],
+            default      => ['🌡️', 'N/A'],
+        };
+    }
+
+    private function cacheWeather(\App\Support\DB $db, array $data): void {
+        $db->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES ('weather.cache',?,'json',0,NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json=VALUES(setting_value_json),updated_at=NOW()",
+            [json_encode($data)]
+        );
+    }
+
+    private function httpGet(string $url, int $timeout = 5): ?string {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>$timeout,
+                CURLOPT_USERAGENT=>'Rooted/1.5',CURLOPT_SSL_VERIFYPEER=>false]);
+            $r = curl_exec($ch); curl_close($ch);
+            return $r ?: null;
+        }
+        $ctx = stream_context_create(['http'=>['timeout'=>$timeout,'user_agent'=>'Rooted/1.5']]);
+        return @file_get_contents($url, false, $ctx) ?: null;
     }
 
     public function overview(Request $request, array $params = []): void
