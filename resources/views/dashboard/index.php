@@ -93,56 +93,71 @@ for ($i = 0; $i < 7; $i++) {
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <!-- ============================================================
-     TOP STRIP — Add Item (left) + Weather (right)
+     WELCOME + QUOTE
      ============================================================ -->
-<div class="dash-top-strip">
-
-    <!-- Add Item half -->
-    <a href="<?= url('/items/create') ?>" class="dash-add-item-btn">
-        <span class="dash-add-item-icon">➕</span>
-        <span class="dash-add-item-label">Add Item</span>
-    </a>
-
-    <!-- Weather half -->
-    <?php if (!empty($weather)): ?>
-    <div class="dash-weather-widget">
-        <div class="dash-weather-main">
-            <span class="dash-weather-icon"><?= $weather['icon'] ?></span>
-            <div class="dash-weather-temps">
-                <span class="dash-weather-temp"><?= $weather['temp'] ?>°</span>
-                <span class="dash-weather-feels">Feels <?= $weather['feels'] ?>°</span>
-            </div>
-            <div class="dash-weather-meta">
-                <span class="dash-weather-desc"><?= e($weather['desc']) ?></span>
-                <span class="dash-weather-detail">💧 <?= $weather['humidity'] ?>% &nbsp;·&nbsp; 🌡 <?= $weather['pressure'] ?> hPa</span>
-                <?php if (!empty($weather['sunset'])): ?>
-                <span class="dash-weather-detail">🌅 <?= e($weather['sunset']) ?></span>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php if (!empty($weather['hours'])): ?>
-        <div class="dash-weather-hours">
-            <?php foreach ($weather['hours'] as $h): ?>
-            <div class="dash-weather-hour">
-                <span class="dash-weather-hour-time"><?= e($h['time']) ?></span>
-                <span class="dash-weather-hour-icon"><?= $h['icon'] ?></span>
-                <span class="dash-weather-hour-temp"><?= $h['temp'] ?>°</span>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        <?php if (!empty($forecastUrl)): ?>
-        <a href="<?= e($forecastUrl) ?>" target="_blank" rel="noopener" class="dash-weather-forecast-link">Full Forecast →</a>
-        <?php endif; ?>
+<div class="dash-welcome">
+    <div class="dash-welcome-greeting">
+        <?php if (!empty($ownerName)): ?>Ciao, <?= e($ownerName) ?>!<?php else: ?>Benvenuto!<?php endif; ?>
     </div>
-    <?php else: ?>
-    <a href="<?= url('/settings/weather') ?>" class="dash-weather-widget dash-weather-widget--empty">
-        <span class="dash-weather-empty-icon">🌤️</span>
-        <span class="dash-weather-empty-text">Enable weather</span>
-    </a>
+    <?php if (!empty($quote)): ?>
+    <div class="dash-welcome-quote">
+        "<?= e(mb_strimwidth($quote['text'], 0, 160, '…')) ?>"<?php if (!empty($quote['author'])): ?> — <?= e($quote['author']) ?><?php endif; ?>
+    </div>
     <?php endif; ?>
-
 </div>
+
+<!-- ============================================================
+     WEATHER WIDGET — full width
+     ============================================================ -->
+<?php if (!empty($weather)): ?>
+<div class="dash-weather-widget">
+    <div class="dash-weather-main">
+        <span class="dash-weather-icon"><?= $weather['icon'] ?></span>
+        <div class="dash-weather-temps">
+            <span class="dash-weather-temp"><?= $weather['temp'] ?>°</span>
+            <span class="dash-weather-feels">Feels <?= $weather['feels'] ?>°</span>
+        </div>
+        <div class="dash-weather-center">
+            <span class="dash-weather-desc"><?= e($weather['desc']) ?></span>
+            <?php if (!empty($weatherCity)): ?>
+            <span class="dash-weather-city">📍 <?= e($weatherCity) ?></span>
+            <?php endif; ?>
+        </div>
+        <div class="dash-weather-meta">
+            <span class="dash-weather-detail">💧 <?= $weather['humidity'] ?>%</span>
+            <span class="dash-weather-detail">🌡 <?= $weather['pressure'] ?> hPa</span>
+            <?php if (!empty($weather['sunset'])): ?>
+            <span class="dash-weather-detail">🌅 <?= e($weather['sunset']) ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php if (!empty($weather['hours']) || !empty($weather['daily'])): ?>
+    <div class="dash-weather-hours">
+        <?php foreach (($weather['hours'] ?? []) as $h): ?>
+        <div class="dash-weather-hour">
+            <span class="dash-weather-hour-time"><?= e($h['time']) ?></span>
+            <span class="dash-weather-hour-icon"><?= $h['icon'] ?></span>
+            <span class="dash-weather-hour-temp"><?= $h['temp'] ?>°</span>
+        </div>
+        <?php endforeach; ?>
+        <?php if (!empty($weather['hours']) && !empty($weather['daily'])): ?>
+        <div class="dash-weather-hours-divider"></div>
+        <?php endif; ?>
+        <?php foreach (($weather['daily'] ?? []) as $d): ?>
+        <div class="dash-weather-hour dash-weather-day">
+            <span class="dash-weather-hour-time"><?= e($d['label']) ?></span>
+            <span class="dash-weather-hour-icon"><?= $d['icon'] ?></span>
+            <span class="dash-weather-hour-temp"><?= $d['max'] ?>°</span>
+            <span class="dash-weather-day-min"><?= $d['min'] ?>°</span>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($forecastUrl)): ?>
+    <a href="<?= e($forecastUrl) ?>" target="_blank" rel="noopener" class="dash-weather-forecast-link">Full Forecast →</a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <!-- ============================================================
      NEAREST TO YOU — hero section, first thing on mobile
@@ -1038,41 +1053,33 @@ for ($i = 0; $i < 7; $i++) {
 .lunar-day-type   { color: var(--elem-color, rgba(255,255,255,0.5)); }
 
 /* -----------------------------------------------
-   Top Strip — Add Item + Weather (50/50)
+   Welcome greeting + quote
    ----------------------------------------------- */
-.dash-top-strip {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-5);
-    align-items: stretch;
+.dash-welcome {
+    margin-bottom: var(--spacing-4);
+    padding: var(--spacing-4) 0 var(--spacing-3);
 }
-@media (max-width: 480px) {
-    .dash-top-strip { grid-template-columns: 1fr; }
+.dash-welcome-greeting {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--color-text);
+    line-height: 1.1;
+    margin-bottom: var(--spacing-2);
+}
+.dash-welcome-quote {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Add Item half */
-.dash-add-item-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-5) var(--spacing-4);
-    background: var(--color-primary);
-    color: #fff;
-    border-radius: var(--radius-xl);
-    text-decoration: none;
-    font-weight: 700;
-    transition: opacity .15s, transform .1s;
-    box-shadow: var(--shadow);
-    min-height: 100px;
-}
-.dash-add-item-btn:hover { opacity: .9; transform: translateY(-2px); text-decoration: none; color: #fff; }
-.dash-add-item-icon  { font-size: 2rem; line-height: 1; }
-.dash-add-item-label { font-size: 1rem; letter-spacing: .01em; }
-
-/* Weather widget half */
+/* -----------------------------------------------
+   Weather widget — full width
+   ----------------------------------------------- */
 .dash-weather-widget {
     background: #1a2433;
     border-radius: var(--radius-xl);
@@ -1081,35 +1088,24 @@ for ($i = 0; $i < 7; $i++) {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
-    min-height: 100px;
+    margin-bottom: var(--spacing-5);
     box-shadow: var(--shadow);
     overflow: hidden;
 }
-.dash-weather-widget--empty {
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    gap: var(--spacing-2);
-    opacity: .7;
-    transition: opacity .15s;
-}
-.dash-weather-widget--empty:hover { opacity: 1; text-decoration: none; }
-.dash-weather-empty-icon { font-size: 2rem; line-height: 1; }
-.dash-weather-empty-text { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
-
 .dash-weather-main {
     display: flex;
     align-items: center;
     gap: var(--spacing-3);
-    flex: 1;
 }
-.dash-weather-icon   { font-size: 2.4rem; line-height: 1; flex-shrink: 0; }
-.dash-weather-temps  { display: flex; flex-direction: column; gap: 1px; }
-.dash-weather-temp   { font-size: 2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
+.dash-weather-icon   { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+.dash-weather-temps  { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+.dash-weather-temp   { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
 .dash-weather-feels  { font-size: 0.7rem; color: #94a3b8; }
-.dash-weather-meta   { display: flex; flex-direction: column; gap: 2px; margin-left: auto; text-align: right; }
-.dash-weather-desc   { font-size: 0.78rem; font-weight: 600; color: #cbd5e1; }
-.dash-weather-detail { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
+.dash-weather-center { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; padding: 0 var(--spacing-2); }
+.dash-weather-desc   { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+.dash-weather-city   { font-size: 0.72rem; color: #64748b; }
+.dash-weather-meta   { display: flex; flex-direction: column; gap: 3px; text-align: right; flex-shrink: 0; }
+.dash-weather-detail { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; }
 
 /* Hourly forecast strip */
 .dash-weather-hours {
@@ -1121,18 +1117,30 @@ for ($i = 0; $i < 7; $i++) {
 }
 .dash-weather-hour {
     display: flex; flex-direction: column; align-items: center;
-    gap: 2px; min-width: 42px;
+    gap: 2px; min-width: 44px;
 }
 .dash-weather-hour-time { font-size: 0.62rem; color: #64748b; }
 .dash-weather-hour-icon { font-size: 1rem; line-height: 1; }
 .dash-weather-hour-temp { font-size: 0.72rem; font-weight: 700; color: #e2e8f0; }
 
+/* Daily forecast items (different shade) */
+.dash-weather-day {
+    background: rgba(255,255,255,0.07);
+    border-radius: var(--radius);
+    padding: 4px 6px;
+    min-width: 52px;
+}
+.dash-weather-day .dash-weather-hour-time { color: #94a3b8; font-weight: 600; }
+.dash-weather-day-min { font-size: 0.65rem; color: #64748b; }
+.dash-weather-hours-divider {
+    width: 1px; background: rgba(255,255,255,0.12);
+    align-self: stretch; flex-shrink: 0; margin: 0 var(--spacing-1);
+}
+
 /* Forecast link */
 .dash-weather-forecast-link {
-    font-size: 0.7rem; font-weight: 600; color: #60a5fa;
-    text-decoration: none; text-align: right;
-    margin-top: auto;
-    align-self: flex-end;
+    font-size: 0.72rem; font-weight: 600; color: #60a5fa;
+    text-decoration: none; align-self: flex-end;
 }
 .dash-weather-forecast-link:hover { color: #93c5fd; text-decoration: none; }
 </style>

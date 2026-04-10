@@ -34,6 +34,14 @@
                 </div>
 
                 <div class="settings-field">
+                    <label class="settings-label">Your Name</label>
+                    <p class="settings-hint">Shown in the dashboard welcome greeting — "Ciao, [Name]!"</p>
+                    <input type="text" name="app_owner_name" class="settings-input"
+                           value="<?= e($settings['app.owner_name'] ?? '') ?>"
+                           placeholder="e.g. Max">
+                </div>
+
+                <div class="settings-field">
                     <label class="settings-label">Currency</label>
                     <select name="app_currency" class="settings-input">
                         <?php foreach (['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'AUD'] as $cur): ?>
@@ -78,6 +86,18 @@
                     <p class="settings-hint">How many days before the due date to show a reminder.</p>
                     <input type="number" name="reminder_default_lead_days" class="settings-input settings-input--sm"
                            value="<?= e($settings['reminder.default_lead_days'] ?? '7') ?>" min="0">
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-group-title">Dashboard Quote</div>
+
+                <div class="settings-field">
+                    <label class="settings-label">Quote API URL</label>
+                    <p class="settings-hint">URL returning JSON with today's inspirational quote. Default: ZenQuotes (free, no key required). Response must be an array with <code>q</code> (text) and <code>a</code> (author) keys.</p>
+                    <input type="url" name="quote_api_url" class="settings-input"
+                           value="<?= e($settings['quote.api_url'] ?? '') ?>"
+                           placeholder="https://zenquotes.io/api/today">
                 </div>
             </div>
 

@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.5.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'Welcome Greeting, Quote of the Day & Weather City',
+        'features' => [
+            ['title' => 'Welcome greeting with owner name',    'detail' => '"Ciao, Max!" personalised header at the top of the dashboard, configurable in General Settings.'],
+            ['title' => 'Quote of the day',                    'detail' => 'Inspirational quote displayed below the greeting (2-line max, italic). Powered by ZenQuotes API, 24-hour DB cache. API URL configurable in settings.'],
+            ['title' => 'Weather city name',                   'detail' => 'City/location label shown inside the weather widget. Set in Settings → Weather.'],
+            ['title' => '2-day daily forecast in weather strip','detail' => 'Tomorrow and the day after shown in the hourly row with a different background shade, max and min temperatures.'],
+            ['title' => 'Add Item removed from dashboard top', 'detail' => 'Removed the large Add Item button — it duplicates the bottom nav shortcut. Weather widget now spans full width.'],
+        ],
+    ],
+
     '1.5.0' => [
         'status'   => 'released',
         'released' => '2026-04-10',

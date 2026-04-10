@@ -8,6 +8,24 @@
  */
 return [
 
+    '1.5.1' => [
+        'date'  => '2026-04-10',
+        'title' => 'Welcome Greeting, Quote of the Day & Weather City',
+        'new' => [
+            'Dashboard welcome header: "Ciao, [Name]!" greeting with a daily inspirational quote below in smaller italic text (max 2 lines)',
+            'Quote of the Day powered by ZenQuotes API (free, no key required) — cached 24 hours in the database to avoid redundant requests',
+            'Weather widget shows city/location name (e.g. "📍 Rosolini") configurable in Settings → Weather',
+            'Weather widget: tomorrow and day-after-tomorrow daily forecast shown in the same horizontal row as hourly items, with a distinct background shade, max/min temperatures',
+        ],
+        'improved' => [
+            'Dashboard layout: Add Item button removed from top (already in bottom nav) — weather widget now takes full width for better readability',
+            'Weather widget: description and city name appear together in the center column; meta details (humidity, pressure, sunset) stacked on the right',
+            'General settings: "Your Name" field drives the dashboard greeting; "Quote API URL" field for customising the quote source',
+            'Open-Meteo request now fetches 3-day forecast data for the daily strip',
+        ],
+        'fixed' => [],
+    ],
+
     '1.5.0' => [
         'date'  => '2026-04-10',
         'title' => 'Weather Widget & Nearby Card Photo Badge',

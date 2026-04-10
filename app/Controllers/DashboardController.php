@@ -84,8 +84,42 @@ class DashboardController
             'monthlyHarvest'    => $monthlyHarvest,
             'gpsItems'          => $gpsItems,
             'weather'           => $this->fetchWeather($db),
+            'weatherCity'       => $this->getSetting($db, 'weather.city_name', ''),
             'forecastUrl'       => $this->getSetting($db, 'weather.forecast_url', 'https://www.ilmeteo.it/meteo/rosolini'),
+            'ownerName'         => $this->getSetting($db, 'app.owner_name', ''),
+            'quote'             => $this->fetchQuote($db),
         ]);
+    }
+
+    // ── Quote of the day ─────────────────────────────────────────────────────
+
+    private function fetchQuote(\App\Support\DB $db): ?array {
+        // 24-hour cache
+        $cache = $db->fetchOne("SELECT setting_value_json, updated_at FROM settings WHERE setting_key = 'quote.cache'");
+        if ($cache && !empty($cache['setting_value_json'])) {
+            $age = time() - (int)strtotime($cache['updated_at'] . ' UTC');
+            if ($age < 86400) {
+                $d = json_decode($cache['setting_value_json'], true);
+                if ($d) return $d;
+            }
+        }
+
+        $apiUrl = $this->getSetting($db, 'quote.api_url', 'https://zenquotes.io/api/today');
+        if (!$apiUrl) return null;
+
+        $json = $this->httpGet($apiUrl, 4);
+        if (!$json) return null;
+        $data = json_decode($json, true);
+        if (empty($data[0]['q'])) return null;
+
+        $result = ['text' => $data[0]['q'], 'author' => $data[0]['a'] ?? ''];
+        $db->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES ('quote.cache',?,'json',0,NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json=VALUES(setting_value_json),updated_at=NOW()",
+            [json_encode($result)]
+        );
+        return $result;
     }
 
     // ── Weather helpers ──────────────────────────────────────────────────────
@@ -123,7 +157,7 @@ class DashboardController
         $url = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lng}"
              . "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m"
              . "&hourly=temperature_2m,weather_code"
-             . "&daily=sunrise,sunset&timezone=Europe%2FRome&forecast_days=1";
+             . "&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FRome&forecast_days=3";
 
         $json = $this->httpGet($url);
         if (!$json) return null;
@@ -152,6 +186,24 @@ class DashboardController
                 $hours[] = ['time' => substr($t, 11, 5), 'temp' => round($temps[$i] ?? 0), 'icon' => $hi];
             }
         }
+        // Build next 2 daily forecasts (tomorrow, day-after)
+        $daily = [];
+        $dailyTimes  = $raw['daily']['time'] ?? [];
+        $dailyMax    = $raw['daily']['temperature_2m_max'] ?? [];
+        $dailyMin    = $raw['daily']['temperature_2m_min'] ?? [];
+        $dailyCodes  = $raw['daily']['weather_code'] ?? [];
+        foreach ([1, 2] as $di) {
+            if (empty($dailyTimes[$di])) continue;
+            [$di_icon] = $this->weatherCode((int)($dailyCodes[$di] ?? 0));
+            $ts = strtotime($dailyTimes[$di]);
+            $daily[] = [
+                'label' => $di === 1 ? 'Tomorrow' : date('D', $ts),
+                'icon'  => $di_icon,
+                'max'   => round((float)($dailyMax[$di] ?? 0)),
+                'min'   => round((float)($dailyMin[$di] ?? 0)),
+            ];
+        }
+
         return [
             'temp'    => round((float)($cur['temperature_2m'] ?? 0)),
             'feels'   => round((float)($cur['apparent_temperature'] ?? 0)),
@@ -160,7 +212,7 @@ class DashboardController
             'wind'    => round((float)($cur['wind_speed_10m'] ?? 0)),
             'icon'    => $icon, 'desc' => $desc,
             'sunset'  => substr($raw['daily']['sunset'][0] ?? '', 11, 5),
-            'hours'   => $hours, 'source' => 'open-meteo',
+            'hours'   => $hours, 'daily' => $daily, 'source' => 'open-meteo',
         ];
     }
 

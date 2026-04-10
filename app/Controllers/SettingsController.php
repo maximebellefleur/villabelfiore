@@ -33,10 +33,10 @@ class SettingsController
         CSRF::validate($request->post('_token', ''));
 
         $allowed = [
-            'app.name', 'app.currency', 'app.language', 'app.timezone',
+            'app.name', 'app.owner_name', 'app.currency', 'app.language', 'app.timezone',
             'gps.accuracy_threshold', 'image.refresh_interval_days',
             'reminder.default_lead_days', 'integration.google_calendar',
-            'integration.weather',
+            'integration.weather', 'quote.api_url',
         ];
 
         $db = DB::getInstance();
@@ -198,7 +198,7 @@ class SettingsController
         CSRF::validate($request->post('_token', ''));
         $db = DB::getInstance();
 
-        $keys = ['weather.enabled','weather.lat','weather.lng','weather.station_url','weather.forecast_url'];
+        $keys = ['weather.enabled','weather.city_name','weather.lat','weather.lng','weather.station_url','weather.forecast_url'];
         foreach ($keys as $key) {
             $value = $request->post(str_replace('.','_',$key), '');
             $db->execute(

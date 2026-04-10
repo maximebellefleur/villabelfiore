@@ -1,6 +1,7 @@
 <?php
 $csrf = e(\App\Support\CSRF::getToken());
 $enabled   = ($ws['weather.enabled']      ?? '') === '1';
+$cityName  = $ws['weather.city_name']     ?? '';
 $lat       = $ws['weather.lat']           ?? '36.82';
 $lng       = $ws['weather.lng']           ?? '14.95';
 $stationUrl= $ws['weather.station_url']   ?? '';
@@ -42,10 +43,16 @@ $forecastUrl=$ws['weather.forecast_url']  ?? 'https://www.ilmeteo.it/meteo/rosol
                 </div>
             </div>
 
-            <!-- Open-Meteo coordinates -->
+            <!-- Location name + coordinates -->
             <div class="settings-group">
-                <div class="settings-group-title">Location (Open-Meteo)</div>
-                <p class="settings-hint">Used when no personal weather station is configured. Open-Meteo is free and requires no API key.</p>
+                <div class="settings-group-title">Location</div>
+                <p class="settings-hint">City name is shown in the weather widget. Coordinates are used by Open-Meteo (free, no API key) when no personal station is set.</p>
+
+                <div class="settings-field">
+                    <label class="settings-label" for="weather_city_name">City / Location Name</label>
+                    <input type="text" id="weather_city_name" name="weather_city_name" class="settings-input"
+                           value="<?= e($cityName) ?>" placeholder="e.g. Rosolini">
+                </div>
 
                 <div class="settings-field">
                     <label class="settings-label" for="weather_lat">Latitude</label>
