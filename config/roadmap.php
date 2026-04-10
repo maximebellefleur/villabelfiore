@@ -85,6 +85,15 @@ return [
         ],
     ],
 
+    '1.4.27' => [
+        'status'   => 'released',
+        'released' => '2026-04-10',
+        'title'    => 'Dashboard Card Photo Badge Bottom-Left of Card',
+        'features' => [
+            ['title' => 'Photo badge repositioned', 'detail' => 'Circular ID photo badge (36px) now sits at the absolute bottom-left corner of the nearest-item card with 10px margin — easy to see over the full-photo card background.'],
+        ],
+    ],
+
     '1.4.26' => [
         'status'   => 'released',
         'released' => '2026-04-09',

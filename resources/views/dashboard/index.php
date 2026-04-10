@@ -155,11 +155,10 @@ for ($i = 0; $i < 7; $i++) {
             html += '<div class="nearby-card" style="' + bgStyle + '">';
             html += '  <div class="nearby-card-gradient"></div>';
             html += '  <a href="' + itemUrl + '" class="nearby-card-inner">';
-            html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji;
+            html += '    <div class="nearby-card-emoji" style="background:' + color + '30">' + emoji + '</div>';
             if (item.photo_id) {
                 html += '<img src="' + BASE + 'attachments/' + item.photo_id + '/download" alt="" class="nearby-card-photo-badge">';
             }
-            html += '</div>';
             html += '    <div class="nearby-card-info">';
             html += '      <div class="nearby-card-name">' + item.name + '</div>';
             html += '      <div class="nearby-card-sub"><span class="nearby-card-type">' + label + '</span><span class="nearby-card-dist">📍 ' + fmtDist(item.dist) + '</span></div>';
@@ -738,14 +737,14 @@ for ($i = 0; $i < 7; $i++) {
 .nearby-card-emoji {
     width: 52px; height: 52px; border-radius: var(--radius);
     font-size: 1.6rem; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; backdrop-filter: blur(8px); position: relative;
+    flex-shrink: 0; backdrop-filter: blur(8px);
 }
 .nearby-card-photo-badge {
-    position: absolute; bottom: -3px; left: -3px;
-    width: 26px; height: 26px; border-radius: 50%;
-    object-fit: cover; display: block;
-    border: 2px solid rgba(255,255,255,0.85);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    position: absolute; bottom: 10px; left: 10px;
+    width: 36px; height: 36px; border-radius: 50%;
+    object-fit: cover; display: block; z-index: 2;
+    border: 2.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 .nearby-card-info { flex: 1; min-width: 0; }
 .nearby-card-name { font-size: 1.05rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

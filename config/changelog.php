@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.4.27' => [
+        'date'  => '2026-04-10',
+        'title' => 'Dashboard Card Photo Badge Bottom-Left of Card',
+        'new' => [],
+        'improved' => [
+            'Dashboard nearest cards: circular ID photo badge repositioned to absolute bottom-left of the card (10px margin) — no longer pinned to the emoji icon corner',
+            'Badge size increased to 36px with stronger border and shadow for better visibility over the photo background',
+        ],
+        'fixed' => [],
+    ],
+
     '1.4.26' => [
         'date'  => '2026-04-09',
         'title' => 'Map Attribution Z-Index, Fullscreen Restored & Lunar Spacing',
