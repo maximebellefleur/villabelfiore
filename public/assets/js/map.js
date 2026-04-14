@@ -21,7 +21,7 @@
         building:    { color: '#607d8b', label: 'Building',     icon: '🏠' },
     };
 
-    var BOUNDARY_TYPES = ['garden', 'bed', 'orchard', 'zone', 'prep_zone'];
+    var BOUNDARY_TYPES = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
     var LINE_TYPES = ['line']; // types that draw LineString (rows) not Polygon
     var ALL_DRAWABLE = BOUNDARY_TYPES.concat(LINE_TYPES);
 
@@ -150,6 +150,14 @@
     }
 
     function buildPopup(item) {
+        var isDrawable  = ALL_DRAWABLE.indexOf(item.type) >= 0;
+        var isLine      = LINE_TYPES.indexOf(item.type) >= 0;
+        var hasBoundary = !!item.boundary;
+        var polyBtn = isDrawable
+            ? '<button class="btn btn-secondary btn-xs" onclick="window.mapDrawForItem(' + item.id + ')">' +
+              (hasBoundary ? (isLine ? '✏️ Row' : '✏️ Polygon') : (isLine ? '➕ Row' : '➕ Polygon')) +
+              '</button>'
+            : '';
         return [
             '<div class="map-popup">',
             '<strong>' + typeIcon(item.type) + ' ' + escHtml(item.name) + '</strong>',
@@ -157,30 +165,56 @@
             item.gps_accuracy ? '<div class="map-popup-acc">GPS ±' + Math.round(item.gps_accuracy) + 'm</div>' : '',
             '<div class="map-popup-actions">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-secondary btn-xs">View</a>',
-            ALL_DRAWABLE.indexOf(item.type) >= 0
-                ? ' <button class="btn btn-secondary btn-xs" onclick="window.mapDrawForItem(' + item.id + ')">' + (LINE_TYPES.indexOf(item.type) >= 0 ? 'Draw row' : 'Draw boundary') + '</button>'
-                : '',
+            polyBtn,
             '</div>',
             '</div>',
         ].join('');
     }
 
     function showItemInfo(item) {
-        var panel = document.getElementById('itemInfoPanel');
-        var content = document.getElementById('itemInfoContent');
+        var panel       = document.getElementById('itemInfoPanel');
+        var content     = document.getElementById('itemInfoContent');
+        var isDrawable  = ALL_DRAWABLE.indexOf(item.type) >= 0;
+        var isLine      = LINE_TYPES.indexOf(item.type) >= 0;
+        var hasBoundary = !!item.boundary;
+
+        var polyHtml = '';
+        if (isDrawable) {
+            var statusTxt   = hasBoundary
+                ? (isLine ? '〰️ Row saved' : '⬡ Polygon saved')
+                : (isLine ? 'No row yet'   : 'No polygon yet');
+            var statusCls   = hasBoundary ? 'map-info-poly-status--ok' : 'map-info-poly-status--none';
+            var btnLabel    = hasBoundary
+                ? (isLine ? '✏️ Edit row' : '✏️ Edit polygon')
+                : (isLine ? '➕ Draw row' : '➕ Draw polygon');
+            polyHtml = '<div class="map-info-poly-row">' +
+                '<span class="map-info-poly-status ' + statusCls + '">' + statusTxt + '</span>' +
+                '<button class="btn btn-secondary btn-sm" id="infoDrawBtn">' + btnLabel + '</button>' +
+                '</div>';
+        }
+
         content.innerHTML = [
             '<p><strong>' + escHtml(item.name) + '</strong></p>',
-            '<p class="text-muted">' + typeLabel(item.type) + '</p>',
+            '<p class="text-muted text-sm">' + typeLabel(item.type) + '</p>',
             item.lat ? '<p class="text-sm">📍 ' + item.lat.toFixed(6) + ', ' + item.lng.toFixed(6) + '</p>' : '',
-            item.gps_accuracy ? '<p class="text-sm">Accuracy: ±' + Math.round(item.gps_accuracy) + 'm</p>' : '',
-            '<div style="margin-top:8px">',
+            item.gps_accuracy ? '<p class="text-sm">GPS ±' + Math.round(item.gps_accuracy) + 'm</p>' : '',
+            polyHtml,
+            '<div style="margin-top:10px">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-sm">Open item</a>',
-            ALL_DRAWABLE.indexOf(item.type) >= 0
-                ? ' <button class="btn btn-secondary btn-sm" id="infoDrawBtn">' + (LINE_TYPES.indexOf(item.type) >= 0 ? 'Draw row' : 'Draw boundary') + '</button>'
-                : '',
             '</div>',
         ].join('');
+
         panel.style.display = 'block';
+
+        // On mobile, open the sidebar so the info panel is visible
+        var sidebar = document.getElementById('mapSidebar');
+        if (sidebar && sidebar.classList.contains('map-sidebar--hidden')) {
+            sidebar.classList.remove('map-sidebar--hidden');
+            var layersBtn = document.getElementById('mapLayersToggle');
+            if (layersBtn) layersBtn.classList.remove('map-layers-toggle--active');
+            setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 320);
+        }
+
         var drawBtn = document.getElementById('infoDrawBtn');
         if (drawBtn) {
             drawBtn.addEventListener('click', function () { window.mapDrawForItem(item.id); });

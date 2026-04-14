@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.8.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Zone Polygon Toggle & Mobile Item Panel',
+        'features' => [
+            ['title' => 'mobile_coop and building now drawable',  'detail' => 'Mobile coop and building type items can now have polygon boundaries on the map, same as garden, bed, zone, etc.'],
+            ['title' => 'Auto-open sidebar on item tap (mobile)', 'detail' => 'Tapping any item marker on mobile now automatically opens the sidebar so the item info panel is always readable.'],
+            ['title' => 'Polygon status indicator',               'detail' => '"⬡ Polygon saved" or "No polygon yet" label in the item info panel, with context-aware draw/edit button.'],
+        ],
+    ],
+
     '1.8.5' => [
         'status'   => 'released',
         'released' => '2026-04-14',

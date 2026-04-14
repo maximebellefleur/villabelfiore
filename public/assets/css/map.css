@@ -82,6 +82,23 @@
   margin: 4px 0;
 }
 
+/* Polygon toggle row in item info */
+.map-info-poly-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 6px;
+}
+.map-info-poly-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.map-info-poly-status--ok   { color: var(--color-primary); }
+.map-info-poly-status--none { color: var(--color-text-muted); }
+
 /* Popups */
 .map-popup {
   min-width: 160px;
