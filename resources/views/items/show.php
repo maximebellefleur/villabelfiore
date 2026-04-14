@@ -263,7 +263,7 @@ window.MINI_MAP_READONLY = true;
 
             <!-- Action type -->
             <div class="log-field-row">
-                <select name="action_type" class="form-input form-input--touch">
+                <select name="action_type" class="form-input form-input--touch" id="logActionType">
                     <option value="note">Note</option>
                     <option value="pruning">Pruning</option>
                     <option value="treatment">Treatment</option>
@@ -271,7 +271,12 @@ window.MINI_MAP_READONLY = true;
                     <option value="harvest">Harvest</option>
                     <option value="maintenance">Maintenance</option>
                     <option value="observation">Observation</option>
+                    <option value="other">Other…</option>
                 </select>
+            </div>
+            <div id="logCustomLabelWrap" style="display:none;margin-top:var(--spacing-2)">
+                <input type="text" name="custom_action_label" id="logCustomLabel"
+                       class="form-input form-input--touch" placeholder="Describe the action type…" maxlength="80">
             </div>
 
             <!-- Description (bigger textarea) -->
@@ -622,6 +627,19 @@ function expandSection(id) {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
 }
+
+// ── Action type "Other" toggle ───────────────────────────────────────────────
+(function(){
+    var sel  = document.getElementById('logActionType');
+    var wrap = document.getElementById('logCustomLabelWrap');
+    if (!sel || !wrap) return;
+    sel.addEventListener('change', function() {
+        wrap.style.display = sel.value === 'other' ? '' : 'none';
+        if (sel.value === 'other') {
+            document.getElementById('logCustomLabel').focus();
+        }
+    });
+}());
 
 // Pre-check reminder checkbox (called from "Reminder" quick action)
 function preCheckReminder() {

@@ -214,4 +214,60 @@ class SettingsController
         flash('success', 'Weather settings saved.');
         Response::redirect('/settings/weather');
     }
+
+    // ── Logo upload ───────────────────────────────────────────────────────────
+
+    public function uploadLogo(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $file = $_FILES['logo_file'] ?? null;
+        if (!$file || ($file['error'] ?? -1) !== UPLOAD_ERR_OK) {
+            flash('error', 'No file uploaded or upload error.');
+            Response::redirect('/settings');
+        }
+
+        try {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime  = $finfo->file($file['tmp_name'] ?? '') ?: '';
+        } catch (\Throwable $e) {
+            $mime = '';
+        }
+
+        $allowed = [
+            'image/png'  => 'png',
+            'image/jpeg' => 'jpg',
+            'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
+        ];
+
+        if (!isset($allowed[$mime])) {
+            flash('error', 'Only PNG, JPG, WebP, or SVG files are accepted.');
+            Response::redirect('/settings');
+        }
+
+        $ext    = $allowed[$mime];
+        $imgDir = PUBLIC_PATH . '/assets/images/';
+
+        if (!is_dir($imgDir) && !@mkdir($imgDir, 0755, true)) {
+            flash('error', 'Cannot create images directory. Check folder permissions.');
+            Response::redirect('/settings');
+        }
+
+        // Remove any existing logo-nav files
+        foreach (['png','jpg','webp','svg'] as $oldExt) {
+            $old = $imgDir . 'logo-nav.' . $oldExt;
+            if (file_exists($old)) { @unlink($old); }
+        }
+
+        $dest = $imgDir . 'logo-nav.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            flash('error', 'Failed to save logo. Check folder write permissions.');
+            Response::redirect('/settings');
+        }
+
+        flash('success', 'Logo updated successfully.');
+        Response::redirect('/settings');
+    }
 }

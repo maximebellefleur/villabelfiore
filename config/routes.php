@@ -16,6 +16,7 @@ use App\Controllers\UpgradeController;
 use App\Controllers\CalendarController;
 use App\Controllers\PublicController;
 use App\Controllers\PwaController;
+use App\Controllers\SeedController;
 
 /** @var \App\Support\Router $router */
 
@@ -135,12 +136,33 @@ $router->post('/settings/pwa',                 'PwaController@updatePwa');
 $router->post('/settings/pwa/upload-icon',     'PwaController@uploadIcon');
 $router->get('/manifest.json',                 'PwaController@serveManifest');
 $router->get('/offline',                       'PublicController@offline');
+$router->post('/settings/logo',                'SettingsController@uploadLogo');
 $router->get('/settings/calendar',             'CalendarController@index');
 $router->post('/settings/calendar/save',       'CalendarController@save');
 $router->get('/settings/calendar/connect',     'CalendarController@connect');
 $router->get('/settings/calendar/callback',    'CalendarController@callback');
 $router->post('/settings/calendar/disconnect', 'CalendarController@disconnect');
 $router->post('/settings/calendar/sync',       'CalendarController@sync');
+
+// -------------------------------------------------------------------------
+// Seeds
+// -------------------------------------------------------------------------
+$router->get('/seeds',                    'SeedController@index');
+$router->get('/seeds/create',             'SeedController@create');
+$router->get('/seeds/family-needs',       'SeedController@familyNeeds');
+$router->post('/seeds/family-needs',      'SeedController@storeFamilyNeed');
+$router->post('/seeds',                   'SeedController@store');
+$router->get('/seeds/{id}',               'SeedController@show');
+$router->get('/seeds/{id}/edit',          'SeedController@edit');
+$router->post('/seeds/{id}/update',       'SeedController@update');
+$router->post('/seeds/{id}/trash',        'SeedController@trash');
+$router->post('/seeds/{id}/stock',        'SeedController@adjustStock');
+$router->get('/items/{id}/rows',          'SeedController@bedRows');
+$router->post('/items/{id}/rows',         'SeedController@storeBedRow');
+$router->post('/bed-rows/{id}/update',    'SeedController@updateBedRow');
+$router->post('/bed-rows/{id}/trash',     'SeedController@trashBedRow');
+$router->post('/family-needs/{id}/update','SeedController@updateFamilyNeed');
+$router->post('/family-needs/{id}/trash', 'SeedController@trashFamilyNeed');
 
 // -------------------------------------------------------------------------
 // Logs

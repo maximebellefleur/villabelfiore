@@ -3,17 +3,32 @@ $navLinks = [
     ['href' => '/dashboard',      'label' => 'Dashboard'],
     ['href' => '/dashboard/map',  'label' => 'Map'],
     ['href' => '/items',          'label' => 'Items'],
+    ['href' => '/seeds',          'label' => '🌱 Seeds'],
     ['href' => '/reminders',      'label' => 'Reminders'],
     ['href' => '/finance',        'label' => 'Finance'],
     ['href' => '/activity-log',   'label' => 'Activity'],
     ['href' => '/settings',       'label' => 'Settings'],
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+
+// Custom logo check
+$_navLogoUrl = null;
+foreach (['png','jpg','webp','svg'] as $_navExt) {
+    $_navFile = PUBLIC_PATH . '/assets/images/logo-nav.' . $_navExt;
+    if (file_exists($_navFile)) {
+        $_navLogoUrl = url('/assets/images/logo-nav.' . $_navExt) . '?v=' . filemtime($_navFile);
+        break;
+    }
+}
 ?>
 
 <!-- ─── Top nav bar ───────────────────────────────────────────────── -->
 <nav class="nav" id="mainNav">
-    <a href="<?= url('/dashboard') ?>" class="nav-logo">🌿 Rooted</a>
+    <a href="<?= url('/dashboard') ?>" class="nav-logo">
+        <?php if ($_navLogoUrl): ?>
+        <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:32px;max-width:120px;object-fit:contain;display:block;">
+        <?php else: ?>🌿 Rooted<?php endif; ?>
+    </a>
 
     <!-- Desktop inline links -->
     <ul class="nav-desktop">
@@ -44,7 +59,11 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 <!-- z-index: 9999 in root stacking context, nothing can hide it -->
 <div class="nav-drawer" id="navDrawer" aria-hidden="true">
     <div class="nav-drawer-head">
+        <?php if ($_navLogoUrl): ?>
+        <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:28px;max-width:100px;object-fit:contain;display:block;">
+        <?php else: ?>
         <span class="nav-drawer-brand">🌿 Rooted</span>
+        <?php endif; ?>
         <button class="nav-drawer-close" id="navDrawerClose" aria-label="Close menu">✕</button>
     </div>
     <ul class="nav-drawer-list">
@@ -67,11 +86,11 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
 <!-- ─── Bottom nav ───────────────────────────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
-    <a href="<?= url('/dashboard') ?>"    class="bottom-nav-item" data-bnav="dashboard">
-        <span class="bottom-nav-icon">🏠</span><span class="bottom-nav-label">Home</span>
-    </a>
     <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
         <span class="bottom-nav-icon">🗺</span><span class="bottom-nav-label">Map</span>
+    </a>
+    <a href="<?= url('/seeds') ?>" class="bottom-nav-item" data-bnav="seeds">
+        <span class="bottom-nav-icon">🌱</span><span class="bottom-nav-label">Seeds</span>
     </a>
     <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
         <span style="line-height:1;font-size:1.7rem">+</span>

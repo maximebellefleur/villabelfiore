@@ -106,6 +106,35 @@
                 <button type="submit" class="btn btn-primary btn-lg">Save Settings</button>
             </div>
         </form>
+
+        <!-- Logo upload -->
+        <div class="settings-group" style="margin-top:var(--spacing-6)">
+            <div class="settings-group-title">Nav Logo</div>
+            <?php
+            $_logoPreview = null;
+            foreach (['png','jpg','webp','svg'] as $_le) {
+                $_lf = PUBLIC_PATH . '/assets/images/logo-nav.' . $_le;
+                if (file_exists($_lf)) { $_logoPreview = url('/assets/images/logo-nav.'.$_le).'?v='.filemtime($_lf); break; }
+            }
+            ?>
+            <?php if ($_logoPreview): ?>
+            <div style="margin-bottom:var(--spacing-3)">
+                <p class="settings-hint" style="margin-bottom:var(--spacing-2)">Current logo:</p>
+                <img src="<?= $_logoPreview ?>" alt="Nav logo" style="height:40px;max-width:160px;object-fit:contain;border:1px solid var(--color-border);border-radius:6px;padding:6px;background:#fff;">
+            </div>
+            <?php endif; ?>
+            <form method="POST" action="<?= url('/settings/logo') ?>" enctype="multipart/form-data" class="settings-form">
+                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                <div class="settings-field">
+                    <label class="settings-label">Upload Logo (PNG, JPG, WebP, or SVG)</label>
+                    <p class="settings-hint">Replaces the "🌿 Rooted" text in the top nav. Recommended height: 32–40 px. Max width displayed: 120 px.</p>
+                    <input type="file" name="logo_file" class="settings-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" required>
+                </div>
+                <div class="settings-save-row">
+                    <button type="submit" class="btn btn-primary">Upload Logo</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </div>

@@ -451,15 +451,21 @@ class ItemController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
 
-        $id          = (int) ($params['id'] ?? 0);
-        $actionKey   = $request->post('action_type', '');
-        $description = trim((string) $request->post('description', ''));
-        $db          = DB::getInstance();
+        $id           = (int) ($params['id'] ?? 0);
+        $actionKey    = $request->post('action_type', 'note');
+        $customLabel  = trim((string) $request->post('custom_action_label', ''));
+        $description  = trim((string) $request->post('description', ''));
+        $db           = DB::getInstance();
         $this->ensureLogAttachmentColumn($db);
+
+        $actionStored = $actionKey === 'other' ? 'other' : $actionKey;
+        $actionLabel  = ($actionKey === 'other' && $customLabel !== '')
+            ? ucfirst($customLabel)
+            : ucfirst(str_replace('_', ' ', $actionKey));
 
         $db->execute(
             'INSERT INTO activity_log (item_id, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,NOW())',
-            [$id, $actionKey, ucfirst(str_replace('_', ' ', $actionKey)), $description, $_SESSION['user_id']]
+            [$id, $actionStored, $actionLabel, $description, $_SESSION['user_id']]
         );
         $logId = (int) $db->lastInsertId();
 

@@ -57,6 +57,19 @@
     </div>
 </div>
 
+<!-- Danger zone: delete item -->
+<div class="card" style="margin-top:var(--spacing-4);border-color:rgba(220,53,69,.3)">
+    <div class="card-body">
+        <p style="font-weight:600;margin:0 0 var(--spacing-2)">Delete this item</p>
+        <p class="text-muted text-sm" style="margin:0 0 var(--spacing-3)">This will permanently delete the item and all its attachments, logs, and reminders. This cannot be undone.</p>
+        <form method="POST" action="<?= url('/items/' . (int)$item['id'] . '/trash') ?>"
+              onsubmit="return confirm('Permanently delete this item? All logs, photos and reminders will be lost.')">
+            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+            <button type="submit" class="btn btn-danger">🗑 Delete Item</button>
+        </form>
+    </div>
+</div>
+
 <script>
 window.MINI_MAP_LAT = <?= (float)($item['gps_lat'] ?? 41.9) ?>;
 window.MINI_MAP_LNG = <?= (float)($item['gps_lng'] ?? 12.5) ?>;

@@ -8,6 +8,22 @@
  */
 return [
 
+    '1.9.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Seeds Catalog & Mobile Nav Update',
+        'features' => [
+            ['title' => 'Seeds Catalog',         'detail' => 'Full CRUD for seed varieties with growing info, companion planting, planting/harvest month calendars, and per-variety stock tracking.'],
+            ['title' => 'Bed Row Planner',        'detail' => 'Plan rows per item (bed/garden) by season with seed, plant count, sowing date, spacing, and status tracking.'],
+            ['title' => 'Family Needs Planner',   'detail' => 'Record yearly vegetable/food consumption targets with priority ranking linked to the seed catalog.'],
+            ['title' => 'Seeds in bottom nav',    'detail' => '🌱 Seeds replaces Home in the mobile bottom navigation bar. Dashboard reachable by tapping the logo.'],
+            ['title' => 'Custom nav logo upload', 'detail' => 'Upload a PNG/JPG/WebP/SVG logo via Settings → General to replace the default "🌿 Rooted" branding.'],
+            ['title' => '"Other" log action type','detail' => 'Choose "Other…" in the item activity log form and type a custom action label — fully dynamic, no page reload.'],
+            ['title' => 'Delete from edit page',  'detail' => 'A danger-zone delete form is now shown at the bottom of every item edit page.'],
+            ['title' => 'Map mobile height fix',  'detail' => 'Map now uses position:fixed to fill the viewport between top and bottom navbars — no more overflow on mobile.'],
+        ],
+    ],
+
     '1.0.0' => [
         'status'   => 'released',
         'released' => '2026-03-31',

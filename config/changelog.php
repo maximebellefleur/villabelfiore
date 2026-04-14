@@ -8,6 +8,27 @@
  */
 return [
 
+    '1.9.0' => [
+        'date'  => '2026-04-14',
+        'title' => 'Seeds Catalog & Mobile Nav Update',
+        'new'   => [
+            'Full Seeds Catalog module: add, edit, and delete seed varieties with growing info, companion planting data, and planting/harvest month calendars',
+            'Per-seed stock tracking with unit (seeds/grams/packets), low-stock threshold alerts, and quick +/− stock adjustment',
+            'Family Needs planner: record yearly vegetable consumption targets with priority ranking and links to seed catalog entries',
+            'Bed Row Planner: plan rows per item (bed/garden) by season, row number, seed, plant count, sowing date, and status',
+            'Seeds accessible from bottom nav (🌱) on mobile — replaces the Home button (the logo tap returns to dashboard)',
+            'Upload a custom logo image (PNG, JPG, WebP, or SVG) via Settings → General to replace the default "🌿 Rooted" text in the nav bar',
+            '"Other…" action type in the item log form — choose Other and type a custom action label that is saved to the activity log',
+        ],
+        'improved' => [
+            'Map on mobile now uses position:fixed pinned between top and bottom nav bars — no more overflow behind the bottom nav buttons',
+            'Delete Item button added directly on the item edit page — no longer need to navigate elsewhere to remove an item',
+        ],
+        'fixed' => [
+            'Map container overflowing behind bottom navigation buttons on mobile devices',
+        ],
+    ],
+
     '1.8.6' => [
         'date'  => '2026-04-14',
         'title' => 'Zone Polygon Toggle & Mobile Item Panel',
