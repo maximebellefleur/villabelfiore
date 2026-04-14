@@ -85,6 +85,18 @@ return [
         ],
     ],
 
+    '1.8.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'PWA Manifest Fix, Dynamic Paths & Install Prompt',
+        'features' => [
+            ['title' => 'Dynamic manifest.json with correct paths',  'detail' => 'manifest.json is now served by PHP at runtime so start_url and icon paths always include the correct subdirectory prefix — fixes install prompt on subdirectory installs like /rooted/.'],
+            ['title' => 'Subdirectory-aware service worker',         'detail' => 'Service worker derives its base path from its own URL, so asset caching and offline mode work correctly on all installs.'],
+            ['title' => 'Platform-aware install prompt',             'detail' => 'Install App section detects iOS (shows share-sheet steps), Chrome/Edge/Android (shows install button), and unsupported browsers (shows browser menu guidance).'],
+            ['title' => 'Better icon quality',                       'detail' => 'Icon resize uses multi-step downsampling and center-crops non-square sources for sharper results.'],
+        ],
+    ],
+
     '1.8.1' => [
         'status'   => 'released',
         'released' => '2026-04-14',

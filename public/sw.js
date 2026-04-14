@@ -1,18 +1,22 @@
-/* Rooted — Service Worker v2 */
+/* Rooted — Service Worker v3 */
 
-var CACHE_NAME = 'rooted-v2';
-var OFFLINE_URL = '/offline';
+// Derive base path from this SW's own URL so subdirectory installs work.
+// e.g. if SW is at /rooted/sw.js then BASE = '/rooted'
+var BASE = self.location.pathname.replace(/\/sw\.js(\?.*)?$/, '').replace(/\/$/, '');
+
+var CACHE_NAME = 'rooted-v3';
+var OFFLINE_URL = BASE + '/offline';
 
 var SHELL_ASSETS = [
-    '/assets/css/app.css',
-    '/assets/css/pwa.css',
-    '/assets/js/app.js',
-    '/assets/js/pwa.js',
-    '/assets/js/gps.js',
-    '/assets/images/icon-192.png',
-    '/assets/images/icon-512.png',
-    '/assets/images/apple-touch-icon.png',
-    '/manifest.json',
+    BASE + '/assets/css/app.css',
+    BASE + '/assets/css/pwa.css',
+    BASE + '/assets/js/app.js',
+    BASE + '/assets/js/pwa.js',
+    BASE + '/assets/js/gps.js',
+    BASE + '/assets/images/icon-192.png',
+    BASE + '/assets/images/icon-512.png',
+    BASE + '/assets/images/apple-touch-icon.png',
+    BASE + '/manifest.json',
 ];
 
 // Install: cache shell assets + offline page
@@ -53,7 +57,7 @@ self.addEventListener('fetch', function (event) {
     if (event.request.method !== 'GET') return;
 
     // API routes: network first, no cache fallback
-    if (url.pathname.startsWith('/api/')) {
+    if (url.pathname.startsWith(BASE + '/api/')) {
         event.respondWith(
             fetch(event.request).catch(function () {
                 return new Response(JSON.stringify({ success: false, message: 'Offline' }), {
@@ -66,8 +70,8 @@ self.addEventListener('fetch', function (event) {
 
     // Static assets + manifest: cache first, network fallback, update cache
     if (
-        url.pathname.startsWith('/assets/') ||
-        url.pathname === '/manifest.json'
+        url.pathname.startsWith(BASE + '/assets/') ||
+        url.pathname === BASE + '/manifest.json'
     ) {
         event.respondWith(
             caches.match(event.request).then(function (cached) {

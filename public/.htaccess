@@ -14,6 +14,9 @@ RewriteEngine On
 # Apache needs this to resolve rewrites relative to the subfolder
 RewriteBase /rooted/
 
+# Always route manifest.json through PHP so APP_BASE paths are correct
+RewriteRule ^manifest\.json$ index.php [L,QSA]
+
 # Serve existing files and directories directly (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

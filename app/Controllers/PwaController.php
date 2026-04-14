@@ -76,27 +76,117 @@ class PwaController
 
     /**
      * Resize source GD image to $size x $size, save as PNG.
+     * Uses multi-step downsampling for better quality on large sources.
      */
     private function resizeIcon(\GdImage $src, int $size, string $destPath): bool
     {
+        // Ensure truecolor (palette PNGs degrade during resampling)
+        imagepalettetotruecolor($src);
+
         $srcW = imagesx($src);
         $srcH = imagesy($src);
 
+        // Center-crop non-square sources to a square before resizing
+        $working      = $src;
+        $workW        = $srcW;
+        $workH        = $srcH;
+        $ownIntermediate = false;
+
+        if ($srcW !== $srcH) {
+            $sq      = min($srcW, $srcH);
+            $offX    = (int)(($srcW - $sq) / 2);
+            $offY    = (int)(($srcH - $sq) / 2);
+            $squared = imagecreatetruecolor($sq, $sq);
+            imagesavealpha($squared, true);
+            imagealphablending($squared, false);
+            imagefill($squared, 0, 0, imagecolorallocatealpha($squared, 0, 0, 0, 127));
+            imagealphablending($squared, true);
+            imagecopy($squared, $src, 0, 0, $offX, $offY, $sq, $sq);
+            $working         = $squared;
+            $workW           = $sq;
+            $workH           = $sq;
+            $ownIntermediate = true;
+        }
+
+        // Multi-step halving: halve dimensions until within 2× of target
+        // This gives sharper results than a single large-to-small jump
+        while ($workW > $size * 2) {
+            $nextSize = max((int)ceil($workW / 2), $size);
+            $tmp      = imagecreatetruecolor($nextSize, $nextSize);
+            imagesavealpha($tmp, true);
+            imagealphablending($tmp, false);
+            imagefill($tmp, 0, 0, imagecolorallocatealpha($tmp, 0, 0, 0, 127));
+            imagealphablending($tmp, true);
+            imagecopyresampled($tmp, $working, 0, 0, 0, 0, $nextSize, $nextSize, $workW, $workH);
+            if ($ownIntermediate) {
+                imagedestroy($working);
+            }
+            $working         = $tmp;
+            $workW           = $nextSize;
+            $workH           = $nextSize;
+            $ownIntermediate = true;
+        }
+
+        // Final resize to exact target
         $dst = imagecreatetruecolor($size, $size);
         imagesavealpha($dst, true);
         imagealphablending($dst, false);
         $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
         imagefill($dst, 0, 0, $transparent);
         imagealphablending($dst, true);
+        imagecopyresampled($dst, $working, 0, 0, 0, 0, $size, $size, $workW, $workH);
 
-        imagecopyresampled($dst, $src, 0, 0, 0, 0, $size, $size, $srcW, $srcH);
+        if ($ownIntermediate) {
+            imagedestroy($working);
+        }
 
-        $ok = imagepng($dst, $destPath, 9);
+        $ok = imagepng($dst, $destPath, 6);
         imagedestroy($dst);
         return $ok;
     }
 
     // ── Controller actions ───────────────────────────────────────────────────
+
+    public function serveManifest(Request $request, array $params = []): void
+    {
+        $db  = DB::getInstance();
+        $cfg = [];
+        foreach ($db->fetchAll("SELECT setting_key, setting_value_text FROM settings WHERE setting_key LIKE 'pwa.%'") as $r) {
+            $cfg[$r['setting_key']] = $r['setting_value_text'];
+        }
+
+        $base     = defined('APP_BASE') ? APP_BASE : '';
+        $startUrl = ltrim($cfg['pwa.start_url'] ?? '/dashboard', '/');
+
+        $manifest = [
+            'name'             => $cfg['pwa.name']        ?? 'Rooted',
+            'short_name'       => $cfg['pwa.short_name']  ?? 'Rooted',
+            'description'      => $cfg['pwa.description'] ?? 'Land management system for orchards, gardens, and productive land.',
+            'display'          => $cfg['pwa.display']     ?? 'standalone',
+            'orientation'      => $cfg['pwa.orientation'] ?? 'portrait-primary',
+            'start_url'        => $base . '/' . $startUrl,
+            'theme_color'      => $cfg['pwa.theme_color'] ?? '#29402B',
+            'background_color' => $cfg['pwa.bg_color']    ?? '#F5F0EA',
+            'icons'            => [
+                [
+                    'src'     => $base . '/assets/images/icon-192.png',
+                    'sizes'   => '192x192',
+                    'type'    => 'image/png',
+                    'purpose' => 'any maskable',
+                ],
+                [
+                    'src'     => $base . '/assets/images/icon-512.png',
+                    'sizes'   => '512x512',
+                    'type'    => 'image/png',
+                    'purpose' => 'any maskable',
+                ],
+            ],
+        ];
+
+        header('Content-Type: application/manifest+json; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        echo json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
 
     public function pwa(Request $request, array $params = []): void
     {

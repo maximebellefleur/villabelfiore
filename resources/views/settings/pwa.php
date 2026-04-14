@@ -203,17 +203,40 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
     <div class="settings-panel" style="margin-top: var(--spacing-5);">
         <div class="settings-group">
             <div class="settings-group-title">Install App</div>
-            <div class="settings-field">
-                <p class="settings-hint">If your browser supports it, you can install Rooted directly from here. On iOS Safari, use the share sheet → "Add to Home Screen".</p>
-                <button type="button" class="btn btn-primary" id="pwaInstallBtn" style="display:none">
+
+            <!-- Already running as installed PWA -->
+            <div id="pwaAlreadyInstalled" class="settings-field" style="display:none">
+                <p class="settings-hint" style="color:var(--color-success);font-weight:600">
+                    ✓ Rooted is already installed on this device.
+                </p>
+            </div>
+
+            <!-- iOS: show share-sheet instructions -->
+            <div id="pwaIosInstructions" class="settings-field" style="display:none">
+                <p class="settings-hint">To install on <strong>iOS Safari</strong>:</p>
+                <ol class="settings-hint" style="padding-left:1.4em;line-height:2">
+                    <li>Tap the <strong>Share</strong> button <span style="font-size:1.1em">⎙</span> at the bottom of Safari</li>
+                    <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                    <li>Tap <strong>Add</strong> in the top-right corner</li>
+                </ol>
+            </div>
+
+            <!-- Chrome / Edge / Samsung: install button (shown after beforeinstallprompt) -->
+            <div id="pwaInstallSection" class="settings-field" style="display:none">
+                <p class="settings-hint">Your browser supports direct install.</p>
+                <button type="button" class="btn btn-primary" id="pwaInstallBtn">
                     📱 Install Rooted App
                 </button>
-                <p id="pwaInstallMsg" class="settings-hint" style="display:none;color:var(--color-success);font-weight:600">
-                    Rooted is already installed or your browser does not support direct install.
-                </p>
-                <p id="pwaUnsupported" class="settings-hint">
-                    Open this page in a supported browser (Chrome, Edge, Samsung Internet) or use Safari on iOS to add to your home screen.
-                </p>
+            </div>
+
+            <!-- Fallback for desktop Chrome / other browsers without iOS -->
+            <div id="pwaFallback" class="settings-field" style="display:none">
+                <p class="settings-hint">Look for the install icon (⊕) in your browser's address bar, or open the browser menu and choose <strong>"Install app"</strong> / <strong>"Add to Home Screen"</strong>.</p>
+            </div>
+
+            <!-- Waiting state shown initially -->
+            <div id="pwaWaiting" class="settings-field">
+                <p class="settings-hint" style="color:var(--color-text-muted)">Checking install status…</p>
             </div>
         </div>
     </div>
@@ -222,34 +245,64 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
 
 <script>
 (function () {
-    var deferredPrompt = null;
-    var installBtn     = document.getElementById('pwaInstallBtn');
-    var installMsg     = document.getElementById('pwaInstallMsg');
-    var unsupported    = document.getElementById('pwaUnsupported');
+    var deferredPrompt   = null;
+    var alreadyInstalled = document.getElementById('pwaAlreadyInstalled');
+    var iosInstructions  = document.getElementById('pwaIosInstructions');
+    var installSection   = document.getElementById('pwaInstallSection');
+    var installBtn       = document.getElementById('pwaInstallBtn');
+    var fallback         = document.getElementById('pwaFallback');
+    var waiting          = document.getElementById('pwaWaiting');
 
-    window.addEventListener('beforeinstallprompt', function (e) {
-        e.preventDefault();
-        deferredPrompt = e;
-        installBtn.style.display = 'inline-flex';
-        unsupported.style.display = 'none';
-    });
+    function show(el) { if (el) el.style.display = 'block'; }
+    function hide(el) { if (el) el.style.display = 'none'; }
+
+    // Detect environment
+    var isIos       = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/windows phone/i.test(navigator.userAgent);
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+
+    hide(waiting);
+
+    if (isStandalone) {
+        show(alreadyInstalled);
+    } else if (isIos) {
+        show(iosInstructions);
+    } else {
+        // Non-iOS: wait for beforeinstallprompt, fall back after 4 s
+        show(waiting);
+        var promptTimer = setTimeout(function () {
+            if (!deferredPrompt) {
+                hide(waiting);
+                show(fallback);
+            }
+        }, 4000);
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            clearTimeout(promptTimer);
+            deferredPrompt = e;
+            hide(waiting);
+            show(installSection);
+        });
+    }
 
     window.addEventListener('appinstalled', function () {
         deferredPrompt = null;
-        installBtn.style.display = 'none';
-        installMsg.style.display = 'block';
-        unsupported.style.display = 'none';
+        hide(installSection);
+        hide(fallback);
+        hide(iosInstructions);
+        show(alreadyInstalled);
     });
 
     if (installBtn) {
         installBtn.addEventListener('click', function () {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function (choiceResult) {
+            deferredPrompt.userChoice.then(function (result) {
                 deferredPrompt = null;
-                if (choiceResult.outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                    installMsg.style.display = 'block';
+                if (result.outcome === 'accepted') {
+                    hide(installSection);
+                    show(alreadyInstalled);
                 }
             });
         });

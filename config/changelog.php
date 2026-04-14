@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.8.2' => [
+        'date'  => '2026-04-14',
+        'title' => 'PWA Manifest Fix, Dynamic Paths & Install Prompt',
+        'new'   => [],
+        'improved' => [
+            'manifest.json is now served dynamically by PHP so icon and start_url paths always include the correct subdirectory prefix (e.g. /rooted/), fixing a long-standing bug where icons 404\'d and the install prompt never appeared on subdirectory installs',
+            'Service worker (sw.js) now derives its base path from its own URL so cache paths work correctly on subdirectory installs; bumped cache to v3 to force reinstall',
+            'Install App section now detects platform: iOS users see step-by-step share-sheet instructions, Chrome/Edge/Android users see the install button when the browser fires beforeinstallprompt, and a fallback message appears for unsupported browsers',
+            'Icon upload now uses multi-step downsampling and center-crops non-square sources, producing sharper results for large source images',
+        ],
+        'fixed' => [
+            'PWA install button was permanently hidden because beforeinstallprompt never fired — root cause was broken icon paths and start_url in manifest.json without /rooted prefix',
+        ],
+    ],
+
     '1.8.1' => [
         'date'  => '2026-04-14',
         'title' => 'Settings CSS Fix & PWA Icon Upload Fix',
