@@ -267,10 +267,7 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
 </script>
 
 <style>
-.settings-actions {
-    padding: var(--spacing-3) 0 var(--spacing-2);
-}
-
+/* PWA-page-specific styles */
 .color-field-row {
     display: flex;
     align-items: center;
@@ -287,8 +284,6 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
     background: var(--color-surface);
     flex-shrink: 0;
 }
-
-/* Icon preview grid */
 .pwa-icon-preview {
     display: flex;
     flex-wrap: wrap;
@@ -305,8 +300,7 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
     color: var(--color-text-muted);
 }
 .pwa-icon-thumb {
-    width: 80px;
-    height: 80px;
+    width: 80px; height: 80px;
     border-radius: 16px;
     border: 1px solid var(--color-border);
     object-fit: contain;
@@ -314,48 +308,4 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
 }
 .pwa-icon-thumb--sm { width: 56px; height: 56px; border-radius: 12px; }
 .pwa-icon-thumb--xs { width: 32px; height: 32px; border-radius: 6px; }
-
-.settings-field--toggle {
-    flex-direction: column;
-    gap: var(--spacing-2);
-}
-.toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 52px;
-    height: 28px;
-    flex-shrink: 0;
-}
-.toggle-switch input[type="checkbox"] {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    position: absolute;
-}
-.toggle-slider {
-    position: absolute;
-    inset: 0;
-    background: var(--color-border-strong);
-    border-radius: 999px;
-    transition: background 0.2s;
-    cursor: pointer;
-}
-.toggle-slider::before {
-    content: '';
-    position: absolute;
-    left: 3px;
-    top: 3px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #fff;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-.toggle-switch input:checked + .toggle-slider {
-    background: var(--color-primary);
-}
-.toggle-switch input:checked + .toggle-slider::before {
-    transform: translateX(24px);
-}
 </style>

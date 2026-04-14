@@ -55,29 +55,7 @@
 </div>
 
 <style>
-.settings-wrap { display:block; width:100%; }
-.settings-tab-nav {
-    display:flex; flex-direction:row; flex-wrap:nowrap; gap:6px;
-    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
-    padding:0 0 var(--spacing-4); border-bottom:2px solid var(--color-border);
-    margin-bottom:var(--spacing-5);
-}
-.settings-tab-nav::-webkit-scrollbar { display:none; }
-.settings-tab {
-    display:inline-flex; align-items:center; white-space:nowrap; flex-shrink:0;
-    padding:8px 16px; border-radius:999px; font-size:.85rem; font-weight:500;
-    color:var(--color-text-muted); background:var(--color-surface);
-    border:1px solid var(--color-border); text-decoration:none;
-    transition:background .15s,color .15s,border-color .15s;
-}
-.settings-tab:hover { background:var(--color-primary); color:#fff; border-color:var(--color-primary); text-decoration:none; }
-.settings-tab--active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
-.settings-panel { display:block; width:100%; }
-.settings-hint { font-size:.82rem; color:var(--color-text-muted); margin:0; line-height:1.5; }
-.settings-group { background:var(--color-surface-raised); border-radius:16px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04); }
-.settings-group-title { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--color-text-muted); padding:var(--spacing-3) var(--spacing-4) var(--spacing-2); border-bottom:1px solid var(--color-border); background:var(--color-surface); }
-
-/* Table with horizontal scroll on mobile */
+/* Action Types table — page-specific */
 .action-types-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .action-types-table { width:100%; border-collapse:collapse; white-space:nowrap; min-width:420px; }
 .action-types-table th {
