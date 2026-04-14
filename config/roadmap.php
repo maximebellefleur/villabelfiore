@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.8.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Gallery Lightbox',
+        'features' => [
+            ['title' => 'Full-screen photo gallery',           'detail' => 'Tapping any image on the item detail page opens a full-screen lightbox showing all item photos in sequence.'],
+            ['title' => 'Swipe and keyboard navigation',       'detail' => 'Navigate photos by swiping left/right on mobile or using the arrow keys on desktop. Escape closes the gallery.'],
+            ['title' => 'Looping navigation',                  'detail' => 'Gallery loops continuously — going past the last photo wraps back to the first and vice versa.'],
+            ['title' => 'Photo counter and caption',           'detail' => 'Counter (e.g. "3 / 7") and the photo caption are displayed at the bottom of the lightbox.'],
+            ['title' => 'Hero image clickable',                'detail' => 'The large hero/identification photo at the top of the item page is also clickable and opens the gallery at the correct index.'],
+        ],
+    ],
+
     '1.8.4' => [
         'status'   => 'released',
         'released' => '2026-04-14',

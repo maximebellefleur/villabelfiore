@@ -33,6 +33,14 @@ $imageAttachments = array_values(array_filter($attachments, fn($a) => str_starts
 $previewPhotos    = array_slice($imageAttachments, 0, 4);
 $totalPhotos      = count($imageAttachments);
 
+// Gallery: find which index in $imageAttachments corresponds to $idPhoto
+$idPhotoGalleryIndex = 0;
+if ($idPhoto) {
+    foreach ($imageAttachments as $_k => $_a) {
+        if ((int)$_a['id'] === (int)$idPhoto['id']) { $idPhotoGalleryIndex = $_k; break; }
+    }
+}
+
 // Recent activity: last 3 log entries
 $recentLog = array_slice($activityLog, 0, 3);
 
@@ -45,7 +53,7 @@ $recentReminders = array_slice($reminders, 0, 3);
      ========================================================= -->
 <div class="show-hero" style="--item-color:<?= $color ?>">
     <?php if ($idPhoto): ?>
-    <div class="show-hero-photo">
+    <div class="show-hero-photo show-hero-photo--clickable" onclick="openGallery(<?= $idPhotoGalleryIndex ?>)" title="View photos">
         <img src="<?= url('/attachments/' . (int)$idPhoto['id'] . '/download') ?>"
              alt="<?= e($item['name']) ?>" loading="eager">
         <div class="show-hero-photo-overlay"></div>
@@ -118,13 +126,14 @@ $recentReminders = array_slice($reminders, 0, 3);
     </div>
     <div class="show-photo-grid show-photo-grid--<?= min(count($previewPhotos), 4) ?>">
         <?php foreach ($previewPhotos as $i => $att): ?>
-        <a href="<?= url('/items/' . (int)$item['id'] . '/photos') ?>" class="show-photo-thumb">
+        <div class="show-photo-thumb" onclick="openGallery(<?= $i ?>)" role="button" tabindex="0"
+             onkeydown="if(event.key==='Enter'||event.key===' ')openGallery(<?= $i ?>)">
             <img src="<?= url('/attachments/' . (int)$att['id'] . '/download') ?>"
                  alt="" loading="lazy">
             <?php if ($i === 3 && $totalPhotos > 4): ?>
             <div class="show-photo-more">+<?= $totalPhotos - 4 ?></div>
             <?php endif; ?>
-        </a>
+        </div>
         <?php endforeach; ?>
     </div>
 </div>
@@ -894,4 +903,169 @@ function preCheckReminder() {
     background:var(--color-primary-soft);color:var(--color-primary);
     font-size:.78rem;font-weight:700;margin-bottom:var(--spacing-2);
 }
+
+/* ── Hero clickable ─────────────────────────── */
+.show-hero-photo--clickable { cursor: zoom-in; }
+
+/* ── Gallery lightbox ───────────────────────── */
+.gallery-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.93);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    touch-action: pan-y;
+}
+.gallery-close {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(255,255,255,.18); border: none;
+    color: #fff; font-size: 1.2rem;
+    width: 42px; height: 42px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    z-index: 10; transition: background .15s; line-height: 1;
+}
+.gallery-close:hover { background: rgba(255,255,255,.32); }
+.gallery-prev, .gallery-next {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,.15); border: none;
+    color: #fff; font-size: 1.9rem; font-weight: 300;
+    width: 50px; height: 50px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    z-index: 10; transition: background .15s; line-height: 1;
+}
+.gallery-prev { left: 14px; }
+.gallery-next { right: 14px; }
+.gallery-prev:hover, .gallery-next:hover { background: rgba(255,255,255,.32); }
+@media(max-width:600px) {
+    .gallery-prev, .gallery-next { width:38px;height:38px;font-size:1.5rem; }
+    .gallery-prev { left:6px; }
+    .gallery-next { right:6px; }
+}
+.gallery-img-wrap {
+    max-width: calc(100vw - 120px);
+    max-height: calc(100vh - 110px);
+    display: flex; align-items: center; justify-content: center;
+    flex: 1;
+}
+@media(max-width:600px) {
+    .gallery-img-wrap { max-width: calc(100vw - 80px); }
+}
+.gallery-img-wrap img {
+    max-width: 100%;
+    max-height: calc(100vh - 110px);
+    object-fit: contain; border-radius: 4px;
+    display: block; user-select: none;
+    transition: opacity .12s ease;
+}
+.gallery-footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 20px 20px;
+    background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 100%);
+    text-align: center; pointer-events: none;
+}
+.gallery-counter {
+    color: rgba(255,255,255,.75); font-size: .82rem; font-weight: 600;
+    letter-spacing: .03em;
+}
+.gallery-caption {
+    color: rgba(255,255,255,.88); font-size: .88rem; margin-top: 4px;
+    padding: 0 60px; line-height: 1.4;
+}
+.show-photo-thumb { cursor: pointer; }
 </style>
+
+<!-- ── Gallery overlay ─────────────────────────────────────────── -->
+<div id="galleryOverlay" class="gallery-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Photo gallery">
+    <button class="gallery-close" id="galleryClose" aria-label="Close gallery">&#10005;</button>
+    <button class="gallery-prev" id="galleryPrev" aria-label="Previous photo">&#8249;</button>
+    <div class="gallery-img-wrap">
+        <img id="galleryImg" src="" alt="">
+    </div>
+    <button class="gallery-next" id="galleryNext" aria-label="Next photo">&#8250;</button>
+    <div class="gallery-footer">
+        <div class="gallery-counter" id="galleryCounter"></div>
+        <div class="gallery-caption" id="galleryCaption"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var items = <?php
+        $galleryData = [];
+        foreach ($imageAttachments as $att) {
+            $galleryData[] = [
+                'src'     => url('/attachments/' . (int)$att['id'] . '/download'),
+                'caption' => $att['caption'] ?? ($att['original_name'] ?? ''),
+            ];
+        }
+        echo json_encode($galleryData, JSON_HEX_TAG | JSON_HEX_AMP);
+    ?>;
+
+    if (!items.length) return;
+
+    var overlay  = document.getElementById('galleryOverlay');
+    var imgEl    = document.getElementById('galleryImg');
+    var counter  = document.getElementById('galleryCounter');
+    var captionEl= document.getElementById('galleryCaption');
+    var closeBtn = document.getElementById('galleryClose');
+    var prevBtn  = document.getElementById('galleryPrev');
+    var nextBtn  = document.getElementById('galleryNext');
+    var current  = 0;
+    var total    = items.length;
+
+    function show(idx) {
+        current = ((idx % total) + total) % total;
+        imgEl.style.opacity = '0.4';
+        imgEl.src = items[current].src;
+        imgEl.onload = function () { imgEl.style.opacity = '1'; };
+        counter.textContent = (current + 1) + ' \u2F ' + total;
+        captionEl.textContent = items[current].caption || '';
+    }
+
+    function open(idx) {
+        show(idx);
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        imgEl.src = '';
+    }
+
+    window.openGallery = open;
+
+    closeBtn.addEventListener('click', close);
+    prevBtn.addEventListener('click', function () { show(current - 1); });
+    nextBtn.addEventListener('click', function () { show(current + 1); });
+
+    // Click on backdrop (not on img/buttons) closes gallery
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) close();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function (e) {
+        if (overlay.style.display === 'none') return;
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { show(current - 1); e.preventDefault(); }
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { show(current + 1); e.preventDefault(); }
+        else if (e.key === 'Escape') close();
+    });
+
+    // Touch swipe
+    var touchStartX = 0;
+    var touchStartY = 0;
+    overlay.addEventListener('touchstart', function (e) {
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+    overlay.addEventListener('touchend', function (e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+            if (dx < 0) show(current + 1);
+            else        show(current - 1);
+        }
+    }, { passive: true });
+}());
+</script>

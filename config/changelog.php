@@ -8,6 +8,20 @@
  */
 return [
 
+    '1.8.5' => [
+        'date'  => '2026-04-14',
+        'title' => 'Gallery Lightbox',
+        'new'   => [
+            'Tapping any photo on the item detail page now opens a full-screen gallery lightbox instead of navigating away',
+            'Gallery supports left/right swipe on mobile, keyboard arrow keys and Escape on desktop, and tap-backdrop-to-close',
+            'Photos loop continuously — swiping past the last image wraps back to the first and vice versa',
+            'Live image counter (e.g. "3 / 7") and caption displayed at the bottom of the lightbox',
+            'Hero/identification photo is also clickable and opens the gallery at the correct index',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '1.8.4' => [
         'date'  => '2026-04-14',
         'title' => 'Map Polygon Drawing Overhaul',
