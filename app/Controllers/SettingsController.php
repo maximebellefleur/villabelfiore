@@ -223,6 +223,10 @@ class SettingsController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
 
+        $validSlots = ['icon-light', 'icon-dark', 'horizontal-light', 'horizontal-dark'];
+        $slot       = $request->post('logo_slot', 'horizontal-light');
+        if (!in_array($slot, $validSlots, true)) { $slot = 'horizontal-light'; }
+
         $file = $_FILES['logo_file'] ?? null;
         if (!$file || ($file['error'] ?? -1) !== UPLOAD_ERR_OK) {
             flash('error', 'No file uploaded or upload error.');
@@ -237,9 +241,9 @@ class SettingsController
         }
 
         $allowed = [
-            'image/png'  => 'png',
-            'image/jpeg' => 'jpg',
-            'image/webp' => 'webp',
+            'image/png'     => 'png',
+            'image/jpeg'    => 'jpg',
+            'image/webp'    => 'webp',
             'image/svg+xml' => 'svg',
         ];
 
@@ -256,19 +260,41 @@ class SettingsController
             Response::redirect('/settings');
         }
 
-        // Remove any existing logo-nav files
+        // Remove existing files for this slot
         foreach (['png','jpg','webp','svg'] as $oldExt) {
-            $old = $imgDir . 'logo-nav.' . $oldExt;
+            $old = $imgDir . 'logo-' . $slot . '.' . $oldExt;
             if (file_exists($old)) { @unlink($old); }
         }
 
-        $dest = $imgDir . 'logo-nav.' . $ext;
+        $dest = $imgDir . 'logo-' . $slot . '.' . $ext;
         if (!move_uploaded_file($file['tmp_name'], $dest)) {
             flash('error', 'Failed to save logo. Check folder write permissions.');
             Response::redirect('/settings');
         }
 
-        flash('success', 'Logo updated successfully.');
+        flash('success', ucwords(str_replace('-', ' ', $slot)) . ' logo updated.');
+        Response::redirect('/settings');
+    }
+
+    public function deleteLogo(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $validSlots = ['icon-light', 'icon-dark', 'horizontal-light', 'horizontal-dark'];
+        $slot       = $request->post('logo_slot', '');
+        if (!in_array($slot, $validSlots, true)) {
+            flash('error', 'Invalid logo slot.');
+            Response::redirect('/settings');
+        }
+
+        $imgDir = PUBLIC_PATH . '/assets/images/';
+        foreach (['png','jpg','webp','svg'] as $ext) {
+            $f = $imgDir . 'logo-' . $slot . '.' . $ext;
+            if (file_exists($f)) { @unlink($f); }
+        }
+
+        flash('success', ucwords(str_replace('-', ' ', $slot)) . ' logo removed.');
         Response::redirect('/settings');
     }
 }

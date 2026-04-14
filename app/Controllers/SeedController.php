@@ -72,12 +72,22 @@ class SeedController
             id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             vegetable_name   VARCHAR(120) NOT NULL,
             seed_id          INT UNSIGNED DEFAULT NULL,
-            yearly_qty_kg    DECIMAL(10,3) DEFAULT NULL,
+            yearly_qty       DECIMAL(10,3) DEFAULT NULL,
+            yearly_unit      VARCHAR(30) NOT NULL DEFAULT 'kg',
             priority         TINYINT UNSIGNED NOT NULL DEFAULT 5,
             notes            TEXT DEFAULT NULL,
             created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Migrate old yearly_qty_kg column → yearly_qty if needed
+        $cols = $db->fetchAll("SHOW COLUMNS FROM family_needs LIKE 'yearly_qty_kg'");
+        if (!empty($cols)) {
+            $db->execute("ALTER TABLE family_needs CHANGE yearly_qty_kg yearly_qty DECIMAL(10,3) DEFAULT NULL");
+        }
+        $unitCol = $db->fetchAll("SHOW COLUMNS FROM family_needs LIKE 'yearly_unit'");
+        if (empty($unitCol)) {
+            $db->execute("ALTER TABLE family_needs ADD COLUMN yearly_unit VARCHAR(30) NOT NULL DEFAULT 'kg' AFTER yearly_qty");
+        }
     }
 
     // ── Seed CRUD ─────────────────────────────────────────────────────────────
@@ -388,11 +398,12 @@ class SeedController
         $this->ensureTables($db);
 
         $db->execute(
-            "INSERT INTO family_needs (vegetable_name, seed_id, yearly_qty_kg, priority, notes) VALUES (?,?,?,?,?)",
+            "INSERT INTO family_needs (vegetable_name, seed_id, yearly_qty, yearly_unit, priority, notes) VALUES (?,?,?,?,?,?)",
             [
                 trim($request->post('vegetable_name', '')),
                 ($request->post('seed_id', '') ?: null),
-                ($request->post('yearly_qty_kg', '') ?: null),
+                ($request->post('yearly_qty', '') ?: null),
+                ($request->post('yearly_unit', 'kg') ?: 'kg'),
                 (int)$request->post('priority', 5),
                 trim($request->post('notes', '')),
             ]
@@ -411,11 +422,12 @@ class SeedController
         $this->ensureTables($db);
 
         $db->execute(
-            "UPDATE family_needs SET vegetable_name=?, seed_id=?, yearly_qty_kg=?, priority=?, notes=? WHERE id=?",
+            "UPDATE family_needs SET vegetable_name=?, seed_id=?, yearly_qty=?, yearly_unit=?, priority=?, notes=? WHERE id=?",
             [
                 trim($request->post('vegetable_name', '')),
                 ($request->post('seed_id', '') ?: null),
-                ($request->post('yearly_qty_kg', '') ?: null),
+                ($request->post('yearly_qty', '') ?: null),
+                ($request->post('yearly_unit', 'kg') ?: 'kg'),
                 (int)$request->post('priority', 5),
                 trim($request->post('notes', '')),
                 $needId,

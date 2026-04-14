@@ -1,3 +1,6 @@
+<?php
+$unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>'bunches','litres'=>'L','jars'=>'jars','other'=>'other'];
+?>
 <div class="page-header">
     <h1 class="page-title">👨‍👩‍👧 Family Needs</h1>
     <a href="<?= url('/seeds') ?>" class="btn btn-secondary">&larr; Seed Catalog</a>
@@ -25,9 +28,19 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Yearly Need (kg)</label>
-                    <input type="number" step="0.1" name="yearly_qty_kg" class="form-input" min="0" placeholder="e.g. 50">
+                    <label class="form-label">Yearly Quantity</label>
+                    <input type="number" step="0.1" name="yearly_qty" class="form-input" min="0" placeholder="e.g. 50">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit</label>
+                    <select name="yearly_unit" class="form-input">
+                        <?php foreach ($unitLabels as $val => $lbl): ?>
+                        <option value="<?= $val ?>"><?= $lbl ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Priority (1=top, 10=low)</label>
@@ -52,10 +65,10 @@
         <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
             <thead>
                 <tr style="border-bottom:2px solid var(--color-border)">
-                    <th style="text-align:left;padding:10px 12px;font-weight:600">Priority</th>
+                    <th style="text-align:center;padding:10px 12px;font-weight:600">#</th>
                     <th style="text-align:left;padding:10px 12px;font-weight:600">Vegetable</th>
                     <th style="text-align:left;padding:10px 12px;font-weight:600">Linked Seed</th>
-                    <th style="text-align:left;padding:10px 12px;font-weight:600">Yearly kg</th>
+                    <th style="text-align:left;padding:10px 12px;font-weight:600">Yearly Need</th>
                     <th style="text-align:left;padding:10px 12px;font-weight:600">Notes</th>
                     <th style="padding:10px 12px"></th>
                 </tr>
@@ -68,7 +81,12 @@
                 </td>
                 <td style="padding:8px 12px;font-weight:600"><?= e($need['vegetable_name']) ?></td>
                 <td style="padding:8px 12px;color:var(--color-text-muted)"><?= $need['seed_name'] ? e($need['seed_name']) : '—' ?></td>
-                <td style="padding:8px 12px"><?= $need['yearly_qty_kg'] !== null ? number_format((float)$need['yearly_qty_kg'],1).' kg' : '—' ?></td>
+                <td style="padding:8px 12px">
+                    <?php if ($need['yearly_qty'] !== null): ?>
+                        <?= number_format((float)$need['yearly_qty'], 1) ?>
+                        <span class="text-muted" style="font-size:0.8rem"> <?= e($need['yearly_unit'] ?? 'kg') ?></span>
+                    <?php else: ?>—<?php endif; ?>
+                </td>
                 <td style="padding:8px 12px;color:var(--color-text-muted);font-size:0.8rem"><?= e($need['notes'] ?? '') ?></td>
                 <td style="padding:8px 12px;text-align:right">
                     <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/trash') ?>" style="display:inline" onsubmit="return confirm('Remove this need?')">

@@ -11,22 +11,35 @@ $navLinks = [
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
-// Custom logo check
-$_navLogoUrl = null;
-foreach (['png','jpg','webp','svg'] as $_navExt) {
-    $_navFile = PUBLIC_PATH . '/assets/images/logo-nav.' . $_navExt;
-    if (file_exists($_navFile)) {
-        $_navLogoUrl = url('/assets/images/logo-nav.' . $_navExt) . '?v=' . filemtime($_navFile);
-        break;
+// Custom logo check — prefer horizontal-light for top nav, fall back to icon-light, then legacy logo-nav
+$_navLogoUrl  = null;   // horizontal (desktop nav)
+$_navIconUrl  = null;   // icon (mobile / drawer)
+foreach (['svg','png','webp','jpg'] as $_navExt) {
+    if (!$_navLogoUrl) {
+        $_navHorizFile = PUBLIC_PATH . '/assets/images/logo-horizontal-light.' . $_navExt;
+        if (file_exists($_navHorizFile)) { $_navLogoUrl = url('/assets/images/logo-horizontal-light.'.$_navExt).'?v='.filemtime($_navHorizFile); }
+    }
+    if (!$_navIconUrl) {
+        $_navIconFile = PUBLIC_PATH . '/assets/images/logo-icon-light.' . $_navExt;
+        if (file_exists($_navIconFile)) { $_navIconUrl = url('/assets/images/logo-icon-light.'.$_navExt).'?v='.filemtime($_navIconFile); }
     }
 }
+// Legacy fallback (old single-slot logo-nav.*)
+if (!$_navLogoUrl && !$_navIconUrl) {
+    foreach (['png','jpg','webp','svg'] as $_navExt) {
+        $_navLegacyFile = PUBLIC_PATH . '/assets/images/logo-nav.' . $_navExt;
+        if (file_exists($_navLegacyFile)) { $_navLogoUrl = $_navIconUrl = url('/assets/images/logo-nav.'.$_navExt).'?v='.filemtime($_navLegacyFile); break; }
+    }
+}
+// Effective logo for top nav (prefer horizontal, fall back to icon)
+$_navEffective = $_navLogoUrl ?: $_navIconUrl;
 ?>
 
 <!-- ─── Top nav bar ───────────────────────────────────────────────── -->
 <nav class="nav" id="mainNav">
     <a href="<?= url('/dashboard') ?>" class="nav-logo">
-        <?php if ($_navLogoUrl): ?>
-        <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:32px;max-width:120px;object-fit:contain;display:block;">
+        <?php if ($_navEffective): ?>
+        <img src="<?= $_navEffective ?>" alt="Logo" style="height:32px;max-width:140px;object-fit:contain;display:block;">
         <?php else: ?>🌿 Rooted<?php endif; ?>
     </a>
 
@@ -59,8 +72,8 @@ foreach (['png','jpg','webp','svg'] as $_navExt) {
 <!-- z-index: 9999 in root stacking context, nothing can hide it -->
 <div class="nav-drawer" id="navDrawer" aria-hidden="true">
     <div class="nav-drawer-head">
-        <?php if ($_navLogoUrl): ?>
-        <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:28px;max-width:100px;object-fit:contain;display:block;">
+        <?php if ($_navIconUrl || $_navEffective): ?>
+        <img src="<?= $_navIconUrl ?: $_navEffective ?>" alt="Logo" style="height:28px;max-width:100px;object-fit:contain;display:block;">
         <?php else: ?>
         <span class="nav-drawer-brand">🌿 Rooted</span>
         <?php endif; ?>

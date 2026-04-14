@@ -8,6 +8,19 @@
  */
 return [
 
+    '1.9.3' => [
+        'date'  => '2026-04-14',
+        'title' => '4-Slot Logos & Family Needs Units',
+        'new'   => [
+            'Four logo upload slots in Settings → General: Icon Light, Icon Dark, Horizontal Light, Horizontal Dark',
+            'Nav bar uses the horizontal-light logo on desktop and the icon-light logo in the mobile drawer — graceful fallback to legacy logo-nav.* files and then "🌿 Rooted" text',
+            'Each logo slot can be independently uploaded (PNG, JPG, WebP, SVG) or removed via a delete button',
+            'Family Needs yearly quantity now has a unit selector: kg, g, units, heads, bunches, litres, jars, other',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '1.9.1' => [
         'date'  => '2026-04-14',
         'title' => 'AI Photo Seed Identification',

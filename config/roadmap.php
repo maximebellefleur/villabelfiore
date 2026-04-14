@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => '4-Slot Logos & Family Needs Units',
+        'features' => [
+            ['title' => '4-slot logo uploads',       'detail' => 'Upload icon (square) and horizontal (wide) logos each in light and dark variants. Nav automatically picks the right one.'],
+            ['title' => 'Family Needs unit selector', 'detail' => 'Choose the unit for yearly family needs: kg, g, units, heads, bunches, litres, jars, or other.'],
+        ],
+    ],
+
     '1.9.1' => [
         'status'   => 'released',
         'released' => '2026-04-14',

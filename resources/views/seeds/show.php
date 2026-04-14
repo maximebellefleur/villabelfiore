@@ -147,7 +147,7 @@ $low = $seed['stock_enabled'] && $seed['stock_low_threshold'] !== null && (float
                 <?php foreach ($familyNeeds as $fn): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--color-border);font-size:0.85rem">
                     <span><?= e($fn['vegetable_name']) ?></span>
-                    <span class="text-muted"><?= $fn['yearly_qty_kg'] ? number_format((float)$fn['yearly_qty_kg'],1).' kg/yr' : '—' ?></span>
+                    <span class="text-muted"><?= $fn['yearly_qty'] ?? $fn['yearly_qty_kg'] ?? null ? number_format((float)($fn['yearly_qty'] ?? $fn['yearly_qty_kg']),1).' '.e($fn['yearly_unit'] ?? 'kg').'/yr' : '—' ?></span>
                 </div>
                 <?php endforeach; ?>
             </div>
