@@ -165,8 +165,13 @@ $recentReminders = array_slice($reminders, 0, 3);
             </span>
             <div class="show-feed-body">
                 <div class="show-feed-text"><?= e($a['description']) ?></div>
-                <div class="show-feed-date"><?= e($a['action_label']) ?> · <?= e(date('d M Y', strtotime($a['performed_at']))) ?></div>
+                <div class="show-feed-date"><?= e($a['action_label']) ?> · <?= e(date('d M Y', strtotime($a['performed_at']))) ?><?= !empty($a['att_id']) ? ' · 📷' : '' ?></div>
             </div>
+            <?php if (!empty($a['att_id'])): ?>
+            <a href="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" target="_blank" class="show-feed-thumb-link">
+                <img src="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" class="show-feed-thumb" alt="">
+            </a>
+            <?php endif; ?>
         </div>
         <?php endforeach; ?>
     </div>
@@ -244,7 +249,7 @@ window.MINI_MAP_READONLY = true;
         <span class="show-section-title">✏️ Log Action</span>
     </div>
     <div class="item-detail-card" id="form-note">
-        <form method="POST" action="<?= url('/items/' . (int)$item['id'] . '/actions') ?>">
+        <form method="POST" action="<?= url('/items/' . (int)$item['id'] . '/actions') ?>" enctype="multipart/form-data">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
 
             <!-- Action type -->
@@ -273,6 +278,23 @@ window.MINI_MAP_READONLY = true;
                     <input type="checkbox" id="setReminderCb" name="set_reminder" value="1">
                     <span class="log-reminder-check-text">Set a reminder for this log</span>
                 </label>
+            </div>
+
+            <!-- Photo toggle -->
+            <div class="log-reminder-row">
+                <label class="log-reminder-check">
+                    <input type="checkbox" id="setPhotoCb" name="attach_photo" value="1">
+                    <span class="log-reminder-check-text">📷 Attach a photo to this log</span>
+                </label>
+            </div>
+
+            <!-- Photo upload panel (hidden until checkbox checked) -->
+            <div id="logPhotoPanel" class="log-cal-panel" style="display:none">
+                <label class="log-photo-label">
+                    <input type="file" name="log_photo" id="logPhotoInput" accept="image/jpeg,image/png,image/webp,image/gif">
+                    <span class="log-photo-btn">📂 Choose Photo</span>
+                </label>
+                <div id="logPhotoPreview" class="log-photo-preview"></div>
             </div>
 
             <!-- Inline calendar picker (hidden until checkbox checked) -->
@@ -392,7 +414,14 @@ window.MINI_MAP_READONLY = true;
                 <tr id="logrow_<?= $logId ?>">
                     <td class="text-sm text-muted" style="white-space:nowrap"><?= e(date('d M Y', strtotime($a['performed_at']))) ?></td>
                     <td><span class="badge"><?= e($a['action_label']) ?></span></td>
-                    <td class="show-log-desc"><?= e($a['description']) ?></td>
+                    <td class="show-log-desc">
+                        <?= e($a['description']) ?>
+                        <?php if (!empty($a['att_id'])): ?>
+                        <a href="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" target="_blank" class="show-log-thumb-link">
+                            <img src="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" class="show-log-thumb" alt="Log photo">
+                        </a>
+                        <?php endif; ?>
+                    </td>
                     <td class="show-log-del-cell">
                         <button type="button" class="show-log-del-btn" data-log-id="<?= $logId ?>" title="Delete">✕</button>
                         <span class="show-log-del-confirm" id="logdel_<?= $logId ?>" style="display:none">
@@ -502,6 +531,26 @@ window.MINI_MAP_READONLY = true;
     border-top: 1px solid var(--color-border);
 }
 
+/* ── Log photo attach ───────────────────────── */
+.log-photo-label {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.log-photo-label input[type="file"] { display: none; }
+.log-photo-btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px;
+    background: var(--color-surface); border: 1.5px dashed var(--color-border);
+    font-size: .82rem; color: var(--color-text-muted); cursor: pointer;
+    transition: border-color .15s, color .15s;
+}
+.log-photo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.log-photo-preview img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+/* ── Log thumbnails in table ────────────────── */
+.show-log-thumb-link { display: block; margin-top: 5px; }
+.show-log-thumb { width: 60px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--color-border); }
+/* ── Feed item thumb ────────────────────────── */
+.show-feed-thumb-link { flex-shrink: 0; }
+.show-feed-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--color-border); }
+
 .show-log-table { font-size:.82rem; width:100%; }
 .show-log-desc { word-break:break-word; overflow-wrap:anywhere; max-width:180px; }
 .show-log-del-cell { white-space:nowrap; text-align:right; padding-right:4px; }
@@ -570,6 +619,25 @@ function preCheckReminder() {
     var cb = document.getElementById('setReminderCb');
     if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
 }
+
+// ── Log photo attach toggle ──────────────────────────────────────────────────
+(function() {
+    var cb      = document.getElementById('setPhotoCb');
+    var panel   = document.getElementById('logPhotoPanel');
+    var input   = document.getElementById('logPhotoInput');
+    var preview = document.getElementById('logPhotoPreview');
+    if (!cb || !panel) return;
+    cb.addEventListener('change', function() {
+        panel.style.display = cb.checked ? '' : 'none';
+    });
+    if (input) {
+        input.addEventListener('change', function() {
+            if (!input.files || !input.files[0]) return;
+            var url = URL.createObjectURL(input.files[0]);
+            preview.innerHTML = '<img src="' + url + '" alt="Preview">';
+        });
+    }
+}());
 
 // ── Inline calendar picker ───────────────────────────────────────────────────
 (function () {

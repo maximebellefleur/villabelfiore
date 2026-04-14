@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.8.0' => [
+        'date'  => '2026-04-14',
+        'title' => 'Log Photos & AI Prompt Image URLs',
+        'new' => [
+            'Attach a photo directly to a log entry: tick "📷 Attach a photo to this log" when logging an action to upload an image that is permanently linked to that log entry',
+            'Log thumbnails: photos linked to log entries appear as small thumbnails in the Activity Log table and in the Recent Activity feed on the item page',
+            'AI Prompt now includes full image URLs: all item photos listed under a PHOTOS section with category, caption, and direct download URL; log entries with linked photos include the photo URL inline',
+        ],
+        'improved' => [
+            'AI Prompt photo section lets any AI (ChatGPT, Claude, Gemini) fetch and analyze the actual images alongside the text history',
+            'activity_log table gains attachment_id column (lazy migration — added automatically on first use, no manual SQL needed)',
+        ],
+        'fixed' => [],
+    ],
+
     '1.7.0' => [
         'date'  => '2026-04-14',
         'title' => 'Fused Log+Reminder, Photo Captions & Google Calendar Auto-Push',

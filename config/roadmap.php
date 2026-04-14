@@ -85,6 +85,17 @@ return [
         ],
     ],
 
+    '1.8.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Log Photos & AI Prompt Image URLs',
+        'features' => [
+            ['title' => 'Attach photo to log entry',         'detail' => 'When logging an action, tick "Attach a photo to this log" to upload an image that is permanently linked to that log entry. Preview shown before submit.'],
+            ['title' => 'Log photo thumbnails',              'detail' => 'Photos linked to log entries appear as thumbnails in the Activity Log table and in the Recent Activity feed on the item detail page.'],
+            ['title' => 'AI Prompt with full image URLs',    'detail' => 'The Copy AI Prompt button now includes a PHOTOS section with direct download URLs for all item photos (with category and caption), and appends [photo: URL] inline on any log entry that has a linked image. Any AI model that supports image URLs can fetch and analyze the photos.'],
+        ],
+    ],
+
     '1.7.0' => [
         'status'   => 'released',
         'released' => '2026-04-14',

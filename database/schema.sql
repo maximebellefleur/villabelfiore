@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `action_type`   VARCHAR(100)    NOT NULL,
   `action_label`  VARCHAR(190)    NOT NULL,
   `description`   TEXT            NOT NULL,
+  `attachment_id` BIGINT UNSIGNED     NULL DEFAULT NULL,
   `payload_json`  JSON                NULL DEFAULT NULL,
   `gps_lat`       DECIMAL(10,7)       NULL DEFAULT NULL,
   `gps_lng`       DECIMAL(10,7)       NULL DEFAULT NULL,

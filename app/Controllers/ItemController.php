@@ -16,6 +16,23 @@ class ItemController
         }
     }
 
+    /** Lazily add attachment_id to activity_log if created before v1.8.0 */
+    private function ensureLogAttachmentColumn(DB $db): void
+    {
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+        try {
+            $row = $db->fetchOne(
+                "SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'activity_log' AND COLUMN_NAME = 'attachment_id'"
+            );
+            if (($row['cnt'] ?? 0) == 0) {
+                $db->execute("ALTER TABLE activity_log ADD COLUMN attachment_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER description");
+            }
+        } catch (\Throwable $e) { /* non-fatal */ }
+    }
+
     public function index(Request $request, array $params = []): void
     {
         $this->requireAuth();
@@ -172,9 +189,16 @@ class ItemController
             return;
         }
 
+        $this->ensureLogAttachmentColumn($db);
         $meta        = $db->fetchAll('SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?', [$id]);
         $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL)", [$id]);
-        $activityLog = $db->fetchAll('SELECT * FROM activity_log WHERE item_id = ? ORDER BY performed_at DESC LIMIT 20', [$id]);
+        $activityLog = $db->fetchAll(
+            'SELECT al.*, a.id AS att_id, a.stored_filename AS att_filename, a.mime_type AS att_mime
+             FROM activity_log al
+             LEFT JOIN attachments a ON a.id = al.attachment_id
+             WHERE al.item_id = ? ORDER BY al.performed_at DESC LIMIT 20',
+            [$id]
+        );
         $reminders   = $db->fetchAll("SELECT * FROM reminders WHERE item_id = ? AND status = 'pending' ORDER BY due_at ASC", [$id]);
         $harvests    = $db->fetchAll('SELECT * FROM harvest_entries WHERE item_id = ? ORDER BY recorded_at DESC LIMIT 10', [$id]);
         $finances    = $db->fetchAll('SELECT * FROM finance_entries WHERE item_id = ? ORDER BY entry_date DESC LIMIT 10', [$id]);
@@ -209,14 +233,30 @@ class ItemController
             return;
         }
 
+        $this->ensureLogAttachmentColumn($db);
         $meta     = $db->fetchAll('SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?', [$id]);
         $metaMap  = [];
         foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
 
-        $actions  = $db->fetchAll('SELECT * FROM activity_log WHERE item_id = ? ORDER BY performed_at DESC', [$id]);
+        $actions  = $db->fetchAll(
+            'SELECT al.*, a.id AS att_id FROM activity_log al
+             LEFT JOIN attachments a ON a.id = al.attachment_id
+             WHERE al.item_id = ? ORDER BY al.performed_at DESC',
+            [$id]
+        );
         $harvests = $db->fetchAll('SELECT * FROM harvest_entries WHERE item_id = ? ORDER BY recorded_at DESC', [$id]);
         $finances = $db->fetchAll('SELECT * FROM finance_entries WHERE item_id = ? ORDER BY entry_date DESC', [$id]);
         $reminders= $db->fetchAll('SELECT * FROM reminders WHERE item_id = ? ORDER BY due_at DESC', [$id]);
+        $photos   = $db->fetchAll(
+            "SELECT * FROM attachments WHERE item_id = ? AND mime_type LIKE 'image/%'
+             AND (status = 'active' OR status IS NULL) ORDER BY uploaded_at DESC",
+            [$id]
+        );
+
+        // Build absolute base URL for attachment links
+        $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $baseUrl = $scheme . '://' . $host . APP_BASE;
 
         $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
 
@@ -234,6 +274,18 @@ class ItemController
         if (!empty($metaMap['sun_exposure']))         $lines[] = 'Sun exposure: '  . $metaMap['sun_exposure'];
         if (!empty($item['notes']))                   $lines[] = 'Notes: '        . $item['notes'];
 
+        // Photos overview
+        if (!empty($photos)) {
+            $lines[] = '';
+            $lines[] = '=== PHOTOS ===';
+            foreach ($photos as $p) {
+                $cat  = ucwords(str_replace('_', ' ', $p['category'] ?? 'general'));
+                $line = '[' . $cat . '] ' . $baseUrl . '/attachments/' . (int)$p['id'] . '/download';
+                if (!empty($p['caption'])) $line .= ' — ' . $p['caption'];
+                $lines[] = $line;
+            }
+        }
+
         $lines[] = '';
         $lines[] = '=== ACTIONS & OBSERVATIONS ===';
         if (empty($actions)) {
@@ -243,6 +295,7 @@ class ItemController
                 $date = date('Y-m-d', strtotime($a['performed_at']));
                 $line = $date . ' | ' . ($a['action_label'] ?? $a['action_type']);
                 if (!empty($a['description'])) $line .= ' — ' . $a['description'];
+                if (!empty($a['att_id']))       $line .= ' [photo: ' . $baseUrl . '/attachments/' . (int)$a['att_id'] . '/download]';
                 $lines[] = $line;
             }
         }
@@ -402,11 +455,41 @@ class ItemController
         $actionKey   = $request->post('action_type', '');
         $description = trim((string) $request->post('description', ''));
         $db          = DB::getInstance();
+        $this->ensureLogAttachmentColumn($db);
 
         $db->execute(
             'INSERT INTO activity_log (item_id, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,NOW())',
             [$id, $actionKey, ucfirst(str_replace('_', ' ', $actionKey)), $description, $_SESSION['user_id']]
         );
+        $logId = (int) $db->lastInsertId();
+
+        // Optional photo attached to this log
+        if ($logId && $request->post('attach_photo', '0') === '1') {
+            $logPhoto = $request->file('log_photo');
+            if ($logPhoto && $logPhoto['error'] === UPLOAD_ERR_OK) {
+                try {
+                    $ext = strtolower(pathinfo($logPhoto['name'], PATHINFO_EXTENSION)) ?: 'jpg';
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $mime  = $finfo->file($logPhoto['tmp_name']) ?: 'application/octet-stream';
+                    if (in_array($mime, ['image/jpeg','image/png','image/webp','image/gif'], true)) {
+                        $dir    = STORAGE_PATH . '/uploads/items/';
+                        $uuid   = bin2hex(random_bytes(16));
+                        $stored = date('Ymd_Hi') . '_' . $id . '_' . substr($uuid, 0, 8) . '.' . $ext;
+                        if ((is_dir($dir) || mkdir($dir, 0755, true)) && move_uploaded_file($logPhoto['tmp_name'], $dir . $stored)) {
+                            $db->execute(
+                                'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
+                                 VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
+                                [$uuid, $id, 'log_photo', $logPhoto['name'], $stored, $mime, $ext, 'local', 'uploads/items/' . $stored, $logPhoto['size'], 0, $_SESSION['user_id'], 'active']
+                            );
+                            $attId = (int) $db->lastInsertId();
+                            if ($attId) {
+                                $db->execute('UPDATE activity_log SET attachment_id = ? WHERE id = ?', [$attId, $logId]);
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) { /* non-fatal — photo upload failure doesn't break the log */ }
+            }
+        }
 
         // Optional reminder attached to this log
         $setReminder = $request->post('set_reminder', '0') === '1';
