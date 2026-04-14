@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.9.5' => [
+        'date'  => '2026-04-14',
+        'title' => 'AI Setup Guide & Nav Logo Pair',
+        'improved' => [
+            'Settings → General now shows a full Ollama setup guide: install command, model comparison table (moondream/llava:7b/13b/34b with RAM requirements), start command, and a collapsible section for importing custom Hugging Face .gguf models',
+            'Nav bar displays icon + wordmark side by side when both logo-icon-light and logo-horizontal-light are uploaded',
+        ],
+        'new'  => [],
+        'fixed' => [],
+    ],
+
     '1.9.4' => [
         'date'  => '2026-04-14',
         'title' => 'Nav: Icon + Wordmark Side by Side',

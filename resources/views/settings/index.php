@@ -163,20 +163,85 @@
         <!-- AI / Ollama settings -->
         <div class="settings-group" style="margin-top:var(--spacing-6)">
             <div class="settings-group-title">🤖 Local AI (Ollama)</div>
-            <p class="settings-hint" style="margin-bottom:var(--spacing-3)">Used for photo-based seed identification. Requires <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> running locally with a vision model.<br>
-            Install a vision model: <code>ollama pull llava</code> or <code>ollama pull moondream</code></p>
+            <p class="settings-hint" style="margin-bottom:var(--spacing-4)">
+                Powers the <strong>photo seed identification</strong> feature on the Add Seed form.
+                Runs entirely on your own server — no data is sent to any cloud service.
+            </p>
+
+            <!-- Install steps -->
+            <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
+                <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 Setup Guide</div>
+
+                <div style="display:flex;flex-direction:column;gap:var(--spacing-4)">
+
+                    <!-- Step 1 -->
+                    <div>
+                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 1 — Install Ollama on your server</div>
+                        <p class="settings-hint" style="margin-bottom:6px">Run this in your server terminal (Linux / macOS). Requires root or sudo.</p>
+                        <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;overflow-x:auto">curl -fsSL https://ollama.com/install.sh | sh</code>
+                        <p class="settings-hint" style="margin-top:6px">On Windows or if you prefer a GUI installer, download from <strong>ollama.com/download</strong>. Ollama will start automatically as a system service.</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div>
+                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 2 — Pull a vision model</div>
+                        <p class="settings-hint" style="margin-bottom:6px">Vision models can understand images. Choose one based on your server RAM:</p>
+                        <table style="width:100%;font-size:0.8rem;border-collapse:collapse;margin-bottom:8px">
+                            <thead><tr style="border-bottom:1px solid var(--color-border)">
+                                <th style="text-align:left;padding:4px 8px;font-weight:600">Model</th>
+                                <th style="text-align:left;padding:4px 8px;font-weight:600">RAM needed</th>
+                                <th style="text-align:left;padding:4px 8px;font-weight:600">Quality</th>
+                                <th style="text-align:left;padding:4px 8px;font-weight:600">Pull command</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">moondream</td><td style="padding:5px 8px">~2 GB</td><td style="padding:5px 8px">Fast, basic</td><td style="padding:5px 8px"><code>ollama pull moondream</code></td></tr>
+                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:7b</td><td style="padding:5px 8px">~4 GB</td><td style="padding:5px 8px">Good ✓ recommended</td><td style="padding:5px 8px"><code>ollama pull llava:7b</code></td></tr>
+                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:13b</td><td style="padding:5px 8px">~8 GB</td><td style="padding:5px 8px">Better</td><td style="padding:5px 8px"><code>ollama pull llava:13b</code></td></tr>
+                                <tr><td style="padding:5px 8px">llava:34b</td><td style="padding:5px 8px">~20 GB</td><td style="padding:5px 8px">Best</td><td style="padding:5px 8px"><code>ollama pull llava:34b</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p class="settings-hint">Models are downloaded from Ollama's library automatically — no Hugging Face account needed for these.</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div>
+                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 3 — Start Ollama (if not already running)</div>
+                        <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem">ollama serve</code>
+                        <p class="settings-hint" style="margin-top:6px">If installed via the install script it runs as a service automatically. Test it: <code>curl http://localhost:11434</code> should return "Ollama is running".</p>
+                    </div>
+
+                    <!-- Step 4 — HuggingFace custom models -->
+                    <details style="border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-3)">
+                        <summary style="font-weight:600;font-size:0.875rem;cursor:pointer">Optional: use a custom model from Hugging Face</summary>
+                        <div style="margin-top:var(--spacing-3);display:flex;flex-direction:column;gap:var(--spacing-2)">
+                            <p class="settings-hint">Hugging Face (huggingface.co) hosts thousands of open-source models including plant/agriculture fine-tunes. You can import any <strong>.gguf</strong> model file into Ollama.</p>
+                            <div style="font-weight:600;font-size:0.8rem">a) Download the model</div>
+                            <p class="settings-hint">On huggingface.co, find a model with a <code>.gguf</code> file (look in the "Files and versions" tab). Download it to your server:</p>
+                            <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;overflow-x:auto">wget https://huggingface.co/&lt;owner&gt;/&lt;model&gt;/resolve/main/model.gguf -O ~/mymodel.gguf</code>
+                            <div style="font-weight:600;font-size:0.8rem;margin-top:4px">b) Create an Ollama Modelfile</div>
+                            <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;white-space:pre">echo 'FROM ~/mymodel.gguf' > Modelfile
+ollama create my-plant-model -f Modelfile</code>
+                            <div style="font-weight:600;font-size:0.8rem;margin-top:4px">c) Set the model name here</div>
+                            <p class="settings-hint">Enter <code>my-plant-model</code> in the Vision Model field below and save.</p>
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+
+            <!-- Config form -->
             <form method="POST" action="<?= url('/settings/update') ?>" class="settings-form">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <div class="settings-field">
                     <label class="settings-label">Ollama Endpoint</label>
-                    <p class="settings-hint">Base URL of your Ollama instance.</p>
+                    <p class="settings-hint">Base URL of your Ollama instance. Default: <code>http://localhost:11434</code> — use this if Ollama runs on the same machine as this app.</p>
                     <input type="url" name="ai_endpoint" class="settings-input"
                            value="<?= e($settings['ai.endpoint'] ?? 'http://localhost:11434') ?>"
                            placeholder="http://localhost:11434">
                 </div>
                 <div class="settings-field">
                     <label class="settings-label">Vision Model</label>
-                    <p class="settings-hint">Must support image input (llava, moondream, bakllava, etc.).</p>
+                    <p class="settings-hint">Must support image input. Use the exact name from <code>ollama list</code>.</p>
                     <input type="text" name="ai_vision_model" class="settings-input"
                            value="<?= e($settings['ai.vision_model'] ?? 'llava') ?>"
                            placeholder="llava">

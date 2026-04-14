@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'AI Setup Guide & Nav Logo Pair',
+        'features' => [
+            ['title' => 'Ollama setup guide in Settings', 'detail' => 'Step-by-step instructions: install Ollama, pull vision model, start server, plus collapsible guide for importing custom Hugging Face .gguf models.'],
+            ['title' => 'Nav icon + wordmark pair', 'detail' => 'Top nav shows icon and horizontal wordmark side by side when both are uploaded.'],
+        ],
+    ],
+
     '1.9.4' => [
         'status'   => 'released',
         'released' => '2026-04-14',
