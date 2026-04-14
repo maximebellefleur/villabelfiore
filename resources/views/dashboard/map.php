@@ -33,13 +33,18 @@
         <!-- Land boundary panel -->
         <div class="map-sidebar-section" id="landBoundaryPanel" style="display:none">
             <h3 class="map-sidebar-title">🗺 Land Boundary</h3>
-            <p class="text-muted text-sm">Click to place points, double-click to finish. Or walk the boundary and tap GPS to add your current position.</p>
+            <p class="text-muted text-sm" id="landBoundaryInstructions">
+                <strong>Desktop:</strong> Click the map to place points.<br>
+                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.<br>
+                When done, tap <strong>Finish Polygon</strong> to close the shape.
+            </p>
             <div class="map-boundary-actions">
                 <button class="btn btn-secondary btn-sm" id="landGpsBtn">🎯 Add GPS Point</button>
+                <button class="btn btn-primary btn-sm" id="finishLandBoundary" style="display:none">✅ Finish Polygon</button>
             </div>
             <div id="landGpsStatus" class="map-gps-status" style="display:none"></div>
             <div class="map-boundary-actions" style="margin-top:var(--spacing-2)">
-                <button class="btn btn-primary btn-sm" id="saveLandBoundary">Save Land Boundary</button>
+                <button class="btn btn-primary btn-sm" id="saveLandBoundary" style="display:none">💾 Save</button>
                 <button class="btn btn-secondary btn-sm" id="clearLandBoundary">Clear</button>
                 <button class="btn btn-link btn-sm" id="cancelLandDraw">Cancel</button>
             </div>
@@ -60,10 +65,15 @@
 
         <!-- Zone boundary panel (accessible from item popups) -->
         <div class="map-sidebar-section" id="boundaryPanel" style="display:none">
-            <h3 class="map-sidebar-title">Draw Zone Boundary</h3>
-            <p class="text-muted text-sm">Click to place points. Double-click to finish. Click a placed point to remove it.</p>
+            <h3 class="map-sidebar-title" id="boundaryPanelTitle">Draw Zone Boundary</h3>
+            <p class="text-muted text-sm">
+                <strong>Desktop:</strong> Click the map to place points.<br>
+                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.<br>
+                Tap a placed point to remove it and all after. Tap <strong>Finish</strong> to close the shape.
+            </p>
             <div class="map-boundary-actions">
                 <button class="btn btn-secondary btn-sm" id="zoneGpsBtn">🎯 Add GPS Point</button>
+                <button class="btn btn-primary btn-sm" id="finishZoneBoundary" style="display:none">✅ Finish</button>
             </div>
             <div id="zoneGpsStatus" class="map-gps-status" style="display:none"></div>
             <div class="form-group" style="margin-top:var(--spacing-2)">
@@ -73,7 +83,7 @@
                 </select>
             </div>
             <div class="map-boundary-actions">
-                <button class="btn btn-primary btn-sm" id="saveBoundary">Save</button>
+                <button class="btn btn-primary btn-sm" id="saveBoundary" style="display:none">💾 Save</button>
                 <button class="btn btn-secondary btn-sm" id="clearBoundary">Clear</button>
                 <button class="btn btn-link btn-sm" id="cancelDraw">Cancel</button>
             </div>

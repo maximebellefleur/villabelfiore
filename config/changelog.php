@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.8.4' => [
+        'date'  => '2026-04-14',
+        'title' => 'Map Polygon Drawing Overhaul',
+        'new'   => [],
+        'improved' => [
+            'Polygon drawing now has explicit "Finish Polygon" and "Save" buttons — no more relying on double-click to close a shape',
+            'Both land boundary and zone boundary drawing now auto-open the sidebar on mobile so the controls are always visible when draw mode is activated',
+            'Live closing-line preview: while drawing, a faint dashed line connects the last point back to the first so you can see the shape forming before finishing',
+            'Drawing is locked after Finish — no accidental point additions after closing the polygon; Clear resets everything for a fresh start',
+            'GPS-assisted mode for mobile: walk to each corner, tap "Add GPS Point", repeat, then "Finish Polygon" — works for both land boundary and zone boundaries',
+            'Status messages updated to guide through both desktop click mode and mobile GPS mode step by step',
+        ],
+        'fixed' => [],
+    ],
+
     '1.8.3' => [
         'date'  => '2026-04-14',
         'title' => 'Icon Alpha Fix, Auto-Sync, Distance Sort & Caption UI',

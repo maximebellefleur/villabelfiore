@@ -403,11 +403,10 @@
 
     // GPS for Land boundary panel — adds a point at current position
     document.getElementById('landGpsBtn').addEventListener('click', function () {
+        if (landDrawFinished) return; // already closed
         var btn = this;
         var statusEl = document.getElementById('landGpsStatus');
         detectGps(function (lat, lng) {
-            // Simulate a map click at that position
-            var latlng = L.latLng(lat, lng);
             var landIdx = landDrawPoints.length;
             landDrawPoints.push([lat, lng]);
             var landDot = L.circleMarker([lat, lng], {
@@ -415,34 +414,26 @@
             }).addTo(map);
             (function (pIdx, pMarker) {
                 pMarker.on('click', function (ev) {
+                    if (landDrawFinished) return;
                     L.DomEvent.stop(ev);
                     var removed = landTempMarkers.splice(pIdx, landTempMarkers.length - pIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
                     landDrawPoints.splice(pIdx, landDrawPoints.length - pIdx);
                     if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
-                    if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
-                    if (landDrawPoints.length >= 2) {
-                        landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
-                    }
-                    document.getElementById('landBoundaryStatus').textContent =
-                        landDrawPoints.length + ' point(s) — double-click to finish.';
+                    updateLandTempLines();
                 });
             })(landIdx, landDot);
             landTempMarkers.push(landDot);
-            if (landTempLine) map.removeLayer(landTempLine);
-            if (landDrawPoints.length >= 2) {
-                landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
-            }
+            updateLandTempLines();
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
-            document.getElementById('landBoundaryStatus').textContent =
-                landDrawPoints.length + ' point(s) — tap GPS again or click map to continue.';
-            showGpsStatus(statusEl, '✅ Point added at ' + lat.toFixed(5) + ', ' + lng.toFixed(5), 'success');
-            setTimeout(function () { hideGpsStatus(statusEl); }, 2500);
+            showGpsStatus(statusEl, '✅ Point ' + landDrawPoints.length + ' added', 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 2000);
         }, statusEl, btn);
     });
 
     // GPS for Zone boundary panel
     document.getElementById('zoneGpsBtn').addEventListener('click', function () {
+        if (drawingFinished) return; // polygon already closed
         var btn = this;
         var statusEl = document.getElementById('zoneGpsStatus');
         detectGps(function (lat, lng) {
@@ -453,6 +444,7 @@
             }).addTo(map);
             (function (pointIdx, dotMarker) {
                 dotMarker.on('click', function (ev) {
+                    if (drawingFinished) return;
                     L.DomEvent.stop(ev);
                     var removed = tempMarkers.splice(pointIdx, tempMarkers.length - pointIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
@@ -466,8 +458,8 @@
             updateTempShape();
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
             updateDrawStatus();
-            showGpsStatus(statusEl, '✅ Point added at ' + lat.toFixed(5) + ', ' + lng.toFixed(5), 'success');
-            setTimeout(function () { hideGpsStatus(statusEl); }, 2500);
+            showGpsStatus(statusEl, '✅ Point ' + drawnPoints.length + ' added', 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 2000);
         }, statusEl, btn);
     });
 
@@ -594,11 +586,13 @@
     // -------------------------------------------------------------------------
     // Boundary drawing (accessible from item popup)
     // -------------------------------------------------------------------------
-    var drawingActive = false;
-    var drawnPoints   = [];
-    var tempMarkers   = [];
-    var tempPolyline  = null;
-    var tempPolygon   = null;
+    var drawingActive   = false;
+    var drawingFinished = false; // true after Finish button / double-click, blocks new points
+    var drawnPoints     = [];
+    var tempMarkers     = [];
+    var tempPolyline    = null;
+    var tempCloseLine   = null; // faint preview line from last point back to first
+    var tempPolygon     = null;
 
     document.getElementById('mapDrawToggle') && document.getElementById('mapDrawToggle').addEventListener('click', function () {
         toggleDrawMode(!drawingActive);
@@ -606,21 +600,57 @@
 
     document.getElementById('cancelDraw').addEventListener('click', function () { toggleDrawMode(false); });
     document.getElementById('clearBoundary').addEventListener('click', clearDraw);
+    document.getElementById('finishZoneBoundary').addEventListener('click', function () {
+        var itemId = document.getElementById('boundaryItemSelect').value;
+        var selectedItem = itemId && allItems.find(function (i) { return String(i.id) === String(itemId); });
+        var isLineType = selectedItem && LINE_TYPES.indexOf(selectedItem.type) >= 0;
+        if (isLineType) {
+            if (drawnPoints.length < 2) { showToast('Need at least 2 points for a row.'); return; }
+            // For lines, "finish" just locks drawing and shows Save
+            drawingFinished = true;
+            if (tempCloseLine) { map.removeLayer(tempCloseLine); tempCloseLine = null; }
+            document.getElementById('boundaryStatus').textContent =
+                '✅ Row complete (' + drawnPoints.length + ' points). Select item and Save.';
+            document.getElementById('finishZoneBoundary').style.display = 'none';
+            document.getElementById('saveBoundary').style.display = 'inline-flex';
+            map.getContainer().style.cursor = '';
+        } else {
+            finishPolygon();
+        }
+    });
 
     function toggleDrawMode(active) {
-        drawingActive = active;
+        drawingActive   = active;
+        drawingFinished = false;
         document.getElementById('boundaryPanel').style.display = active ? 'block' : 'none';
+        document.getElementById('finishZoneBoundary').style.display = 'none';
+        document.getElementById('saveBoundary').style.display = 'none';
         map.getContainer().style.cursor = active ? 'crosshair' : '';
         if (!active) clearDraw();
-        if (active) { enterAddItemMode && cancelAddItem(); }
+        if (active) {
+            cancelAddItem();
+            // Open sidebar on mobile so controls are visible
+            var sidebar = document.getElementById('mapSidebar');
+            if (sidebar && sidebar.classList.contains('map-sidebar--hidden')) {
+                sidebar.classList.remove('map-sidebar--hidden');
+                var layersBtn = document.getElementById('mapLayersToggle');
+                if (layersBtn) layersBtn.classList.remove('map-layers-toggle--active');
+                setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 320);
+            }
+        }
     }
 
     function clearDraw() {
+        drawingFinished = false;
         drawnPoints = [];
         tempMarkers.forEach(function (m) { map.removeLayer(m); });
         tempMarkers = [];
-        if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
-        if (tempPolygon)  { map.removeLayer(tempPolygon);  tempPolygon  = null; }
+        if (tempPolyline)  { map.removeLayer(tempPolyline);  tempPolyline  = null; }
+        if (tempCloseLine) { map.removeLayer(tempCloseLine); tempCloseLine = null; }
+        if (tempPolygon)   { map.removeLayer(tempPolygon);   tempPolygon   = null; }
+        document.getElementById('finishZoneBoundary').style.display = 'none';
+        document.getElementById('saveBoundary').style.display = 'none';
+        map.getContainer().style.cursor = drawingActive ? 'crosshair' : '';
         updateDrawStatus();
     }
 
@@ -628,27 +658,52 @@
         var itemId = document.getElementById('boundaryItemSelect').value;
         var selectedItem = itemId && allItems.find(function (i) { return String(i.id) === String(itemId); });
         var isLineType = selectedItem && LINE_TYPES.indexOf(selectedItem.type) >= 0;
+        if (drawingFinished) return; // status already set by finishPolygon
         document.getElementById('boundaryStatus').textContent =
             drawnPoints.length > 0
-                ? drawnPoints.length + ' point(s) — ' + (isLineType ? 'save when done (min 2 points).' : 'double-click to finish (min 3 points). Click a point to remove it and all after.')
-                : (isLineType ? 'Click to add points for the planting row (min 2).' : 'Click to add points (min 3), double-click to finish.');
+                ? drawnPoints.length + ' point(s) placed.' + (isLineType
+                    ? ' Add more or Save.'
+                    : (drawnPoints.length >= 3 ? ' Tap Finish to close the polygon.' : ' Need at least 3 — keep adding.'))
+                : (isLineType ? 'Click map or use GPS to add points (min 2).' : 'Click map or use GPS to place corners (min 3).');
     }
 
     function updateTempShape() {
-        if (tempPolyline) map.removeLayer(tempPolyline);
+        if (tempPolyline)  map.removeLayer(tempPolyline);
+        if (tempCloseLine) { map.removeLayer(tempCloseLine); tempCloseLine = null; }
+
+        var itemId = document.getElementById('boundaryItemSelect').value;
+        var selectedItem = itemId && allItems.find(function (i) { return String(i.id) === String(itemId); });
+        var isLineType = selectedItem && LINE_TYPES.indexOf(selectedItem.type) >= 0;
+
         if (drawnPoints.length >= 2) {
-            tempPolyline = L.polyline(drawnPoints, { color: '#e74c3c', dashArray: '5,5' }).addTo(map);
+            tempPolyline = L.polyline(drawnPoints, { color: '#e74c3c', dashArray: '5,5', weight: 2 }).addTo(map);
         }
+        // Faint closing line preview (polygon types only, 3+ points)
+        if (!isLineType && drawnPoints.length >= 3) {
+            tempCloseLine = L.polyline(
+                [drawnPoints[drawnPoints.length - 1], drawnPoints[0]],
+                { color: '#e74c3c', dashArray: '3,10', weight: 1.5, opacity: 0.45 }
+            ).addTo(map);
+        }
+        // Show Finish button once there are enough points
+        var minPts = isLineType ? 2 : 3;
+        document.getElementById('finishZoneBoundary').style.display =
+            (!drawingFinished && drawnPoints.length >= minPts) ? 'inline-flex' : 'none';
     }
 
     function finishPolygon() {
-        if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
-        if (tempPolygon)  { map.removeLayer(tempPolygon); }
+        if (drawnPoints.length < 3) return;
+        drawingFinished = true;
+        if (tempPolyline)  { map.removeLayer(tempPolyline);  tempPolyline  = null; }
+        if (tempCloseLine) { map.removeLayer(tempCloseLine); tempCloseLine = null; }
+        if (tempPolygon)   { map.removeLayer(tempPolygon); }
         tempPolygon = L.polygon(drawnPoints, {
             color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.2, weight: 2,
         }).addTo(map);
         document.getElementById('boundaryStatus').textContent =
-            'Polygon complete (' + drawnPoints.length + ' points). Select an item and save.';
+            '✅ Polygon closed (' + drawnPoints.length + ' points). Select an item below and tap Save.';
+        document.getElementById('finishZoneBoundary').style.display = 'none';
+        document.getElementById('saveBoundary').style.display = 'inline-flex';
         map.getContainer().style.cursor = '';
     }
 
@@ -750,53 +805,105 @@
         }
     }
 
-    var landDrawActive  = false;
-    var landDrawPoints  = [];
-    var landTempMarkers = [];
-    var landTempLine    = null;
-    var landTempPoly    = null;
+    var landDrawActive    = false;
+    var landDrawFinished  = false;
+    var landDrawPoints    = [];
+    var landTempMarkers   = [];
+    var landTempLine      = null;
+    var landTempCloseLine = null;
+    var landTempPoly      = null;
 
     document.getElementById('mapDrawLandToggle').addEventListener('click', function () {
         toggleLandDrawMode(!landDrawActive);
     });
     document.getElementById('cancelLandDraw').addEventListener('click', function () { toggleLandDrawMode(false); });
     document.getElementById('clearLandBoundary').addEventListener('click', clearLandDraw);
+    document.getElementById('finishLandBoundary').addEventListener('click', function () {
+        finishLandPolygon();
+    });
 
     function toggleLandDrawMode(active) {
-        landDrawActive = active;
+        landDrawActive   = active;
+        landDrawFinished = false;
         document.getElementById('landBoundaryPanel').style.display = active ? 'block' : 'none';
         document.getElementById('mapDrawLandToggle').textContent = active ? '✕ Cancel Land Draw' : '🗺 Set Land Boundary';
+        document.getElementById('finishLandBoundary').style.display = 'none';
+        document.getElementById('saveLandBoundary').style.display = 'none';
         map.getContainer().style.cursor = active ? 'crosshair' : '';
-        if (active) { toggleDrawMode(false); cancelAddItem(); }
+        if (active) {
+            toggleDrawMode(false);
+            cancelAddItem();
+            // Open sidebar on mobile
+            var sidebar = document.getElementById('mapSidebar');
+            if (sidebar && sidebar.classList.contains('map-sidebar--hidden')) {
+                sidebar.classList.remove('map-sidebar--hidden');
+                var layersBtn = document.getElementById('mapLayersToggle');
+                if (layersBtn) layersBtn.classList.remove('map-layers-toggle--active');
+                setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 320);
+            }
+        }
         if (!active) clearLandDraw();
     }
 
     function clearLandDraw() {
+        landDrawFinished = false;
         landDrawPoints = [];
         landTempMarkers.forEach(function (m) { map.removeLayer(m); });
         landTempMarkers = [];
-        if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
-        if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
+        if (landTempLine)      { map.removeLayer(landTempLine);      landTempLine      = null; }
+        if (landTempCloseLine) { map.removeLayer(landTempCloseLine); landTempCloseLine = null; }
+        if (landTempPoly)      { map.removeLayer(landTempPoly);      landTempPoly      = null; }
+        document.getElementById('finishLandBoundary').style.display = 'none';
+        document.getElementById('saveLandBoundary').style.display   = 'none';
         document.getElementById('landBoundaryStatus').textContent = '';
+        if (landDrawActive) map.getContainer().style.cursor = 'crosshair';
+    }
+
+    function updateLandTempLines() {
+        if (landTempLine)      { map.removeLayer(landTempLine);      landTempLine      = null; }
+        if (landTempCloseLine) { map.removeLayer(landTempCloseLine); landTempCloseLine = null; }
+        if (landDrawPoints.length >= 2) {
+            landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3', weight: 2 }).addTo(map);
+        }
+        if (landDrawPoints.length >= 3) {
+            landTempCloseLine = L.polyline(
+                [landDrawPoints[landDrawPoints.length - 1], landDrawPoints[0]],
+                { color: '#2d5a27', dashArray: '3,10', weight: 1.5, opacity: 0.4 }
+            ).addTo(map);
+        }
+        // Show/hide Finish button
+        document.getElementById('finishLandBoundary').style.display =
+            (!landDrawFinished && landDrawPoints.length >= 3) ? 'inline-flex' : 'none';
+        document.getElementById('landBoundaryStatus').textContent =
+            landDrawPoints.length > 0
+                ? landDrawPoints.length + ' point(s) placed.' + (landDrawPoints.length >= 3
+                    ? ' Tap Finish Polygon to close the shape.'
+                    : ' Keep adding corners.')
+                : 'Click the map or use GPS to place corners.';
     }
 
     function finishLandPolygon() {
-        if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+        if (landDrawPoints.length < 3) return;
+        landDrawFinished = true;
+        if (landTempLine)      { map.removeLayer(landTempLine);      landTempLine      = null; }
+        if (landTempCloseLine) { map.removeLayer(landTempCloseLine); landTempCloseLine = null; }
         if (landTempPoly) map.removeLayer(landTempPoly);
         landTempPoly = L.polygon(landDrawPoints, {
             color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 0.08, weight: 3, dashArray: '8 4',
         }).addTo(map);
         document.getElementById('landBoundaryStatus').textContent =
-            'Polygon complete (' + landDrawPoints.length + ' points). Click Save.';
+            '✅ Polygon closed (' + landDrawPoints.length + ' points). Tap Save to confirm.';
+        document.getElementById('finishLandBoundary').style.display = 'none';
+        document.getElementById('saveLandBoundary').style.display   = 'inline-flex';
         map.getContainer().style.cursor = '';
     }
 
     document.getElementById('saveLandBoundary').addEventListener('click', function () {
-        if (landDrawPoints.length < 3 && !landTempPoly) {
-            document.getElementById('landBoundaryStatus').textContent = 'Draw the boundary first (min 3 points, double-click to finish).';
+        if (landDrawPoints.length < 3) {
+            document.getElementById('landBoundaryStatus').textContent = 'Draw the boundary first (at least 3 points).';
             return;
         }
-        if (!landTempPoly && landDrawPoints.length >= 3) finishLandPolygon();
+        if (!landTempPoly) finishLandPolygon();
 
         var geojson = {
             type: 'Polygon',
@@ -874,7 +981,7 @@
         }
 
         // Zone boundary drawing
-        if (drawingActive) {
+        if (drawingActive && !drawingFinished) {
             drawnPoints.push([e.latlng.lat, e.latlng.lng]);
 
             var idx = drawnPoints.length - 1;
@@ -886,8 +993,8 @@
             // Click on existing point: remove it and all points after it
             (function (pointIdx, dotMarker) {
                 dotMarker.on('click', function (ev) {
+                    if (drawingFinished) return;
                     L.DomEvent.stop(ev);
-                    // Remove this point and all subsequent from the visual list
                     var removed = tempMarkers.splice(pointIdx, tempMarkers.length - pointIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
                     drawnPoints.splice(pointIdx, drawnPoints.length - pointIdx);
@@ -904,37 +1011,27 @@
         }
 
         // Land boundary drawing
-        if (landDrawActive) {
+        if (landDrawActive && !landDrawFinished) {
+            var lIdx = landDrawPoints.length;
             landDrawPoints.push([e.latlng.lat, e.latlng.lng]);
-            var landIdx = landDrawPoints.length - 1;
-            var landDot = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+            var lDot = L.circleMarker([e.latlng.lat, e.latlng.lng], {
                 radius: 7, color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 1, weight: 2,
             }).addTo(map);
 
-            // Click on land boundary point: remove it and all after
             (function (pIdx, pMarker) {
                 pMarker.on('click', function (ev) {
+                    if (landDrawFinished) return;
                     L.DomEvent.stop(ev);
                     var removed = landTempMarkers.splice(pIdx, landTempMarkers.length - pIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
                     landDrawPoints.splice(pIdx, landDrawPoints.length - pIdx);
                     if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
-                    if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
-                    if (landDrawPoints.length >= 2) {
-                        landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
-                    }
-                    document.getElementById('landBoundaryStatus').textContent =
-                        landDrawPoints.length + ' point(s) — double-click to finish.';
+                    updateLandTempLines();
                 });
-            })(landIdx, landDot);
+            })(lIdx, lDot);
 
-            landTempMarkers.push(landDot);
-            if (landTempLine) map.removeLayer(landTempLine);
-            if (landDrawPoints.length >= 2) {
-                landTempLine = L.polyline(landDrawPoints, { color: '#2d5a27', dashArray: '6 3' }).addTo(map);
-            }
-            document.getElementById('landBoundaryStatus').textContent =
-                landDrawPoints.length + ' point(s) — double-click to finish. Click a point to remove it.';
+            landTempMarkers.push(lDot);
+            updateLandTempLines();
             return;
         }
 
@@ -944,8 +1041,8 @@
 
     map.on('dblclick', function (e) {
         L.DomEvent.stop(e);
-        if (drawingActive && drawnPoints.length >= 3) { finishPolygon(); return; }
-        if (landDrawActive && landDrawPoints.length >= 3) { finishLandPolygon(); }
+        if (drawingActive   && !drawingFinished   && drawnPoints.length >= 3)     { finishPolygon();     return; }
+        if (landDrawActive  && !landDrawFinished  && landDrawPoints.length >= 3)  { finishLandPolygon(); }
     });
 
     // -------------------------------------------------------------------------

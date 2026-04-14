@@ -85,6 +85,18 @@ return [
         ],
     ],
 
+    '1.8.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Map Polygon Drawing Overhaul',
+        'features' => [
+            ['title' => 'Finish Polygon button',           'detail' => 'Explicit "Finish Polygon" button closes the shape without relying on double-click, which is unreliable on mobile.'],
+            ['title' => 'Auto-open sidebar on draw mode',  'detail' => 'Activating draw mode on mobile now opens the sidebar automatically so GPS, Finish, Save, and Cancel buttons are visible.'],
+            ['title' => 'Live closing-line preview',       'detail' => 'A faint dashed line connects the last placed point back to the first as you draw, showing the shape before it is closed.'],
+            ['title' => 'GPS-assisted polygon on mobile',  'detail' => 'Walk to each corner of a zone or your land boundary, tap Add GPS Point, move, repeat, then tap Finish Polygon.'],
+        ],
+    ],
+
     '1.8.3' => [
         'status'   => 'released',
         'released' => '2026-04-14',
