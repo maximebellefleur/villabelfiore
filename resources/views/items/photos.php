@@ -128,8 +128,10 @@ $gallery = array_values($gallery);
     <div class="photos-caption-edit" id="captionEdit_<?= $attId ?>" style="display:none">
         <input type="text" class="photos-caption-input-inline" data-att-id="<?= $attId ?>"
                value="<?= e($captionVal) ?>" placeholder="Caption…" maxlength="500">
-        <button type="button" class="photos-caption-save" data-att-id="<?= $attId ?>">✓</button>
-        <button type="button" class="photos-caption-cancel" data-att-id="<?= $attId ?>">✕</button>
+        <div class="photos-caption-edit-btns">
+            <button type="button" class="photos-caption-save" data-att-id="<?= $attId ?>">✓ Save</button>
+            <button type="button" class="photos-caption-cancel" data-att-id="<?= $attId ?>">✕ Cancel</button>
+        </div>
     </div>
 
     <!-- Inline category selector (hidden by default) -->
@@ -477,10 +479,12 @@ document.querySelectorAll('.photos-caption-save').forEach(function(btn) {
 .photos-caption-text { font-size:.68rem;color:var(--color-text-muted);display:block;cursor:pointer;line-height:1.4;word-break:break-word;transition:color .15s; }
 .photos-caption-text:hover { color:var(--color-primary); }
 .photos-caption-empty { font-style:italic;opacity:.5; }
-.photos-caption-edit { display:flex;align-items:center;gap:3px;padding:2px 8px; }
-.photos-caption-input-inline { flex:1;padding:3px 7px;border:1.5px solid var(--color-primary);border-radius:var(--radius-pill);font-size:.68rem;font-family:inherit;background:var(--color-surface); }
-.photos-caption-save { background:var(--color-primary);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:var(--radius-pill); }
-.photos-caption-cancel { background:rgba(0,0,0,.07);color:var(--color-text-muted);border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:var(--radius-pill); }
+.photos-caption-edit { display:flex;flex-direction:column;gap:7px;padding:4px 8px 10px; }
+.photos-caption-input-inline { width:100%;box-sizing:border-box;padding:8px 12px;border:1.5px solid var(--color-primary);border-radius:10px;font-size:.85rem;font-family:inherit;background:var(--color-surface); }
+.photos-caption-edit-btns { display:flex;gap:6px; }
+.photos-caption-save { flex:1;background:var(--color-primary);color:#fff;border:none;cursor:pointer;font-size:.82rem;font-weight:700;padding:8px 0;border-radius:var(--radius-pill); }
+.photos-caption-cancel { background:rgba(0,0,0,.07);color:var(--color-text-muted);border:none;cursor:pointer;font-size:.82rem;font-weight:700;padding:8px 12px;border-radius:var(--radius-pill);transition:background .15s; }
+.photos-caption-cancel:hover { background:rgba(0,0,0,.12); }
 
 /* Gallery footer: delete */
 .photos-gallery-footer { padding:4px 8px 8px;display:flex;align-items:center;gap:4px; }

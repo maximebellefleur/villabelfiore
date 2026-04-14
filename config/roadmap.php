@@ -85,6 +85,19 @@ return [
         ],
     ],
 
+    '1.8.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Icon Alpha Fix, Auto-Sync, Distance Sort & Caption UI',
+        'features' => [
+            ['title' => 'Transparent logo support for PWA icons', 'detail' => 'Fixed alpha channel corruption when uploading logos with transparent backgrounds — images are now resized with blending off throughout the pipeline.'],
+            ['title' => 'Automatic Google Calendar sync',         'detail' => 'Reminders are pushed to Google Calendar automatically when the Reminders page is opened — no need to visit Settings → Calendar to sync.'],
+            ['title' => 'Distance sort as default on items list', 'detail' => 'Items page requests GPS on load and sorts items nearest-first automatically. Falls back to name order if location is unavailable.'],
+            ['title' => 'Improved caption editor',               'detail' => 'Save/Cancel buttons now appear below the caption input with larger touch targets, making it easier to edit captions on mobile.'],
+            ['title' => 'Browser asset caching',                 'detail' => 'CSS, JS, and image files now get 1-year browser cache headers, reducing page load time on repeat visits.'],
+        ],
+    ],
+
     '1.8.2' => [
         'status'   => 'released',
         'released' => '2026-04-14',

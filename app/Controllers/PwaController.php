@@ -100,7 +100,7 @@ class PwaController
             imagesavealpha($squared, true);
             imagealphablending($squared, false);
             imagefill($squared, 0, 0, imagecolorallocatealpha($squared, 0, 0, 0, 127));
-            imagealphablending($squared, true);
+            // Keep blending OFF so raw alpha values are copied, not composited
             imagecopy($squared, $src, 0, 0, $offX, $offY, $sq, $sq);
             $working         = $squared;
             $workW           = $sq;
@@ -116,7 +116,7 @@ class PwaController
             imagesavealpha($tmp, true);
             imagealphablending($tmp, false);
             imagefill($tmp, 0, 0, imagecolorallocatealpha($tmp, 0, 0, 0, 127));
-            imagealphablending($tmp, true);
+            // Keep blending OFF for alpha-preserving resample
             imagecopyresampled($tmp, $working, 0, 0, 0, 0, $nextSize, $nextSize, $workW, $workH);
             if ($ownIntermediate) {
                 imagedestroy($working);
@@ -133,7 +133,7 @@ class PwaController
         imagealphablending($dst, false);
         $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
         imagefill($dst, 0, 0, $transparent);
-        imagealphablending($dst, true);
+        // Keep blending OFF so transparent areas in the logo are preserved
         imagecopyresampled($dst, $working, 0, 0, 0, 0, $size, $size, $workW, $workH);
 
         if ($ownIntermediate) {

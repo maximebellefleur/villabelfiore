@@ -197,6 +197,30 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
 // Tag each row with its original index for restoring order
 document.querySelectorAll('.item-row').forEach(function(row, i) { row.dataset.origIndex = i; });
 
+// Auto-sort by distance on page load
+(function() {
+    var distBtn = document.getElementById('sortByDist');
+    var nameBtn = document.querySelector('[data-sort="default"]');
+    if (!distBtn || typeof RootedGPS === 'undefined') return;
+
+    distBtn.classList.add('active');
+    if (nameBtn) nameBtn.classList.remove('active');
+    distBtn.textContent = '⏳ Locating…';
+    _distSortActive = true;
+
+    RootedGPS.get(function(pos) {
+        distBtn.textContent = '📍 Distance';
+        if (!pos) {
+            // No GPS available — fall back to name order
+            distBtn.classList.remove('active');
+            if (nameBtn) nameBtn.classList.add('active');
+            _distSortActive = false;
+            return;
+        }
+        doDistanceSort(pos);
+    }, 5000);
+}());
+
 // Auto-resort by distance as GPS accuracy improves (only when distance sort is active)
 RootedGPS.onAccuracyImprove(function(pos) {
     if (_distSortActive) doDistanceSort(pos);

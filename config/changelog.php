@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.8.3' => [
+        'date'  => '2026-04-14',
+        'title' => 'Icon Alpha Fix, Auto-Sync, Distance Sort & Caption UI',
+        'new'   => [],
+        'improved' => [
+            'Google Calendar sync is now fully automatic — visiting the Reminders page silently pushes any pending reminders not yet synced, no manual sync button needed',
+            'Items list now defaults to distance sort — GPS location is requested on page load and items are immediately sorted nearest-first; falls back to name order if GPS is unavailable',
+            'Caption editor on photo cards is now stacked (button below input) with larger text and touch targets, matching the rest of the mobile UI',
+            'Static assets (CSS, JS, images) now get 1-year browser cache headers, significantly reducing repeat page load times',
+        ],
+        'fixed' => [
+            'PWA icon upload corrupted transparent logos — imagealphablending was set to true before imagecopyresampled causing alpha compositing instead of direct pixel copy; fixed by keeping blending off throughout the resize pipeline',
+        ],
+    ],
+
     '1.8.2' => [
         'date'  => '2026-04-14',
         'title' => 'PWA Manifest Fix, Dynamic Paths & Install Prompt',

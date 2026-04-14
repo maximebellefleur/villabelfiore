@@ -307,6 +307,61 @@ class CalendarController
     }
 
     // -------------------------------------------------------------------------
+    // Public helper — silently sync all unsynced pending reminders
+    // -------------------------------------------------------------------------
+
+    /**
+     * Push all pending reminders that have no Google Calendar event yet.
+     * Called automatically on reminders page load so no manual sync is needed.
+     * Returns the number of successfully pushed reminders.
+     */
+    public function syncPendingReminders(DB $db): int
+    {
+        try {
+            $settings = $this->loadCalendarSettings();
+            if (empty($settings['google_calendar.refresh_token'])) return 0;
+
+            $reminders = $db->fetchAll(
+                "SELECT r.*, i.name AS item_name
+                 FROM reminders r
+                 LEFT JOIN items i ON i.id = r.item_id
+                 WHERE r.status = 'pending'
+                 AND r.due_at >= NOW()
+                 AND (r.google_calendar_event_id IS NULL OR r.google_calendar_event_id = '')
+                 ORDER BY r.due_at ASC
+                 LIMIT 30"
+            );
+            if (!$reminders) return 0;
+
+            $token      = $this->getValidAccessToken($settings);
+            $calendarId = $settings['google_calendar.calendar_id'] ?: 'primary';
+            $pushed     = 0;
+
+            foreach ($reminders as $reminder) {
+                try {
+                    $result = $this->httpPost(
+                        self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
+                        $this->buildCalendarEvent($reminder),
+                        $token,
+                        true
+                    );
+                    if (!empty($result['id'])) {
+                        $db->execute(
+                            'UPDATE reminders SET google_calendar_event_id = ? WHERE id = ?',
+                            [$result['id'], $reminder['id']]
+                        );
+                        $pushed++;
+                    }
+                } catch (\Throwable $e) { /* skip individual failures */ }
+            }
+            return $pushed;
+        } catch (\Throwable $e) {
+            \App\Support\Logger::warning('Calendar auto-sync failed: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

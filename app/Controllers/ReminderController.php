@@ -21,6 +21,12 @@ class ReminderController
         $overdue  = $db->fetchAll("SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at < NOW() ORDER BY r.due_at ASC");
         $upcoming = $db->fetchAll("SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at >= NOW() ORDER BY r.due_at ASC");
         $items    = $db->fetchAll("SELECT id, name, type, gps_lat, gps_lng FROM items WHERE status='active' ORDER BY name ASC");
+
+        // Silently push any pending reminders not yet synced to Google Calendar
+        try {
+            (new \App\Controllers\CalendarController())->syncPendingReminders($db);
+        } catch (\Throwable $e) { /* non-fatal */ }
+
         Response::render('reminders/index', ['title' => 'Reminders', 'overdue' => $overdue, 'upcoming' => $upcoming, 'items' => $items]);
     }
 
