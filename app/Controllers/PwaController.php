@@ -152,58 +152,108 @@ class PwaController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
 
-        if (!function_exists('imagecreatetruecolor')) {
-            flash('error', 'GD library is not available on this server.');
-            Response::redirect('/settings/pwa');
-        }
-
-        $file = $_FILES['icon_source'] ?? null;
-        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
-            flash('error', 'Upload failed — please try again.');
-            Response::redirect('/settings/pwa');
-        }
-
-        $mime = mime_content_type($file['tmp_name']);
-        if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
-            flash('error', 'Only PNG, JPG, or WebP images are accepted.');
-            Response::redirect('/settings/pwa');
-        }
-
-        // Load source image
-        $src = match ($mime) {
-            'image/png'  => @imagecreatefrompng($file['tmp_name']),
-            'image/jpeg' => @imagecreatefromjpeg($file['tmp_name']),
-            'image/webp' => @imagecreatefromwebp($file['tmp_name']),
-            default      => false,
-        };
-
-        if (!$src) {
-            flash('error', 'Could not read the uploaded image. Make sure it is a valid PNG/JPG/WebP file.');
-            Response::redirect('/settings/pwa');
-        }
-
-        $imgDir = PUBLIC_PATH . '/assets/images/';
-        $sizes  = [512, 192, 180, 32];
-        $names  = [
-            512 => 'icon-512.png',
-            192 => 'icon-192.png',
-            180 => 'apple-touch-icon.png',
-            32  => 'favicon-32.png',
-        ];
-
-        $errors = [];
-        foreach ($sizes as $size) {
-            if (!$this->resizeIcon($src, $size, $imgDir . $names[$size])) {
-                $errors[] = $names[$size];
+        try {
+            if (!function_exists('imagecreatetruecolor')) {
+                flash('error', 'GD library is not available on this server. Contact your host to enable the GD extension.');
+                Response::redirect('/settings/pwa');
             }
-        }
 
-        imagedestroy($src);
+            $file = $_FILES['icon_source'] ?? null;
+            if (!$file || ($file['error'] ?? -1) !== UPLOAD_ERR_OK) {
+                $errMsgs = [
+                    UPLOAD_ERR_INI_SIZE   => 'File too large (exceeds PHP upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'File too large.',
+                    UPLOAD_ERR_PARTIAL    => 'Upload interrupted — please try again.',
+                    UPLOAD_ERR_NO_FILE    => 'No file selected.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Server error: missing temp folder.',
+                    UPLOAD_ERR_CANT_WRITE => 'Server error: cannot write temp file.',
+                ];
+                $code = $file['error'] ?? -1;
+                flash('error', $errMsgs[$code] ?? 'Upload failed (code ' . $code . ').');
+                Response::redirect('/settings/pwa');
+            }
 
-        if ($errors) {
-            flash('error', 'Some icons failed to save: ' . implode(', ', $errors));
-        } else {
-            flash('success', 'Icon uploaded and all sizes generated successfully.');
+            $tmpName = $file['tmp_name'] ?? '';
+            if ($tmpName === '' || !file_exists($tmpName)) {
+                flash('error', 'Uploaded file could not be found in temp storage. Check upload_tmp_dir server config.');
+                Response::redirect('/settings/pwa');
+            }
+
+            // Use finfo for reliable MIME detection
+            try {
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mime  = $finfo->file($tmpName) ?: '';
+            } catch (\Throwable $e) {
+                $ext  = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
+                $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'][$ext] ?? '';
+            }
+
+            if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
+                flash('error', 'Only PNG, JPG, or WebP images are accepted. Detected type: ' . ($mime ?: 'unknown'));
+                Response::redirect('/settings/pwa');
+            }
+
+            // Load source image
+            $src = false;
+            if ($mime === 'image/png') {
+                $src = @imagecreatefrompng($tmpName);
+            } elseif ($mime === 'image/jpeg') {
+                $src = @imagecreatefromjpeg($tmpName);
+            } elseif ($mime === 'image/webp') {
+                if (!function_exists('imagecreatefromwebp')) {
+                    flash('error', 'WebP is not supported by the GD library on this server. Please upload a PNG or JPG instead.');
+                    Response::redirect('/settings/pwa');
+                }
+                $src = @imagecreatefromwebp($tmpName);
+            }
+
+            if (!$src) {
+                flash('error', 'Could not decode the uploaded image. Please use a valid PNG or JPG file.');
+                Response::redirect('/settings/pwa');
+            }
+
+            $imgDir = PUBLIC_PATH . '/assets/images/';
+
+            // Ensure the directory exists and is writable
+            if (!is_dir($imgDir) && !@mkdir($imgDir, 0755, true)) {
+                imagedestroy($src);
+                flash('error', 'Cannot create images directory: ' . $imgDir . '. Check folder permissions.');
+                Response::redirect('/settings/pwa');
+            }
+            if (!is_writable($imgDir)) {
+                imagedestroy($src);
+                flash('error', 'Images directory is not writable: ' . $imgDir . '. Contact your host to fix permissions.');
+                Response::redirect('/settings/pwa');
+            }
+
+            $sizes = [512, 192, 180, 32];
+            $names = [
+                512 => 'icon-512.png',
+                192 => 'icon-192.png',
+                180 => 'apple-touch-icon.png',
+                32  => 'favicon-32.png',
+            ];
+
+            $errors = [];
+            foreach ($sizes as $size) {
+                if (!$this->resizeIcon($src, $size, $imgDir . $names[$size])) {
+                    $errors[] = $names[$size];
+                }
+            }
+
+            imagedestroy($src);
+
+            if ($errors) {
+                flash('error', 'Some icons failed to save: ' . implode(', ', $errors) . '. Check write permissions on ' . $imgDir);
+            } else {
+                flash('success', 'Icon uploaded and all sizes generated successfully.');
+            }
+
+        } catch (\Throwable $e) {
+            \App\Support\Logger::critical('PWA icon upload failed: ' . $e->getMessage(), [
+                'file' => $e->getFile(), 'line' => $e->getLine(),
+            ]);
+            flash('error', 'Icon upload error: ' . $e->getMessage());
         }
 
         Response::redirect('/settings/pwa');
