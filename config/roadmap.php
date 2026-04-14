@@ -8,6 +8,15 @@
  */
 return [
 
+    '1.9.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'AI Photo Seed Identification',
+        'features' => [
+            ['title' => 'AI photo seed ID', 'detail' => 'Take or pick a photo of seeds or a seed packet — Ollama vision model identifies the plant and pre-fills the entire Add Seed form. Configurable endpoint and model in Settings.'],
+        ],
+    ],
+
     '1.9.0' => [
         'status'   => 'released',
         'released' => '2026-04-14',

@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.9.1' => [
+        'date'  => '2026-04-14',
+        'title' => 'AI Photo Seed Identification',
+        'new'   => [
+            'Photo identify button on the Add / Edit Seed form — take a photo or pick from gallery and local AI (Ollama) pre-fills the entire form: name, variety, type, growing times, spacing, sun, companions, antagonists, notes',
+            'AI endpoint and vision model configurable in Settings → General (supports llava, moondream, bakllava, and any Ollama vision model)',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '1.9.0' => [
         'date'  => '2026-04-14',
         'title' => 'Seeds Catalog & Mobile Nav Update',

@@ -135,6 +135,33 @@
                 </div>
             </form>
         </div>
+
+        <!-- AI / Ollama settings -->
+        <div class="settings-group" style="margin-top:var(--spacing-6)">
+            <div class="settings-group-title">🤖 Local AI (Ollama)</div>
+            <p class="settings-hint" style="margin-bottom:var(--spacing-3)">Used for photo-based seed identification. Requires <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> running locally with a vision model.<br>
+            Install a vision model: <code>ollama pull llava</code> or <code>ollama pull moondream</code></p>
+            <form method="POST" action="<?= url('/settings/update') ?>" class="settings-form">
+                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                <div class="settings-field">
+                    <label class="settings-label">Ollama Endpoint</label>
+                    <p class="settings-hint">Base URL of your Ollama instance.</p>
+                    <input type="url" name="ai_endpoint" class="settings-input"
+                           value="<?= e($settings['ai.endpoint'] ?? 'http://localhost:11434') ?>"
+                           placeholder="http://localhost:11434">
+                </div>
+                <div class="settings-field">
+                    <label class="settings-label">Vision Model</label>
+                    <p class="settings-hint">Must support image input (llava, moondream, bakllava, etc.).</p>
+                    <input type="text" name="ai_vision_model" class="settings-input"
+                           value="<?= e($settings['ai.vision_model'] ?? 'llava') ?>"
+                           placeholder="llava">
+                </div>
+                <div class="settings-save-row">
+                    <button type="submit" class="btn btn-primary">Save AI Settings</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </div>

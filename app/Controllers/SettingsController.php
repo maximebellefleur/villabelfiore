@@ -37,6 +37,7 @@ class SettingsController
             'gps.accuracy_threshold', 'image.refresh_interval_days',
             'reminder.default_lead_days', 'integration.google_calendar',
             'integration.weather', 'quote.api_url',
+            'ai.endpoint', 'ai.vision_model',
         ];
 
         $db = DB::getInstance();

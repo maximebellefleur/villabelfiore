@@ -17,6 +17,7 @@ use App\Controllers\CalendarController;
 use App\Controllers\PublicController;
 use App\Controllers\PwaController;
 use App\Controllers\SeedController;
+use App\Controllers\AiController;
 
 /** @var \App\Support\Router $router */
 
@@ -192,6 +193,7 @@ $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');
 $router->post('/api/items',                    'ItemController@apiStore');
 $router->post('/api/items/{id}/actions',       'ItemController@apiAddAction');
+$router->post('/api/ai/identify-seed',         'AiController@identifySeed');
 $router->post('/api/items/{id}/harvests',      'HarvestController@apiStore');
 $router->get('/api/reminders',                 'ReminderController@apiIndex');
 $router->post('/api/sync/push',                'SyncController@apiPush');
