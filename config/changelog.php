@@ -8,6 +8,17 @@
  */
 return [
 
+    '1.8.1' => [
+        'date'  => '2026-04-14',
+        'title' => 'Settings CSS Fix & PWA Icon Upload Fix',
+        'new'   => [],
+        'improved' => [],
+        'fixed' => [
+            'PWA, Weather, Harvest and Action Types settings tabs were unstyled — shared settings CSS was only in General settings inline style block; moved to admin.css so all tabs load it',
+            'PWA icon upload crashed with "Something went wrong" — replaced mime_content_type() with finfo (PHP 8.1+ safe), added directory writability check, guarded imagecreatefromwebp() availability, wrapped in try/catch so real error is shown as flash message',
+        ],
+    ],
+
     '1.8.0' => [
         'date'  => '2026-04-14',
         'title' => 'Log Photos & AI Prompt Image URLs',

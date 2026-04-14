@@ -85,6 +85,16 @@ return [
         ],
     ],
 
+    '1.8.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Settings CSS Fix & PWA Icon Upload Fix',
+        'features' => [
+            ['title' => 'Settings tabs all properly styled', 'detail' => 'Shared settings CSS moved to admin.css — PWA, Weather, Harvest, Action Types tabs now render correctly.'],
+            ['title' => 'PWA icon upload fixed',             'detail' => 'Icon upload no longer crashes. Uses finfo for MIME detection, checks directory writability, guards WebP support, and shows real error messages on failure.'],
+        ],
+    ],
+
     '1.8.0' => [
         'status'   => 'released',
         'released' => '2026-04-14',
