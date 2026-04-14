@@ -37,9 +37,12 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 
 <!-- ─── Top nav bar ───────────────────────────────────────────────── -->
 <nav class="nav" id="mainNav">
-    <a href="<?= url('/dashboard') ?>" class="nav-logo">
-        <?php if ($_navEffective): ?>
-        <img src="<?= $_navEffective ?>" alt="Logo" style="height:32px;max-width:140px;object-fit:contain;display:block;">
+    <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px">
+        <?php if ($_navIconUrl && $_navLogoUrl): ?>
+            <img src="<?= $_navIconUrl ?>" alt="" style="height:32px;width:32px;object-fit:contain;flex-shrink:0">
+            <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:26px;max-width:120px;object-fit:contain">
+        <?php elseif ($_navEffective): ?>
+            <img src="<?= $_navEffective ?>" alt="Logo" style="height:32px;max-width:140px;object-fit:contain">
         <?php else: ?>🌿 Rooted<?php endif; ?>
     </a>
 

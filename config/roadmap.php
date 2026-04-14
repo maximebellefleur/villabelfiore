@@ -8,6 +8,15 @@
  */
 return [
 
+    '1.9.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Nav: Icon + Wordmark Side by Side',
+        'features' => [
+            ['title' => 'Icon + wordmark in nav', 'detail' => 'When both icon-light and horizontal-light logos are uploaded, they are displayed side by side in the top nav bar.'],
+        ],
+    ],
+
     '1.9.3' => [
         'status'   => 'released',
         'released' => '2026-04-14',

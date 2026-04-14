@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.4' => [
+        'date'  => '2026-04-14',
+        'title' => 'Nav: Icon + Wordmark Side by Side',
+        'improved' => [
+            'Top nav now shows the icon logo and horizontal wordmark together side-by-side when both are uploaded. Falls back to whichever is available, then to "🌿 Rooted" text.',
+        ],
+        'new'  => [],
+        'fixed' => [],
+    ],
+
     '1.9.3' => [
         'date'  => '2026-04-14',
         'title' => '4-Slot Logos & Family Needs Units',
