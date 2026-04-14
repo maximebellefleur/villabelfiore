@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS `attachments` (
   `storage_path`      VARCHAR(500)    NOT NULL,
   `file_size_bytes`   BIGINT UNSIGNED     NULL DEFAULT NULL,
   `checksum_sha256`   CHAR(64)            NULL DEFAULT NULL,
+  `caption`           VARCHAR(500)        NULL DEFAULT NULL,
   `is_primary`        TINYINT(1)      NOT NULL DEFAULT 0,
   `captured_at`       DATETIME            NULL DEFAULT NULL,
   `uploaded_at`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,

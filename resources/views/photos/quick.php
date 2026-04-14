@@ -8,8 +8,13 @@ $categories = [
     'yearly_refresh_east'  => 'East',
     'yearly_refresh_west'  => 'West',
     'harvest_photo'        => 'Harvest',
+    'treatment_photo'      => 'Treatment',
     'general_attachment'   => 'General',
 ];
+// Custom categories already in use
+foreach (($customCategories ?? []) as $cc) {
+    if (!isset($categories[$cc])) $categories[$cc] = $cc;
+}
 ?>
 <div class="qp-page">
 
@@ -50,12 +55,13 @@ $categories = [
         </div>
     </div>
 
-    <!-- Category + single upload button -->
+    <!-- Category + caption + upload button -->
     <div class="qp-bottom-row">
         <select class="qp-category-select" id="qpCat_<?= (int)$item['id'] ?>">
             <?php foreach ($categories as $key => $label): ?>
             <option value="<?= e($key) ?>"><?= e($label) ?></option>
             <?php endforeach; ?>
+            <option value="__custom__">Other…</option>
         </select>
         <label class="qp-add-btn" id="zone_<?= (int)$item['id'] ?>">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.5" cy="7.5" r="1"/></svg>
@@ -66,6 +72,16 @@ $categories = [
                    data-upload-url="<?= e($uploadUrl) ?>"
                    data-photos-url="<?= e($photosUrl) ?>">
         </label>
+    </div>
+    <!-- Custom category input (shown when "Other…" is selected) -->
+    <div class="qp-custom-cat-row" id="qpCustomCatRow_<?= (int)$item['id'] ?>" style="display:none">
+        <input type="text" class="qp-custom-cat-input" id="qpCustomCat_<?= (int)$item['id'] ?>"
+               placeholder="Category name (e.g. Infestation)" maxlength="80">
+    </div>
+    <!-- Caption row (always visible, optional) -->
+    <div class="qp-caption-row">
+        <input type="text" class="qp-caption-input" id="qpCaption_<?= (int)$item['id'] ?>"
+               placeholder="Optional caption / legend…" maxlength="500">
     </div>
 
     <!-- Progress bar -->
@@ -179,6 +195,8 @@ $categories = [
         var errEl     = document.getElementById('qpErr_' + itemId);
         var okEl      = document.getElementById('qpOk_' + itemId);
         var catEl     = document.getElementById('qpCat_' + itemId);
+        var customEl  = document.getElementById('qpCustomCat_' + itemId);
+        var captionEl = document.getElementById('qpCaption_' + itemId);
 
         errEl.textContent = ''; errEl.style.display = 'none';
         okEl.style.display = 'none';
@@ -192,9 +210,18 @@ $categories = [
             fillEl.style.width = '5%';
             progTxt.textContent = 'Uploading…';
 
+            var catVal = catEl ? catEl.value : 'general_attachment';
             var fd = new FormData();
             fd.append('file', compressed);
-            fd.append('category', catEl ? catEl.value : 'general_attachment');
+            if (catVal === '__custom__') {
+                fd.append('category', '__custom__');
+                fd.append('custom_category', customEl ? customEl.value.trim() : '');
+            } else {
+                fd.append('category', catVal);
+            }
+            if (captionEl && captionEl.value.trim()) {
+                fd.append('caption', captionEl.value.trim());
+            }
             fd.append('_token', CSRF);
             fd.append('_ajax', '1');
 
@@ -245,6 +272,15 @@ $categories = [
             xhr.send(fd);
         });
     }
+
+    // Show/hide custom category input
+    document.querySelectorAll('.qp-category-select').forEach(function(sel) {
+        sel.addEventListener('change', function() {
+            var itemId = sel.id.replace('qpCat_', '');
+            var row = document.getElementById('qpCustomCatRow_' + itemId);
+            if (row) row.style.display = sel.value === '__custom__' ? 'block' : 'none';
+        });
+    });
 
     // Wire up file inputs — single change event, no capture / no focus fallback needed
     document.querySelectorAll('.qp-file-input').forEach(function(input) {
@@ -318,6 +354,20 @@ $categories = [
 }
 .qp-add-btn:active { opacity:.8; }
 .qp-file-input { display:none; }
+
+.qp-custom-cat-row, .qp-caption-row {
+    padding: 0 var(--spacing-3) var(--spacing-2);
+}
+.qp-custom-cat-input, .qp-caption-input {
+    width: 100%; padding: 8px 12px;
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-pill);
+    font-size: .82rem; font-family: inherit;
+    background: var(--color-surface); color: var(--color-text);
+}
+.qp-custom-cat-input:focus, .qp-caption-input:focus {
+    outline: none; border-color: var(--color-primary);
+}
+.qp-caption-input { border-style: dashed; }
 
 /* Progress bar */
 .qp-progress-wrap {

@@ -408,10 +408,32 @@ class ItemController
             [$id, $actionKey, ucfirst(str_replace('_', ' ', $actionKey)), $description, $_SESSION['user_id']]
         );
 
+        // Optional reminder attached to this log
+        $setReminder = $request->post('set_reminder', '0') === '1';
+        $dueAt       = trim((string) $request->post('reminder_due_at', ''));
+        $newReminderId = null;
+
+        if ($setReminder && $dueAt && $description) {
+            $reminderTitle = mb_substr($description, 0, 160);
+            $db->execute(
+                'INSERT INTO reminders (item_id, type, title, due_at, is_recurring, status, created_at, updated_at)
+                 VALUES (?,?,?,?,0,?,NOW(),NOW())',
+                [$id, 'log_reminder', $reminderTitle, $dueAt, 'pending']
+            );
+            $newReminderId = (int)$db->lastInsertId();
+
+            // Auto-push to Google Calendar if connected
+            if ($newReminderId) {
+                try {
+                    (new \App\Controllers\CalendarController())->pushReminderById($db, $newReminderId);
+                } catch (\Throwable $e) { /* non-fatal */ }
+            }
+        }
+
         if ($request->isAjax()) {
             Response::json(['success' => true, 'message' => 'Action logged.']);
         }
-        flash('success', 'Action logged.');
+        flash('success', 'Action logged.' . ($newReminderId ? ' Reminder set.' : ''));
         Response::redirect('/items/' . $id);
     }
 

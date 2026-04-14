@@ -262,6 +262,51 @@ class CalendarController
     }
 
     // -------------------------------------------------------------------------
+    // Public helper — auto-push a single reminder (called from other controllers)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Push one reminder to Google Calendar immediately.
+     * Returns true on success, false if not connected or already synced.
+     * Never throws — failure is non-fatal.
+     */
+    public function pushReminderById(DB $db, int $reminderId): bool
+    {
+        try {
+            $settings = $this->loadCalendarSettings();
+            if (empty($settings['google_calendar.refresh_token'])) return false;
+
+            $reminder = $db->fetchOne(
+                'SELECT r.*, i.name AS item_name FROM reminders r
+                 LEFT JOIN items i ON i.id = r.item_id WHERE r.id = ?',
+                [$reminderId]
+            );
+            if (!$reminder) return false;
+            if (!empty($reminder['google_calendar_event_id'])) return true; // already synced
+
+            $token      = $this->getValidAccessToken($settings);
+            $calendarId = $settings['google_calendar.calendar_id'] ?: 'primary';
+            $event      = $this->buildCalendarEvent($reminder);
+
+            $result = $this->httpPost(
+                self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
+                $event, $token, true
+            );
+
+            if (!empty($result['id'])) {
+                $db->execute(
+                    'UPDATE reminders SET google_calendar_event_id = ? WHERE id = ?',
+                    [$result['id'], $reminderId]
+                );
+                return true;
+            }
+        } catch (\Throwable $e) {
+            \App\Support\Logger::warning('Google Calendar auto-push failed: ' . $e->getMessage());
+        }
+        return false;
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

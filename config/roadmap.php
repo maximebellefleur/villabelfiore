@@ -85,6 +85,20 @@ return [
         ],
     ],
 
+    '1.7.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-14',
+        'title'    => 'Fused Log+Reminder, Photo Captions & Google Calendar Auto-Push',
+        'features' => [
+            ['title' => 'Fused Log + Reminder form',                    'detail' => 'Log Action and Reminder merged into one form on the item detail page. Tick "Set a reminder for this log" to attach a reminder inline without leaving the form.'],
+            ['title' => 'Inline calendar picker',                       'detail' => 'Full month-grid calendar widget for selecting reminder dates — no native datetime input. Mo–Su headers, today/selected/past highlighting. Default = today + 7 days.'],
+            ['title' => 'Photo captions',                               'detail' => 'Each photo has an optional caption/legend. Editable at upload and inline in the gallery (tap-to-edit, same UX as category). Stored in a new caption column on the attachments table.'],
+            ['title' => 'Dynamic "Other…" photo category',              'detail' => 'Selecting Other… in the category dropdown reveals a free-text input. Any custom category name is stored and listed dynamically from existing DB values.'],
+            ['title' => 'Google Calendar auto-push',                    'detail' => 'Reminders are pushed to Google Calendar immediately on creation — from the Log Action form or the Reminders page. No manual Sync Now needed.'],
+            ['title' => 'Bottom nav: Items replaces Photos',            'detail' => 'Bottom nav now shows Items (🌿) instead of Photos (📷) — Photos always required an item selection first; Items is a more useful quick-nav destination.'],
+        ],
+    ],
+
     '1.6.0' => [
         'status'   => 'released',
         'released' => '2026-04-10',

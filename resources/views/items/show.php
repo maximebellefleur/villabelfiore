@@ -90,13 +90,13 @@ $recentReminders = array_slice($reminders, 0, 3);
         <span class="show-qa-icon">📷</span>
         <span class="show-qa-label">Add Photo</span>
     </a>
-    <a href="#form-reminder" class="show-qa-btn" onclick="expandSection('reminder-section')">
+    <a href="#form-note" class="show-qa-btn" onclick="expandSection('note-section'); preCheckReminder()">
         <span class="show-qa-icon">🔔</span>
         <span class="show-qa-label">Reminder</span>
     </a>
     <a href="#form-note" class="show-qa-btn" onclick="expandSection('note-section')">
         <span class="show-qa-icon">✏️</span>
-        <span class="show-qa-label">Add Note</span>
+        <span class="show-qa-label">Log</span>
     </a>
     <button class="show-qa-btn" id="aiPromptBtn"
             data-url="<?= url('/items/' . (int)$item['id'] . '/ai-prompt') ?>">
@@ -237,52 +237,65 @@ window.MINI_MAP_READONLY = true;
 <?php endif; ?>
 
 <!-- =========================================================
-     ADD REMINDER FORM (anchor target)
-     ========================================================= -->
-<div class="show-section" id="reminder-section">
-    <div class="show-section-head">
-        <span class="show-section-title">🔔 Add Reminder</span>
-    </div>
-    <div class="item-detail-card" id="form-reminder">
-        <form method="POST" action="<?= url('/reminders') ?>">
-            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-            <input type="hidden" name="item_id" value="<?= (int)$item['id'] ?>">
-            <div class="show-reminder-for-badge">
-                <?= $emoji ?> <?= e($item['name']) ?>
-            </div>
-            <div class="show-form-row">
-                <input type="text" name="title" class="form-input form-input--touch"
-                       placeholder="What to do?" required style="flex:1">
-                <input type="datetime-local" name="due_at" class="form-input form-input--touch"
-                       required style="flex:1">
-                <button type="submit" class="btn btn-secondary">Add</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- =========================================================
-     ADD NOTE FORM (anchor target)
+     LOG ACTION + OPTIONAL REMINDER (fused form)
      ========================================================= -->
 <div class="show-section" id="note-section">
     <div class="show-section-head">
-        <span class="show-section-title">✏️ Log Note or Action</span>
+        <span class="show-section-title">✏️ Log Action</span>
     </div>
     <div class="item-detail-card" id="form-note">
         <form method="POST" action="<?= url('/items/' . (int)$item['id'] . '/actions') ?>">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-            <div class="show-form-row">
-                <select name="action_type" class="form-input form-input--touch" style="flex-shrink:0">
+
+            <!-- Action type -->
+            <div class="log-field-row">
+                <select name="action_type" class="form-input form-input--touch">
                     <option value="note">Note</option>
                     <option value="pruning">Pruning</option>
                     <option value="treatment">Treatment</option>
                     <option value="amendment">Amendment</option>
                     <option value="harvest">Harvest</option>
                     <option value="maintenance">Maintenance</option>
+                    <option value="observation">Observation</option>
                 </select>
-                <input type="text" name="description" class="form-input form-input--touch"
-                       placeholder="Description (required)" required style="flex:1">
-                <button type="submit" class="btn btn-primary">Log</button>
+            </div>
+
+            <!-- Description (bigger textarea) -->
+            <div class="log-field-row">
+                <textarea name="description" class="form-input form-input--touch log-textarea"
+                          placeholder="What happened? Add your notes here…"
+                          rows="3" required></textarea>
+            </div>
+
+            <!-- Reminder toggle -->
+            <div class="log-reminder-row">
+                <label class="log-reminder-check">
+                    <input type="checkbox" id="setReminderCb" name="set_reminder" value="1">
+                    <span class="log-reminder-check-text">Set a reminder for this log</span>
+                </label>
+            </div>
+
+            <!-- Inline calendar picker (hidden until checkbox checked) -->
+            <div id="reminderPickerPanel" class="log-cal-panel" style="display:none">
+                <input type="hidden" name="reminder_due_at" id="reminderDueAt">
+                <div class="cal-widget">
+                    <div class="cal-hdr">
+                        <button type="button" id="calPrevBtn" class="cal-nav-btn">&#8249;</button>
+                        <span id="calMonthLabel" class="cal-month-label"></span>
+                        <button type="button" id="calNextBtn" class="cal-nav-btn">&#8250;</button>
+                    </div>
+                    <div class="cal-dow">
+                        <span>Mo</span><span>Tu</span><span>We</span><span>Th</span>
+                        <span>Fr</span><span>Sa</span><span>Su</span>
+                    </div>
+                    <div class="cal-grid" id="calGrid"></div>
+                    <div id="calSelectedLabel" class="cal-selected-label" style="display:none"></div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="log-submit-row">
+                <button type="submit" class="btn btn-primary btn-block-mobile">Log</button>
             </div>
         </form>
     </div>
@@ -399,6 +412,96 @@ window.MINI_MAP_READONLY = true;
 </div>
 
 <style>
+/* ── Fused log form ─────────────────────────── */
+.log-field-row { padding: var(--spacing-3) var(--spacing-3) 0; }
+.log-textarea {
+    width: 100%; min-height: 90px; resize: vertical;
+    font-family: inherit; line-height: 1.5;
+}
+.log-reminder-row {
+    padding: var(--spacing-3) var(--spacing-3) 0;
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--spacing-3);
+}
+.log-reminder-check {
+    display: inline-flex; align-items: center; gap: 10px;
+    cursor: pointer; font-size: .88rem; color: var(--color-text-muted);
+    font-weight: 500;
+}
+.log-reminder-check input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--color-primary);
+    cursor: pointer; flex-shrink: 0;
+}
+.log-reminder-check:has(input:checked) .log-reminder-check-text {
+    color: var(--color-primary); font-weight: 600;
+}
+.log-submit-row {
+    padding: var(--spacing-3);
+}
+.btn-block-mobile { width: 100%; justify-content: center; }
+
+/* ── Inline calendar widget ─────────────────── */
+.log-cal-panel {
+    padding: var(--spacing-2) var(--spacing-3) var(--spacing-3);
+    border-top: 1px solid var(--color-border);
+}
+.cal-widget {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 320px;
+}
+.cal-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px 8px;
+    background: var(--color-primary);
+}
+.cal-month-label {
+    font-size: .9rem; font-weight: 700; color: #fff;
+    letter-spacing: .01em;
+}
+.cal-nav-btn {
+    background: rgba(255,255,255,.18); border: none; color: #fff;
+    width: 30px; height: 30px; border-radius: 8px; font-size: 1.2rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s; line-height: 1;
+}
+.cal-nav-btn:hover { background: rgba(255,255,255,.32); }
+.cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    padding: 6px 8px 0;
+}
+.cal-dow span {
+    text-align: center; font-size: .65rem; font-weight: 700;
+    text-transform: uppercase; color: var(--color-text-muted); letter-spacing: .05em;
+}
+.cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px; padding: 4px 8px 8px;
+}
+.cal-day-blank { /* empty placeholder */ }
+.cal-day-btn {
+    aspect-ratio: 1; border: none; background: none;
+    border-radius: 8px; font-size: .82rem; font-weight: 500;
+    cursor: pointer; color: var(--color-text);
+    transition: background .12s, color .12s;
+    display: flex; align-items: center; justify-content: center;
+}
+.cal-day-btn:hover { background: var(--color-primary-soft); color: var(--color-primary); }
+.cal-day-btn.cal-day--today { font-weight: 800; color: var(--color-primary); }
+.cal-day-btn.cal-day--selected {
+    background: var(--color-primary); color: #fff; font-weight: 700;
+}
+.cal-day-btn.cal-day--past { opacity: .35; cursor: default; }
+.cal-day-btn.cal-day--past:hover { background: none; color: var(--color-text); }
+.cal-selected-label {
+    padding: 8px 14px 10px;
+    font-size: .82rem; font-weight: 600;
+    color: var(--color-primary);
+    border-top: 1px solid var(--color-border);
+}
+
 .show-log-table { font-size:.82rem; width:100%; }
 .show-log-desc { word-break:break-word; overflow-wrap:anywhere; max-width:180px; }
 .show-log-del-cell { white-space:nowrap; text-align:right; padding-right:4px; }
@@ -461,6 +564,113 @@ function expandSection(id) {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
 }
+
+// Pre-check reminder checkbox (called from "Reminder" quick action)
+function preCheckReminder() {
+    var cb = document.getElementById('setReminderCb');
+    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+}
+
+// ── Inline calendar picker ───────────────────────────────────────────────────
+(function () {
+    var cb         = document.getElementById('setReminderCb');
+    var panel      = document.getElementById('reminderPickerPanel');
+    var hiddenInput= document.getElementById('reminderDueAt');
+    var calGrid    = document.getElementById('calGrid');
+    var calLabel   = document.getElementById('calMonthLabel');
+    var calSelected= document.getElementById('calSelectedLabel');
+    var prevBtn    = document.getElementById('calPrevBtn');
+    var nextBtn    = document.getElementById('calNextBtn');
+    if (!cb || !panel) return;
+
+    // Default date = today + 7 days
+    var today    = new Date();
+    today.setHours(0,0,0,0);
+    var defDate  = new Date(today);
+    defDate.setDate(defDate.getDate() + 7);
+
+    var viewYear  = defDate.getFullYear();
+    var viewMonth = defDate.getMonth(); // 0-indexed
+    var selected  = new Date(defDate);
+
+    var MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+    var DAYS   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    function isoDate(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth()+1).padStart(2,'0');
+        var day = String(d.getDate()).padStart(2,'0');
+        return y+'-'+m+'-'+day+' 09:00:00';
+    }
+    function formatDisplay(d) {
+        return DAYS[(d.getDay()+6)%7] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    }
+
+    function renderCalendar() {
+        calLabel.textContent = MONTHS[viewMonth] + ' ' + viewYear;
+        calGrid.innerHTML = '';
+
+        // First day of month (0=Sun…6=Sat) → convert to Mo-based (0=Mo…6=Su)
+        var firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        var offset   = (firstDay + 6) % 7; // blanks before day 1
+        var daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+
+        for (var i = 0; i < offset; i++) {
+            var blank = document.createElement('span');
+            blank.className = 'cal-day-blank';
+            calGrid.appendChild(blank);
+        }
+
+        for (var d = 1; d <= daysInMonth; d++) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cal-day-btn';
+            btn.textContent = d;
+
+            var thisDate = new Date(viewYear, viewMonth, d);
+            if (thisDate.toDateString() === today.toDateString()) btn.classList.add('cal-day--today');
+            if (selected && thisDate.toDateString() === selected.toDateString()) btn.classList.add('cal-day--selected');
+            if (thisDate < today) btn.classList.add('cal-day--past');
+
+            btn.addEventListener('click', (function(date) {
+                return function() {
+                    selected = date;
+                    hiddenInput.value = isoDate(date);
+                    calSelected.textContent = '📅 ' + formatDisplay(date);
+                    calSelected.style.display = 'block';
+                    renderCalendar();
+                };
+            })(new Date(viewYear, viewMonth, d)));
+
+            calGrid.appendChild(btn);
+        }
+    }
+
+    function show() {
+        panel.style.display = 'block';
+        // Set default immediately
+        hiddenInput.value = isoDate(defDate);
+        calSelected.textContent = '📅 ' + formatDisplay(defDate);
+        calSelected.style.display = 'block';
+        renderCalendar();
+    }
+    function hide() {
+        panel.style.display = 'none';
+        hiddenInput.value = '';
+    }
+
+    cb.addEventListener('change', function() {
+        if (cb.checked) show(); else hide();
+    });
+
+    prevBtn.addEventListener('click', function() {
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar();
+    });
+    nextBtn.addEventListener('click', function() {
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar();
+    });
+}());
 </script>
 
 <style>

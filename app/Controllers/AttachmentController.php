@@ -14,15 +14,50 @@ class AttachmentController
         if (empty($_SESSION['user_id'])) { Response::redirect('/login'); }
     }
 
+    /** Lazily add the caption column if the table was created before v1.7.0 */
+    private function ensureCaptionColumn(DB $db): void
+    {
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+        try {
+            $row = $db->fetchOne(
+                "SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attachments' AND COLUMN_NAME = 'caption'"
+            );
+            if (($row['cnt'] ?? 0) == 0) {
+                $db->execute("ALTER TABLE attachments ADD COLUMN caption VARCHAR(500) NULL DEFAULT NULL AFTER category");
+            }
+        } catch (\Throwable $e) { /* non-fatal */ }
+    }
+
+    /** Return custom categories already in use (not in the built-in list). */
+    private function customCategories(DB $db): array
+    {
+        $builtin = ['identification_photo','yearly_refresh_north','yearly_refresh_south',
+                    'yearly_refresh_east','yearly_refresh_west','harvest_photo',
+                    'treatment_photo','general_attachment'];
+        $rows = $db->fetchAll(
+            "SELECT DISTINCT category FROM attachments
+             WHERE status='active' AND category NOT IN (" . implode(',', array_fill(0, count($builtin), '?')) . ")
+             ORDER BY category ASC
+             LIMIT 20",
+            $builtin
+        );
+        return array_column($rows, 'category');
+    }
+
     public function index(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $id          = (int) ($params['id'] ?? 0);
-        $db          = DB::getInstance();
-        $item        = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $id  = (int) ($params['id'] ?? 0);
+        $db  = DB::getInstance();
+        $this->ensureCaptionColumn($db);
+        $item = $db->fetchOne('SELECT * FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
         if (!$item) { http_response_code(404); echo '<h1>Item not found</h1>'; return; }
-        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL) ORDER BY uploaded_at DESC", [$id]);
-        Response::render('items/photos', ['title' => 'Photos', 'item' => $item, 'attachments' => $attachments]);
+        $attachments    = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL) ORDER BY uploaded_at DESC", [$id]);
+        $customCategories = $this->customCategories($db);
+        Response::render('items/photos', ['title' => 'Photos', 'item' => $item, 'attachments' => $attachments, 'customCategories' => $customCategories]);
     }
 
     public function store(Request $request, array $params = []): void
@@ -104,12 +139,24 @@ class AttachmentController
         // Database
         try {
             $db = DB::getInstance();
+            $this->ensureCaptionColumn($db);
+
+            // Resolve category — handle "other" custom input
+            $rawCat   = trim((string)$request->post('category', 'general_attachment'));
+            $customCat= trim((string)$request->post('custom_category', ''));
+            if ($rawCat === '__custom__' && $customCat !== '') {
+                $category = mb_substr($customCat, 0, 100);
+            } else {
+                $category = $rawCat ?: 'general_attachment';
+            }
+
+            $caption = mb_substr(trim((string)$request->post('caption', '')), 0, 500) ?: null;
+
             $db->execute(
-                'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
+                'INSERT INTO attachments (uuid, item_id, category, caption, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
                 [
-                    $uuid, $itemId,
-                    $request->post('category', 'general_attachment'),
+                    $uuid, $itemId, $category, $caption,
                     $file['name'], $stored, $mime, $ext,
                     'local', 'uploads/items/' . $stored,
                     $file['size'], 0, $_SESSION['user_id'], 'active',
@@ -134,7 +181,8 @@ class AttachmentController
                 'uuid'     => $uuid,
                 'filename' => $stored,
                 'url'      => '/attachments/' . $attId . '/download',
-                'category' => $request->post('category', 'general_attachment'),
+                'category' => $category,
+                'caption'  => $caption,
             ]]);
         }
         flash('success', 'Photo uploaded successfully.');
@@ -175,19 +223,32 @@ class AttachmentController
         $isAjax = ($request->header('X-Requested-With') === 'XMLHttpRequest')
                || ($request->post('_ajax') === '1');
         CSRF::validate($request->post('_token', ''));
-        $id       = (int) ($params['id'] ?? 0);
-        $category = trim((string) $request->post('category', ''));
-        $allowed  = ['identification_photo','yearly_refresh_north','yearly_refresh_south',
-                     'yearly_refresh_east','yearly_refresh_west','harvest_photo',
-                     'treatment_photo','general_attachment'];
-        if (!in_array($category, $allowed, true)) {
-            if ($isAjax) { Response::json(['success' => false, 'error' => 'Invalid category']); }
-            flash('error', 'Invalid category.');
+        $id  = (int) ($params['id'] ?? 0);
+        $cat = mb_substr(trim((string) $request->post('category', '')), 0, 100);
+        if ($cat === '') {
+            if ($isAjax) { Response::json(['success' => false, 'error' => 'Category cannot be empty']); }
+            flash('error', 'Category cannot be empty.');
             Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
         }
-        DB::getInstance()->execute("UPDATE attachments SET category=? WHERE id=?", [$category, $id]);
-        if ($isAjax) { Response::json(['success' => true]); }
+        DB::getInstance()->execute("UPDATE attachments SET category=? WHERE id=?", [$cat, $id]);
+        if ($isAjax) { Response::json(['success' => true, 'category' => $cat]); }
         flash('success', 'Category updated.');
+        Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
+    }
+
+    public function updateCaption(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $isAjax = ($request->header('X-Requested-With') === 'XMLHttpRequest')
+               || ($request->post('_ajax') === '1');
+        CSRF::validate($request->post('_token', ''));
+        $id      = (int) ($params['id'] ?? 0);
+        $caption = mb_substr(trim((string) $request->post('caption', '')), 0, 500) ?: null;
+        $db = DB::getInstance();
+        $this->ensureCaptionColumn($db);
+        $db->execute("UPDATE attachments SET caption=? WHERE id=?", [$caption, $id]);
+        if ($isAjax) { Response::json(['success' => true, 'caption' => $caption]); }
+        flash('success', 'Caption updated.');
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 
@@ -204,9 +265,11 @@ class AttachmentController
              ORDER BY (i.gps_lat IS NOT NULL) DESC, i.name ASC"
         );
 
+        $customCategories = $this->customCategories($db);
         Response::render('photos/quick', [
-            'title' => 'Quick Photos',
-            'items' => $items,
+            'title'            => 'Quick Photos',
+            'items'            => $items,
+            'customCategories' => $customCategories,
         ]);
     }
 

@@ -79,8 +79,8 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
         <span class="bottom-nav-icon">🌾</span><span class="bottom-nav-label">Harvest</span>
     </a>
-    <a href="<?= url('/photos/quick') ?>"  class="bottom-nav-item" data-bnav="photos">
-        <span class="bottom-nav-icon">📷</span><span class="bottom-nav-label">Photos</span>
+    <a href="<?= url('/items') ?>"  class="bottom-nav-item" data-bnav="items">
+        <span class="bottom-nav-icon">🌿</span><span class="bottom-nav-label">Items</span>
     </a>
 </nav>
 

@@ -39,10 +39,18 @@ class ReminderController
             Response::redirect($_SERVER['HTTP_REFERER'] ?? '/reminders');
         }
 
-        DB::getInstance()->execute(
+        $db = DB::getInstance();
+        $db->execute(
             'INSERT INTO reminders (item_id, type, title, due_at, is_recurring, status, created_at, updated_at) VALUES (?,?,?,?,0,?,NOW(),NOW())',
             [$itemId, $type, $title, $dueAt, 'pending']
         );
+        $newReminderId = (int) $db->lastInsertId();
+
+        if ($newReminderId) {
+            try {
+                (new \App\Controllers\CalendarController())->pushReminderById($db, $newReminderId);
+            } catch (\Throwable $e) { /* non-fatal */ }
+        }
 
         flash('success', 'Reminder created.');
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/reminders');

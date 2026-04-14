@@ -9,6 +9,12 @@ $categories = [
     'treatment_photo'      => ['label' => 'Treatment',    'icon' => '💊'],
     'general_attachment'   => ['label' => 'General',      'icon' => '📎'],
 ];
+// Custom categories in use (passed from controller)
+foreach (($customCategories ?? []) as $cc) {
+    if (!isset($categories[$cc])) {
+        $categories[$cc] = ['label' => $cc, 'icon' => '🏷️'];
+    }
+}
 $uploadUrl = url('/items/' . (int)$item['id'] . '/attachments');
 $csrf      = e(\App\Support\CSRF::getToken());
 
@@ -40,12 +46,25 @@ $gallery = array_values($gallery);
             <?php foreach ($categories as $key => $cat): ?>
             <option value="<?= e($key) ?>"><?= $cat['icon'] ?> <?= e($cat['label']) ?></option>
             <?php endforeach; ?>
+            <option value="__custom__">🏷️ Other…</option>
         </select>
         <label class="photos-add-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.5" cy="7.5" r="1"/></svg>
             Add Photo
             <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
         </label>
+    </div>
+    <!-- Custom category input (shown when Other… is selected) -->
+    <div id="photosCustomCatRow" style="display:none;padding:0 var(--spacing-3) var(--spacing-2)">
+        <input type="text" id="photosCustomCat" class="photos-cat-select"
+               style="border-radius:var(--radius-pill)"
+               placeholder="Category name (e.g. Infestation)" maxlength="80">
+    </div>
+    <!-- Caption row (always visible) -->
+    <div style="padding:0 var(--spacing-3) var(--spacing-2)">
+        <input type="text" id="photosCaptionInput" class="photos-cat-select"
+               style="border-style:dashed;border-radius:var(--radius-pill)"
+               placeholder="Optional caption / legend…" maxlength="500">
     </div>
     <!-- Progress bar -->
     <div class="photos-progress-wrap" id="photosProgress" style="display:none">
@@ -96,6 +115,23 @@ $gallery = array_values($gallery);
         <span class="photos-gallery-date"><?= $dateStr ?></span>
     </div>
 
+    <!-- Caption (tap to edit) -->
+    <?php $captionVal = $att['caption'] ?? ''; ?>
+    <div class="photos-caption-wrap" id="captionWrap_<?= $attId ?>">
+        <span class="photos-caption-text photos-caption-trigger"
+              data-att-id="<?= $attId ?>"
+              title="Tap to edit caption">
+            <?= $captionVal ? e($captionVal) : '<span class="photos-caption-empty">+ add caption</span>' ?>
+        </span>
+    </div>
+    <!-- Inline caption editor (hidden by default) -->
+    <div class="photos-caption-edit" id="captionEdit_<?= $attId ?>" style="display:none">
+        <input type="text" class="photos-caption-input-inline" data-att-id="<?= $attId ?>"
+               value="<?= e($captionVal) ?>" placeholder="Caption…" maxlength="500">
+        <button type="button" class="photos-caption-save" data-att-id="<?= $attId ?>">✓</button>
+        <button type="button" class="photos-caption-cancel" data-att-id="<?= $attId ?>">✕</button>
+    </div>
+
     <!-- Inline category selector (hidden by default) -->
     <div class="photos-cat-edit" id="catEdit_<?= $attId ?>" style="display:none">
         <select class="photos-cat-inline-select" data-att-id="<?= $attId ?>">
@@ -104,6 +140,7 @@ $gallery = array_values($gallery);
                 <?= $cat['icon'] ?> <?= e($cat['label']) ?>
             </option>
             <?php endforeach; ?>
+            <option value="__custom__">🏷️ Other…</option>
         </select>
         <button type="button" class="photos-cat-cancel" data-att-id="<?= $attId ?>">✕</button>
     </div>
@@ -141,13 +178,21 @@ $gallery = array_values($gallery);
 (function() {
     var uploadUrl  = <?= json_encode($uploadUrl) ?>;
     var csrfToken  = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
-    var zone       = document.getElementById('photosUploadZone');
-    var catSelect  = document.getElementById('photosCatSelect');
-    var progEl     = document.getElementById('photosProgress');
-    var fillEl     = document.getElementById('photosProgressFill');
-    var progText   = document.getElementById('photosProgressText');
-    var errorEl    = document.getElementById('photosError');
-    var successEl  = document.getElementById('photosSuccess');
+    var zone        = document.getElementById('photosUploadZone');
+    var catSelect   = document.getElementById('photosCatSelect');
+    var customCatRow= document.getElementById('photosCustomCatRow');
+    var customCatIn = document.getElementById('photosCustomCat');
+    var captionIn   = document.getElementById('photosCaptionInput');
+    var progEl      = document.getElementById('photosProgress');
+    var fillEl      = document.getElementById('photosProgressFill');
+    var progText    = document.getElementById('photosProgressText');
+    var errorEl     = document.getElementById('photosError');
+    var successEl   = document.getElementById('photosSuccess');
+
+    // Show/hide custom category input
+    catSelect.addEventListener('change', function() {
+        customCatRow.style.display = catSelect.value === '__custom__' ? 'block' : 'none';
+    });
 
     function doUpload(file) {
         if (!file) return;
@@ -165,7 +210,13 @@ $gallery = array_values($gallery);
 
             var fd = new FormData();
             fd.append('file', compressed);
-            fd.append('category', catSelect.value);
+            if (catSelect.value === '__custom__') {
+                fd.append('category', '__custom__');
+                fd.append('custom_category', customCatIn ? customCatIn.value.trim() : '');
+            } else {
+                fd.append('category', catSelect.value);
+            }
+            if (captionIn && captionIn.value.trim()) fd.append('caption', captionIn.value.trim());
             fd.append('_token', csrfToken);
             fd.append('_ajax', '1');
             fd.append('_redirect', window.location.pathname);
@@ -295,31 +346,78 @@ document.querySelectorAll('.photos-cat-inline-select').forEach(function(sel) {
     sel.addEventListener('change', function() {
         var id  = sel.dataset.attId;
         var cat = sel.value;
+        if (cat === '__custom__') return; // wait for text input
+        saveCategory(id, cat, sel);
+    });
+});
+
+function saveCategory(id, cat, sel) {
+    var fd = new FormData();
+    fd.append('category', cat);
+    fd.append('_token', CSRF_TOKEN);
+    fd.append('_ajax', '1');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/category', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.addEventListener('load', function() {
+        var res; try { res = JSON.parse(xhr.responseText); } catch(e){}
+        var editEl = document.getElementById('catEdit_' + id);
+        var metaEl = editEl.previousElementSibling; // .photos-gallery-meta (skip caption wrappers above it)
+        // Walk backwards to find .photos-gallery-meta
+        var node = editEl;
+        while (node && !node.classList.contains('photos-gallery-meta')) node = node.previousElementSibling;
+        if (res && res.success) {
+            if (node) {
+                node.querySelector('.photos-cat-trigger').innerHTML = cat + ' ✎';
+                node.querySelector('.photos-cat-trigger').dataset.current = cat;
+                node.style.display = '';
+            }
+        }
+        editEl.style.display = 'none';
+    });
+    xhr.send(fd);
+}
+
+// ── Caption inline edit ─────────────────────────────────────────────────────
+document.querySelectorAll('.photos-caption-trigger').forEach(function(span) {
+    span.addEventListener('click', function() {
+        var id = span.dataset.attId;
+        document.getElementById('captionWrap_' + id).style.display = 'none';
+        document.getElementById('captionEdit_' + id).style.display = 'flex';
+        var inp = document.querySelector('.photos-caption-input-inline[data-att-id="' + id + '"]');
+        if (inp) inp.focus();
+    });
+});
+document.querySelectorAll('.photos-caption-cancel').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = btn.dataset.attId;
+        document.getElementById('captionEdit_' + id).style.display = 'none';
+        document.getElementById('captionWrap_' + id).style.display = '';
+    });
+});
+document.querySelectorAll('.photos-caption-save').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id  = btn.dataset.attId;
+        var inp = document.querySelector('.photos-caption-input-inline[data-att-id="' + id + '"]');
+        var val = inp ? inp.value.trim() : '';
         var fd  = new FormData();
-        fd.append('category', cat);
+        fd.append('caption', val);
         fd.append('_token', CSRF_TOKEN);
         fd.append('_ajax', '1');
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/category', true);
+        xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/caption', true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.addEventListener('load', function() {
             var res; try { res = JSON.parse(xhr.responseText); } catch(e){}
-            var editEl = document.getElementById('catEdit_' + id);
-            var metaEl = editEl.previousElementSibling; // .photos-gallery-meta
             if (res && res.success) {
-                // Update visible label
-                var catLabels = {
-                    identification_photo:'🪪 ID / Main',yearly_refresh_north:'⬆️ North',
-                    yearly_refresh_south:'⬇️ South',yearly_refresh_east:'➡️ East',
-                    yearly_refresh_west:'⬅️ West',harvest_photo:'🌾 Harvest',
-                    general_attachment:'📎 General'
-                };
-                metaEl.querySelector('.photos-cat-trigger').innerHTML =
-                    (catLabels[cat] || cat) + ' ✎';
-                metaEl.querySelector('.photos-cat-trigger').dataset.current = cat;
+                var wrap = document.getElementById('captionWrap_' + id);
+                var span = wrap.querySelector('.photos-caption-text');
+                span.innerHTML = val
+                    ? val.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                    : '<span class="photos-caption-empty">+ add caption</span>';
+                document.getElementById('captionEdit_' + id).style.display = 'none';
+                wrap.style.display = '';
             }
-            editEl.style.display = 'none';
-            metaEl.style.display = '';
         });
         xhr.send(fd);
     });
@@ -373,6 +471,16 @@ document.querySelectorAll('.photos-cat-inline-select').forEach(function(sel) {
 .photos-cat-inline-select { flex:1;padding:4px 8px;border:1.5px solid var(--color-primary);border-radius:var(--radius-pill);font-size:.72rem;font-family:inherit;background:var(--color-surface);cursor:pointer; }
 .photos-cat-cancel { background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:.85rem;padding:2px 4px;border-radius:4px;flex-shrink:0; }
 .photos-cat-cancel:hover { color:var(--color-danger,#c0392b); }
+
+/* Caption */
+.photos-caption-wrap { padding:2px 8px 0; }
+.photos-caption-text { font-size:.68rem;color:var(--color-text-muted);display:block;cursor:pointer;line-height:1.4;word-break:break-word;transition:color .15s; }
+.photos-caption-text:hover { color:var(--color-primary); }
+.photos-caption-empty { font-style:italic;opacity:.5; }
+.photos-caption-edit { display:flex;align-items:center;gap:3px;padding:2px 8px; }
+.photos-caption-input-inline { flex:1;padding:3px 7px;border:1.5px solid var(--color-primary);border-radius:var(--radius-pill);font-size:.68rem;font-family:inherit;background:var(--color-surface); }
+.photos-caption-save { background:var(--color-primary);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:var(--radius-pill); }
+.photos-caption-cancel { background:rgba(0,0,0,.07);color:var(--color-text-muted);border:none;cursor:pointer;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:var(--radius-pill); }
 
 /* Gallery footer: delete */
 .photos-gallery-footer { padding:4px 8px 8px;display:flex;align-items:center;gap:4px; }

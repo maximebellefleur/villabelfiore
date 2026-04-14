@@ -8,6 +8,25 @@
  */
 return [
 
+    '1.7.0' => [
+        'date'  => '2026-04-14',
+        'title' => 'Fused Log+Reminder, Photo Captions & Google Calendar Auto-Push',
+        'new' => [
+            'Item detail: Log Action and Reminder forms merged into a single "Log Action" form — log anything, then tick "Set a reminder for this log" to optionally attach a reminder inline',
+            'Inline calendar picker for reminders — full month-grid calendar widget (no native date input) with Mo–Su header, past-day dimming, today highlight, and selected-day highlight; defaults to today + 7 days',
+            'Photo captions: each photo now has an optional text legend/caption — editable at upload time and inline-editable in the gallery (same tap-to-edit pattern as category)',
+            'Photo category "Other…" option: select Other… to reveal a free-text input and store any custom category name; custom categories are listed dynamically in the dropdown from existing DB values',
+            'Google Calendar auto-push: reminders created from the Log Action form or from the Reminders page are immediately pushed to Google Calendar — no manual Sync Now needed',
+        ],
+        'improved' => [
+            'Bottom nav: Photos (📷) replaced with Items (🌿) — Photos always required selecting an item first; Items is more useful as a quick-nav destination',
+            'Photo upload form: caption field always visible below category (dashed placeholder style)',
+            'Quick Photos and Item Photos both support custom categories and captions',
+            'ReminderController::store() and ItemController::addAction() both auto-push to Google Calendar via shared CalendarController::pushReminderById() — consistent across all creation paths',
+        ],
+        'fixed' => [],
+    ],
+
     '1.6.0' => [
         'date'  => '2026-04-10',
         'title' => 'PWA, Brand Identity & Offline Support',
