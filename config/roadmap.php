@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'Precise GPS & Better Satellite',
+        'features' => [
+            ['title' => 'Multi-sample GPS averaging', 'detail' => 'Boundary GPS collects up to 12 readings over 6 seconds, averages the best half. Each placed point shows an accuracy ring. Stops early at ≤5 m accuracy.'],
+            ['title' => 'ESRI Clarity satellite tiles', 'detail' => 'Switched from Google to ESRI World Imagery Clarity — sharper imagery at high zoom for rural/agricultural land.'],
+        ],
+    ],
+
     '1.9.7' => [
         'status'   => 'released',
         'released' => '2026-04-15',

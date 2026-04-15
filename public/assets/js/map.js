@@ -39,10 +39,10 @@
         15
     );
 
-    // Satellite on by default — Google Maps (no API key required for tile access)
+    // Satellite on by default — ESRI World Imagery Clarity (sharp rural/agricultural imagery, no API key)
     var satelliteLayer = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
+        'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 22, maxNativeZoom: 19, attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)
@@ -437,33 +437,129 @@
         }, statusEl, btn);
     });
 
+    // -------------------------------------------------------------------------
+    // Precise GPS sampler — collects multiple readings, averages the best ones
+    // Stops early once accuracy ≤ goodAccuracy, or after maxDurationMs.
+    // onResult(lat, lng, accuracyMetres)
+    // -------------------------------------------------------------------------
+    function preciseSample(onResult, statusEl, btn, options) {
+        options       = options || {};
+        var maxMs     = options.maxMs        || 6000;  // max collection window (ms)
+        var maxReads  = options.maxReads     || 12;    // hard cap on readings
+        var minReads  = options.minReads     || 3;     // collect at least this many
+        var goodAcc   = options.goodAcc      || 5;     // stop early if ≤ this accurate (m)
+
+        var readings  = [];
+        var watchId   = null;
+        var timer     = null;
+        var finished  = false;
+        var origHTML  = btn ? btn.innerHTML : '';
+
+        if (btn) { btn.disabled = true; btn.textContent = '📡 …'; }
+        showGpsStatus(statusEl, '📡 Getting fix…', 'info');
+
+        if (!navigator.geolocation) {
+            if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+            showGpsStatus(statusEl, '⚠️ Geolocation not supported.', 'error');
+            return;
+        }
+
+        function done() {
+            if (finished) return;
+            finished = true;
+            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            clearTimeout(timer);
+            if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+
+            if (!readings.length) {
+                showGpsStatus(statusEl, '⚠️ No GPS fix — move to open sky and retry.', 'error');
+                return;
+            }
+
+            // Sort by accuracy (best = lowest value first), average top half
+            readings.sort(function (a, b) { return a.acc - b.acc; });
+            var keep = Math.max(1, Math.ceil(readings.length / 2));
+            var best = readings.slice(0, keep);
+            var latSum = 0, lngSum = 0;
+            best.forEach(function (r) { latSum += r.lat; lngSum += r.lng; });
+            var avgLat  = latSum  / best.length;
+            var avgLng  = lngSum  / best.length;
+            var bestAcc = best[0].acc;
+
+            onResult(avgLat, avgLng, bestAcc);
+        }
+
+        watchId = navigator.geolocation.watchPosition(
+            function (pos) {
+                if (finished) return;
+                var r = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+                readings.push(r);
+                var pct = Math.min(100, Math.round((readings.length / maxReads) * 100));
+                showGpsStatus(statusEl,
+                    '📡 Sampling… ' + readings.length + ' fix' + (readings.length > 1 ? 'es' : '') +
+                    ' · ±' + Math.round(r.acc) + ' m', 'info');
+                // Stop early if we have minimum readings AND a good fix
+                if (readings.length >= minReads && r.acc <= goodAcc) { done(); return; }
+                if (readings.length >= maxReads) { done(); }
+            },
+            function (err) {
+                if (readings.length >= minReads) { done(); return; }
+                finished = true;
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+                clearTimeout(timer);
+                if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+                showGpsStatus(statusEl, '🔒 GPS unavailable — check browser permissions.', 'error');
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 }
+        );
+
+        // Bail-out timer
+        timer = setTimeout(function () {
+            if (readings.length > 0) { done(); }
+            else {
+                finished = true;
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+                if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+                showGpsStatus(statusEl, '⚠️ GPS timeout — move to open sky and retry.', 'error');
+            }
+        }, maxMs);
+    }
+
+    // -------------------------------------------------------------------------
     // GPS for Land boundary panel — adds a point at current position
+    // -------------------------------------------------------------------------
     document.getElementById('landGpsBtn').addEventListener('click', function () {
-        if (landDrawFinished) return; // already closed
+        if (landDrawFinished) return;
         var btn = this;
         var statusEl = document.getElementById('landGpsStatus');
-        detectGps(function (lat, lng) {
+        preciseSample(function (lat, lng, acc) {
             var landIdx = landDrawPoints.length;
             landDrawPoints.push([lat, lng]);
+            // Accuracy ring (semi-transparent) shows GPS confidence radius
+            var accCircle = L.circle([lat, lng], {
+                radius: acc, color: '#2d5a27', fillColor: '#2d5a27',
+                fillOpacity: 0.08, weight: 1, dashArray: '3 3', interactive: false,
+            }).addTo(map);
             var landDot = L.circleMarker([lat, lng], {
                 radius: 7, color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 1, weight: 2,
             }).addTo(map);
-            (function (pIdx, pMarker) {
+            (function (pIdx, pMarker, pCircle) {
                 pMarker.on('click', function (ev) {
                     if (landDrawFinished) return;
                     L.DomEvent.stop(ev);
                     var removed = landTempMarkers.splice(pIdx, landTempMarkers.length - pIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
                     landDrawPoints.splice(pIdx, landDrawPoints.length - pIdx);
+                    if (pCircle) { map.removeLayer(pCircle); }
                     if (landTempPoly) { map.removeLayer(landTempPoly); landTempPoly = null; }
                     updateLandTempLines();
                 });
-            })(landIdx, landDot);
+            })(landIdx, landDot, accCircle);
             landTempMarkers.push(landDot);
             updateLandTempLines();
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
-            showGpsStatus(statusEl, '✅ Point ' + landDrawPoints.length + ' added', 'success');
-            setTimeout(function () { hideGpsStatus(statusEl); }, 2000);
+            showGpsStatus(statusEl, '✅ Point ' + landDrawPoints.length + ' added · ±' + Math.round(acc) + ' m', 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 3000);
         }, statusEl, btn);
     });
 
@@ -472,30 +568,35 @@
         if (drawingFinished) return; // polygon already closed
         var btn = this;
         var statusEl = document.getElementById('zoneGpsStatus');
-        detectGps(function (lat, lng) {
+        preciseSample(function (lat, lng, acc) {
             var idx = drawnPoints.length;
             drawnPoints.push([lat, lng]);
+            var accCircle = L.circle([lat, lng], {
+                radius: acc, color: '#e74c3c', fillColor: '#e74c3c',
+                fillOpacity: 0.08, weight: 1, dashArray: '3 3', interactive: false,
+            }).addTo(map);
             var dot = L.circleMarker([lat, lng], {
                 radius: 7, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 1, weight: 2,
             }).addTo(map);
-            (function (pointIdx, dotMarker) {
+            (function (pointIdx, dotMarker, dotCircle) {
                 dotMarker.on('click', function (ev) {
                     if (drawingFinished) return;
                     L.DomEvent.stop(ev);
                     var removed = tempMarkers.splice(pointIdx, tempMarkers.length - pointIdx);
                     removed.forEach(function (m) { map.removeLayer(m); });
                     drawnPoints.splice(pointIdx, drawnPoints.length - pointIdx);
+                    if (dotCircle) { map.removeLayer(dotCircle); }
                     if (tempPolygon) { map.removeLayer(tempPolygon); tempPolygon = null; }
                     updateTempShape();
                     updateDrawStatus();
                 });
-            })(idx, dot);
+            })(idx, dot, accCircle);
             tempMarkers.push(dot);
             updateTempShape();
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
             updateDrawStatus();
-            showGpsStatus(statusEl, '✅ Point ' + drawnPoints.length + ' added', 'success');
-            setTimeout(function () { hideGpsStatus(statusEl); }, 2000);
+            showGpsStatus(statusEl, '✅ Point ' + drawnPoints.length + ' added · ±' + Math.round(acc) + ' m', 'success');
+            setTimeout(function () { hideGpsStatus(statusEl); }, 3000);
         }, statusEl, btn);
     });
 

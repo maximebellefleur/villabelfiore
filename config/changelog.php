@@ -8,6 +8,20 @@
  */
 return [
 
+    '1.9.8' => [
+        'date'  => '2026-04-15',
+        'title' => 'Precise GPS & Better Satellite',
+        'new'   => [
+            'GPS boundary drawing now uses multi-sample averaging: collects up to 12 readings over 6 seconds, discards the worst half, and averages the best ones — typical accuracy improves from ±30 m to ±5–10 m in open sky',
+            'Each GPS-placed boundary point shows a live accuracy ring (semi-transparent circle proportional to GPS error) so you can see the confidence of each corner',
+            'GPS button shows live feedback: "📡 Sampling… 4 fixes · ±8 m" while collecting, stops early when accuracy ≤ 5 m',
+        ],
+        'improved' => [
+            'Satellite tiles switched to ESRI World Imagery Clarity — noticeably sharper than Google at high zoom levels over agricultural land',
+        ],
+        'fixed' => [],
+    ],
+
     '1.9.7' => [
         'date'  => '2026-04-15',
         'title' => 'cPanel PUBLIC_PATH Fix',
