@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'Google Satellite & Gallery Fix',
+        'features' => [
+            ['title' => 'Google satellite tiles', 'detail' => 'Switched from ESRI Clarity to Google Maps satellite. Provides zoom 20+ coverage for rural Sicily and regions where ESRI imagery was unavailable above zoom 15.'],
+            ['title' => 'Gallery fullscreen fix',  'detail' => 'Image tap to fullscreen was broken due to window.open name collision. Restructured the gallery IIFE: all DOM vars declared first, internal function renamed to galleryOpen, window.openGallery assigned directly.'],
+        ],
+    ],
+
     '1.9.9' => [
         'status'   => 'released',
         'released' => '2026-04-15',

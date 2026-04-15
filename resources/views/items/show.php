@@ -1162,60 +1162,62 @@ function preCheckReminder() {
         echo json_encode($galleryData, JSON_HEX_TAG | JSON_HEX_AMP);
     ?>;
 
-    // Always expose openGallery — it's a no-op when there are no images
-    window.openGallery = function(idx) {
-        if (!items.length) return;
-        open(idx);
-    };
+    // Declare all DOM refs at the top — before any early return — so the
+    // closure assigned to window.openGallery can reference them safely.
+    var overlay   = document.getElementById('galleryOverlay');
+    var imgEl     = document.getElementById('galleryImg');
+    var counter   = document.getElementById('galleryCounter');
+    var captionEl = document.getElementById('galleryCaption');
+    var closeBtn  = document.getElementById('galleryClose');
+    var prevBtn   = document.getElementById('galleryPrev');
+    var nextBtn   = document.getElementById('galleryNext');
+    var current   = 0;
+    var total     = items.length;
 
-    if (!items.length) return;
-
-    var overlay  = document.getElementById('galleryOverlay');
-    var imgEl    = document.getElementById('galleryImg');
-    var counter  = document.getElementById('galleryCounter');
-    var captionEl= document.getElementById('galleryCaption');
-    var closeBtn = document.getElementById('galleryClose');
-    var prevBtn  = document.getElementById('galleryPrev');
-    var nextBtn  = document.getElementById('galleryNext');
-    var current  = 0;
-    var total    = items.length;
-
-    function show(idx) {
+    function galleryShow(idx) {
         current = ((idx % total) + total) % total;
         imgEl.style.opacity = '0.4';
         imgEl.src = items[current].src;
         imgEl.onload = function () { imgEl.style.opacity = '1'; };
-        counter.textContent = (current + 1) + ' \u2F ' + total;
+        counter.textContent = (current + 1) + ' / ' + total;
         captionEl.textContent = items[current].caption || '';
     }
 
-    function open(idx) {
-        show(idx);
+    function galleryOpen(idx) {
+        if (!items.length || !overlay) return;
+        galleryShow(idx);
         overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 
-    function close() {
+    function galleryClose() {
+        if (!overlay) return;
         overlay.style.display = 'none';
         document.body.style.overflow = '';
         imgEl.src = '';
     }
 
-    closeBtn.addEventListener('click', close);
-    prevBtn.addEventListener('click', function () { show(current - 1); });
-    nextBtn.addEventListener('click', function () { show(current + 1); });
+    // Direct reference — no wrapper, no name collision with window.open
+    window.openGallery = galleryOpen;
+
+    // Skip event listener setup when there are no images or overlay is missing
+    if (!items.length || !overlay) return;
+
+    closeBtn.addEventListener('click', galleryClose);
+    prevBtn.addEventListener('click', function () { galleryShow(current - 1); });
+    nextBtn.addEventListener('click', function () { galleryShow(current + 1); });
 
     // Click on backdrop (not on img/buttons) closes gallery
     overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) close();
+        if (e.target === overlay) galleryClose();
     });
 
     // Keyboard navigation
     document.addEventListener('keydown', function (e) {
         if (overlay.style.display === 'none') return;
-        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { show(current - 1); e.preventDefault(); }
-        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { show(current + 1); e.preventDefault(); }
-        else if (e.key === 'Escape') close();
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { galleryShow(current - 1); e.preventDefault(); }
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { galleryShow(current + 1); e.preventDefault(); }
+        else if (e.key === 'Escape') galleryClose();
     });
 
     // Touch swipe
@@ -1229,8 +1231,8 @@ function preCheckReminder() {
         var dx = e.changedTouches[0].clientX - touchStartX;
         var dy = e.changedTouches[0].clientY - touchStartY;
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-            if (dx < 0) show(current + 1);
-            else        show(current - 1);
+            if (dx < 0) galleryShow(current + 1);
+            else        galleryShow(current - 1);
         }
     }, { passive: true });
 }());

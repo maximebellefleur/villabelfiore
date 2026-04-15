@@ -39,10 +39,10 @@
         15
     );
 
-    // Satellite on by default — ESRI World Imagery Clarity (sharp rural/agricultural imagery, no API key)
+    // Satellite on by default — Google Maps satellite (zoom 20+ coverage worldwide)
     var satelliteLayer = L.tileLayer(
-        'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 22, maxNativeZoom: 19, attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>' }
+        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)

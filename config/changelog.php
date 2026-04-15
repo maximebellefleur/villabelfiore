@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.0.0' => [
+        'date'  => '2026-04-15',
+        'title' => 'Google Satellite & Gallery Fix',
+        'new'   => [],
+        'improved' => [
+            'Satellite tiles switched from ESRI Clarity to Google Maps satellite — full zoom 20+ coverage for rural Sicily and other regions where ESRI blanked out above zoom 15.',
+        ],
+        'fixed' => [
+            'Gallery fullscreen broken: internal function named "open" collided with window.open. Renamed to galleryOpen, moved all DOM variable declarations above the early-return guard, and assigned window.openGallery = galleryOpen directly. Tapping an image thumbnail now reliably opens the fullscreen overlay.',
+        ],
+    ],
+
     '1.9.9' => [
         'date'  => '2026-04-15',
         'title' => 'Walk Perimeter Mode',
