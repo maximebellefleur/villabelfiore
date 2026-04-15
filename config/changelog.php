@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.0.1' => [
+        'date'  => '2026-04-15',
+        'title' => 'Map Fixes',
+        'new'   => [],
+        'improved' => [
+            'Satellite tiles switched to Esri World Imagery (standard REST endpoint). More reliable than Google or Esri Clarity, zoom 19+ coverage for Italy/Sicily, no API key required.',
+            'Walk mode GPS accuracy threshold raised from ±12 m to ±25 m — accepts more readings in rural areas where GPS rarely gets better than 15 m.',
+        ],
+        'fixed' => [
+            'Land boundary polygon no longer intercepts map clicks. Uses a dedicated CSS pane with pointer-events:none so tapping the land fill area passes through to items and the map beneath.',
+            'Walk mode "doing nothing" bug: removed the 30-second GPS timeout from watchPosition. Previously a TIMEOUT error would silently reset the walk UI. Now it waits indefinitely for a fix, shows clear error only on permission denied or GPS unavailable.',
+        ],
+    ],
+
     '2.0.0' => [
         'date'  => '2026-04-15',
         'title' => 'Google Satellite & Gallery Fix',

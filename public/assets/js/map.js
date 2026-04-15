@@ -39,10 +39,10 @@
         15
     );
 
-    // Satellite on by default — Google Maps satellite (zoom 20+ coverage worldwide)
+    // Satellite on by default — Esri World Imagery (free, no API key, zoom 19+ for Italy)
     var satelliteLayer = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 22, maxNativeZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)
@@ -924,10 +924,18 @@
     // -------------------------------------------------------------------------
     var landBoundaryLayer = null;
 
+    // Dedicated pane for the land perimeter — pointer-events:none at CSS level
+    // so the polygon NEVER intercepts clicks, even on its fill area.
+    // Must be created before renderLandBoundary is first called.
+    map.createPane('landBoundaryPane');
+    map.getPane('landBoundaryPane').style.pointerEvents = 'none';
+    map.getPane('landBoundaryPane').style.zIndex = '350'; // below item polygons (overlayPane=400)
+
     function renderLandBoundary(geojson) {
         if (landBoundaryLayer) { map.removeLayer(landBoundaryLayer); }
         if (!geojson) return;
         landBoundaryLayer = L.geoJSON(geojson, {
+            pane: 'landBoundaryPane',
             interactive: false,
             style: {
                 color: '#2d5a27', weight: 3, opacity: 1,
@@ -994,7 +1002,7 @@
     // Walk-perimeter mode — shared constants
     // -------------------------------------------------------------------------
     var WALK_MIN_DIST_M  = 1.5;  // record a new point only every 1.5 m
-    var WALK_MAX_ACC_M   = 12;   // skip readings worse than 12 m accuracy
+    var WALK_MAX_ACC_M   = 25;   // skip readings worse than 25 m accuracy (relaxed for rural areas)
     var WALK_SIMPLIFY_M  = 0.8;  // RDP tolerance: keep points that deviate > 0.8 m
 
     // -------------------------------------------------------------------------
@@ -1041,12 +1049,26 @@
         landWalkWatchId = navigator.geolocation.watchPosition(
             onLandWalkPos,
             function (err) {
-                if (landWalkPts.length >= 3) { stopLandWalk(true); return; }
-                stopLandWalk(false);
-                document.getElementById('landBoundaryStatus').textContent =
-                    '🔒 GPS error — check browser permissions.';
+                // PERMISSION_DENIED or POSITION_UNAVAILABLE — fatal, stop walk
+                if (err.code === 1) {
+                    stopLandWalk(false);
+                    document.getElementById('landBoundaryStatus').textContent =
+                        '🔒 GPS access denied — enable Location in browser settings.';
+                    return;
+                }
+                if (err.code === 2) {
+                    stopLandWalk(false);
+                    document.getElementById('landBoundaryStatus').textContent =
+                        '📡 GPS unavailable — go to an open area and try again.';
+                    return;
+                }
+                // TIMEOUT (code 3) — just keep waiting, show warning in stats
+                var statsEl = document.getElementById('landWalkStats');
+                if (statsEl) {
+                    statsEl.innerHTML = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
+                }
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+            { enableHighAccuracy: true, maximumAge: 0 }  // no timeout — wait as long as needed
         );
     }
 
@@ -1188,12 +1210,25 @@
         zoneWalkWatchId = navigator.geolocation.watchPosition(
             onZoneWalkPos,
             function (err) {
-                if (zoneWalkPts.length >= 3) { stopZoneWalk(true); return; }
-                stopZoneWalk(false);
-                document.getElementById('boundaryStatus').textContent =
-                    '🔒 GPS error — check browser permissions.';
+                if (err.code === 1) {
+                    stopZoneWalk(false);
+                    document.getElementById('boundaryStatus').textContent =
+                        '🔒 GPS access denied — enable Location in browser settings.';
+                    return;
+                }
+                if (err.code === 2) {
+                    stopZoneWalk(false);
+                    document.getElementById('boundaryStatus').textContent =
+                        '📡 GPS unavailable — go to an open area and try again.';
+                    return;
+                }
+                // TIMEOUT — keep waiting
+                var statsEl = document.getElementById('zoneWalkStats');
+                if (statsEl) {
+                    statsEl.innerHTML = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
+                }
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+            { enableHighAccuracy: true, maximumAge: 0 }  // no timeout
         );
     }
 

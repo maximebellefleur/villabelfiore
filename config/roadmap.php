@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.0.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'Map Fixes',
+        'features' => [
+            ['title' => 'Esri World Imagery satellite', 'detail' => 'Switched from Google to Esri World Imagery standard REST tiles. Free, no API key, zoom 19+ for Italy.'],
+            ['title' => 'Land boundary non-interactive', 'detail' => 'Land perimeter polygon placed in a dedicated CSS pane with pointer-events:none. Clicks on the land fill area no longer intercept item taps.'],
+            ['title' => 'Walk mode GPS fix',             'detail' => 'Removed 30s GPS timeout from watchPosition. Walk now waits as long as needed for a fix. Accuracy threshold raised to 25 m for better rural coverage.'],
+        ],
+    ],
+
     '2.0.0' => [
         'status'   => 'released',
         'released' => '2026-04-15',
