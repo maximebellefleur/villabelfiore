@@ -150,6 +150,7 @@ var MAP_ITEM_URL          = '<?= url('/items/') ?>';
 var MAP_LAND_NAME         = '<?= e($landName) ?>';
 var MAP_HAS_LAND_BOUNDARY = <?= $hasLandBoundary ? 'true' : 'false' ?>;
 var MAP_LAND_BOUNDARY     = <?= $landBoundaryJson ?>;
+var MAP_BOUNDARY_TYPES    = <?= json_encode($boundaryTypes) ?>;
 </script>
 <script>
 (function () {

@@ -209,6 +209,18 @@ $recentReminders = array_slice($reminders, 0, 3);
                 <dd class="text-sm"><?= number_format((float)$item['gps_lat'], 6) ?>, <?= number_format((float)$item['gps_lng'], 6) ?><?= $item['gps_source'] ? ' <span class="text-muted">(' . e($item['gps_source']) . ')</span>' : '' ?></dd>
             </div>
             <?php endif; ?>
+            <?php if (!empty($boundaryGeojson)): ?>
+            <div class="item-dl-row">
+                <dt>Boundary</dt>
+                <dd>
+                    <a href="<?= url('/dashboard/map') ?>" class="text-sm">View on map →</a>
+                    <details style="margin-top:4px">
+                        <summary class="text-sm text-muted" style="cursor:pointer">Show GPS polygon JSON</summary>
+                        <pre class="item-dl-geojson"><?= e($boundaryGeojson) ?></pre>
+                    </details>
+                </dd>
+            </div>
+            <?php endif; ?>
             <?php if ($item['parent_id']): ?>
             <div class="item-dl-row">
                 <dt>Part of</dt>
@@ -423,20 +435,28 @@ window.MINI_MAP_READONLY = true;
             <thead><tr><th>Date</th><th>Action</th><th>Description</th><th></th></tr></thead>
             <tbody>
                 <?php foreach ($activityLog as $a):
-                    $logId = (int)$a['id'];
+                    $logId   = (int)$a['id'];
+                    $logData = json_encode([
+                        'date'        => date('d M Y, H:i', strtotime($a['performed_at'])),
+                        'action'      => $a['action_label'] ?? '',
+                        'action_type' => $a['action_type'] ?? '',
+                        'description' => $a['description'] ?? '',
+                        'att_id'      => $a['att_id'] ?? null,
+                        'att_mime'    => $a['att_mime'] ?? null,
+                        'att_url'     => !empty($a['att_id']) ? url('/attachments/' . (int)$a['att_id'] . '/download') : null,
+                        'log_id'      => $logId,
+                    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
                 ?>
-                <tr id="logrow_<?= $logId ?>">
+                <tr id="logrow_<?= $logId ?>" class="show-log-row" data-log='<?= $logData ?>' style="cursor:pointer" title="Click for details">
                     <td class="text-sm text-muted" style="white-space:nowrap"><?= e(date('d M Y', strtotime($a['performed_at']))) ?></td>
                     <td><span class="badge"><?= e($a['action_label']) ?></span></td>
                     <td class="show-log-desc">
-                        <?= e($a['description']) ?>
+                        <?= e(mb_strimwidth($a['description'] ?? '', 0, 60, '…')) ?>
                         <?php if (!empty($a['att_id'])): ?>
-                        <a href="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" target="_blank" class="show-log-thumb-link">
-                            <img src="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" class="show-log-thumb" alt="Log photo">
-                        </a>
+                        <span class="text-muted" style="font-size:.75rem"> 📷</span>
                         <?php endif; ?>
                     </td>
-                    <td class="show-log-del-cell">
+                    <td class="show-log-del-cell" onclick="event.stopPropagation()">
                         <button type="button" class="show-log-del-btn" data-log-id="<?= $logId ?>" title="Delete">✕</button>
                         <span class="show-log-del-confirm" id="logdel_<?= $logId ?>" style="display:none">
                             <form method="POST" action="<?= url('/activity-log/' . $logId . '/trash') ?>" style="display:inline">
@@ -565,6 +585,12 @@ window.MINI_MAP_READONLY = true;
 .show-feed-thumb-link { flex-shrink: 0; }
 .show-feed-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--color-border); }
 
+.item-dl-geojson {
+    font-size:.68rem; line-height:1.4; overflow-x:auto; white-space:pre-wrap; word-break:break-all;
+    background:var(--color-surface); border:1px solid var(--color-border);
+    border-radius:6px; padding:6px 8px; margin-top:4px; max-height:120px;
+    color:var(--color-text-muted);
+}
 .show-log-table { font-size:.82rem; width:100%; }
 .show-log-desc { word-break:break-word; overflow-wrap:anywhere; max-width:180px; }
 .show-log-del-cell { white-space:nowrap; text-align:right; padding-right:4px; }
@@ -590,6 +616,58 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
         document.querySelector('.show-log-del-btn[data-log-id="' + id + '"]').style.display = '';
     });
 });
+
+// Log entry detail popup
+(function () {
+    var backdrop  = document.getElementById('logDetailBackdrop');
+    var closeBtn  = document.getElementById('logModalClose');
+    var titleEl   = document.getElementById('logModalTitle');
+    var badgeEl   = document.getElementById('logModalBadge');
+    var dateEl    = document.getElementById('logModalDate');
+    var descEl    = document.getElementById('logModalDesc');
+    var photoWrap = document.getElementById('logModalPhoto');
+    var photoImg  = document.getElementById('logModalPhotoImg');
+    var photoLink = document.getElementById('logModalPhotoLink');
+
+    function openLogModal(data) {
+        titleEl.textContent  = data.action || 'Log Entry';
+        badgeEl.textContent  = data.action || '';
+        dateEl.textContent   = data.date   || '';
+        descEl.textContent   = data.description || '—';
+        if (data.att_url && data.att_mime && data.att_mime.indexOf('image/') === 0) {
+            photoImg.src         = data.att_url;
+            photoLink.href       = data.att_url;
+            photoWrap.style.display = '';
+        } else {
+            photoWrap.style.display = 'none';
+            photoImg.src = '';
+        }
+        backdrop.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLogModal() {
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.show-log-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+            try {
+                var data = JSON.parse(row.getAttribute('data-log'));
+                openLogModal(data);
+            } catch(e) {}
+        });
+    });
+
+    closeBtn.addEventListener('click', closeLogModal);
+    backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) closeLogModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && backdrop.style.display !== 'none') closeLogModal();
+    });
+}());
 
 // AI Prompt
 (function() {
@@ -989,7 +1067,73 @@ function preCheckReminder() {
     padding: 0 60px; line-height: 1.4;
 }
 .show-photo-thumb { cursor: pointer; }
+
+/* ── Log detail modal ───────────────────────────────────────────── */
+.log-modal-backdrop {
+    position: fixed; inset: 0; z-index: 4000;
+    background: rgba(0,0,0,.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    animation: logFadeIn .18s ease;
+}
+@keyframes logFadeIn { from { opacity:0 } to { opacity:1 } }
+.log-modal {
+    background: var(--color-surface);
+    border-radius: 18px;
+    width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,.45);
+    animation: logSlideUp .22s cubic-bezier(.25,.8,.25,1);
+    position: relative;
+}
+@keyframes logSlideUp { from { transform:translateY(24px);opacity:0 } to { transform:translateY(0);opacity:1 } }
+.log-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+.log-modal-title { font-weight: 700; font-size: 1rem; }
+.log-modal-close {
+    background: none; border: none; font-size: 1.2rem; cursor: pointer;
+    color: var(--color-text-muted); padding: 4px 8px; border-radius: 6px;
+    transition: background .12s;
+}
+.log-modal-close:hover { background: var(--color-border); }
+.log-modal-body { padding: 16px 20px 20px; }
+.log-modal-badge { display: inline-block; margin-bottom: 12px; }
+.log-modal-date { font-size: .82rem; color: var(--color-text-muted); margin-bottom: 10px; }
+.log-modal-desc {
+    font-size: .93rem; line-height: 1.6;
+    word-break: break-word; white-space: pre-wrap;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px; padding: 12px 14px;
+}
+.log-modal-photo { margin-top: 12px; }
+.log-modal-photo img { max-width: 100%; border-radius: 10px; border: 1px solid var(--color-border); }
+.log-row-hint { font-size: .72rem; color: var(--color-text-muted); margin-top: 2px; opacity:.7 }
 </style>
+
+<!-- ── Log detail modal ─────────────────────────────────────────── -->
+<div id="logDetailBackdrop" class="log-modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-label="Log entry detail">
+    <div class="log-modal" id="logDetailModal">
+        <div class="log-modal-header">
+            <span class="log-modal-title" id="logModalTitle">Log Entry</span>
+            <button class="log-modal-close" id="logModalClose" aria-label="Close">&#10005;</button>
+        </div>
+        <div class="log-modal-body">
+            <div class="log-modal-badge"><span class="badge" id="logModalBadge"></span></div>
+            <div class="log-modal-date" id="logModalDate"></div>
+            <div class="log-modal-desc" id="logModalDesc"></div>
+            <div class="log-modal-photo" id="logModalPhoto" style="display:none">
+                <a id="logModalPhotoLink" href="#" target="_blank">
+                    <img id="logModalPhotoImg" src="" alt="Log photo">
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ── Gallery overlay ─────────────────────────────────────────── -->
 <div id="galleryOverlay" class="gallery-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Photo gallery">
@@ -1017,6 +1161,12 @@ function preCheckReminder() {
         }
         echo json_encode($galleryData, JSON_HEX_TAG | JSON_HEX_AMP);
     ?>;
+
+    // Always expose openGallery — it's a no-op when there are no images
+    window.openGallery = function(idx) {
+        if (!items.length) return;
+        open(idx);
+    };
 
     if (!items.length) return;
 
@@ -1050,8 +1200,6 @@ function preCheckReminder() {
         document.body.style.overflow = '';
         imgEl.src = '';
     }
-
-    window.openGallery = open;
 
     closeBtn.addEventListener('click', close);
     prevBtn.addEventListener('click', function () { show(current - 1); });

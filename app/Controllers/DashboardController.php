@@ -322,6 +322,15 @@ class DashboardController
 
         $itemTypes = require BASE_PATH . '/config/item_types.php';
 
+        // Configurable boundary types (which item types can draw polygon boundaries)
+        $defaultBoundaryTypes = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
+        $boundaryTypesRow = $db->fetchOne(
+            "SELECT setting_value_json FROM settings WHERE setting_key = 'map.boundary_types'"
+        );
+        $boundaryTypes = (!empty($boundaryTypesRow['setting_value_json']))
+            ? (json_decode($boundaryTypesRow['setting_value_json'], true) ?: $defaultBoundaryTypes)
+            : $defaultBoundaryTypes;
+
         Response::render('dashboard/map', [
             'title'            => 'Land Map',
             'mapEnabled'       => true,
@@ -332,6 +341,7 @@ class DashboardController
             'landBoundaryJson' => $hasLandBoundary ? $landBoundaryJson : 'null',
             'landName'         => $landNameSetting['setting_value_text'] ?? 'My Land',
             'itemTypes'        => $itemTypes,
+            'boundaryTypes'    => $boundaryTypes,
         ]);
     }
 

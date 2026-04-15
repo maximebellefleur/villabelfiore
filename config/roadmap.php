@@ -8,6 +8,21 @@
  */
 return [
 
+    '1.9.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'Map & Item Detail Polish',
+        'features' => [
+            ['title' => 'Google satellite tiles',         'detail' => 'Map switched from Esri to Google satellite tiles — sharper, higher zoom, no API key needed.'],
+            ['title' => 'Land boundary non-interactive',  'detail' => 'Land boundary outline is visual-only: no hover tooltip, no click events.'],
+            ['title' => 'Gallery bug fix',                'detail' => 'openGallery is now always defined on window — no more "not defined" error when an item has no images.'],
+            ['title' => 'Boundary polygon in details',    'detail' => 'Item details page shows a "Boundary" row with a link to the map and a collapsible raw GeoJSON view.'],
+            ['title' => 'Logo MIME detection fix',        'detail' => 'Logo uploads now accept image/x-png, text/xml (SVG), and other finfo variants — uploads no longer rejected for valid files.'],
+            ['title' => 'Configurable boundary types',    'detail' => 'Settings → General lets you choose which item types can draw polygon boundaries on the map.'],
+            ['title' => 'Activity log popup',             'detail' => 'Click any activity log row to open a full-detail overlay with dark backdrop. Shows action, date, full description, and attached photo.'],
+        ],
+    ],
+
     '1.9.5' => [
         'status'   => 'released',
         'released' => '2026-04-14',

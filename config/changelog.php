@@ -8,6 +8,24 @@
  */
 return [
 
+    '1.9.6' => [
+        'date'  => '2026-04-15',
+        'title' => 'Map & Item Detail Polish',
+        'new'   => [
+            'Map now uses Google satellite tiles (no API key required) with native zoom up to level 21',
+            'Activity log entries are now clickable — tap any row to open a full-detail popup with dark backdrop',
+            'Item details page shows the boundary polygon GeoJSON when a boundary is set, with a collapsible raw JSON view',
+            'Settings → General: configurable boundary types — choose which item types can draw polygon boundaries on the map',
+        ],
+        'improved' => [
+            'Logo uploads now accept all valid PNG/JPG/WebP/SVG variants regardless of what finfo reports (image/x-png, text/xml for SVG, etc.)',
+        ],
+        'fixed' => [
+            'Gallery "openGallery is not defined" error — function is now always exposed on window, even when an item has no images',
+            'Land boundary on map is now purely visual — non-interactive, no tooltip on hover',
+        ],
+    ],
+
     '1.9.5' => [
         'date'  => '2026-04-14',
         'title' => 'AI Setup Guide & Nav Logo Pair',

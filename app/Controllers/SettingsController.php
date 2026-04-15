@@ -20,11 +20,29 @@ class SettingsController
         $this->requireAuth();
         $db       = DB::getInstance();
         $settings = [];
-        $rows     = $db->fetchAll('SELECT setting_key, setting_value_text, value_type FROM settings');
+        $rows     = $db->fetchAll('SELECT setting_key, setting_value_text, setting_value_json, value_type FROM settings');
         foreach ($rows as $row) {
             $settings[$row['setting_key']] = $row['setting_value_text'];
         }
-        Response::render('settings/index', ['title' => 'Settings', 'settings' => $settings]);
+
+        // Boundary types (stored as JSON)
+        $defaultBoundaryTypes = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
+        $btRow = null;
+        foreach ($rows as $row) {
+            if ($row['setting_key'] === 'map.boundary_types') { $btRow = $row; break; }
+        }
+        $boundaryTypes = (!empty($btRow['setting_value_json']))
+            ? (json_decode($btRow['setting_value_json'], true) ?: $defaultBoundaryTypes)
+            : $defaultBoundaryTypes;
+
+        $itemTypes = require BASE_PATH . '/config/item_types.php';
+
+        Response::render('settings/index', [
+            'title'         => 'Settings',
+            'settings'      => $settings,
+            'boundaryTypes' => $boundaryTypes,
+            'itemTypes'     => $itemTypes,
+        ]);
     }
 
     public function update(Request $request, array $params = []): void
@@ -216,6 +234,31 @@ class SettingsController
         Response::redirect('/settings/weather');
     }
 
+    // ── Map settings ─────────────────────────────────────────────────────────
+
+    public function updateMap(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $itemTypes   = require BASE_PATH . '/config/item_types.php';
+        $validTypes  = array_keys($itemTypes);
+
+        // Collect checked boundary types (only valid item type keys)
+        $submitted = $_POST['boundary_types'] ?? [];
+        $selected  = array_values(array_intersect((array) $submitted, $validTypes));
+
+        DB::getInstance()->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES ('map.boundary_types', ?, 'json', 0, NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json=VALUES(setting_value_json), updated_at=NOW()",
+            [json_encode($selected)]
+        );
+
+        flash('success', 'Map settings saved.');
+        Response::redirect('/settings');
+    }
+
     // ── Logo upload ───────────────────────────────────────────────────────────
 
     public function uploadLogo(Request $request, array $params = []): void
@@ -240,19 +283,41 @@ class SettingsController
             $mime = '';
         }
 
+        // finfo can return variant MIME strings (image/x-png, text/xml for SVG, etc.)
         $allowed = [
-            'image/png'     => 'png',
-            'image/jpeg'    => 'jpg',
-            'image/webp'    => 'webp',
-            'image/svg+xml' => 'svg',
+            'image/png'       => 'png',
+            'image/x-png'     => 'png',
+            'image/jpeg'      => 'jpg',
+            'image/jpg'       => 'jpg',
+            'image/pjpeg'     => 'jpg',
+            'image/webp'      => 'webp',
+            'image/svg+xml'   => 'svg',
+            'text/xml'        => 'svg',   // some finfo builds return this for SVG
+            'application/xml' => 'svg',
+            'text/plain'      => null,    // resolved via extension below
         ];
 
-        if (!isset($allowed[$mime])) {
+        // Extension-based fallback when finfo is ambiguous
+        $origName = strtolower($file['name'] ?? '');
+        $extMap   = ['png' => 'png', 'jpg' => 'jpg', 'jpeg' => 'jpg', 'webp' => 'webp', 'svg' => 'svg'];
+        $origExt  = pathinfo($origName, PATHINFO_EXTENSION);
+        $extFallback = $extMap[$origExt] ?? null;
+
+        $ext = null;
+        if (isset($allowed[$mime]) && $allowed[$mime] !== null) {
+            $ext = $allowed[$mime];
+        } elseif (isset($allowed[$mime]) && $allowed[$mime] === null && $extFallback) {
+            // text/plain — trust extension only for svg/png/jpg/webp
+            $ext = $extFallback;
+        } elseif (!isset($allowed[$mime]) && $extFallback) {
+            // Unknown MIME but recognisable extension — use extension
+            $ext = $extFallback;
+        }
+
+        if (!$ext) {
             flash('error', 'Only PNG, JPG, WebP, or SVG files are accepted.');
             Response::redirect('/settings');
         }
-
-        $ext    = $allowed[$mime];
         $imgDir = PUBLIC_PATH . '/assets/images/';
 
         if (!is_dir($imgDir) && !@mkdir($imgDir, 0755, true)) {

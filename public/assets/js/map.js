@@ -21,7 +21,9 @@
         building:    { color: '#607d8b', label: 'Building',     icon: '🏠' },
     };
 
-    var BOUNDARY_TYPES = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
+    var BOUNDARY_TYPES = (typeof MAP_BOUNDARY_TYPES !== 'undefined' && Array.isArray(MAP_BOUNDARY_TYPES))
+        ? MAP_BOUNDARY_TYPES
+        : ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
     var LINE_TYPES = ['line']; // types that draw LineString (rows) not Polygon
     var ALL_DRAWABLE = BOUNDARY_TYPES.concat(LINE_TYPES);
 
@@ -37,10 +39,10 @@
         15
     );
 
-    // Satellite on by default
+    // Satellite on by default — Google Maps (no API key required for tile access)
     var satelliteLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 22, maxNativeZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe' }
+        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)
@@ -822,13 +824,13 @@
         if (landBoundaryLayer) { map.removeLayer(landBoundaryLayer); }
         if (!geojson) return;
         landBoundaryLayer = L.geoJSON(geojson, {
+            interactive: false,
             style: {
                 color: '#2d5a27', weight: 3, opacity: 1,
                 dashArray: '8 4',
                 fillColor: '#2d5a27', fillOpacity: 0.05,
             },
         });
-        landBoundaryLayer.bindTooltip(MAP_LAND_NAME + ' — Land Boundary', { sticky: false });
         landBoundaryLayer.addTo(map);
     }
 

@@ -251,7 +251,30 @@ ollama create my-plant-model -f Modelfile</code>
                 </div>
             </form>
         </div>
-    </div>
 
+        <!-- Map settings — boundary types -->
+        <div class="settings-group" style="margin-top:var(--spacing-6)">
+            <div class="settings-group-title">🗺 Map — Boundary Types</div>
+            <p class="settings-hint" style="margin-bottom:var(--spacing-3)">
+                Choose which item types can have a drawn polygon boundary on the map.
+                Only selected types will show the <em>Draw Boundary</em> tool in their map popup.
+            </p>
+            <form method="POST" action="<?= url('/settings/map') ?>">
+                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--spacing-2);margin-bottom:var(--spacing-4)">
+                <?php foreach ($itemTypes as $_btKey => $_btCfg): ?>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--color-border);border-radius:8px;cursor:pointer;font-size:0.875rem;<?= in_array($_btKey, $boundaryTypes) ? 'border-color:var(--color-primary);background:var(--color-primary-soft,rgba(42,167,105,.07))' : '' ?>">
+                        <input type="checkbox" name="boundary_types[]" value="<?= e($_btKey) ?>"
+                               <?= in_array($_btKey, $boundaryTypes) ? 'checked' : '' ?>
+                               style="width:16px;height:16px;accent-color:var(--color-primary)">
+                        <?= e($_btCfg['label']) ?>
+                    </label>
+                <?php endforeach; ?>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Map Settings</button>
+            </form>
+        </div>
+
+    </div>
 </div>
 

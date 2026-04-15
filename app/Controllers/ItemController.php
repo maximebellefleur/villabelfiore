@@ -206,6 +206,13 @@ class ItemController
         $metaMap = [];
         foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
 
+        // Load boundary GeoJSON if set
+        $boundaryRow    = $db->fetchOne(
+            "SELECT meta_value_text FROM item_meta WHERE item_id = ? AND meta_key = 'boundary_geojson' LIMIT 1",
+            [$id]
+        );
+        $boundaryGeojson = $boundaryRow['meta_value_text'] ?? null;
+
         Response::render('items/show', [
             'title'          => e($item['name']),
             'item'           => $item,
@@ -216,6 +223,7 @@ class ItemController
             'harvests'       => $harvests,
             'finances'       => $finances,
             'miniMapEnabled' => !empty($item['gps_lat']) && !empty($item['gps_lng']),
+            'boundaryGeojson'=> $boundaryGeojson,
         ]);
     }
 

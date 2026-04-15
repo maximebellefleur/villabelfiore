@@ -137,6 +137,7 @@ $router->post('/settings/pwa',                 'PwaController@updatePwa');
 $router->post('/settings/pwa/upload-icon',     'PwaController@uploadIcon');
 $router->get('/manifest.json',                 'PwaController@serveManifest');
 $router->get('/offline',                       'PublicController@offline');
+$router->post('/settings/map',                 'SettingsController@updateMap');
 $router->post('/settings/logo',                'SettingsController@uploadLogo');
 $router->post('/settings/logo/delete',         'SettingsController@deleteLogo');
 $router->get('/settings/calendar',             'CalendarController@index');
