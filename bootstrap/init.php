@@ -14,7 +14,9 @@ declare(strict_types=1);
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));
 }
-define('PUBLIC_PATH',  BASE_PATH . '/public');
+if (!defined('PUBLIC_PATH')) {
+    define('PUBLIC_PATH', BASE_PATH . '/public');
+}
 define('STORAGE_PATH', BASE_PATH . '/storage');
 define('APP_PATH',     BASE_PATH . '/app');
 

@@ -8,6 +8,15 @@
  */
 return [
 
+    '1.9.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'cPanel PUBLIC_PATH Fix',
+        'features' => [
+            ['title' => 'cPanel upload path fix', 'detail' => 'index.php now sets PUBLIC_PATH = __DIR__ in cPanel deployments so uploaded files (logos, attachments) are saved to the actual web root, not to the unserved rooted-files/public/ directory.'],
+        ],
+    ],
+
     '1.9.6' => [
         'status'   => 'released',
         'released' => '2026-04-15',

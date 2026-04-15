@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.7' => [
+        'date'  => '2026-04-15',
+        'title' => 'cPanel PUBLIC_PATH Fix',
+        'fixed' => [
+            'Logo uploads, attachment storage and any file written to PUBLIC_PATH now land in the correct web-accessible directory on cPanel subdirectory installs (/rooted). Previously files were saved to rooted-files/public/ (not served) instead of the actual web root.',
+        ],
+        'new'      => [],
+        'improved' => [],
+    ],
+
     '1.9.6' => [
         'date'  => '2026-04-15',
         'title' => 'Map & Item Detail Polish',

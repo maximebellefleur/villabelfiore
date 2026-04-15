@@ -12,8 +12,11 @@ declare(strict_types=1);
 // cPanel subdirectory deployment: app files are in sibling folder rooted-files/
 if (file_exists(dirname(__DIR__) . '/bootstrap/init.php')) {
     define('BASE_PATH', dirname(__DIR__));
+    // PUBLIC_PATH = BASE_PATH/public — set by bootstrap/init.php
 } else {
     define('BASE_PATH', dirname(__DIR__) . '/rooted-files');
+    // cPanel: index.php lives IN the web root, so __DIR__ IS the public path
+    define('PUBLIC_PATH', __DIR__);
 }
 
 // APP_BASE is the URL subdirectory prefix (e.g. '/rooted' or '' for root installs).
