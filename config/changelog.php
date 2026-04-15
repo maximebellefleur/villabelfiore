@@ -8,6 +8,20 @@
  */
 return [
 
+    '1.9.9' => [
+        'date'  => '2026-04-15',
+        'title' => 'Walk Perimeter Mode',
+        'new'   => [
+            'Walk Perimeter mode for land boundary: tap 🚶 Walk the Perimeter, walk around your property, tap Stop. GPS records the path continuously, rejects readings worse than ±12 m, records a new point every 1.5 m of movement.',
+            'Walk Boundary mode for zone/item boundaries: same continuous walk recording, available in the Draw Zone Boundary panel.',
+            'Both walk modes use Ramer-Douglas-Peucker simplification on finish (0.8 m tolerance) to produce a clean, minimal polygon from the raw GPS path.',
+            'Live stats while walking: "📍 42 pts · 247 m · ±4 m" updates on every GPS reading.',
+            'Walk mode rejects noisy readings (>12 m accuracy) and shows a warning until signal improves.',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '1.9.8' => [
         'date'  => '2026-04-15',
         'title' => 'Precise GPS & Better Satellite',

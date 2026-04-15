@@ -490,3 +490,60 @@
   to   { box-shadow: 0 4px 20px rgba(45,106,79,0.60); }
 }
 
+/* ── Walk-perimeter mode ─────────────────────────────────────── */
+.walk-mode-block {
+  background: color-mix(in srgb, var(--color-primary, #2d6a4f) 6%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-primary, #2d6a4f) 25%, transparent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.walk-btn { width: 100%; justify-content: center; }
+.walk-or-divider {
+  text-align: center;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin: 10px 0 8px;
+  position: relative;
+}
+.walk-or-divider::before,
+.walk-or-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 28%;
+  height: 1px;
+  background: var(--color-border);
+}
+.walk-or-divider::before { left: 0; }
+.walk-or-divider::after  { right: 0; }
+.walk-stats {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--color-primary, #2d6a4f);
+  margin-top: 8px;
+  line-height: 1.5;
+  min-height: 36px;
+}
+/* Pulsing dot while walk is active */
+.walk-recording-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #e74c3c;
+  margin-right: 5px;
+  animation: walkPulse 0.9s ease-in-out infinite alternate;
+  vertical-align: middle;
+}
+@keyframes walkPulse {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: .4; transform: scale(.7); }
+}
+

@@ -778,6 +778,9 @@
     }
 
     function clearDraw() {
+        // Stop walk mode if active
+        if (typeof stopZoneWalk === 'function') stopZoneWalk(false);
+
         drawingFinished = false;
         drawnPoints = [];
         tempMarkers.forEach(function (m) { map.removeLayer(m); });
@@ -942,6 +945,350 @@
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Geo utilities — used by walk mode
+    // -------------------------------------------------------------------------
+
+    /** Haversine distance in metres between two [lat,lng] points */
+    function haversineM(lat1, lng1, lat2, lng2) {
+        var R   = 6371000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a   = Math.sin(dLat/2) * Math.sin(dLat/2)
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng/2) * Math.sin(dLng/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    /**
+     * Ramer-Douglas-Peucker simplification.
+     * points: [[lat,lng]…], tolerance: metres
+     * Returns reduced [[lat,lng]…] array.
+     */
+    function rdp(points, toleranceM) {
+        if (points.length < 3) return points.slice();
+        var dmax = 0, idx = 0;
+        var a = points[0], b = points[points.length - 1];
+        for (var i = 1; i < points.length - 1; i++) {
+            var d = pointSegDistM(points[i], a, b);
+            if (d > dmax) { dmax = d; idx = i; }
+        }
+        if (dmax > toleranceM) {
+            var left  = rdp(points.slice(0, idx + 1), toleranceM);
+            var right = rdp(points.slice(idx),         toleranceM);
+            return left.slice(0, -1).concat(right);
+        }
+        return [a, b];
+    }
+
+    /** Perpendicular distance from point p to segment [a,b] in metres */
+    function pointSegDistM(p, a, b) {
+        var dx = b[0] - a[0], dy = b[1] - a[1];
+        if (dx === 0 && dy === 0) return haversineM(p[0], p[1], a[0], a[1]);
+        var t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+        return haversineM(p[0], p[1], a[0] + t * dx, a[1] + t * dy);
+    }
+
+    // -------------------------------------------------------------------------
+    // Walk-perimeter mode — shared constants
+    // -------------------------------------------------------------------------
+    var WALK_MIN_DIST_M  = 1.5;  // record a new point only every 1.5 m
+    var WALK_MAX_ACC_M   = 12;   // skip readings worse than 12 m accuracy
+    var WALK_SIMPLIFY_M  = 0.8;  // RDP tolerance: keep points that deviate > 0.8 m
+
+    // -------------------------------------------------------------------------
+    // Walk mode for LAND boundary
+    // -------------------------------------------------------------------------
+    var landWalkActive  = false;
+    var landWalkWatchId = null;
+    var landWalkPts     = [];       // raw walk path
+    var landWalkLine    = null;     // live polyline on map
+    var landWalkLastLat = null;
+    var landWalkLastLng = null;
+    var landWalkDist    = 0;
+
+    document.getElementById('landWalkBtn').addEventListener('click', function () {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not available on this device/browser.');
+            return;
+        }
+        startLandWalk();
+    });
+
+    document.getElementById('landWalkStopBtn').addEventListener('click', function () {
+        stopLandWalk(true);
+    });
+
+    function startLandWalk() {
+        // Clear any manually placed corners first
+        clearLandDraw();
+
+        landWalkActive  = true;
+        landWalkPts     = [];
+        landWalkDist    = 0;
+        landWalkLastLat = null;
+        landWalkLastLng = null;
+
+        document.getElementById('landWalkBtn').style.display    = 'none';
+        document.getElementById('landWalkActive').style.display = 'block';
+        document.getElementById('landWalkStats').innerHTML      =
+            '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
+
+        // Disable manual GPS button while walking
+        document.getElementById('landGpsBtn').disabled = true;
+
+        landWalkWatchId = navigator.geolocation.watchPosition(
+            onLandWalkPos,
+            function (err) {
+                if (landWalkPts.length >= 3) { stopLandWalk(true); return; }
+                stopLandWalk(false);
+                document.getElementById('landBoundaryStatus').textContent =
+                    '🔒 GPS error — check browser permissions.';
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+        );
+    }
+
+    function onLandWalkPos(pos) {
+        if (!landWalkActive) return;
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        var acc = pos.coords.accuracy;
+
+        var statsEl = document.getElementById('landWalkStats');
+
+        // Reject noisy readings
+        if (acc > WALK_MAX_ACC_M) {
+            statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+                '⚠️ Weak signal ±' + Math.round(acc) + ' m — move to open sky';
+            return;
+        }
+
+        // Distance gate — only record if moved enough
+        if (landWalkLastLat !== null) {
+            var dist = haversineM(landWalkLastLat, landWalkLastLng, lat, lng);
+            if (dist < WALK_MIN_DIST_M) {
+                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+                    landWalkPts.length + ' pts · ' + Math.round(landWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+                return;
+            }
+            landWalkDist += dist;
+        }
+
+        landWalkLastLat = lat;
+        landWalkLastLng = lng;
+        landWalkPts.push([lat, lng]);
+
+        // Update live polyline
+        if (landWalkLine) {
+            landWalkLine.setLatLngs(landWalkPts);
+        } else {
+            landWalkLine = L.polyline(landWalkPts, {
+                color: '#2d5a27', weight: 3, opacity: 0.85,
+            }).addTo(map);
+        }
+
+        // Keep map centred on the walker
+        map.panTo([lat, lng]);
+
+        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+            landWalkPts.length + ' pts · ' +
+            (landWalkDist >= 1000
+                ? (landWalkDist / 1000).toFixed(2) + ' km'
+                : Math.round(landWalkDist) + ' m') +
+            ' · ±' + Math.round(acc) + ' m';
+    }
+
+    function stopLandWalk(usePath) {
+        if (!landWalkActive && landWalkWatchId === null) return;
+        landWalkActive = false;
+        if (landWalkWatchId !== null) {
+            navigator.geolocation.clearWatch(landWalkWatchId);
+            landWalkWatchId = null;
+        }
+
+        document.getElementById('landWalkBtn').style.display    = 'inline-flex';
+        document.getElementById('landWalkActive').style.display = 'none';
+        document.getElementById('landWalkStats').innerHTML      = '';
+        document.getElementById('landGpsBtn').disabled          = false;
+
+        if (landWalkLine) { map.removeLayer(landWalkLine); landWalkLine = null; }
+
+        if (!usePath || landWalkPts.length < 3) {
+            if (usePath) {
+                document.getElementById('landBoundaryStatus').textContent =
+                    '⚠️ Not enough points (' + landWalkPts.length + '). Walk further before stopping.';
+            }
+            return;
+        }
+
+        // Simplify the path using RDP, then close the polygon
+        var simplified = rdp(landWalkPts, WALK_SIMPLIFY_M);
+        landDrawPoints = simplified;
+
+        // Draw final polygon
+        if (landTempPoly) { map.removeLayer(landTempPoly); }
+        if (landTempLine) { map.removeLayer(landTempLine); landTempLine = null; }
+        if (landTempCloseLine) { map.removeLayer(landTempCloseLine); landTempCloseLine = null; }
+
+        landTempPoly = L.polygon(landDrawPoints, {
+            color: '#2d5a27', fillColor: '#2d5a27', fillOpacity: 0.08, weight: 3, dashArray: '8 4',
+        }).addTo(map);
+        map.fitBounds(landTempPoly.getBounds(), { padding: [40, 40] });
+
+        landDrawFinished = true;
+        document.getElementById('landBoundaryStatus').textContent =
+            '✅ Path recorded: ' + landDrawPoints.length + ' points · ' +
+            Math.round(landWalkDist) + ' m perimeter. Tap Save to confirm.';
+        document.getElementById('saveLandBoundary').style.display   = 'inline-flex';
+        document.getElementById('finishLandBoundary').style.display = 'none';
+    }
+
+    // -------------------------------------------------------------------------
+    // Walk mode for ZONE boundary
+    // -------------------------------------------------------------------------
+    var zoneWalkActive  = false;
+    var zoneWalkWatchId = null;
+    var zoneWalkPts     = [];
+    var zoneWalkLine    = null;
+    var zoneWalkLastLat = null;
+    var zoneWalkLastLng = null;
+    var zoneWalkDist    = 0;
+
+    document.getElementById('zoneWalkBtn').addEventListener('click', function () {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not available on this device/browser.');
+            return;
+        }
+        startZoneWalk();
+    });
+
+    document.getElementById('zoneWalkStopBtn').addEventListener('click', function () {
+        stopZoneWalk(true);
+    });
+
+    function startZoneWalk() {
+        // Clear any manually placed corners
+        clearDraw();
+
+        zoneWalkActive  = true;
+        zoneWalkPts     = [];
+        zoneWalkDist    = 0;
+        zoneWalkLastLat = null;
+        zoneWalkLastLng = null;
+
+        document.getElementById('zoneWalkBtn').style.display    = 'none';
+        document.getElementById('zoneWalkActive').style.display = 'block';
+        document.getElementById('zoneWalkStats').innerHTML      =
+            '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
+
+        document.getElementById('zoneGpsBtn').disabled = true;
+
+        zoneWalkWatchId = navigator.geolocation.watchPosition(
+            onZoneWalkPos,
+            function (err) {
+                if (zoneWalkPts.length >= 3) { stopZoneWalk(true); return; }
+                stopZoneWalk(false);
+                document.getElementById('boundaryStatus').textContent =
+                    '🔒 GPS error — check browser permissions.';
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+        );
+    }
+
+    function onZoneWalkPos(pos) {
+        if (!zoneWalkActive) return;
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        var acc = pos.coords.accuracy;
+
+        var statsEl = document.getElementById('zoneWalkStats');
+
+        if (acc > WALK_MAX_ACC_M) {
+            statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+                '⚠️ Weak signal ±' + Math.round(acc) + ' m — move to open sky';
+            return;
+        }
+
+        if (zoneWalkLastLat !== null) {
+            var dist = haversineM(zoneWalkLastLat, zoneWalkLastLng, lat, lng);
+            if (dist < WALK_MIN_DIST_M) {
+                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+                    zoneWalkPts.length + ' pts · ' + Math.round(zoneWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+                return;
+            }
+            zoneWalkDist += dist;
+        }
+
+        zoneWalkLastLat = lat;
+        zoneWalkLastLng = lng;
+        zoneWalkPts.push([lat, lng]);
+
+        if (zoneWalkLine) {
+            zoneWalkLine.setLatLngs(zoneWalkPts);
+        } else {
+            zoneWalkLine = L.polyline(zoneWalkPts, {
+                color: '#e74c3c', weight: 3, opacity: 0.85,
+            }).addTo(map);
+        }
+
+        map.panTo([lat, lng]);
+
+        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
+            zoneWalkPts.length + ' pts · ' +
+            (zoneWalkDist >= 1000
+                ? (zoneWalkDist / 1000).toFixed(2) + ' km'
+                : Math.round(zoneWalkDist) + ' m') +
+            ' · ±' + Math.round(acc) + ' m';
+    }
+
+    function stopZoneWalk(usePath) {
+        if (!zoneWalkActive && zoneWalkWatchId === null) return;
+        zoneWalkActive = false;
+        if (zoneWalkWatchId !== null) {
+            navigator.geolocation.clearWatch(zoneWalkWatchId);
+            zoneWalkWatchId = null;
+        }
+
+        document.getElementById('zoneWalkBtn').style.display    = 'inline-flex';
+        document.getElementById('zoneWalkActive').style.display = 'none';
+        document.getElementById('zoneWalkStats').innerHTML      = '';
+        document.getElementById('zoneGpsBtn').disabled          = false;
+
+        if (zoneWalkLine) { map.removeLayer(zoneWalkLine); zoneWalkLine = null; }
+
+        if (!usePath || zoneWalkPts.length < 3) {
+            if (usePath) {
+                document.getElementById('boundaryStatus').textContent =
+                    '⚠️ Not enough points. Keep walking before stopping.';
+            }
+            return;
+        }
+
+        var simplified = rdp(zoneWalkPts, WALK_SIMPLIFY_M);
+        drawnPoints    = simplified;
+
+        if (tempPolyline)  { map.removeLayer(tempPolyline);  tempPolyline  = null; }
+        if (tempCloseLine) { map.removeLayer(tempCloseLine); tempCloseLine = null; }
+        if (tempPolygon)   { map.removeLayer(tempPolygon); }
+
+        tempPolygon = L.polygon(drawnPoints, {
+            color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.2, weight: 2,
+        }).addTo(map);
+        map.fitBounds(tempPolygon.getBounds(), { padding: [40, 40] });
+
+        drawingFinished = true;
+        document.getElementById('boundaryStatus').textContent =
+            '✅ Path recorded: ' + drawnPoints.length + ' points · ' +
+            Math.round(zoneWalkDist) + ' m perimeter. Select item and Save.';
+        document.getElementById('saveBoundary').style.display        = 'inline-flex';
+        document.getElementById('finishZoneBoundary').style.display  = 'none';
+    }
+
+    // -------------------------------------------------------------------------
+    // Land boundary — draw state
+    // -------------------------------------------------------------------------
     var landDrawActive    = false;
     var landDrawFinished  = false;
     var landDrawPoints    = [];
@@ -983,6 +1330,9 @@
     }
 
     function clearLandDraw() {
+        // Stop walk mode if active
+        stopLandWalk(false);
+
         landDrawFinished = false;
         landDrawPoints = [];
         landTempMarkers.forEach(function (m) { map.removeLayer(m); });

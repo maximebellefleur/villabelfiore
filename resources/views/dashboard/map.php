@@ -33,10 +33,24 @@
         <!-- Land boundary panel -->
         <div class="map-sidebar-section" id="landBoundaryPanel" style="display:none">
             <h3 class="map-sidebar-title">🗺 Land Boundary</h3>
+
+            <!-- Walk mode (primary on mobile) -->
+            <div class="walk-mode-block" id="landWalkBlock">
+                <button class="btn btn-primary btn-sm walk-btn" id="landWalkBtn">🚶 Walk the Perimeter</button>
+                <p class="text-muted text-sm" style="margin:4px 0 0">Walk around your land — GPS records the path automatically.</p>
+                <div id="landWalkActive" style="display:none">
+                    <div id="landWalkStats" class="walk-stats"></div>
+                    <button class="btn btn-danger btn-sm" id="landWalkStopBtn" style="width:100%;margin-top:6px">⏹ Stop &amp; Use This Path</button>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="walk-or-divider">or place corners manually</div>
+
+            <!-- Corner mode (existing) -->
             <p class="text-muted text-sm" id="landBoundaryInstructions">
                 <strong>Desktop:</strong> Click the map to place points.<br>
-                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.<br>
-                When done, tap <strong>Finish Polygon</strong> to close the shape.
+                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.
             </p>
             <div class="map-boundary-actions">
                 <button class="btn btn-secondary btn-sm" id="landGpsBtn">🎯 Add GPS Point</button>
@@ -66,10 +80,22 @@
         <!-- Zone boundary panel (accessible from item popups) -->
         <div class="map-sidebar-section" id="boundaryPanel" style="display:none">
             <h3 class="map-sidebar-title" id="boundaryPanelTitle">Draw Zone Boundary</h3>
+
+            <!-- Walk mode -->
+            <div class="walk-mode-block" id="zoneWalkBlock">
+                <button class="btn btn-primary btn-sm walk-btn" id="zoneWalkBtn">🚶 Walk the Boundary</button>
+                <p class="text-muted text-sm" style="margin:4px 0 0">Walk around the zone — GPS records the path automatically.</p>
+                <div id="zoneWalkActive" style="display:none">
+                    <div id="zoneWalkStats" class="walk-stats"></div>
+                    <button class="btn btn-danger btn-sm" id="zoneWalkStopBtn" style="width:100%;margin-top:6px">⏹ Stop &amp; Use This Path</button>
+                </div>
+            </div>
+
+            <div class="walk-or-divider">or place corners manually</div>
+
             <p class="text-muted text-sm">
-                <strong>Desktop:</strong> Click the map to place points.<br>
-                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.<br>
-                Tap a placed point to remove it and all after. Tap <strong>Finish</strong> to close the shape.
+                <strong>Desktop:</strong> Click the map.<br>
+                <strong>Mobile:</strong> Walk to each corner and tap <em>Add GPS Point</em>.
             </p>
             <div class="map-boundary-actions">
                 <button class="btn btn-secondary btn-sm" id="zoneGpsBtn">🎯 Add GPS Point</button>

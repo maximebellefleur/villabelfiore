@@ -8,6 +8,16 @@
  */
 return [
 
+    '1.9.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-15',
+        'title'    => 'Walk Perimeter Mode',
+        'features' => [
+            ['title' => 'Walk Perimeter — land boundary', 'detail' => 'Tap 🚶 Walk the Perimeter and walk your land. GPS records continuously, filtering noise >12m and recording every 1.5m of movement. RDP simplification on finish produces a clean polygon.'],
+            ['title' => 'Walk Boundary — zone/item',      'detail' => 'Same continuous walk mode available in the Draw Zone Boundary panel for gardens, beds, orchards, etc.'],
+        ],
+    ],
+
     '1.9.8' => [
         'status'   => 'released',
         'released' => '2026-04-15',
