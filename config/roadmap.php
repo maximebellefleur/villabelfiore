@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-16',
+        'title'    => 'Walk Mode GPS Fix',
+        'features' => [
+            ['title' => 'RootedGPS.subscribe API', 'detail' => 'Shared GPS stream now supports continuous subscribers. Walk mode subscribes to this instead of opening a competing watchPosition.'],
+            ['title' => 'Wake Lock during walk', 'detail' => 'Screen stays on while walking so iOS/Android does not throttle background JavaScript and pause GPS callbacks.'],
+        ],
+    ],
+
     '2.0.1' => [
         'status'   => 'released',
         'released' => '2026-04-15',

@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.0.2' => [
+        'date'  => '2026-04-16',
+        'title' => 'Walk Mode GPS Fix',
+        'new'   => [
+            'Walk mode now uses the shared RootedGPS stream (gps.js) instead of creating its own watchPosition. Eliminates the competing-watcher bug that silently killed GPS callbacks on iOS/Android.',
+            'Wake Lock API: the screen stays on automatically during a walk so background JS throttling does not pause GPS recording.',
+            'RootedGPS.subscribe(cb) API added — fires callback on every GPS update, returns an unsubscribe function.',
+        ],
+        'improved' => [
+            'gps.js watchPosition now uses maximumAge:0 (was 5000 ms) so walk mode always gets fresh readings, not cached ones.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.0.1' => [
         'date'  => '2026-04-15',
         'title' => 'Map Fixes',

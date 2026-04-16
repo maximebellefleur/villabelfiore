@@ -3,6 +3,7 @@
  * continuously-improving cached fix. No more waiting 10s for each feature.
  * Usage:  RootedGPS.get(function(pos) { pos.lat, pos.lng, pos.accuracy });
  *         RootedGPS.last()  → last known pos or null
+ *         var unsub = RootedGPS.subscribe(fn)  → fn({lat,lng,accuracy,timestamp}) on every update; call unsub() to stop
  */
 window.RootedGPS = (function () {
     'use strict';
@@ -11,6 +12,7 @@ window.RootedGPS = (function () {
     var _watchId          = null;
     var _pending          = [];        // waiting callbacks (first-fix)
     var _accuracyWatchers = [];        // callbacks that fire when accuracy improves
+    var _subscribers      = [];        // continuous subscribers — fire on every update
     var _bestAccuracy     = Infinity;  // best accuracy seen so far (m)
 
     function _store(pos) {
@@ -32,6 +34,11 @@ window.RootedGPS = (function () {
             _bestAccuracy = newAcc;
             _accuracyWatchers.forEach(function (fn) { fn(_pos); });
         }
+        // Fire continuous subscribers on every update
+        if (_subscribers.length) {
+            var subs = _subscribers.slice();
+            subs.forEach(function (fn) { fn(_pos); });
+        }
     }
 
     function _watchError(err) {
@@ -47,9 +54,27 @@ window.RootedGPS = (function () {
         if (_watchId !== null || !navigator.geolocation) return;
         _watchId = navigator.geolocation.watchPosition(_store, _watchError, {
             enableHighAccuracy: true,
-            maximumAge:         5000,
+            maximumAge:         0,       // always fresh — important for walk mode
             timeout:            20000,
         });
+    }
+
+    /**
+     * Subscribe to every GPS update (continuous stream).
+     * Returns an unsubscribe function — call it to stop receiving updates.
+     * cb({ lat, lng, accuracy, timestamp })
+     */
+    function subscribe(cb) {
+        _subscribers.push(cb);
+        start(); // ensure watch is running
+        // If we already have a recent fix, fire immediately
+        if (_pos && (Date.now() - _pos.timestamp) < 5000) {
+            try { cb(_pos); } catch (e) {}
+        }
+        return function unsubscribe() {
+            var idx = _subscribers.indexOf(cb);
+            if (idx > -1) _subscribers.splice(idx, 1);
+        };
     }
 
     /**
@@ -121,5 +146,5 @@ window.RootedGPS = (function () {
         }
     }
 
-    return { start: start, get: get, last: last, onAccuracyImprove: onAccuracyImprove };
+    return { start: start, get: get, last: last, onAccuracyImprove: onAccuracyImprove, subscribe: subscribe };
 }());

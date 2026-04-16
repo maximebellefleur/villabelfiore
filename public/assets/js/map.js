@@ -1006,15 +1006,31 @@
     var WALK_SIMPLIFY_M  = 0.8;  // RDP tolerance: keep points that deviate > 0.8 m
 
     // -------------------------------------------------------------------------
-    // Walk mode for LAND boundary
+    // Walk mode shared: Wake Lock to keep screen on while recording
     // -------------------------------------------------------------------------
-    var landWalkActive  = false;
-    var landWalkWatchId = null;
-    var landWalkPts     = [];       // raw walk path
-    var landWalkLine    = null;     // live polyline on map
-    var landWalkLastLat = null;
-    var landWalkLastLng = null;
-    var landWalkDist    = 0;
+    var _walkWakeLock = null;
+    function _acquireWakeLock() {
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').then(function (wl) {
+                _walkWakeLock = wl;
+            }).catch(function () { /* silently ignore — not critical */ });
+        }
+    }
+    function _releaseWakeLock() {
+        if (_walkWakeLock) { _walkWakeLock.release(); _walkWakeLock = null; }
+    }
+
+    // -------------------------------------------------------------------------
+    // Walk mode for LAND boundary
+    // Uses RootedGPS.subscribe — no competing watchPosition, works on iOS/Android
+    // -------------------------------------------------------------------------
+    var landWalkActive    = false;
+    var landWalkUnsub     = null;    // unsubscribe handle from RootedGPS
+    var landWalkPts       = [];
+    var landWalkLine      = null;
+    var landWalkLastLat   = null;
+    var landWalkLastLng   = null;
+    var landWalkDist      = 0;
 
     document.getElementById('landWalkBtn').addEventListener('click', function () {
         if (!navigator.geolocation) {
@@ -1029,7 +1045,6 @@
     });
 
     function startLandWalk() {
-        // Clear any manually placed corners first
         clearLandDraw();
 
         landWalkActive  = true;
@@ -1042,41 +1057,36 @@
         document.getElementById('landWalkActive').style.display = 'block';
         document.getElementById('landWalkStats').innerHTML      =
             '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
-
-        // Disable manual GPS button while walking
         document.getElementById('landGpsBtn').disabled = true;
 
-        landWalkWatchId = navigator.geolocation.watchPosition(
-            onLandWalkPos,
-            function (err) {
-                // PERMISSION_DENIED or POSITION_UNAVAILABLE — fatal, stop walk
-                if (err.code === 1) {
-                    stopLandWalk(false);
-                    document.getElementById('landBoundaryStatus').textContent =
-                        '🔒 GPS access denied — enable Location in browser settings.';
-                    return;
-                }
-                if (err.code === 2) {
-                    stopLandWalk(false);
-                    document.getElementById('landBoundaryStatus').textContent =
-                        '📡 GPS unavailable — go to an open area and try again.';
-                    return;
-                }
-                // TIMEOUT (code 3) — just keep waiting, show warning in stats
-                var statsEl = document.getElementById('landWalkStats');
-                if (statsEl) {
-                    statsEl.innerHTML = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
-                }
-            },
-            { enableHighAccuracy: true, maximumAge: 0 }  // no timeout — wait as long as needed
-        );
+        _acquireWakeLock();
+
+        // Use shared RootedGPS stream — no competing watchPosition
+        landWalkUnsub = window.RootedGPS
+            ? RootedGPS.subscribe(onLandWalkPos)
+            : (function () {
+                // Fallback if gps.js not loaded yet (shouldn't happen in practice)
+                var wid = navigator.geolocation.watchPosition(
+                    function (p) { onLandWalkPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }); },
+                    function () {},
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+                return function () { navigator.geolocation.clearWatch(wid); };
+            })();
     }
 
-    function onLandWalkPos(pos) {
+    function onLandWalkPos(gpsPos) {
         if (!landWalkActive) return;
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
-        var acc = pos.coords.accuracy;
+        if (!gpsPos) {
+            // null = permission denied from RootedGPS
+            stopLandWalk(false);
+            document.getElementById('landBoundaryStatus').textContent =
+                '🔒 GPS access denied — enable Location in browser settings.';
+            return;
+        }
+        var lat = gpsPos.lat;
+        var lng = gpsPos.lng;
+        var acc = gpsPos.accuracy;
 
         var statsEl = document.getElementById('landWalkStats');
 
@@ -1123,12 +1133,10 @@
     }
 
     function stopLandWalk(usePath) {
-        if (!landWalkActive && landWalkWatchId === null) return;
+        if (!landWalkActive && landWalkUnsub === null) return;
         landWalkActive = false;
-        if (landWalkWatchId !== null) {
-            navigator.geolocation.clearWatch(landWalkWatchId);
-            landWalkWatchId = null;
-        }
+        if (landWalkUnsub) { landWalkUnsub(); landWalkUnsub = null; }
+        _releaseWakeLock();
 
         document.getElementById('landWalkBtn').style.display    = 'inline-flex';
         document.getElementById('landWalkActive').style.display = 'none';
@@ -1171,7 +1179,7 @@
     // Walk mode for ZONE boundary
     // -------------------------------------------------------------------------
     var zoneWalkActive  = false;
-    var zoneWalkWatchId = null;
+    var zoneWalkUnsub   = null;
     var zoneWalkPts     = [];
     var zoneWalkLine    = null;
     var zoneWalkLastLat = null;
@@ -1207,36 +1215,31 @@
 
         document.getElementById('zoneGpsBtn').disabled = true;
 
-        zoneWalkWatchId = navigator.geolocation.watchPosition(
-            onZoneWalkPos,
-            function (err) {
-                if (err.code === 1) {
-                    stopZoneWalk(false);
-                    document.getElementById('boundaryStatus').textContent =
-                        '🔒 GPS access denied — enable Location in browser settings.';
-                    return;
-                }
-                if (err.code === 2) {
-                    stopZoneWalk(false);
-                    document.getElementById('boundaryStatus').textContent =
-                        '📡 GPS unavailable — go to an open area and try again.';
-                    return;
-                }
-                // TIMEOUT — keep waiting
-                var statsEl = document.getElementById('zoneWalkStats');
-                if (statsEl) {
-                    statsEl.innerHTML = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
-                }
-            },
-            { enableHighAccuracy: true, maximumAge: 0 }  // no timeout
-        );
+        _acquireWakeLock();
+
+        zoneWalkUnsub = window.RootedGPS
+            ? RootedGPS.subscribe(onZoneWalkPos)
+            : (function () {
+                var wid = navigator.geolocation.watchPosition(
+                    function (p) { onZoneWalkPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }); },
+                    function () {},
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+                return function () { navigator.geolocation.clearWatch(wid); };
+            })();
     }
 
-    function onZoneWalkPos(pos) {
+    function onZoneWalkPos(gpsPos) {
         if (!zoneWalkActive) return;
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
-        var acc = pos.coords.accuracy;
+        if (!gpsPos) {
+            stopZoneWalk(false);
+            document.getElementById('boundaryStatus').textContent =
+                '🔒 GPS access denied — enable Location in browser settings.';
+            return;
+        }
+        var lat = gpsPos.lat;
+        var lng = gpsPos.lng;
+        var acc = gpsPos.accuracy;
 
         var statsEl = document.getElementById('zoneWalkStats');
 
@@ -1279,12 +1282,10 @@
     }
 
     function stopZoneWalk(usePath) {
-        if (!zoneWalkActive && zoneWalkWatchId === null) return;
+        if (!zoneWalkActive && zoneWalkUnsub === null) return;
         zoneWalkActive = false;
-        if (zoneWalkWatchId !== null) {
-            navigator.geolocation.clearWatch(zoneWalkWatchId);
-            zoneWalkWatchId = null;
-        }
+        if (zoneWalkUnsub) { zoneWalkUnsub(); zoneWalkUnsub = null; }
+        _releaseWakeLock();
 
         document.getElementById('zoneWalkBtn').style.display    = 'inline-flex';
         document.getElementById('zoneWalkActive').style.display = 'none';
