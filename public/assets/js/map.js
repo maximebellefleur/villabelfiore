@@ -39,10 +39,10 @@
         15
     );
 
-    // Satellite on by default — Esri World Imagery (free, no API key, zoom 19+ for Italy)
+    // Satellite on by default — Google Maps satellite (zoom 21, best rural/agricultural coverage)
     var satelliteLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 22, maxNativeZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics' }
+        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
     ).addTo(map);
 
     // OSM road overlay (labels on top of satellite)

@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.0.3' => [
+        'date'  => '2026-04-17',
+        'title' => 'Edit Form Fields & Google Satellite',
+        'new'   => [],
+        'improved' => [
+            'Item edit form now shows the same type-specific meta fields as the create form — with dropdowns, custom tree types, and all required/optional fields from the type config. Existing values are pre-populated.',
+            'Edit form uses the shared RootedGPS service for location detection (same as create form), replacing the older direct getCurrentPosition call.',
+            'Satellite tiles switched back to Google Maps (maxNativeZoom 21) — matches the desktop view the user preferred, with real tile detail up to zoom 21 vs Esri\'s zoom 19.',
+        ],
+        'fixed' => [
+            'Edit form was missing meta fields that were never filled at creation time. Now all fields from required_meta and optional_meta are always shown.',
+        ],
+    ],
+
     '2.0.2' => [
         'date'  => '2026-04-16',
         'title' => 'Walk Mode GPS Fix',

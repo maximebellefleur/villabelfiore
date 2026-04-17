@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-17',
+        'title'    => 'Edit Form Fields & Google Satellite',
+        'features' => [
+            ['title' => 'Edit form: full meta fields', 'detail' => 'Item edit now shows all type-specific fields (required + optional) with dropdowns and custom tree type support. Values pre-populated from DB.'],
+            ['title' => 'Google satellite tiles',       'detail' => 'Switched back to Google Maps satellite (maxNativeZoom 21). Two extra zoom levels of real imagery vs Esri standard (19).'],
+        ],
+    ],
+
     '2.0.2' => [
         'status'   => 'released',
         'released' => '2026-04-16',

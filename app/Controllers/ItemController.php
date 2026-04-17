@@ -369,8 +369,12 @@ class ItemController
         $metaMap = [];
         foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
 
-        $itemTypes = require BASE_PATH . '/config/item_types.php';
-        Response::render('items/edit', ['title' => 'Edit ' . e($item['name']), 'item' => $item, 'meta' => $metaMap, 'itemTypes' => $itemTypes]);
+        $itemTypes   = require BASE_PATH . '/config/item_types.php';
+        $row         = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
+        $customTypes = ($row && !empty($row['setting_value_json']))
+            ? (json_decode($row['setting_value_json'], true) ?: [])
+            : [];
+        Response::render('items/edit', ['title' => 'Edit ' . e($item['name']), 'item' => $item, 'meta' => $metaMap, 'itemTypes' => $itemTypes, 'customTypes' => $customTypes]);
     }
 
     public function update(Request $request, array $params = []): void
