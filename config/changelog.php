@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.0.4' => [
+        'date'  => '2026-04-17',
+        'title' => 'Multi-Photo Upload',
+        'new'   => [
+            'Photos page now accepts multiple files at once — tap "Add Photos" and select as many as you want. All selected images share the same category and caption.',
+            'Sequential upload queue with per-file progress: "2 / 5 · Uploading… 64%" so you always see which file is in flight.',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '2.0.3' => [
         'date'  => '2026-04-17',
         'title' => 'Edit Form Fields & Google Satellite',

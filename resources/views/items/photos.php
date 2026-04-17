@@ -50,8 +50,8 @@ $gallery = array_values($gallery);
         </select>
         <label class="photos-add-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.5" cy="7.5" r="1"/></svg>
-            Add Photo
-            <input type="file" id="photosFileInput" accept="image/*,application/pdf" style="display:none">
+            Add Photos
+            <input type="file" id="photosFileInput" accept="image/*,application/pdf" multiple style="display:none">
         </label>
     </div>
     <!-- Custom category input (shown when Other… is selected) -->
@@ -196,19 +196,52 @@ $gallery = array_values($gallery);
         customCatRow.style.display = catSelect.value === '__custom__' ? 'block' : 'none';
     });
 
-    function doUpload(file) {
-        if (!file) return;
+    // Upload queue — sequential so server isn't overwhelmed
+    var _queue      = [];
+    var _queueTotal = 0;
+    var _queueDone  = 0;
+
+    function enqueueFiles(files) {
+        if (!files || !files.length) return;
+        _queue      = Array.from(files);
+        _queueTotal = _queue.length;
+        _queueDone  = 0;
         errorEl.textContent = ''; errorEl.style.display = 'none';
         successEl.style.display = 'none';
-        fillEl.style.width = '0%';
-        progEl.style.display = 'block';
-        progText.textContent = 'Compressing…';
         zone.style.pointerEvents = 'none';
         zone.style.opacity = '0.5';
+        uploadNext();
+    }
+
+    function uploadNext() {
+        if (!_queue.length) {
+            // All done
+            fillEl.style.width = '100%';
+            progText.textContent = _queueTotal > 1
+                ? '✅ ' + _queueTotal + ' photos saved!'
+                : '✅ Photo saved!';
+            setTimeout(function() {
+                progEl.style.display = 'none';
+                zone.style.pointerEvents = '';
+                zone.style.opacity = '';
+                successEl.style.display = 'block';
+                document.getElementById('photosFileInput').value = '';
+                setTimeout(function() { window.location.reload(); }, 800);
+            }, 400);
+            return;
+        }
+
+        var file     = _queue.shift();
+        _queueDone  += 1;
+        var label    = _queueTotal > 1 ? _queueDone + ' / ' + _queueTotal + ' · ' : '';
+
+        fillEl.style.width = '0%';
+        progEl.style.display = 'block';
+        progText.textContent = label + 'Compressing…';
 
         compressImage(file, function(compressed) {
             fillEl.style.width = '5%';
-            progText.textContent = 'Uploading…';
+            progText.textContent = label + 'Uploading…';
 
             var fd = new FormData();
             fd.append('file', compressed);
@@ -226,29 +259,25 @@ $gallery = array_values($gallery);
             var xhr = new XMLHttpRequest();
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
-                    var pct = Math.min(95, Math.round(e.loaded / e.total * 95) + 5);
+                    var pct = Math.min(95, Math.round(e.loaded / e.total * 90) + 5);
                     fillEl.style.width = pct + '%';
-                    progText.textContent = pct < 95 ? pct + '%' : 'Saving…';
+                    progText.textContent = label + (pct < 95 ? pct + '%' : 'Saving…');
                 }
             });
             xhr.addEventListener('load', function() {
-                fillEl.style.width = '100%';
                 var res; try { res = JSON.parse(xhr.responseText); } catch(ex){}
-                setTimeout(function() {
+                if (xhr.status === 200 && res && res.success) {
+                    uploadNext(); // proceed to next file
+                } else {
                     progEl.style.display = 'none';
                     zone.style.pointerEvents = '';
                     zone.style.opacity = '';
-                    if (xhr.status === 200 && res && res.success) {
-                        successEl.style.display = 'block';
-                        setTimeout(function() { window.location.reload(); }, 800);
-                    } else {
-                        var msg = (res && (res.error || res.message))
-                            ? (res.error || res.message)
-                            : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0,120).replace(/<[^>]+>/g,'').trim());
-                        showError(msg);
-                    }
+                    var msg = (res && (res.error || res.message))
+                        ? (res.error || res.message)
+                        : ('Upload failed (HTTP ' + xhr.status + '): ' + xhr.responseText.substring(0,120).replace(/<[^>]+>/g,'').trim());
+                    showError(msg);
                     document.getElementById('photosFileInput').value = '';
-                }, 300);
+                }
             });
             xhr.addEventListener('error', function() {
                 progEl.style.display = 'none';
@@ -263,9 +292,8 @@ $gallery = array_values($gallery);
         });
     }
 
-    // Single input, single change event — no capture / no focus fallback
     document.getElementById('photosFileInput').addEventListener('change', function() {
-        doUpload(this.files[0]);
+        enqueueFiles(this.files);
     });
 
     function showError(msg) {

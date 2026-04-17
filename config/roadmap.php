@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.0.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-17',
+        'title'    => 'Multi-Photo Upload',
+        'features' => [
+            ['title' => 'Multiple photo upload', 'detail' => 'File input now has the multiple attribute. Files are uploaded sequentially with shared caption and category. Progress shows "2 / 5 · 64%".'],
+        ],
+    ],
+
     '2.0.3' => [
         'status'   => 'released',
         'released' => '2026-04-17',
