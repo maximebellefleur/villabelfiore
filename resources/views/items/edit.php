@@ -487,7 +487,7 @@ function wireCustomTreeType() {
         var fd = new FormData();
         fd.append('label', label); fd.append('_token', CSRF_TOKEN_ITEM);
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', window.APP_BASE + 'settings/tree-types/add', true);
+        xhr.open('POST', window.APP_BASE + '/settings/tree-types/add', true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.addEventListener('load', function () {
             var res; try { res = JSON.parse(xhr.responseText); } catch (e) {}

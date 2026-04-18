@@ -387,7 +387,7 @@ function saveCategory(id, cat, sel) {
     fd.append('_token', CSRF_TOKEN);
     fd.append('_ajax', '1');
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/category', true);
+    xhr.open('POST', window.APP_BASE + '/attachments/' + id + '/category', true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.addEventListener('load', function() {
         var res; try { res = JSON.parse(xhr.responseText); } catch(e){}
@@ -435,7 +435,7 @@ document.querySelectorAll('.photos-caption-save').forEach(function(btn) {
         fd.append('_token', CSRF_TOKEN);
         fd.append('_ajax', '1');
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', window.APP_BASE + 'attachments/' + id + '/caption', true);
+        xhr.open('POST', window.APP_BASE + '/attachments/' + id + '/caption', true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.addEventListener('load', function() {
             var res; try { res = JSON.parse(xhr.responseText); } catch(e){}

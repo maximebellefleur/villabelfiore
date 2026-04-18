@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.0.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Fix APP_BASE URL Bug',
+        'features' => [
+            ['title' => 'APP_BASE slash fix', 'detail' => 'All AJAX URLs that concatenated window.APP_BASE + path now correctly include a leading slash on the path segment, preventing broken URLs like /rootedpath instead of /rooted/path.'],
+        ],
+    ],
+
     '2.0.7' => [
         'status'   => 'released',
         'released' => '2026-04-18',

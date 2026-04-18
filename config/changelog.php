@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.0.8' => [
+        'date'  => '2026-04-18',
+        'title' => 'Fix APP_BASE URL Bug',
+        'new'   => [],
+        'improved' => [],
+        'fixed' => [
+            'Tree-type "Save as new type" now works correctly — the AJAX POST URL was malformed due to APP_BASE having no trailing slash, causing /rootedpath instead of /rooted/path. Fixed in create, edit, and photos views.',
+            'Photo category and caption AJAX calls in the photos gallery view were also affected by the same APP_BASE slash bug and are now fixed.',
+        ],
+    ],
+
     '2.0.7' => [
         'date'  => '2026-04-18',
         'title' => 'Boundary Walk in Edit Item',
