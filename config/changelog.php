@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.1.0' => [
+        'date'  => '2026-04-18',
+        'title' => 'Walk Mode Live Feedback',
+        'new'   => [
+            'Red "⏺ REC · X pts · Y m · ±Z m" overlay banner on the map itself — visible while GPS walk is recording, impossible to miss.',
+            'Live position dot (red circle) follows your GPS position on the map during walk mode, so you can see the trail being drawn behind you.',
+        ],
+        'improved' => [
+            '"Add GPS Point" now shows a toast notification on the map ("📍 Point 3 saved · ±4 m") in addition to the sidebar status text.',
+            'Service worker bumped to v5 to push updated map.js and map.css to all PWA installs.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.0.9' => [
         'date'  => '2026-04-18',
         'title' => 'Yearly Compass Survey',

@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Walk Mode Live Feedback',
+        'features' => [
+            ['title' => 'Recording overlay on map', 'detail' => 'A red pill banner "⏺ REC · 12 pts · 45 m · ±3 m" appears on the map canvas itself while GPS walk is active — no need to look at the sidebar.'],
+            ['title' => 'Live GPS position dot', 'detail' => 'A red dot follows your position on the map during walk mode so you can see the path being traced behind you in real time.'],
+            ['title' => 'Toast on GPS point save', 'detail' => '"📍 Point N saved · ±X m" toast pops on the map each time a manual GPS corner is added.'],
+        ],
+    ],
+
     '2.0.9' => [
         'status'   => 'released',
         'released' => '2026-04-18',

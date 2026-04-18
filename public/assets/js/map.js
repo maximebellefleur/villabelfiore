@@ -559,6 +559,7 @@
             updateLandTempLines();
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
             showGpsStatus(statusEl, '✅ Point ' + landDrawPoints.length + ' added · ±' + Math.round(acc) + ' m', 'success');
+            showToast('📍 Point ' + landDrawPoints.length + ' saved · ±' + Math.round(acc) + ' m');
             setTimeout(function () { hideGpsStatus(statusEl); }, 3000);
         }, statusEl, btn);
     });
@@ -596,6 +597,7 @@
             map.setView([lat, lng], Math.max(map.getZoom(), 18));
             updateDrawStatus();
             showGpsStatus(statusEl, '✅ Point ' + drawnPoints.length + ' added · ±' + Math.round(acc) + ' m', 'success');
+            showToast('📍 Point ' + drawnPoints.length + ' saved · ±' + Math.round(acc) + ' m');
             setTimeout(function () { hideGpsStatus(statusEl); }, 3000);
         }, statusEl, btn);
     });
@@ -718,6 +720,46 @@
         toastEl.textContent = msg;
         document.body.appendChild(toastEl);
         toastEl._timer = setTimeout(function () { if (toastEl) { toastEl.remove(); toastEl = null; } }, 3500);
+    }
+
+    // ── Walk recording overlay — shown ON the map while GPS walk is active ──────
+    var _walkOverlayEl  = null;
+    var _walkPosMarker  = null;
+
+    function _ensureWalkOverlay() {
+        if (_walkOverlayEl) return;
+        _walkOverlayEl = document.createElement('div');
+        _walkOverlayEl.id = 'walkRecordingOverlay';
+        _walkOverlayEl.innerHTML = '<span class="walk-rec-dot"></span><span id="walkRecordingText">Waiting for GPS…</span>';
+        _walkOverlayEl.style.display = 'none';
+        map.getContainer().appendChild(_walkOverlayEl);
+    }
+
+    function showWalkOverlay(text) {
+        _ensureWalkOverlay();
+        var el = document.getElementById('walkRecordingText');
+        if (el) el.textContent = text;
+        _walkOverlayEl.style.display = 'flex';
+    }
+
+    function hideWalkOverlay() {
+        if (_walkOverlayEl) _walkOverlayEl.style.display = 'none';
+    }
+
+    function updateWalkPosMarker(lat, lng) {
+        if (_walkPosMarker) {
+            _walkPosMarker.setLatLng([lat, lng]);
+        } else {
+            _walkPosMarker = L.circleMarker([lat, lng], {
+                radius: 9, color: '#fff', weight: 3,
+                fillColor: '#e74c3c', fillOpacity: 1,
+                interactive: false,
+            }).addTo(map);
+        }
+    }
+
+    function removeWalkPosMarker() {
+        if (_walkPosMarker) { map.removeLayer(_walkPosMarker); _walkPosMarker = null; }
     }
 
     // -------------------------------------------------------------------------
@@ -1059,6 +1101,7 @@
             '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
         document.getElementById('landGpsBtn').disabled = true;
 
+        showWalkOverlay('Waiting for GPS…');
         _acquireWakeLock();
 
         // Use shared RootedGPS stream — no competing watchPosition
@@ -1094,18 +1137,23 @@
         if (acc > WALK_MAX_ACC_M) {
             statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
                 '⚠️ Weak signal ±' + Math.round(acc) + ' m — move to open sky';
+            showWalkOverlay('⚠️ Weak GPS ±' + Math.round(acc) + ' m');
+            updateWalkPosMarker(lat, lng);
             return;
         }
 
+        updateWalkPosMarker(lat, lng);
+
         // Distance gate — only record if moved enough
         if (landWalkLastLat !== null) {
-            var dist = haversineM(landWalkLastLat, landWalkLastLng, lat, lng);
-            if (dist < WALK_MIN_DIST_M) {
-                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
-                    landWalkPts.length + ' pts · ' + Math.round(landWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+            var ldist = haversineM(landWalkLastLat, landWalkLastLng, lat, lng);
+            if (ldist < WALK_MIN_DIST_M) {
+                var lMovingText = landWalkPts.length + ' pts · ' + Math.round(landWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' + lMovingText;
+                showWalkOverlay('⏺ REC · ' + lMovingText);
                 return;
             }
-            landWalkDist += dist;
+            landWalkDist += ldist;
         }
 
         landWalkLastLat = lat;
@@ -1124,12 +1172,12 @@
         // Keep map centred on the walker
         map.panTo([lat, lng]);
 
-        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
-            landWalkPts.length + ' pts · ' +
-            (landWalkDist >= 1000
-                ? (landWalkDist / 1000).toFixed(2) + ' km'
-                : Math.round(landWalkDist) + ' m') +
-            ' · ±' + Math.round(acc) + ' m';
+        var lDistLabel = landWalkDist >= 1000
+            ? (landWalkDist / 1000).toFixed(2) + ' km'
+            : Math.round(landWalkDist) + ' m';
+        var lStatsText = landWalkPts.length + ' pts · ' + lDistLabel + ' · ±' + Math.round(acc) + ' m';
+        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' + lStatsText;
+        showWalkOverlay('⏺ REC · ' + lStatsText);
     }
 
     function stopLandWalk(usePath) {
@@ -1137,6 +1185,8 @@
         landWalkActive = false;
         if (landWalkUnsub) { landWalkUnsub(); landWalkUnsub = null; }
         _releaseWakeLock();
+        hideWalkOverlay();
+        removeWalkPosMarker();
 
         document.getElementById('landWalkBtn').style.display    = 'inline-flex';
         document.getElementById('landWalkActive').style.display = 'none';
@@ -1215,6 +1265,7 @@
 
         document.getElementById('zoneGpsBtn').disabled = true;
 
+        showWalkOverlay('Waiting for GPS…');
         _acquireWakeLock();
 
         zoneWalkUnsub = window.RootedGPS
@@ -1246,14 +1297,19 @@
         if (acc > WALK_MAX_ACC_M) {
             statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
                 '⚠️ Weak signal ±' + Math.round(acc) + ' m — move to open sky';
+            showWalkOverlay('⚠️ Weak GPS ±' + Math.round(acc) + ' m');
+            updateWalkPosMarker(lat, lng);
             return;
         }
+
+        updateWalkPosMarker(lat, lng);
 
         if (zoneWalkLastLat !== null) {
             var dist = haversineM(zoneWalkLastLat, zoneWalkLastLng, lat, lng);
             if (dist < WALK_MIN_DIST_M) {
-                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
-                    zoneWalkPts.length + ' pts · ' + Math.round(zoneWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+                var movingText = zoneWalkPts.length + ' pts · ' + Math.round(zoneWalkDist) + ' m · ±' + Math.round(acc) + ' m';
+                statsEl.innerHTML = '<span class="walk-recording-dot"></span>' + movingText;
+                showWalkOverlay('⏺ REC · ' + movingText);
                 return;
             }
             zoneWalkDist += dist;
@@ -1273,12 +1329,12 @@
 
         map.panTo([lat, lng]);
 
-        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' +
-            zoneWalkPts.length + ' pts · ' +
-            (zoneWalkDist >= 1000
-                ? (zoneWalkDist / 1000).toFixed(2) + ' km'
-                : Math.round(zoneWalkDist) + ' m') +
-            ' · ±' + Math.round(acc) + ' m';
+        var distLabel = zoneWalkDist >= 1000
+            ? (zoneWalkDist / 1000).toFixed(2) + ' km'
+            : Math.round(zoneWalkDist) + ' m';
+        var statsText = zoneWalkPts.length + ' pts · ' + distLabel + ' · ±' + Math.round(acc) + ' m';
+        statsEl.innerHTML = '<span class="walk-recording-dot"></span>' + statsText;
+        showWalkOverlay('⏺ REC · ' + statsText);
     }
 
     function stopZoneWalk(usePath) {
@@ -1286,6 +1342,8 @@
         zoneWalkActive = false;
         if (zoneWalkUnsub) { zoneWalkUnsub(); zoneWalkUnsub = null; }
         _releaseWakeLock();
+        hideWalkOverlay();
+        removeWalkPosMarker();
 
         document.getElementById('zoneWalkBtn').style.display    = 'inline-flex';
         document.getElementById('zoneWalkActive').style.display = 'none';

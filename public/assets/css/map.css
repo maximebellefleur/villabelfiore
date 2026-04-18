@@ -547,3 +547,33 @@
   to   { opacity: .4; transform: scale(.7); }
 }
 
+/* ── Walk recording overlay — shown ON the map while GPS walk is active ── */
+#walkRecordingOverlay {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(220, 53, 69, 0.93);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 3px 14px rgba(220,53,69,.45);
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: .01em;
+}
+.walk-rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+  animation: walkPulse 0.8s ease-in-out infinite alternate;
+}
+
