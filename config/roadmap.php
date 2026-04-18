@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Edit Meta Save & Google Mini-Map',
+        'features' => [
+            ['title' => 'Edit form saves meta fields', 'detail' => 'The update action now persists all type-specific meta fields (variety, tree_type, soil, irrigation, sun, etc.) to item_meta. Empty fields are deleted. Previously edit silently discarded all meta changes.'],
+            ['title' => 'Google satellite on mini-map', 'detail' => 'Item create/edit forms now use Google Maps satellite (maxNativeZoom 21) instead of Esri (max 19) — same tiles and zoom as the main land map.'],
+        ],
+    ],
+
     '2.0.4' => [
         'status'   => 'released',
         'released' => '2026-04-17',

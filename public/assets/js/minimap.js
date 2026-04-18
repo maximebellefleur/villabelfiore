@@ -20,18 +20,19 @@
 
     if (!readOnly && (!latInput || !lngInput)) return;
 
-    var miniMap = L.map('miniMap', { zoomControl: true, dragging: !readOnly, scrollWheelZoom: !readOnly })
+    var miniMap = L.map('miniMap', { zoomControl: true, dragging: !readOnly, scrollWheelZoom: !readOnly, maxZoom: 22 })
                    .setView([initialLat, initialLng], hasCoords ? 16 : 5);
 
-    // Satellite by default
+    // Satellite by default — Google Maps (same source as main map, zoom 21)
     L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { subdomains: ['0','1','2','3'], maxZoom: 22, maxNativeZoom: 21, attribution: 'Map data &copy; Google' }
     ).addTo(miniMap);
 
     // Road labels on top
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 21,
+        maxZoom: 22,
+        maxNativeZoom: 19,
         opacity: 0.35,
         attribution: '© OpenStreetMap',
     }).addTo(miniMap);

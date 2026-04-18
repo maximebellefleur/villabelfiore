@@ -153,7 +153,8 @@ class ItemController
 
         // Save meta fields
         $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
-                     'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled'];
+                     'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
+                     'tree_type'];
         foreach ($metaKeys as $key) {
             if (isset($data['meta'][$key]) && $data['meta'][$key] !== '') {
                 $db->execute(
@@ -406,6 +407,26 @@ class ItemController
                 $id,
             ]
         );
+
+        // Save meta fields
+        $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
+                     'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
+                     'tree_type'];
+        foreach ($metaKeys as $key) {
+            if (isset($data['meta'][$key])) {
+                $val = $data['meta'][$key];
+                if ($val !== '') {
+                    $db->execute(
+                        'INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+                         VALUES (?,?,?,?,NOW(),NOW())
+                         ON DUPLICATE KEY UPDATE meta_value_text=VALUES(meta_value_text), updated_at=NOW()',
+                        [$id, $key, $val, 'text']
+                    );
+                } else {
+                    $db->execute('DELETE FROM item_meta WHERE item_id = ? AND meta_key = ?', [$id, $key]);
+                }
+            }
+        }
 
         $db->execute(
             'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,?,NOW())',

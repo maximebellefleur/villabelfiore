@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.0.5' => [
+        'date'  => '2026-04-18',
+        'title' => 'Edit Meta Save & Google Mini-Map',
+        'new'   => [],
+        'improved' => [
+            'Mini-map on item create/edit forms now uses Google Maps satellite tiles (matching the main map) — same zoom levels (native 21) and identical imagery.',
+        ],
+        'fixed' => [
+            'Editing an existing item now correctly saves all type-specific meta fields (variety, tree type, soil, irrigation, etc.). Previously the update action ignored all meta[] POST data and values were silently discarded.',
+            'tree_type field now included in both create and update meta save lists.',
+        ],
+    ],
+
     '2.0.4' => [
         'date'  => '2026-04-17',
         'title' => 'Multi-Photo Upload',
