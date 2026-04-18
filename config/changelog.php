@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.0.9' => [
+        'date'  => '2026-04-18',
+        'title' => 'Yearly Compass Survey',
+        'new'   => [
+            'Annual compass survey: tap "🧭 Survey" on any item\'s page to start a guided 4-photo capture flow (South → East → North → West). One tap per direction, thumbnail preview after each, then upload all 4 at once with a single button. Photos are saved directly to the item gallery as yearly_refresh_* categories.',
+        ],
+        'improved' => [
+            'Quick action bar on item page now has 5 buttons (added Survey alongside Add Photo, Reminder, Log, AI).',
+            'Survey uses rear camera directly via capture="environment" — no gallery picker, no extra taps.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.0.8' => [
         'date'  => '2026-04-18',
         'title' => 'Fix APP_BASE URL Bug',

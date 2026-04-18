@@ -111,6 +111,10 @@ $recentReminders = array_slice($reminders, 0, 3);
         <span class="show-qa-icon" id="aiPromptIcon">🤖</span>
         <span class="show-qa-label" id="aiPromptLabel">Copy AI</span>
     </button>
+    <button class="show-qa-btn" id="surveyStartBtn">
+        <span class="show-qa-icon">🧭</span>
+        <span class="show-qa-label">Survey</span>
+    </button>
 </div>
 
 <!-- =========================================================
@@ -934,7 +938,7 @@ function preCheckReminder() {
 
 /* Quick actions */
 .show-quick-actions {
-    display:grid;grid-template-columns:repeat(4,1fr);gap:var(--spacing-2);
+    display:grid;grid-template-columns:repeat(5,1fr);gap:var(--spacing-2);
     margin-bottom:var(--spacing-4);
 }
 .show-qa-btn {
@@ -1162,6 +1166,373 @@ function preCheckReminder() {
         </div>
     </div>
 </div>
+
+<!-- ── Yearly Compass Survey modal ────────────────────────────── -->
+<div id="surveyBackdrop" class="survey-backdrop" style="display:none" role="dialog" aria-modal="true" aria-label="Compass survey">
+    <div class="survey-modal" id="surveyModal">
+        <div class="survey-modal-header">
+            <span class="survey-modal-title">🧭 Annual Survey</span>
+            <button class="survey-modal-close" id="surveyClose" aria-label="Close">&#10005;</button>
+        </div>
+        <div class="survey-modal-body" id="surveyBody">
+            <!-- injected by JS -->
+        </div>
+    </div>
+</div>
+<!-- hidden camera input (reused per step) -->
+<input type="file" id="surveyFileInput" accept="image/*" capture="environment"
+       style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;overflow:hidden">
+
+<style>
+/* ── Survey modal ───────────────────────────────────────────── */
+.survey-backdrop {
+    position:fixed;inset:0;z-index:5000;
+    background:rgba(0,0,0,.78);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+    animation:logFadeIn .18s ease;
+}
+.survey-modal {
+    background:var(--color-surface);
+    border-radius:20px;
+    width:100%;max-width:420px;
+    max-height:92vh;overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,.5);
+    animation:logSlideUp .22s cubic-bezier(.25,.8,.25,1);
+}
+.survey-modal-header {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px 14px;
+    border-bottom:1px solid var(--color-border);
+}
+.survey-modal-title { font-weight:800;font-size:1rem;letter-spacing:.01em; }
+.survey-modal-close {
+    background:none;border:none;font-size:1.1rem;cursor:pointer;
+    color:var(--color-text-muted);padding:4px 8px;border-radius:6px;
+    transition:background .12s;
+}
+.survey-modal-close:hover { background:var(--color-border); }
+.survey-modal-body { padding:20px; }
+
+/* Step card */
+.survey-step {
+    text-align:center;
+    padding:8px 0 4px;
+}
+.survey-step-counter {
+    font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--color-text-muted);margin-bottom:6px;
+}
+.survey-direction-arrow {
+    font-size:4rem;line-height:1;margin:8px 0;
+    display:block;
+}
+.survey-direction-label {
+    font-size:1.3rem;font-weight:900;letter-spacing:-.02em;
+    margin-bottom:4px;color:var(--color-text);
+}
+.survey-direction-hint {
+    font-size:.82rem;color:var(--color-text-muted);margin-bottom:20px;
+}
+.survey-thumb-wrap {
+    margin:12px auto 16px;
+    width:140px;height:105px;
+    border-radius:12px;overflow:hidden;
+    border:2px solid var(--color-primary);
+    background:var(--color-bg);
+    display:none;
+}
+.survey-thumb-wrap img {
+    width:100%;height:100%;object-fit:cover;display:block;
+}
+.survey-capture-btn {
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px 20px;
+    background:var(--color-primary);color:#fff;
+    border:none;border-radius:12px;
+    font-size:.95rem;font-weight:700;font-family:inherit;
+    cursor:pointer;transition:opacity .15s;
+    margin-bottom:10px;
+}
+.survey-capture-btn:hover { opacity:.88; }
+.survey-capture-btn:disabled { opacity:.45;cursor:not-allowed; }
+.survey-next-btn {
+    display:inline-flex;align-items:center;justify-content:center;
+    width:100%;padding:12px 20px;
+    background:var(--color-surface-raised);color:var(--color-primary);
+    border:1.5px solid var(--color-primary);border-radius:12px;
+    font-size:.9rem;font-weight:700;font-family:inherit;
+    cursor:pointer;transition:background .15s;
+    margin-bottom:8px;
+}
+.survey-next-btn:hover { background:var(--color-primary-soft); }
+
+/* Upload step */
+.survey-upload-grid {
+    display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+    margin-bottom:20px;
+}
+.survey-upload-thumb {
+    border-radius:10px;overflow:hidden;border:1.5px solid var(--color-border);
+    position:relative;background:var(--color-bg);
+}
+.survey-upload-thumb img { width:100%;aspect-ratio:4/3;object-fit:cover;display:block; }
+.survey-upload-thumb-label {
+    position:absolute;bottom:0;left:0;right:0;
+    background:rgba(0,0,0,.55);color:#fff;
+    font-size:.62rem;font-weight:700;text-align:center;
+    padding:3px 4px;letter-spacing:.04em;
+}
+.survey-upload-btn {
+    width:100%;padding:15px;
+    background:var(--color-primary);color:#fff;
+    border:none;border-radius:12px;
+    font-size:1rem;font-weight:700;font-family:inherit;
+    cursor:pointer;transition:opacity .15s;
+    margin-bottom:10px;
+}
+.survey-upload-btn:hover { opacity:.88; }
+.survey-upload-btn:disabled { opacity:.45;cursor:not-allowed; }
+.survey-progress-wrap {
+    margin-bottom:10px;
+    background:var(--color-border);border-radius:20px;
+    height:8px;overflow:hidden;display:none;
+}
+.survey-progress-fill {
+    height:100%;background:var(--color-primary);
+    border-radius:20px;transition:width .2s;
+}
+.survey-progress-label {
+    font-size:.78rem;color:var(--color-text-muted);
+    text-align:center;display:none;margin-bottom:8px;
+}
+.survey-done-msg {
+    text-align:center;font-size:1rem;font-weight:700;
+    color:var(--color-primary);padding:8px 0;display:none;
+}
+</style>
+
+<script>
+(function() {
+    var ITEM_ID     = <?= (int)$item['id'] ?>;
+    var UPLOAD_URL  = window.APP_BASE + '/items/' + ITEM_ID + '/attachments';
+    var CSRF_TOKEN  = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+
+    var STEPS = [
+        { label: 'South', arrow: '⬇️', hint: 'Face south — point camera at item', cat: 'yearly_refresh_south' },
+        { label: 'East',  arrow: '➡️', hint: 'Face east — point camera at item',  cat: 'yearly_refresh_east'  },
+        { label: 'North', arrow: '⬆️', hint: 'Face north — point camera at item', cat: 'yearly_refresh_north' },
+        { label: 'West',  arrow: '⬅️', hint: 'Face west — point camera at item',  cat: 'yearly_refresh_west'  },
+    ];
+
+    var backdrop  = document.getElementById('surveyBackdrop');
+    var body      = document.getElementById('surveyBody');
+    var closeBtn  = document.getElementById('surveyClose');
+    var startBtn  = document.getElementById('surveyStartBtn');
+    var fileInput = document.getElementById('surveyFileInput');
+
+    var currentStep = 0;
+    var photos      = []; // {file, dataUrl} per step
+
+    function openSurvey() {
+        currentStep = 0;
+        photos      = [];
+        backdrop.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        renderStep();
+    }
+
+    function closeSurvey() {
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function renderStep() {
+        if (currentStep >= STEPS.length) {
+            renderUpload();
+            return;
+        }
+        var s = STEPS[currentStep];
+        var stepNum = currentStep + 1;
+        var existingDataUrl = photos[currentStep] ? photos[currentStep].dataUrl : null;
+
+        body.innerHTML = [
+            '<div class="survey-step">',
+            '  <div class="survey-step-counter">Step ' + stepNum + ' of ' + STEPS.length + '</div>',
+            '  <div class="survey-direction-arrow">' + s.arrow + '</div>',
+            '  <div class="survey-direction-label">' + s.label + '</div>',
+            '  <div class="survey-direction-hint">' + s.hint + '</div>',
+            '  <div class="survey-thumb-wrap" id="surveyThumbWrap"' + (existingDataUrl ? ' style="display:block"' : '') + '>',
+            '    <img id="surveyThumbImg" src="' + (existingDataUrl || '') + '" alt="">',
+            '  </div>',
+            '  <button class="survey-capture-btn" id="surveyCaptureBtn">📸 ' + (existingDataUrl ? 'Retake' : 'Take Photo') + '</button>',
+            '  <button class="survey-next-btn" id="surveyNextBtn"' + (existingDataUrl ? '' : ' disabled') + '>',
+            '    ' + (stepNum < STEPS.length ? 'Next →' : 'Review & Upload'),
+            '  </button>',
+            '</div>',
+        ].join('');
+
+        document.getElementById('surveyCaptureBtn').addEventListener('click', function() {
+            fileInput.value = '';
+            fileInput.click();
+        });
+
+        document.getElementById('surveyNextBtn').addEventListener('click', function() {
+            if (!photos[currentStep]) return;
+            currentStep++;
+            renderStep();
+        });
+    }
+
+    fileInput.addEventListener('change', function() {
+        if (!fileInput.files || !fileInput.files.length) return;
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            photos[currentStep] = { file: file, dataUrl: e.target.result };
+            var wrap  = document.getElementById('surveyThumbWrap');
+            var img   = document.getElementById('surveyThumbImg');
+            var next  = document.getElementById('surveyNextBtn');
+            var capBtn= document.getElementById('surveyCaptureBtn');
+            if (wrap)  { img.src = e.target.result; wrap.style.display = 'block'; }
+            if (capBtn) capBtn.textContent = '📸 Retake';
+            if (next)  { next.disabled = false; }
+        };
+        reader.readAsDataURL(file);
+        fileInput.value = '';
+    });
+
+    function renderUpload() {
+        var grid = photos.map(function(p, i) {
+            return '<div class="survey-upload-thumb">'
+                + '<img src="' + p.dataUrl + '" alt="' + STEPS[i].label + '">'
+                + '<div class="survey-upload-thumb-label">' + STEPS[i].arrow + ' ' + STEPS[i].label + '</div>'
+                + '</div>';
+        }).join('');
+
+        body.innerHTML = [
+            '<div class="survey-upload-grid">' + grid + '</div>',
+            '<div class="survey-progress-wrap" id="surveyProgressWrap"><div class="survey-progress-fill" id="surveyProgressFill" style="width:0%"></div></div>',
+            '<div class="survey-progress-label" id="surveyProgressLabel"></div>',
+            '<div class="survey-done-msg" id="surveyDoneMsg">✅ All 4 photos saved!</div>',
+            '<button class="survey-upload-btn" id="surveyUploadBtn">⬆️ Upload All 4 Photos</button>',
+        ].join('');
+
+        document.getElementById('surveyUploadBtn').addEventListener('click', startUpload);
+    }
+
+    function startUpload() {
+        var btn      = document.getElementById('surveyUploadBtn');
+        var progWrap = document.getElementById('surveyProgressWrap');
+        var progFill = document.getElementById('surveyProgressFill');
+        var progLbl  = document.getElementById('surveyProgressLabel');
+        var doneMsg  = document.getElementById('surveyDoneMsg');
+        btn.disabled = true;
+        progWrap.style.display = 'block';
+        progLbl.style.display  = 'block';
+
+        var queue  = photos.slice();
+        var total  = queue.length;
+        var done   = 0;
+
+        function uploadNext() {
+            if (!queue.length) {
+                progFill.style.width = '100%';
+                progLbl.textContent  = '✅ Done!';
+                btn.style.display    = 'none';
+                doneMsg.style.display = 'block';
+                setTimeout(closeSurvey, 1400);
+                return;
+            }
+            var item  = queue.shift();
+            var step  = STEPS[total - queue.length - 1];
+            done++;
+            var label = done + ' / ' + total + ' — ' + step.label;
+            progLbl.textContent = label + ' · Compressing…';
+            progFill.style.width = Math.round((done - 1) / total * 100) + '%';
+
+            compressImage(item.file, function(compressed) {
+                progLbl.textContent = label + ' · Uploading…';
+                var fd = new FormData();
+                fd.append('file', compressed);
+                fd.append('category', step.cat);
+                fd.append('_token', CSRF_TOKEN);
+                fd.append('_ajax', '1');
+                fd.append('_redirect', window.location.pathname);
+
+                var xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        var pct = ((done - 1) / total + e.loaded / e.total / total) * 100;
+                        progFill.style.width = Math.min(Math.round(pct), 95) + '%';
+                    }
+                });
+                xhr.addEventListener('load', function() {
+                    var res; try { res = JSON.parse(xhr.responseText); } catch(ex) {}
+                    if (xhr.status === 200 && res && res.success) {
+                        uploadNext();
+                    } else {
+                        progLbl.textContent = '⚠️ Upload failed for ' + step.label + '. Tap to retry.';
+                        btn.disabled = false;
+                        btn.textContent = '↩️ Retry';
+                        queue.unshift(item); // put back
+                        btn.addEventListener('click', function retry() {
+                            btn.removeEventListener('click', retry);
+                            btn.disabled = true;
+                            btn.textContent = '⬆️ Upload All 4 Photos';
+                            done--;
+                            queue.unshift(item);
+                            uploadNext();
+                        }, { once: true });
+                    }
+                });
+                xhr.addEventListener('error', function() {
+                    progLbl.textContent = '⚠️ Network error. Check connection.';
+                    btn.disabled = false;
+                    btn.textContent = '↩️ Retry';
+                });
+                xhr.open('POST', UPLOAD_URL, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.send(fd);
+            });
+        }
+
+        uploadNext();
+    }
+
+    function compressImage(file, callback) {
+        if (file.type.indexOf('image/') !== 0) { callback(file); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var MAX = 1920, w = img.width, h = img.height;
+                var ratio = Math.min(MAX/w, MAX/h, 1);
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.round(w*ratio); canvas.height = Math.round(h*ratio);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(function(blob) {
+                    if (!blob) { callback(file); return; }
+                    callback(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() }));
+                }, 'image/jpeg', 0.82);
+            };
+            img.onerror = function() { callback(file); };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() { callback(file); };
+        reader.readAsDataURL(file);
+    }
+
+    startBtn.addEventListener('click', openSurvey);
+    closeBtn.addEventListener('click', closeSurvey);
+    backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) closeSurvey();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && backdrop.style.display !== 'none') closeSurvey();
+    });
+}());
+</script>
 
 <!-- ── Gallery overlay ─────────────────────────────────────────── -->
 <div id="galleryOverlay" class="gallery-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Photo gallery">

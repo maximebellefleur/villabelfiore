@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Yearly Compass Survey',
+        'features' => [
+            ['title' => 'Guided 4-direction photo survey', 'detail' => 'Tap "🧭 Survey" on any item to capture S/E/N/W photos in sequence. Uses rear camera directly, shows thumbnail after each capture, then uploads all 4 to the item gallery in one batch.'],
+            ['title' => '5-button quick action bar', 'detail' => 'Item show page quick actions now include Survey alongside Add Photo, Reminder, Log, and AI Copy.'],
+        ],
+    ],
+
     '2.0.8' => [
         'status'   => 'released',
         'released' => '2026-04-18',
