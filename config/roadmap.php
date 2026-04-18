@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Multi-Photo Log & Google Satellite',
+        'features' => [
+            ['title' => 'Multiple log photos', 'detail' => 'Attach several photos to one log entry. All are saved to the item gallery; the first is linked to the log for the feed thumbnail.'],
+            ['title' => 'PWA cache bust (v4)', 'detail' => 'Service worker cache version bumped so all installed PWAs re-fetch the latest JS/CSS on next visit — eliminates the stale Esri tile issue.'],
+        ],
+    ],
+
     '2.0.5' => [
         'status'   => 'released',
         'released' => '2026-04-18',

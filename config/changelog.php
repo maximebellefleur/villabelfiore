@@ -8,6 +8,21 @@
  */
 return [
 
+    '2.0.6' => [
+        'date'  => '2026-04-18',
+        'title' => 'Multi-Photo Log & Google Satellite',
+        'new'   => [
+            'Log Action form now supports multiple photo attachments — select several at once, see thumbnail previews of all, and all photos are saved to the item gallery with the first one linked to the log entry.',
+        ],
+        'improved' => [
+            'File picker for log photos now uses programmatic input.click() instead of the label+display:none trick — reliably opens the camera/gallery on iOS PWA.',
+            'Service worker cache bumped to v4, forcing all PWA clients to re-fetch latest JS/CSS assets (fixes stale Esri map tiles showing on devices that had the old cache).',
+        ],
+        'fixed' => [
+            'Main map and mini-map both now display Google Maps satellite imagery (no API key required) — previously the PWA served the old cached Esri tile source even after the code was updated.',
+        ],
+    ],
+
     '2.0.5' => [
         'date'  => '2026-04-18',
         'title' => 'Edit Meta Save & Google Mini-Map',

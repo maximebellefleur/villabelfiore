@@ -1,10 +1,10 @@
-/* Rooted — Service Worker v3 */
+/* Rooted — Service Worker v4 */
 
 // Derive base path from this SW's own URL so subdirectory installs work.
 // e.g. if SW is at /rooted/sw.js then BASE = '/rooted'
 var BASE = self.location.pathname.replace(/\/sw\.js(\?.*)?$/, '').replace(/\/$/, '');
 
-var CACHE_NAME = 'rooted-v3';
+var CACHE_NAME = 'rooted-v4';
 var OFFLINE_URL = BASE + '/offline';
 
 var SHELL_ASSETS = [

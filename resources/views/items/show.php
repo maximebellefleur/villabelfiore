@@ -310,16 +310,17 @@ window.MINI_MAP_READONLY = true;
             <div class="log-reminder-row">
                 <label class="log-reminder-check">
                     <input type="checkbox" id="setPhotoCb" name="attach_photo" value="1">
-                    <span class="log-reminder-check-text">📷 Attach a photo to this log</span>
+                    <span class="log-reminder-check-text">📷 Attach photos to this log</span>
                 </label>
             </div>
 
             <!-- Photo upload panel (hidden until checkbox checked) -->
             <div id="logPhotoPanel" class="log-cal-panel" style="display:none">
-                <label class="log-photo-label">
-                    <input type="file" name="log_photo" id="logPhotoInput" accept="image/jpeg,image/png,image/webp,image/gif">
-                    <span class="log-photo-btn">📂 Choose Photo</span>
-                </label>
+                <input type="file" name="log_photos[]" id="logPhotoInput"
+                       accept="image/jpeg,image/png,image/webp,image/gif,image/*"
+                       multiple
+                       style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;overflow:hidden">
+                <button type="button" id="logPhotoPickerBtn" class="log-photo-btn">📂 Choose Photos</button>
                 <div id="logPhotoPreview" class="log-photo-preview"></div>
             </div>
 
@@ -566,18 +567,17 @@ window.MINI_MAP_READONLY = true;
 }
 
 /* ── Log photo attach ───────────────────────── */
-.log-photo-label {
-    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-}
-.log-photo-label input[type="file"] { display: none; }
 .log-photo-btn {
     display: inline-block; padding: 8px 16px; border-radius: 8px;
     background: var(--color-surface); border: 1.5px dashed var(--color-border);
     font-size: .82rem; color: var(--color-text-muted); cursor: pointer;
-    transition: border-color .15s, color .15s;
+    transition: border-color .15s, color .15s; font-family: inherit;
+    width: 100%; text-align: left; box-sizing: border-box;
 }
-.log-photo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-.log-photo-preview img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+.log-photo-btn:hover, .log-photo-btn:focus { border-color: var(--color-primary); color: var(--color-primary); outline: none; }
+.log-photo-preview { display: none; }
+.log-photo-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.log-photo-thumb-img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--color-border); }
 /* ── Log thumbnails in table ────────────────── */
 .show-log-thumb-link { display: block; margin-top: 5px; }
 .show-log-thumb { width: 60px; height: 44px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--color-border); }
@@ -730,16 +730,44 @@ function preCheckReminder() {
     var cb      = document.getElementById('setPhotoCb');
     var panel   = document.getElementById('logPhotoPanel');
     var input   = document.getElementById('logPhotoInput');
+    var pickerBtn = document.getElementById('logPhotoPickerBtn');
     var preview = document.getElementById('logPhotoPreview');
     if (!cb || !panel) return;
+
     cb.addEventListener('change', function() {
         panel.style.display = cb.checked ? '' : 'none';
+        if (cb.checked && pickerBtn) {
+            // Small delay so the panel is rendered before programmatic click
+            setTimeout(function() { input && input.click(); }, 80);
+        }
     });
+
+    // Programmatic click — reliable on iOS PWA where label+display:none fails
+    if (pickerBtn) {
+        pickerBtn.addEventListener('click', function() {
+            input && input.click();
+        });
+    }
+
     if (input) {
         input.addEventListener('change', function() {
-            if (!input.files || !input.files[0]) return;
-            var url = URL.createObjectURL(input.files[0]);
-            preview.innerHTML = '<img src="' + url + '" alt="Preview">';
+            if (!input.files || !input.files.length) return;
+            var files = Array.from(input.files);
+            var html = '<div class="log-photo-thumbs">';
+            var remaining = files.length;
+            files.forEach(function(file, i) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    html += '<img src="' + e.target.result + '" class="log-photo-thumb-img" alt="Photo ' + (i+1) + '">';
+                    remaining--;
+                    if (remaining === 0) {
+                        preview.innerHTML = html + '</div>';
+                        preview.style.display = '';
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            pickerBtn.textContent = '📷 ' + files.length + ' photo' + (files.length !== 1 ? 's' : '') + ' selected — tap to change';
         });
     }
 }());
