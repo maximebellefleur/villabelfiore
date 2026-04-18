@@ -8,6 +8,21 @@
  */
 return [
 
+    '2.0.7' => [
+        'date'  => '2026-04-18',
+        'title' => 'Boundary Walk in Edit Item',
+        'new'   => [
+            'Walk boundary mode is now available directly on the item edit page — no need to go to the map. Works for all boundary-able types (garden, bed, orchard, zone, etc.).',
+            'Edit item boundary section: walk the path, preview the polygon on the mini-map, then save or discard. Existing boundary can also be deleted inline.',
+        ],
+        'improved' => [
+            'minimap.js exposes window.miniMapLeaflet so the boundary polygon can be drawn on the edit-form mini-map.',
+        ],
+        'fixed' => [
+            'GPS permission denied no longer leaves walk mode stuck on "Waiting for GPS fix…" forever. RootedGPS now notifies continuous subscribers (walk mode) with null when permission is denied, so they can show the error immediately.',
+        ],
+    ],
+
     '2.0.6' => [
         'date'  => '2026-04-18',
         'title' => 'Multi-Photo Log & Google Satellite',

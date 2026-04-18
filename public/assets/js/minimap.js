@@ -95,6 +95,9 @@
         lngInput.value = lng.toFixed(7);
     }
 
+    // Expose for other scripts on the same page (e.g. boundary walk in edit.php)
+    window.miniMapLeaflet = miniMap;
+
     // Invalidate size after form layout shifts (tabs, collapsibles)
     setTimeout(function () { miniMap.invalidateSize(); }, 300);
 

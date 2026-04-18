@@ -43,9 +43,15 @@ window.RootedGPS = (function () {
 
     function _watchError(err) {
         if (err.code === 1 /* PERMISSION_DENIED */) {
-            // Tell waiters there's nothing coming
+            // Tell one-shot waiters there's nothing coming
             var cbs = _pending.slice(); _pending = [];
             cbs.forEach(function (fn) { fn(null); });
+            // Tell continuous subscribers too — so walk mode can show an error
+            // instead of waiting forever
+            if (_subscribers.length) {
+                var subs = _subscribers.slice();
+                subs.forEach(function (fn) { try { fn(null); } catch (e) {} });
+            }
         }
         // For timeout/unavailable, keep watching — might recover
     }

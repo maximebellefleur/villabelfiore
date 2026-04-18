@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.0.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Boundary Walk in Edit Item',
+        'features' => [
+            ['title' => 'Walk boundary from edit page', 'detail' => 'Item edit page now has a Boundary section for boundary-able types. Walk, preview on mini-map, save via API, or delete. No map page required.'],
+            ['title' => 'GPS denied error in walk mode', 'detail' => 'When GPS permission is denied, walk mode now immediately shows an error instead of waiting forever for a fix that never comes.'],
+        ],
+    ],
+
     '2.0.6' => [
         'status'   => 'released',
         'released' => '2026-04-18',

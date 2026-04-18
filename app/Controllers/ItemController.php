@@ -375,7 +375,27 @@ class ItemController
         $customTypes = ($row && !empty($row['setting_value_json']))
             ? (json_decode($row['setting_value_json'], true) ?: [])
             : [];
-        Response::render('items/edit', ['title' => 'Edit ' . e($item['name']), 'item' => $item, 'meta' => $metaMap, 'itemTypes' => $itemTypes, 'customTypes' => $customTypes]);
+        $boundaryRow = $db->fetchOne(
+            "SELECT meta_value_text FROM item_meta WHERE item_id = ? AND meta_key = 'boundary_geojson' LIMIT 1",
+            [$id]
+        );
+        $boundaryGeojson = $boundaryRow['meta_value_text'] ?? null;
+
+        $defaultBoundaryTypes = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];
+        $btRow       = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'map.boundary_types' LIMIT 1");
+        $boundaryTypes = (!empty($btRow['setting_value_json']))
+            ? (json_decode($btRow['setting_value_json'], true) ?: $defaultBoundaryTypes)
+            : $defaultBoundaryTypes;
+
+        Response::render('items/edit', [
+            'title'          => 'Edit ' . e($item['name']),
+            'item'           => $item,
+            'meta'           => $metaMap,
+            'itemTypes'      => $itemTypes,
+            'customTypes'    => $customTypes,
+            'boundaryTypes'  => $boundaryTypes,
+            'boundaryGeojson'=> $boundaryGeojson,
+        ]);
     }
 
     public function update(Request $request, array $params = []): void
