@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.2' => [
+        'date'  => '2026-04-18',
+        'title' => 'Family Needs Edit & Delete',
+        'new'   => [],
+        'improved' => [
+            'Each family need row now has an ✏️ Edit button that expands an inline edit form — change vegetable name, linked seed, quantity, unit, priority, or notes without leaving the page.',
+            'Delete confirmation replaced with inline "Remove? Yes / No" buttons — no window.confirm(), works correctly in PWA standalone mode.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.1.1' => [
         'date'  => '2026-04-18',
         'title' => 'CSRF Login Fix',

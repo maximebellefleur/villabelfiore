@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.1.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'Family Needs Edit & Delete',
+        'features' => [
+            ['title' => 'Inline edit for family needs', 'detail' => 'Each row in the Family Needs list has an Edit button that expands an inline form pre-filled with the existing values. Save posts to the existing update route.'],
+            ['title' => 'PWA-safe inline delete confirm', 'detail' => 'Delete uses inline "Remove? Yes / No" buttons instead of window.confirm() — works in PWA standalone mode.'],
+        ],
+    ],
+
     '2.1.1' => [
         'status'   => 'released',
         'released' => '2026-04-18',

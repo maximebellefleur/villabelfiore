@@ -75,7 +75,8 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
             </thead>
             <tbody>
             <?php foreach ($needs as $need): ?>
-            <tr style="border-bottom:1px solid var(--color-border)">
+            <!-- Read row -->
+            <tr id="fn-row-<?= (int)$need['id'] ?>" style="border-bottom:1px solid var(--color-border)">
                 <td style="padding:8px 12px;text-align:center">
                     <span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:0.8rem;font-weight:700;line-height:26px;text-align:center"><?= (int)$need['priority'] ?></span>
                 </td>
@@ -88,10 +89,66 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
                     <?php else: ?>—<?php endif; ?>
                 </td>
                 <td style="padding:8px 12px;color:var(--color-text-muted);font-size:0.8rem"><?= e($need['notes'] ?? '') ?></td>
-                <td style="padding:8px 12px;text-align:right">
-                    <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/trash') ?>" style="display:inline" onsubmit="return confirm('Remove this need?')">
+                <td style="padding:8px 12px;text-align:right;white-space:nowrap">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="fnToggleEdit(<?= (int)$need['id'] ?>)">✏️ Edit</button>
+                    <button type="button" class="btn btn-ghost btn-sm fn-del-btn" style="color:#dc3545" data-id="<?= (int)$need['id'] ?>" onclick="fnShowDelete(this)">✕</button>
+                    <!-- inline delete confirm -->
+                    <span class="fn-del-confirm" id="fn-del-<?= (int)$need['id'] ?>" style="display:none">
+                        <span style="font-size:0.8rem;margin-right:4px">Remove?</span>
+                        <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/trash') ?>" style="display:inline">
+                            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                            <button type="submit" class="btn btn-sm" style="background:#dc3545;color:#fff;padding:2px 10px">Yes</button>
+                        </form>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="fnHideDelete(<?= (int)$need['id'] ?>)">No</button>
+                    </span>
+                </td>
+            </tr>
+            <!-- Edit row -->
+            <tr id="fn-edit-<?= (int)$need['id'] ?>" style="display:none;background:var(--color-surface-alt,#f8f9f5);border-bottom:2px solid var(--color-primary)">
+                <td colspan="6" style="padding:14px 16px">
+                    <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/update') ?>" class="form">
                         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                        <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc3545">✕ Remove</button>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Vegetable / Food</label>
+                                <input type="text" name="vegetable_name" class="form-input" required value="<?= e($need['vegetable_name']) ?>">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Linked Seed</label>
+                                <select name="seed_id" class="form-input">
+                                    <option value="">— none —</option>
+                                    <?php foreach ($seeds as $s): ?>
+                                    <option value="<?= (int)$s['id'] ?>" <?= (int)($need['seed_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>><?= e($s['name']) ?><?= $s['variety'] ? ' ('.$s['variety'].')' : '' ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Yearly Quantity</label>
+                                <input type="number" step="0.1" name="yearly_qty" class="form-input" min="0" value="<?= e($need['yearly_qty'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Unit</label>
+                                <select name="yearly_unit" class="form-input">
+                                    <?php foreach ($unitLabels as $val => $lbl): ?>
+                                    <option value="<?= $val ?>" <?= ($need['yearly_unit'] ?? 'kg') === $val ? 'selected' : '' ?>><?= $lbl ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priority</label>
+                                <input type="number" name="priority" class="form-input" min="1" max="10" value="<?= (int)$need['priority'] ?>">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notes</label>
+                            <input type="text" name="notes" class="form-input" value="<?= e($need['notes'] ?? '') ?>">
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="fnToggleEdit(<?= (int)$need['id'] ?>)">Cancel</button>
+                        </div>
                     </form>
                 </td>
             </tr>
@@ -101,3 +158,28 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
     </div>
 </div>
 <?php endif; ?>
+
+<script>
+function fnToggleEdit(id) {
+    var editRow = document.getElementById('fn-edit-' + id);
+    var readRow = document.getElementById('fn-row-' + id);
+    var open = editRow.style.display !== 'none';
+    editRow.style.display = open ? 'none' : 'table-row';
+    // hide delete confirm if open
+    fnHideDelete(id);
+}
+
+function fnShowDelete(btn) {
+    var id = btn.dataset.id;
+    btn.style.display = 'none';
+    document.getElementById('fn-del-' + id).style.display = 'inline';
+}
+
+function fnHideDelete(id) {
+    var confirm = document.getElementById('fn-del-' + id);
+    if (!confirm) return;
+    confirm.style.display = 'none';
+    var btn = confirm.closest('td').querySelector('.fn-del-btn');
+    if (btn) btn.style.display = '';
+}
+</script>
