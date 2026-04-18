@@ -1,10 +1,10 @@
-/* Rooted — Service Worker v5 */
+/* Rooted — Service Worker v6 */
 
 // Derive base path from this SW's own URL so subdirectory installs work.
 // e.g. if SW is at /rooted/sw.js then BASE = '/rooted'
 var BASE = self.location.pathname.replace(/\/sw\.js(\?.*)?$/, '').replace(/\/$/, '');
 
-var CACHE_NAME = 'rooted-v5';
+var CACHE_NAME = 'rooted-v6';
 var OFFLINE_URL = BASE + '/offline';
 
 var SHELL_ASSETS = [
@@ -55,6 +55,18 @@ self.addEventListener('fetch', function (event) {
     // Skip cross-origin and non-GET for caching
     if (url.origin !== self.location.origin) return;
     if (event.request.method !== 'GET') return;
+
+    // Navigation (HTML pages): always network-first so CSRF tokens are never stale
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(function () {
+                return caches.match(event.request).then(function (cached) {
+                    return cached || caches.match(BASE + '/offline');
+                });
+            })
+        );
+        return;
+    }
 
     // API routes: network first, no cache fallback
     if (url.pathname.startsWith(BASE + '/api/')) {

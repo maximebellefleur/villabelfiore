@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.1.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-18',
+        'title'    => 'CSRF Login Fix',
+        'features' => [
+            ['title' => 'Service worker network-first for HTML pages', 'detail' => 'Navigation requests (HTML pages) now bypass the service worker cache entirely and always fetch from the network. This ensures CSRF tokens embedded in forms are always fresh and match the PHP session — fixes the "403 Invalid or missing CSRF token" login error on PWA installs.'],
+        ],
+    ],
+
     '2.1.0' => [
         'status'   => 'released',
         'released' => '2026-04-18',

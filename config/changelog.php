@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.1.1' => [
+        'date'  => '2026-04-18',
+        'title' => 'CSRF Login Fix',
+        'new'   => [],
+        'improved' => [
+            'Service worker bumped to v6 to force all PWA clients to re-register with the new fetch strategy.',
+        ],
+        'fixed' => [
+            'Login page returned "403 — Invalid or missing CSRF token" on PWA installs. The service worker was caching HTML pages containing embedded CSRF tokens; on subsequent visits it served the stale cached page whose token no longer matched the PHP session. Navigation requests (HTML pages) now always bypass the cache and go direct to the network, so the CSRF token is always fresh.',
+        ],
+    ],
+
     '2.1.0' => [
         'date'  => '2026-04-18',
         'title' => 'Walk Mode Live Feedback',
