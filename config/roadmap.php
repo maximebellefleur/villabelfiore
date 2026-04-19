@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.1.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-19',
+        'title'    => 'Family Needs Mobile Fix & Copy AI Fix',
+        'features' => [
+            ['title' => 'Family Needs card layout', 'detail' => 'Replaced the table with mobile-friendly cards. Each card shows priority badge, vegetable name, qty/unit, linked seed, and notes. Edit expands an inline form. Delete shows inline Yes/Cancel confirm.'],
+            ['title' => 'Copy AI clipboard fallback', 'detail' => 'Added execCommand fallback for navigator.clipboard.writeText — fixes the iOS PWA bug where the Clipboard API silently fails when a capture="environment" file input exists on the page.'],
+        ],
+    ],
+
     '2.1.2' => [
         'status'   => 'released',
         'released' => '2026-04-18',

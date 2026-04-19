@@ -673,6 +673,31 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
     });
 }());
 
+// Clipboard helper — works on iOS PWA even with capture="environment" inputs present
+function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).catch(function() {
+            return copyTextFallback(text);
+        });
+    }
+    return copyTextFallback(text);
+}
+function copyTextFallback(text) {
+    return new Promise(function(resolve, reject) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+            var ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            ok ? resolve() : reject(new Error('execCommand failed'));
+        } catch(e) { document.body.removeChild(ta); reject(e); }
+    });
+}
+
 // AI Prompt
 (function() {
     var btn = document.getElementById('aiPromptBtn');
@@ -685,7 +710,7 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.prompt) throw new Error('empty');
-                return navigator.clipboard.writeText(data.prompt);
+                return copyText(data.prompt);
             })
             .then(function() {
                 icon.textContent = '✅'; label.textContent = 'Copied!';

@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.1.3' => [
+        'date'  => '2026-04-19',
+        'title' => 'Family Needs Mobile Fix & Copy AI Fix',
+        'new'   => [],
+        'improved' => [
+            'Family Needs redesigned as cards instead of a table — works on all screen sizes. Edit button expands inline form, delete shows inline "Yes / Cancel" confirm. Notes now use a textarea and wrap properly.',
+            'Copy AI button now works on iOS PWA even when a capture="environment" file input is present on the page. Falls back to execCommand if the Clipboard API is unavailable or denied.',
+        ],
+        'fixed' => [
+            'Family Needs edit and delete buttons were cut off on mobile because the table overflowed the screen width.',
+            'Copy AI button was stuck on "Building…" on iOS PWA — navigator.clipboard.writeText() was silently failing due to an iOS bug triggered by the compass survey capture input.',
+        ],
+    ],
+
     '2.1.2' => [
         'date'  => '2026-04-18',
         'title' => 'Family Needs Edit & Delete',
