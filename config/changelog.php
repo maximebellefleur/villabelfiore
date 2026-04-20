@@ -8,6 +8,26 @@
  */
 return [
 
+    '2.3.0' => [
+        'date'  => '2026-04-20',
+        'title' => 'Smart Irrigation',
+        'new'   => [
+            'Multiple irrigation plans per item — add overlapping or sequential plans to cover the full season.',
+            'New interval options: every 3, 5, 10, and 20 days.',
+            'Custom end date picker replaces fixed duration selector.',
+            'Quantity in litres field — displayed in Google Calendar event title.',
+            'Time preset for Google Calendar: Sunrise (6AM), Midday (12PM), Sunset (7PM), Night (9PM), or a custom hour. Leaves it as an all-day event if no time is set.',
+            '"Irrigate Today" dashboard widget: shows all items due for watering today. Click ✓ Done to mark complete and log a Google Calendar event.',
+            'Basket icon (🧺) for Garden in bottom and mobile navigation.',
+            'All drawer/top navigation links now show emoji icons for quicker scanning.',
+        ],
+        'improved' => [
+            'Biodynamic "Garden — Right Now" panel on dashboard: actionable advice (what to sow, harvest, or avoid) based on current organ type, ascending/descending moon, and anomaly detection. Replaces generic data display.',
+            'Dashboard biodynamic section is now focused on the current moment with specific crop suggestions.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.2.0' => [
         'date'  => '2026-04-20',
         'title' => 'Biodynamic Garden',

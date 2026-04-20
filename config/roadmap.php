@@ -8,6 +8,21 @@
  */
 return [
 
+    '2.3.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Smart Irrigation',
+        'features' => [
+            ['title' => 'Multiple irrigation plans per item', 'detail' => 'Add as many plans as needed per item — no more one-plan restriction.'],
+            ['title' => 'New intervals (3/5/10/20 days)', 'detail' => 'More granular watering schedules for different crops and seasons.'],
+            ['title' => 'Custom end date + quantity (litres)', 'detail' => 'Set an exact end date and record the volume per session, shown in Google Calendar.'],
+            ['title' => 'Time preset for Calendar events', 'detail' => 'Sunrise, Midday, Sunset, Night, or custom hour — sets the event time in Google Calendar.'],
+            ['title' => '"Irrigate Today" dashboard widget', 'detail' => 'See what needs watering today. Tap Done to log it in Google Calendar.'],
+            ['title' => 'Biodynamic "Right Now" advice', 'detail' => 'Dashboard shows specific actionable advice: what to sow, harvest, or avoid based on the current biodynamic moment.'],
+            ['title' => 'Nav icons + basket for Garden', 'detail' => 'All navigation links now show emoji icons. Garden uses the 🧺 basket icon.'],
+        ],
+    ],
+
     '2.2.0' => [
         'status'   => 'released',
         'released' => '2026-04-20',

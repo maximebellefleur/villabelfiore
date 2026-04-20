@@ -86,6 +86,21 @@ class DashboardController
             $bioWeek[$i] = BiodynamicCalendar::computePoint($dt);
         }
 
+        // Today's irrigation plans (active, not already done today)
+        $todayIrrigation = [];
+        try {
+            $todayIrrigation = $db->fetchAll(
+                "SELECT ip.*, i.name AS item_name, i.type AS item_type
+                 FROM irrigation_plans ip
+                 JOIN items i ON i.id = ip.item_id
+                 WHERE i.deleted_at IS NULL AND i.status != 'trashed'
+                   AND ip.start_date <= CURDATE()
+                   AND (ip.end_date IS NULL OR ip.end_date >= CURDATE())
+                   AND (ip.last_done_date IS NULL OR ip.last_done_date < CURDATE())
+                 ORDER BY i.name"
+            );
+        } catch (\Throwable $e) { /* table may not exist yet */ }
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
@@ -102,6 +117,7 @@ class DashboardController
             'quote'             => $this->fetchQuote($db),
             'bioNow'            => $bioNow,
             'bioWeek'           => $bioWeek,
+            'todayIrrigation'   => $todayIrrigation,
         ]);
     }
 

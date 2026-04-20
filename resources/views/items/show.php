@@ -398,93 +398,147 @@ window.MINI_MAP_READONLY = true;
 <?php endif; ?>
 
 <!-- =========================================================
-     IRRIGATION PLAN
+     IRRIGATION PLANS
      ========================================================= -->
 <?php
 $irrigationTypes = ['tree','olive_tree','almond_tree','vine','garden','bed'];
-$irrigIntervals  = ['twice_daily'=>'Twice daily','daily'=>'Daily','every_2_days'=>'Every 2 days','weekly'=>'Weekly','biweekly'=>'Every 2 weeks','monthly'=>'Monthly'];
+$irrigIntervals  = [
+    'twice_daily'   => 'Twice daily',
+    'daily'         => 'Daily',
+    'every_2_days'  => 'Every 2 days',
+    'every_3_days'  => 'Every 3 days',
+    'every_5_days'  => 'Every 5 days',
+    'every_10_days' => 'Every 10 days',
+    'every_20_days' => 'Every 20 days',
+    'weekly'        => 'Weekly',
+    'biweekly'      => 'Every 2 weeks',
+    'monthly'       => 'Monthly',
+];
+$irrigHourPresets = [
+    ''        => 'All-day (no time)',
+    'sunrise' => 'Sunrise (~6:00 AM)',
+    'midday'  => 'Midday (12:00 PM)',
+    'sunset'  => 'Sunset (~7:00 PM)',
+    'night'   => 'Night (9:00 PM)',
+    'custom'  => 'Custom hour…',
+];
 ?>
 <?php if (in_array($item['type'], $irrigationTypes)): ?>
 <div class="show-section" id="irrigation-section">
     <div class="show-section-head">
-        <span class="show-section-title">💧 Irrigation Plan</span>
+        <span class="show-section-title">💧 Irrigation Plans</span>
     </div>
     <div class="item-detail-card">
 
-    <?php if ($irrigationPlan): ?>
-        <!-- ── View ── -->
-        <div id="irrView">
+    <?php foreach ($irrigationPlans as $irrigPlan): ?>
+    <!-- ── Existing plan ── -->
+    <div style="border:1px solid var(--color-border);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+        <div id="irrView<?= $irrigPlan['id'] ?>">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
                 <div>
-                    <div style="font-weight:700;font-size:1rem"><?= e($irrigIntervals[$irrigationPlan['interval_type']] ?? $irrigationPlan['interval_type']) ?></div>
-                    <div style="font-size:0.85rem;color:var(--color-text-muted);margin-top:2px">
-                        From <?= e(date('d M Y', strtotime($irrigationPlan['start_date']))) ?>
-                        · <?= (int)$irrigationPlan['duration_months'] ?> month<?= $irrigationPlan['duration_months'] != 1 ? 's' : '' ?>
-                        <?php if (!empty($irrigationPlan['google_event_id'])): ?>
-                        · <span style="color:#2d8a27">📅 Google Calendar</span>
+                    <div style="font-weight:700;font-size:.95rem">
+                        <?= e($irrigIntervals[$irrigPlan['interval_type']] ?? $irrigPlan['interval_type']) ?>
+                        <?php if (!empty($irrigPlan['quantity_liters'])): ?>
+                        <span style="font-weight:400;color:var(--color-primary)"> · <?= (float)$irrigPlan['quantity_liters'] ?>L</span>
                         <?php endif; ?>
                     </div>
-                    <?php if (!empty($irrigationPlan['notes'])): ?>
-                    <div style="font-size:0.82rem;margin-top:6px;color:var(--color-text-muted)"><?= nl2br(e($irrigationPlan['notes'])) ?></div>
+                    <div style="font-size:0.82rem;color:var(--color-text-muted);margin-top:3px">
+                        <?= e(date('d M Y', strtotime($irrigPlan['start_date']))) ?>
+                        <?php if (!empty($irrigPlan['end_date'])): ?>
+                        → <?= e(date('d M Y', strtotime($irrigPlan['end_date']))) ?>
+                        <?php endif; ?>
+                        <?php if (!empty($irrigPlan['hour_preset'])): ?>
+                        · <?= e($irrigHourPresets[$irrigPlan['hour_preset']] ?? $irrigPlan['hour_preset']) ?>
+                        <?php if ($irrigPlan['hour_preset'] === 'custom' && !empty($irrigPlan['custom_hour'])): ?>
+                        (<?= e(substr($irrigPlan['custom_hour'], 0, 5)) ?>)
+                        <?php endif; ?>
+                        <?php endif; ?>
+                        <?php if (!empty($irrigPlan['google_event_id'])): ?>
+                        · <span style="color:#2d8a27">📅 Calendar</span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!empty($irrigPlan['notes'])): ?>
+                    <div style="font-size:0.8rem;margin-top:5px;color:var(--color-text-muted)"><?= nl2br(e($irrigPlan['notes'])) ?></div>
                     <?php endif; ?>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrToggleEdit(true)">✏️ Edit</button>
-                    <button type="button" class="btn btn-ghost btn-sm" style="color:#dc3545" onclick="irrDelToggle(true)">✕</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrEdit(<?= $irrigPlan['id'] ?>,true)">✏️</button>
+                    <button type="button" class="btn btn-ghost btn-sm" style="color:#dc3545" onclick="irrDel(<?= $irrigPlan['id'] ?>,true)">✕</button>
                 </div>
             </div>
-            <!-- Delete confirm -->
-            <div id="irrDelConfirm" style="display:none;margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fcc">
-                <div style="font-size:0.9rem;margin-bottom:8px">Remove plan and delete recurring Google Calendar events?</div>
+            <div id="irrDelConfirm<?= $irrigPlan['id'] ?>" style="display:none;margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fcc">
+                <div style="font-size:0.85rem;margin-bottom:8px">Remove this plan and delete Google Calendar events?</div>
                 <div style="display:flex;gap:8px">
-                    <form method="POST" action="<?= url('/irrigation/' . (int)$irrigationPlan['id'] . '/delete') ?>">
+                    <form method="POST" action="<?= url('/irrigation/' . (int)$irrigPlan['id'] . '/delete') ?>">
                         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                         <button type="submit" class="btn btn-sm" style="background:#dc3545;color:#fff">Yes, remove</button>
                     </form>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrDelToggle(false)">Cancel</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrDel(<?= $irrigPlan['id'] ?>,false)">Cancel</button>
                 </div>
             </div>
         </div>
 
         <!-- ── Edit form ── -->
-        <div id="irrEditForm" style="display:none;margin-top:var(--spacing-3);border-top:1px solid var(--color-border);padding-top:var(--spacing-3)">
-            <form method="POST" action="<?= url('/irrigation/' . (int)$irrigationPlan['id'] . '/update') ?>" class="form">
+        <div id="irrEditForm<?= $irrigPlan['id'] ?>" style="display:none;margin-top:var(--spacing-3);border-top:1px solid var(--color-border);padding-top:var(--spacing-3)">
+            <form method="POST" action="<?= url('/irrigation/' . (int)$irrigPlan['id'] . '/update') ?>" class="form">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Interval</label>
                         <select name="interval_type" class="form-input">
                             <?php foreach ($irrigIntervals as $v => $l): ?>
-                            <option value="<?= $v ?>" <?= $irrigationPlan['interval_type'] === $v ? 'selected' : '' ?>><?= $l ?></option>
+                            <option value="<?= $v ?>" <?= $irrigPlan['interval_type'] === $v ? 'selected' : '' ?>><?= $l ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Duration</label>
-                        <select name="duration_months" class="form-input">
-                            <?php foreach ([1=>'1 month',3=>'3 months',6=>'6 months',12=>'1 year'] as $v=>$l): ?>
-                            <option value="<?= $v ?>" <?= (int)$irrigationPlan['duration_months'] === $v ? 'selected' : '' ?>><?= $l ?></option>
+                        <label class="form-label">Quantity (liters)</label>
+                        <input type="number" step="0.5" min="0" name="quantity_liters" class="form-input" value="<?= e($irrigPlan['quantity_liters'] ?? '') ?>" placeholder="e.g. 20">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Start date</label>
+                        <input type="date" name="start_date" class="form-input" value="<?= e($irrigPlan['start_date']) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End date</label>
+                        <input type="date" name="end_date" class="form-input" value="<?= e($irrigPlan['end_date'] ?? '') ?>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Time preset</label>
+                        <select name="hour_preset" class="form-input" onchange="irrPresetToggle(this,'irrCustomHour<?= $irrigPlan['id'] ?>')">
+                            <?php foreach ($irrigHourPresets as $v => $l): ?>
+                            <option value="<?= $v ?>" <?= ($irrigPlan['hour_preset'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Start date</label>
-                    <input type="date" name="start_date" class="form-input" value="<?= e($irrigationPlan['start_date']) ?>">
+                    <div class="form-group" id="irrCustomHour<?= $irrigPlan['id'] ?>" style="<?= ($irrigPlan['hour_preset'] ?? '') === 'custom' ? '' : 'display:none' ?>">
+                        <label class="form-label">Custom time</label>
+                        <input type="time" name="custom_hour" class="form-input" value="<?= e(substr($irrigPlan['custom_hour'] ?? '07:00', 0, 5)) ?>">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Notes</label>
-                    <textarea name="notes" class="form-input" rows="2"><?= e($irrigationPlan['notes'] ?? '') ?></textarea>
+                    <textarea name="notes" class="form-input" rows="2"><?= e($irrigPlan['notes'] ?? '') ?></textarea>
                 </div>
                 <div style="display:flex;gap:8px">
-                    <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrToggleEdit(false)">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="irrEdit(<?= $irrigPlan['id'] ?>,false)">Cancel</button>
                 </div>
             </form>
         </div>
+    </div>
+    <?php endforeach; ?>
 
+    <!-- ── Add new plan ── -->
+    <?php if (empty($irrigationPlans)): ?>
+    <div id="irrAddWrap">
     <?php else: ?>
-        <!-- ── Add form ── -->
+    <div id="irrAddWrap" style="display:none">
+    <?php endif; ?>
         <form method="POST" action="<?= url('/items/' . (int)$item['id'] . '/irrigation') ?>" class="form">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
             <div class="form-row">
@@ -492,41 +546,69 @@ $irrigIntervals  = ['twice_daily'=>'Twice daily','daily'=>'Daily','every_2_days'
                     <label class="form-label">Interval</label>
                     <select name="interval_type" class="form-input">
                         <?php foreach ($irrigIntervals as $v => $l): ?>
-                        <option value="<?= $v ?>"><?= $l ?></option>
+                        <option value="<?= $v ?>" <?= $v === 'daily' ? 'selected' : '' ?>><?= $l ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Duration</label>
-                    <select name="duration_months" class="form-input">
-                        <option value="1">1 month</option>
-                        <option value="3">3 months</option>
-                        <option value="6">6 months</option>
-                        <option value="12" selected>1 year</option>
-                    </select>
+                    <label class="form-label">Quantity (liters)</label>
+                    <input type="number" step="0.5" min="0" name="quantity_liters" class="form-input" placeholder="e.g. 20">
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Start date</label>
-                <input type="date" name="start_date" class="form-input" value="<?= date('Y-m-d') ?>">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Start date</label>
+                    <input type="date" name="start_date" class="form-input" value="<?= date('Y-m-d') ?>">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End date <small class="text-muted">(optional)</small></label>
+                    <input type="date" name="end_date" class="form-input">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Time preset</label>
+                    <select name="hour_preset" class="form-input" onchange="irrPresetToggle(this,'irrCustomHourNew')">
+                        <?php foreach ($irrigHourPresets as $v => $l): ?>
+                        <option value="<?= $v ?>"><?= $l ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group" id="irrCustomHourNew" style="display:none">
+                    <label class="form-label">Custom time</label>
+                    <input type="time" name="custom_hour" class="form-input" value="07:00">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Notes <small class="text-muted">(optional)</small></label>
                 <textarea name="notes" class="form-input" rows="2" placeholder="e.g. 15 min drip irrigation"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">💧 Set Irrigation Plan</button>
+            <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-primary btn-sm">💧 Add Plan</button>
+                <?php if (!empty($irrigationPlans)): ?>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('irrAddWrap').style.display='none'">Cancel</button>
+                <?php endif; ?>
+            </div>
         </form>
+    </div>
+
+    <?php if (!empty($irrigationPlans)): ?>
+    <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="document.getElementById('irrAddWrap').style.display=document.getElementById('irrAddWrap').style.display==='none'?'block':'none'">+ Add another plan</button>
     <?php endif; ?>
 
     </div>
 </div>
 <script>
-function irrToggleEdit(open) {
-    document.getElementById('irrView').style.display     = open ? 'none' : '';
-    document.getElementById('irrEditForm').style.display = open ? 'block' : 'none';
+function irrEdit(id, open) {
+    document.getElementById('irrView' + id).style.display     = open ? 'none' : '';
+    document.getElementById('irrEditForm' + id).style.display = open ? 'block' : 'none';
 }
-function irrDelToggle(open) {
-    document.getElementById('irrDelConfirm').style.display = open ? 'block' : 'none';
+function irrDel(id, open) {
+    document.getElementById('irrDelConfirm' + id).style.display = open ? 'block' : 'none';
+}
+function irrPresetToggle(sel, targetId) {
+    var el = document.getElementById(targetId);
+    if (el) el.style.display = sel.value === 'custom' ? '' : 'none';
 }
 </script>
 <?php endif; ?>

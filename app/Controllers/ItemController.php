@@ -214,10 +214,10 @@ class ItemController
         );
         $boundaryGeojson = $boundaryRow['meta_value_text'] ?? null;
 
-        // Load irrigation plan if table exists
-        $irrigationPlan = null;
+        // Load irrigation plans if table exists (multiple per item supported)
+        $irrigationPlans = [];
         try {
-            $irrigationPlan = $db->fetchOne('SELECT * FROM irrigation_plans WHERE item_id = ? LIMIT 1', [$id]);
+            $irrigationPlans = $db->fetchAll('SELECT * FROM irrigation_plans WHERE item_id = ? ORDER BY start_date ASC', [$id]);
         } catch (\Throwable $e) { /* table created on first use */ }
 
         Response::render('items/show', [
@@ -231,7 +231,7 @@ class ItemController
             'finances'       => $finances,
             'miniMapEnabled' => !empty($item['gps_lat']) && !empty($item['gps_lng']),
             'boundaryGeojson'=> $boundaryGeojson,
-            'irrigationPlan' => $irrigationPlan,
+            'irrigationPlans' => $irrigationPlans,
         ]);
     }
 

@@ -156,59 +156,93 @@ for ($i = 0; $i < 7; $i++) {
 </div>
 
 <!-- ============================================================
-     LUNAR + BIODYNAMIC CALENDAR
+     BIODYNAMIC NOW PANEL
      ============================================================ -->
-<section class="dash-section lunar-section">
+<?php
+// Actionable advice based on organ + ascending/descending + anomaly
+$_bioAdvice = '';
+$_bioCrops  = '';
+if (!empty($bioNow)) {
+    $_organ = $bioNow['organ'] ?? 'Root';
+    $_desc  = $bioNow['is_descending'] ?? false;
+    $_anom  = $bioNow['is_anomaly']    ?? false;
+    if ($_anom) {
+        $_bioAdvice = 'Avoid all major garden work today — lunar node or apse period.';
+        $_bioCrops  = 'Rest, observe, plan. Resume after the anomaly passes.';
+    } elseif ($_organ === 'Root' && $_desc) {
+        $_bioAdvice = 'Sow &amp; plant root crops.';
+        $_bioCrops  = 'Carrots · Beets · Garlic · Onions · Potatoes · Radishes';
+    } elseif ($_organ === 'Root' && !$_desc) {
+        $_bioAdvice = 'Harvest root crops — best flavour &amp; storage.';
+        $_bioCrops  = 'Carrots · Beets · Garlic · Onions · Potatoes · Radishes';
+    } elseif ($_organ === 'Leaf' && $_desc) {
+        $_bioAdvice = 'Transplant seedlings, water &amp; feed leafy greens.';
+        $_bioCrops  = 'Lettuce · Spinach · Cabbage · Kale · Chard · Herbs';
+    } elseif ($_organ === 'Leaf' && !$_desc) {
+        $_bioAdvice = 'Harvest leafy greens — crisp &amp; full of vitality.';
+        $_bioCrops  = 'Lettuce · Spinach · Cabbage · Kale · Chard · Herbs';
+    } elseif ($_organ === 'Flower' && $_desc) {
+        $_bioAdvice = 'Sow flowering plants, light pruning for fragrance.';
+        $_bioCrops  = 'Roses · Lavender · Chamomile · Sunflowers · Broccoli · Cauliflower';
+    } elseif ($_organ === 'Flower' && !$_desc) {
+        $_bioAdvice = 'Harvest flowers for drying, cutting, or distillation.';
+        $_bioCrops  = 'Roses · Lavender · Chamomile · Sunflowers · Broccoli · Cauliflower';
+    } elseif ($_organ === 'Fruit' && $_desc) {
+        $_bioAdvice = 'Sow or plant fruiting crops &amp; trees.';
+        $_bioCrops  = 'Tomatoes · Peppers · Zucchini · Olives · Almonds · Grapes · Beans';
+    } else {
+        $_bioAdvice = 'Harvest fruits &amp; seeds — peak ripeness.';
+        $_bioCrops  = 'Tomatoes · Peppers · Zucchini · Olives · Almonds · Grapes · Beans';
+    }
+}
+?>
+<section class="dash-section lunar-section" style="padding-bottom:var(--spacing-3)">
     <div class="lunar-section-head">
-        <span class="lunar-section-title">🌙 Lunar Garden Calendar</span>
+        <span class="lunar-section-title">🌙 Garden — Right Now</span>
         <a href="<?= url('/garden/biodynamic') ?>" style="font-size:.75rem;color:var(--color-primary);text-decoration:none;font-weight:600">Full Calendar →</a>
     </div>
 
-    <!-- Biodynamic today panel -->
     <?php if (!empty($bioNow)): ?>
-    <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:var(--spacing-3);flex-wrap:wrap">
-        <!-- Moon phase (existing data) -->
-        <div class="lunar-today-left" style="flex:1;min-width:160px">
-            <span class="lunar-phase-big"><?= $moonToday['phaseEmoji'] ?></span>
+    <?php
+        $_organBg    = \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']]    ?? '#f0fdf4';
+        $_organColor = \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d';
+        $_organEmoji = \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bioNow['organ']] ?? '🌿';
+    ?>
+    <!-- Hero: what to do right now -->
+    <?php if ($bioNow['is_anomaly']): ?>
+    <div style="background:#fef2f2;border-radius:var(--radius);padding:14px 16px;margin-bottom:var(--spacing-3);border-left:4px solid #dc2626">
+        <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:2rem">⚠️</span>
             <div>
-                <div class="lunar-phase-name"><?= $moonToday['phaseName'] ?></div>
-                <div class="lunar-phase-sub"><?= $moonToday['waxing'] ? '↑ Waxing' : '↓ Waning' ?> · <?= $moonToday['sign'] ?></div>
+                <div style="font-weight:700;font-size:1rem;color:#dc2626">Anomaly Period — Rest Today</div>
+                <div style="font-size:.82rem;color:#7f1d1d;margin-top:2px"><?= $_bioAdvice ?></div>
             </div>
         </div>
-        <!-- Biodynamic organ -->
-        <div style="flex:1;min-width:140px;background:<?= \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']] ?? '#f0fdf4' ?>;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
-            <span style="font-size:1.8rem"><?= \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bioNow['organ']] ?? '🌿' ?></span>
-            <div>
-                <div style="font-weight:700;font-size:.9rem;color:<?= \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d' ?>"><?= $bioNow['organ'] ?> Day</div>
-                <div style="font-size:.75rem;color:var(--color-text-muted)"><?= $bioNow['name'] ?> · <?= $bioNow['element'] ?></div>
+    </div>
+    <?php else: ?>
+    <div style="background:<?= $_organBg ?>;border-radius:var(--radius);padding:14px 16px;margin-bottom:var(--spacing-3)">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:2.4rem;flex-shrink:0"><?= $_organEmoji ?></span>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:1.05rem;color:<?= $_organColor ?>"><?= $_bioAdvice ?></div>
+                <div style="font-size:.78rem;color:rgba(0,0,0,0.5);margin-top:3px"><?= $_bioCrops ?></div>
             </div>
-        </div>
-        <!-- Ascending/Descending -->
-        <div style="flex:1;min-width:140px;background:<?= $bioNow['is_descending'] ? '#eff6ff' : '#faf5ff' ?>;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
-            <span style="font-size:1.8rem"><?= $bioNow['is_descending'] ? '🌱' : '🌾' ?></span>
-            <div>
-                <div style="font-weight:700;font-size:.9rem;color:<?= $bioNow['is_descending'] ? '#1d4ed8' : '#6d28d9' ?>">
-                    <?= $bioNow['is_descending'] ? '↓ Plant Now' : '↑ Harvest Time' ?>
+            <div style="flex-shrink:0;text-align:right">
+                <div style="font-size:.75rem;font-weight:600;color:<?= $_organColor ?>"><?= $bioNow['organ'] ?> day</div>
+                <div style="font-size:.7rem;color:rgba(0,0,0,0.4)"><?= $bioNow['name'] ?> · <?= $bioNow['element'] ?></div>
+                <div style="font-size:.7rem;color:<?= $bioNow['is_descending'] ? '#1d4ed8' : '#6d28d9' ?>;margin-top:2px">
+                    <?= $bioNow['is_descending'] ? '↓ Descending' : '↑ Ascending' ?>
                 </div>
-                <div style="font-size:.75rem;color:var(--color-text-muted)">
-                    <?= $bioNow['is_descending'] ? 'Moon descending — sow &amp; plant' : 'Moon ascending — harvest &amp; pick' ?>
-                </div>
             </div>
         </div>
-        <?php if ($bioNow['is_anomaly']): ?>
-        <div style="flex:1;min-width:140px;background:#fef2f2;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
-            <span style="font-size:1.8rem">⚠️</span>
-            <div>
-                <div style="font-weight:700;font-size:.9rem;color:#dc2626">Avoid Today</div>
-                <div style="font-size:.75rem;color:var(--color-text-muted)">Near lunar node or apse — pause garden work</div>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <!-- 7-day biodynamic week strip -->
-    <?php if (!empty($bioWeek)): ?>
+    <!-- Moon phase + 7-day strip -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:1.2rem"><?= $moonToday['phaseEmoji'] ?></span>
+        <span style="font-size:.8rem;color:var(--color-text-muted);font-weight:500"><?= $moonToday['phaseName'] ?> · <?= $moonToday['sign'] ?></span>
+    </div>
     <div class="lunar-week bio-week" style="margin-bottom:0">
         <?php foreach ($bioWeek as $i => $bw):
             $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
@@ -243,6 +277,63 @@ for ($i = 0; $i < 7; $i++) {
     </div>
     <?php endif; ?>
 </section>
+
+<!-- ============================================================
+     WHAT TO IRRIGATE TODAY
+     ============================================================ -->
+<?php if (!empty($todayIrrigation)): ?>
+<section class="dash-widget" style="margin-bottom:var(--spacing-4)">
+    <div class="dash-widget-header">
+        <span>💧 Irrigate Today</span>
+        <a href="<?= url('/irrigation') ?>" class="dash-widget-link">All plans →</a>
+    </div>
+    <div class="dash-widget-body" style="padding:0">
+        <?php foreach ($todayIrrigation as $ip): ?>
+        <div class="irr-dash-row" id="irrRow<?= $ip['id'] ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--color-border)">
+            <span style="font-size:1.2rem">💧</span>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:.9rem"><?= e($ip['item_name']) ?></div>
+                <div style="font-size:.75rem;color:var(--color-text-muted)">
+                    <?= e(\App\Controllers\IrrigationController::intervalLabel($ip['interval_type'])) ?>
+                    <?php if (!empty($ip['quantity_liters'])): ?>· <?= (float)$ip['quantity_liters'] ?>L<?php endif; ?>
+                    <?php if (!empty($ip['notes'])): ?>· <?= e(mb_strimwidth($ip['notes'], 0, 40, '…')) ?><?php endif; ?>
+                </div>
+            </div>
+            <button
+                type="button"
+                class="btn btn-sm"
+                style="background:#16a34a;color:#fff;flex-shrink:0"
+                onclick="irrMarkDone(<?= $ip['id'] ?>, this)"
+            >✓ Done</button>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+<script>
+function irrMarkDone(id, btn) {
+    btn.disabled = true;
+    btn.textContent = '…';
+    fetch('<?= url('/irrigation/') ?>' + id + '/done', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: '_token=<?= urlencode(\App\Support\CSRF::getToken()) ?>'
+    }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.success) {
+            var row = document.getElementById('irrRow' + id);
+            row.style.opacity = '0.4';
+            row.style.pointerEvents = 'none';
+            btn.textContent = '✓';
+        } else {
+            btn.disabled = false;
+            btn.textContent = '✓ Done';
+        }
+    }).catch(function(){
+        btn.disabled = false;
+        btn.textContent = '✓ Done';
+    });
+}
+</script>
+<?php endif; ?>
 
 <!-- ============================================================
      UPCOMING REMINDERS

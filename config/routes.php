@@ -181,6 +181,7 @@ $router->get('/irrigation',                   'IrrigationController@index');
 $router->post('/items/{id}/irrigation',       'IrrigationController@store');
 $router->post('/irrigation/{id}/update',      'IrrigationController@update');
 $router->post('/irrigation/{id}/delete',      'IrrigationController@destroy');
+$router->post('/irrigation/{id}/done',        'IrrigationController@markDone');
 
 // -------------------------------------------------------------------------
 // Logs

@@ -1,13 +1,13 @@
 <?php
 $navLinks = [
-    ['href' => '/dashboard',      'label' => 'Dashboard'],
-    ['href' => '/dashboard/map',  'label' => 'Map'],
-    ['href' => '/items',          'label' => 'Items'],
-    ['href' => '/garden',         'label' => '🌿 Garden'],
-    ['href' => '/reminders',      'label' => 'Reminders'],
-    ['href' => '/finance',        'label' => 'Finance'],
-    ['href' => '/activity-log',   'label' => 'Activity'],
-    ['href' => '/settings',       'label' => 'Settings'],
+    ['href' => '/dashboard',      'label' => '🏠 Dashboard'],
+    ['href' => '/dashboard/map',  'label' => '🗺 Map'],
+    ['href' => '/items',          'label' => '🌳 Items'],
+    ['href' => '/garden',         'label' => '🧺 Garden'],
+    ['href' => '/reminders',      'label' => '🔔 Reminders'],
+    ['href' => '/finance',        'label' => '💰 Finance'],
+    ['href' => '/activity-log',   'label' => '📋 Activity'],
+    ['href' => '/settings',       'label' => '⚙️ Settings'],
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
@@ -106,7 +106,7 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <span class="bottom-nav-icon">🗺</span><span class="bottom-nav-label">Map</span>
     </a>
     <a href="<?= url('/garden') ?>" class="bottom-nav-item" data-bnav="garden">
-        <span class="bottom-nav-icon">🌿</span><span class="bottom-nav-label">Garden</span>
+        <span class="bottom-nav-icon">🧺</span><span class="bottom-nav-label">Garden</span>
     </a>
     <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
         <span style="line-height:1;font-size:1.7rem">+</span>
@@ -115,7 +115,7 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <span class="bottom-nav-icon">🌾</span><span class="bottom-nav-label">Harvest</span>
     </a>
     <a href="<?= url('/items') ?>"  class="bottom-nav-item" data-bnav="items">
-        <span class="bottom-nav-icon">🌿</span><span class="bottom-nav-label">Items</span>
+        <span class="bottom-nav-icon">🌳</span><span class="bottom-nav-label">Items</span>
     </a>
 </nav>
 
