@@ -72,9 +72,10 @@ class MapController
             ['trashed']
         );
 
-        // Load boundaries from item_meta for all relevant items
+        // Load boundaries and bed meta from item_meta for all relevant items
         $ids = array_column($items, 'id');
         $boundaries = [];
+        $bedRowsMeta = [];
         if ($ids) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $rows = $db->fetchAll(
@@ -84,6 +85,14 @@ class MapController
             );
             foreach ($rows as $row) {
                 $boundaries[$row['item_id']] = $row['meta_value_text'];
+            }
+            $bedRows = $db->fetchAll(
+                "SELECT item_id, meta_value FROM item_meta
+                 WHERE meta_key = 'bed_rows' AND item_id IN ($placeholders)",
+                $ids
+            );
+            foreach ($bedRows as $br) {
+                $bedRowsMeta[$br['item_id']] = (int)$br['meta_value'];
             }
         }
 
@@ -113,6 +122,7 @@ class MapController
                 'boundary'     => isset($boundaries[$item['id']])
                                   ? json_decode($boundaries[$item['id']], true)
                                   : null,
+                'bed_rows'     => $bedRowsMeta[$item['id']] ?? null,
             ];
             $features[] = $feature;
         }
@@ -171,6 +181,19 @@ class MapController
              ON DUPLICATE KEY UPDATE meta_value_text = VALUES(meta_value_text), updated_at = NOW()",
             [$id, json_encode($decoded)]
         );
+
+        // Optionally save bed dimensions / row count (sent from corner+size mode)
+        foreach (['bed_rows', 'bed_length_m', 'bed_width_m'] as $key) {
+            $val = trim($request->post($key, ''));
+            if ($val !== '' && (float)$val > 0) {
+                $db->execute(
+                    "INSERT INTO item_meta (item_id, meta_key, meta_value, value_type, created_at, updated_at)
+                     VALUES (?, ?, ?, 'text', NOW(), NOW())
+                     ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value), updated_at = NOW()",
+                    [$id, $key, $val]
+                );
+            }
+        }
 
         Response::json(['success' => true, 'message' => 'Boundary saved for ' . $item['name']]);
     }

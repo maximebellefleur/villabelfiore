@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'GPS Accuracy Visual & Bed Corner+Size Mode',
+        'features' => [
+            ['title' => 'Color-coded GPS accuracy indicator', 'detail' => 'During GPS sampling (boundary points, corner capture) the status shows 🟢 ≤5 m / 🟡 5–20 m / 🔴 >20 m with matching background color so you instantly know signal quality.'],
+            ['title' => 'Corner + Size bed/garden boundary mode', 'detail' => 'Stand at any corner of a bed or garden, get a GPS fix, select NE/NW/SE/SW, enter N-S length and E-W width in meters. The app computes the rectangle and previews it on the mini-map. Saves boundary + dimensions to item_meta.'],
+            ['title' => 'Planting rows on map', 'detail' => 'If a bed has a bed_rows value stored (from Corner+Size mode), the main land map renders that many dashed parallel horizontal lines inside the polygon — one per planting row.'],
+        ],
+    ],
+
     '2.1.3' => [
         'status'   => 'released',
         'released' => '2026-04-19',

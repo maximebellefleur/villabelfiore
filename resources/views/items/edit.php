@@ -68,7 +68,8 @@
 </form>
 
 <?php if (in_array($item['type'], $boundaryTypes ?? [])): ?>
-<!-- Boundary walk section (outside the main form — saved independently via AJAX) -->
+<?php $hasCornerMode = in_array($item['type'], ['bed', 'garden']); ?>
+<!-- Boundary section (outside the main form — saved independently via AJAX) -->
 <div class="card item-form-fields" style="margin-top:var(--spacing-3)">
     <div class="card-body">
         <div class="form-group-label" style="margin-bottom:var(--spacing-2)">📐 Boundary</div>
@@ -77,14 +78,62 @@
             <?= $boundaryGeojson ? '⬡ Boundary saved' : 'No boundary set yet' ?>
         </div>
 
-        <div class="walk-mode-block" id="editWalkBlock">
-            <button type="button" id="editWalkBtn" class="btn btn-primary btn-sm walk-btn">🚶 Walk the Boundary</button>
-            <p class="text-muted text-sm" style="margin:4px 0 0">Walk around the zone — GPS records the path automatically.</p>
-            <div id="editWalkActive" style="display:none;margin-top:6px">
-                <div id="editWalkStats" class="walk-stats"></div>
-                <button type="button" id="editWalkStopBtn" class="btn btn-danger btn-sm" style="width:100%;margin-top:6px">⏹ Stop &amp; Use This Path</button>
+        <?php if ($hasCornerMode): ?>
+        <!-- Mode tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:var(--spacing-3)">
+            <button type="button" id="editModeWalkBtn" class="btn btn-primary btn-sm" onclick="editSwitchMode('walk')">🚶 Walk</button>
+            <button type="button" id="editModeCornerBtn" class="btn btn-secondary btn-sm" onclick="editSwitchMode('corner')">📐 Corner + Size</button>
+        </div>
+        <?php endif; ?>
+
+        <!-- Walk mode -->
+        <div id="editWalkSection">
+            <div class="walk-mode-block" id="editWalkBlock">
+                <button type="button" id="editWalkBtn" class="btn btn-primary btn-sm walk-btn">🚶 Walk the Boundary</button>
+                <p class="text-muted text-sm" style="margin:4px 0 0">Walk around the zone — GPS records the path automatically.</p>
+                <div id="editWalkActive" style="display:none;margin-top:6px">
+                    <div id="editWalkStats" class="walk-stats"></div>
+                    <button type="button" id="editWalkStopBtn" class="btn btn-danger btn-sm" style="width:100%;margin-top:6px">⏹ Stop &amp; Use This Path</button>
+                </div>
             </div>
         </div>
+
+        <?php if ($hasCornerMode): ?>
+        <!-- Corner + Size mode -->
+        <div id="editCornerSection" style="display:none">
+            <p class="text-muted text-sm" style="margin:0 0 var(--spacing-2)">Stand at one corner of your <?= e($item['type']) ?>, tap <strong>Get Position</strong>, then enter the corner and dimensions.</p>
+            <button type="button" id="editCornerGpsBtn" class="btn btn-secondary btn-sm">📡 Get Corner Position</button>
+            <div id="editCornerGpsStatus" class="map-gps-status" style="display:none"></div>
+
+            <div id="editCornerForm" style="display:none;margin-top:var(--spacing-3)">
+                <div class="form-group" style="margin-bottom:var(--spacing-2)">
+                    <label class="form-label">Which corner are you standing at?</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                        <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="NW">↖ NW</button>
+                        <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="NE">↗ NE</button>
+                        <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="SW">↙ SW</button>
+                        <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="SE">↘ SE</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Length N↔S (m)</label>
+                        <input type="number" id="editBedLengthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 8">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Width E↔W (m)</label>
+                        <input type="number" id="editBedWidthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 1.2">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Planting rows (optional)</label>
+                    <input type="number" id="editBedRows" class="form-input" min="1" step="1" placeholder="e.g. 4">
+                </div>
+                <button type="button" id="editCornerPreviewBtn" class="btn btn-secondary btn-sm">👁 Preview on Map</button>
+                <div id="editCornerMsg" class="text-sm" style="margin-top:6px"></div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div id="editBoundaryActions" style="display:none;margin-top:var(--spacing-2);display:flex;gap:var(--spacing-2)">
             <button type="button" id="editBoundarySave" class="btn btn-primary btn-sm">💾 Save Boundary</button>
@@ -111,6 +160,7 @@
     var SAVE_URL      = <?= json_encode(url('/api/map/boundary/' . (int)$item['id'])) ?>;
     var DELETE_URL    = <?= json_encode(url('/api/map/boundary/' . (int)$item['id'] . '/delete')) ?>;
     var EXISTING      = <?= $boundaryGeojson ? $boundaryGeojson : 'null' ?>;
+    var HAS_CORNER_MODE = <?= $hasCornerMode ? 'true' : 'false' ?>;
 
     var WALK_MIN_DIST_M  = 1.5;
     var WALK_MAX_ACC_M   = 25;
@@ -126,6 +176,12 @@
     var walkPolygon  = null;
     var boundaryLayer= null;
     var pendingPts   = null; // simplified points waiting to be saved
+    var pendingBedMeta = null; // {bed_rows, bed_length_m, bed_width_m} from corner mode
+
+    // Corner+Size mode state
+    var cornerLat = null, cornerLng = null, cornerAcc = null;
+    var cornerSide = null;
+    var cornerPolygon = null;
 
     var statusEl  = document.getElementById('editBoundaryStatus');
     var statsEl   = document.getElementById('editWalkStats');
@@ -247,15 +303,149 @@
         if (msgEl) msgEl.textContent = '';
     }
 
+    // ── Mode toggle (bed/garden only) ─────────────────────────────────────────
+    window.editSwitchMode = function(mode) {
+        var walkSec   = document.getElementById('editWalkSection');
+        var cornerSec = document.getElementById('editCornerSection');
+        var walkBtn   = document.getElementById('editModeWalkBtn');
+        var cornerBtn = document.getElementById('editModeCornerBtn');
+        if (!walkSec || !cornerSec) return;
+        if (mode === 'walk') {
+            walkSec.style.display = ''; cornerSec.style.display = 'none';
+            walkBtn.className = 'btn btn-primary btn-sm';
+            cornerBtn.className = 'btn btn-secondary btn-sm';
+        } else {
+            walkSec.style.display = 'none'; cornerSec.style.display = '';
+            cornerBtn.className = 'btn btn-primary btn-sm';
+            walkBtn.className = 'btn btn-secondary btn-sm';
+        }
+        // clear pending from other mode
+        pendingPts = null; pendingBedMeta = null;
+        actionsEl.style.display = 'none';
+    };
+
+    // ── Corner + Size mode ────────────────────────────────────────────────────
+    if (HAS_CORNER_MODE) {
+        var cornerGpsBtn = document.getElementById('editCornerGpsBtn');
+        var cornerGpsStatus = document.getElementById('editCornerGpsStatus');
+        var cornerFormEl = document.getElementById('editCornerForm');
+        var cornerMsgEl  = document.getElementById('editCornerMsg');
+
+        function showCornerStatus(msg, type) {
+            cornerGpsStatus.textContent = msg;
+            cornerGpsStatus.className = 'map-gps-status map-gps-status--' + (type || 'info');
+            cornerGpsStatus.style.display = 'block';
+        }
+
+        cornerGpsBtn.addEventListener('click', function () {
+            var btn = this;
+            btn.disabled = true; btn.textContent = '📡 …';
+            var readings = [], watchId = null, done = false;
+
+            function finish() {
+                if (done) return; done = true;
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+                btn.disabled = false; btn.textContent = '📡 Get Corner Position';
+                if (!readings.length) { showCornerStatus('⚠️ No GPS fix', 'error'); return; }
+                readings.sort(function (a, b) { return a.acc - b.acc; });
+                var keep = Math.max(1, Math.ceil(readings.length / 2));
+                var best = readings.slice(0, keep);
+                cornerLat = best.reduce(function (s, r) { return s + r.lat; }, 0) / best.length;
+                cornerLng = best.reduce(function (s, r) { return s + r.lng; }, 0) / best.length;
+                cornerAcc = best[0].acc;
+                var dot = cornerAcc <= 5 ? '🟢' : cornerAcc <= 20 ? '🟡' : '🔴';
+                var type = cornerAcc <= 5 ? 'success' : cornerAcc <= 20 ? 'warning' : 'info';
+                showCornerStatus(dot + ' ±' + Math.round(cornerAcc) + ' m — select corner and enter dimensions', type);
+                cornerFormEl.style.display = 'block';
+            }
+
+            watchId = navigator.geolocation.watchPosition(function (pos) {
+                var r = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+                readings.push(r);
+                var dot = r.acc <= 5 ? '🟢' : r.acc <= 20 ? '🟡' : '🔴';
+                var t   = r.acc <= 5 ? 'success' : r.acc <= 20 ? 'warning' : 'error';
+                showCornerStatus(dot + ' ' + readings.length + ' fixes · ±' + Math.round(r.acc) + ' m', t);
+                if (readings.length >= 3 && r.acc <= 5) finish();
+                else if (readings.length >= 12) finish();
+            }, function () {
+                if (readings.length > 0) { finish(); return; }
+                done = true; if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                btn.disabled = false; btn.textContent = '📡 Get Corner Position';
+                showCornerStatus('🔒 GPS unavailable', 'error');
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 });
+            setTimeout(function () { if (readings.length > 0) finish(); }, 6000);
+        });
+
+        // Corner selector buttons
+        document.querySelectorAll('.edit-corner-btn').forEach(function (b) {
+            b.addEventListener('click', function () {
+                cornerSide = this.dataset.corner;
+                document.querySelectorAll('.edit-corner-btn').forEach(function (x) {
+                    x.className = x === b ? 'btn btn-primary btn-sm edit-corner-btn' : 'btn btn-secondary btn-sm edit-corner-btn';
+                });
+            });
+        });
+
+        // Preview polygon from corner + dimensions
+        document.getElementById('editCornerPreviewBtn').addEventListener('click', function () {
+            if (!cornerLat) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Get your GPS position first.'; return; }
+            if (!cornerSide) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Select which corner you are at.'; return; }
+            var lM = parseFloat(document.getElementById('editBedLengthM').value);
+            var wM = parseFloat(document.getElementById('editBedWidthM').value);
+            if (!lM || !wM || lM <= 0 || wM <= 0) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Enter length and width.'; return; }
+
+            var latPerM = 1 / 111111;
+            var lngPerM = 1 / (111111 * Math.cos(cornerLat * Math.PI / 180));
+            var dLat = lM * latPerM, dLng = wM * lngPerM;
+            var nw, ne, se, sw;
+            if (cornerSide === 'NE') { ne=[cornerLat,cornerLng]; nw=[cornerLat,cornerLng-dLng]; se=[cornerLat-dLat,cornerLng]; sw=[cornerLat-dLat,cornerLng-dLng]; }
+            else if (cornerSide === 'NW') { nw=[cornerLat,cornerLng]; ne=[cornerLat,cornerLng+dLng]; sw=[cornerLat-dLat,cornerLng]; se=[cornerLat-dLat,cornerLng+dLng]; }
+            else if (cornerSide === 'SE') { se=[cornerLat,cornerLng]; sw=[cornerLat,cornerLng-dLng]; ne=[cornerLat+dLat,cornerLng]; nw=[cornerLat+dLat,cornerLng-dLng]; }
+            else { sw=[cornerLat,cornerLng]; se=[cornerLat,cornerLng+dLng]; nw=[cornerLat+dLat,cornerLng]; ne=[cornerLat+dLat,cornerLng+dLng]; }
+
+            pendingPts = [nw, ne, se, sw];
+            var rows = parseInt(document.getElementById('editBedRows').value) || 0;
+            pendingBedMeta = { bed_rows: rows, bed_length_m: lM, bed_width_m: wM };
+
+            var m = mm();
+            if (m) {
+                if (cornerPolygon) m.removeLayer(cornerPolygon);
+                cornerPolygon = L.polygon(pendingPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.18, weight: 2 }).addTo(m);
+                // Draw row lines preview
+                if (rows > 0) {
+                    var lats = pendingPts.map(function(p){return p[0];});
+                    var lngs = pendingPts.map(function(p){return p[1];});
+                    var minLat = Math.min.apply(null,lats), maxLat = Math.max.apply(null,lats);
+                    var minLng = Math.min.apply(null,lngs), maxLng = Math.max.apply(null,lngs);
+                    var step = (maxLat - minLat) / (rows + 1);
+                    for (var i = 1; i <= rows; i++) {
+                        L.polyline([[minLat+i*step, minLng],[minLat+i*step, maxLng]], {
+                            color: '#2d8a27', weight: 1, opacity: 0.6, dashArray: '5 5', interactive: false
+                        }).addTo(m);
+                    }
+                }
+                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20] });
+            }
+            if (statusEl) statusEl.textContent = '✅ Preview ready — tap Save Boundary to confirm';
+            actionsEl.style.display = 'flex';
+            if (cornerMsgEl) cornerMsgEl.textContent = '';
+        });
+    }
+
     // ── Save ─────────────────────────────────────────────────────────────────
     document.getElementById('editBoundarySave').addEventListener('click', function () {
-        if (!pendingPts || pendingPts.length < 3) { if (msgEl) msgEl.textContent = '⚠️ Walk a boundary first.'; return; }
+        if (!pendingPts || pendingPts.length < 3) { if (msgEl) msgEl.textContent = '⚠️ Walk a boundary or preview a corner+size polygon first.'; return; }
         var geojson = { type: 'Polygon', coordinates: [pendingPts.map(function (p) { return [p[1], p[0]]; })] };
         geojson.coordinates[0].push(geojson.coordinates[0][0]);
         if (msgEl) msgEl.textContent = 'Saving…';
         var fd = new FormData();
         fd.append('_token', CSRF);
         fd.append('geojson', JSON.stringify(geojson));
+        if (pendingBedMeta) {
+            if (pendingBedMeta.bed_rows > 0) fd.append('bed_rows', pendingBedMeta.bed_rows);
+            if (pendingBedMeta.bed_length_m > 0) fd.append('bed_length_m', pendingBedMeta.bed_length_m);
+            if (pendingBedMeta.bed_width_m > 0) fd.append('bed_width_m', pendingBedMeta.bed_width_m);
+        }
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SAVE_URL, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
@@ -293,8 +483,9 @@
     document.getElementById('editBoundaryDiscard').addEventListener('click', function () {
         var m = mm();
         if (walkPolygon && m) { m.removeLayer(walkPolygon); walkPolygon = null; }
+        if (cornerPolygon && m) { m.removeLayer(cornerPolygon); cornerPolygon = null; }
         actionsEl.style.display = 'none';
-        pendingPts = null;
+        pendingPts = null; pendingBedMeta = null;
         if (msgEl) msgEl.textContent = '';
         if (EXISTING) { drawBoundary(EXISTING); if (statusEl) statusEl.textContent = '⬡ Boundary saved'; }
         else if (statusEl) statusEl.textContent = 'No boundary set yet';

@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.1.4' => [
+        'date'  => '2026-04-20',
+        'title' => 'GPS Accuracy Visual & Bed Corner+Size Mode',
+        'new'   => [
+            'GPS accuracy is now color-coded in real time during boundary point sampling: 🟢 ≤5 m (excellent), 🟡 5–20 m (good), 🔴 >20 m (weak). Shows in the status bar during preciseSample() and in the corner GPS capture.',
+            'New "📐 Corner + Size" mode on the edit page for beds and gardens: stand at one corner, tap Get Position to get a GPS fix, select which corner you are at (NE/NW/SE/SW), enter N-S length and E-W width in meters, and optionally enter the number of planting rows. Tap Preview to see the computed rectangle on the mini-map, then Save.',
+            'Planting rows from Corner+Size mode are rendered as dashed parallel lines inside the bed polygon on the main land map.',
+        ],
+        'improved' => [
+            'Bed boundary Save now also persists bed_length_m, bed_width_m, and bed_rows to item_meta so the map always has the latest dimensions.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.1.3' => [
         'date'  => '2026-04-19',
         'title' => 'Family Needs Mobile Fix & Copy AI Fix',

@@ -239,6 +239,30 @@
         gj.on('click', function () { showItemInfo(item); });
         gj.addTo(layerGroups[item.type] || map);
         polygonMap[item.id] = gj;
+
+        if (!isLine && item.bed_rows > 0 && item.boundary.type === 'Polygon') {
+            renderBedRows(item);
+        }
+    }
+
+    function renderBedRows(item) {
+        var coords = item.boundary.coordinates[0];
+        if (!coords || coords.length < 4) return;
+        var lats = coords.map(function (c) { return c[1]; });
+        var lngs = coords.map(function (c) { return c[0]; });
+        var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+        var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+        var rows = item.bed_rows;
+        var step = (maxLat - minLat) / (rows + 1);
+        var color = typeColor(item.type);
+        var lg = layerGroups[item.type] || map;
+        for (var i = 1; i <= rows; i++) {
+            var lat = minLat + i * step;
+            L.polyline([[lat, minLng], [lat, maxLng]], {
+                color: color, weight: 1, opacity: 0.55,
+                dashArray: '5 5', interactive: false,
+            }).addTo(lg);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -494,10 +518,11 @@
                 if (finished) return;
                 var r = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
                 readings.push(r);
-                var pct = Math.min(100, Math.round((readings.length / maxReads) * 100));
+                var accDot  = r.acc <= 5 ? '🟢' : r.acc <= 20 ? '🟡' : '🔴';
+                var accType = r.acc <= 5 ? 'success' : r.acc <= 20 ? 'warning' : 'error';
                 showGpsStatus(statusEl,
-                    '📡 Sampling… ' + readings.length + ' fix' + (readings.length > 1 ? 'es' : '') +
-                    ' · ±' + Math.round(r.acc) + ' m', 'info');
+                    accDot + ' ' + readings.length + ' fix' + (readings.length > 1 ? 'es' : '') +
+                    ' · ±' + Math.round(r.acc) + ' m', accType);
                 // Stop early if we have minimum readings AND a good fix
                 if (readings.length >= minReads && r.acc <= goodAcc) { done(); return; }
                 if (readings.length >= maxReads) { done(); }

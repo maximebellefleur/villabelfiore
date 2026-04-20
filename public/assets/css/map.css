@@ -440,6 +440,11 @@
   color: #2d5a27;
 }
 
+.map-gps-status--warning {
+  background: rgba(255,193,7,.15);
+  color: #7d5a00;
+}
+
 /* Add Item sheet — location row (coords + GPS button side by side) */
 .map-add-sheet-loc {
   display: flex;
