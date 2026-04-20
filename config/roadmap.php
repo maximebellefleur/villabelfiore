@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Bug Fixes',
+        'features' => [
+            ['title' => 'Copy AI fixed', 'detail' => 'Fixed null addEventListener crash — modal elements are now looked up lazily on first click instead of at script load time.'],
+            ['title' => 'Remember Me layout', 'detail' => 'Checkbox and label are now on the same line, left-aligned, standard form style.'],
+            ['title' => 'Dashboard 4-per-row grid', 'detail' => 'Quick action buttons now use a strict CSS grid — always 4 columns, no irregular wrapping.'],
+        ],
+    ],
+
     '2.1.7' => [
         'status'   => 'released',
         'released' => '2026-04-20',

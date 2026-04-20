@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.1.8' => [
+        'date'  => '2026-04-20',
+        'title' => 'Bug Fixes',
+        'new'   => [],
+        'improved' => [],
+        'fixed' => [
+            'Copy AI button: "Cannot read properties of null (reading addEventListener)" — modal HTML is placed after the script tag so getElementById returned null at load time; now looked up lazily on first click.',
+            'Remember Me checkbox: moved into a proper left-aligned label element, checkbox and text on the same line.',
+            'Dashboard quick actions: changed from flex-wrap to a strict 4-column grid so buttons always appear 4 per row.',
+        ],
+    ],
+
     '2.1.7' => [
         'date'  => '2026-04-20',
         'title' => 'Remember Me & Dashboard Links',
