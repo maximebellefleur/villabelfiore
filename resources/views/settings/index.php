@@ -62,6 +62,35 @@
             </div>
 
             <div class="settings-group">
+                <div class="settings-group-title">Garden &amp; Climate</div>
+
+                <div class="settings-field">
+                    <label class="settings-label">Climate Zone</label>
+                    <p class="settings-hint">Used for seasonal planting suggestions in the Garden hub.</p>
+                    <select name="garden_climate_zone" class="settings-input">
+                        <?php
+                        $climateZones = [
+                            ''                       => '— Select your climate —',
+                            'mediterranean_sicily'   => '🌿 Mediterranean — Sicily / S. Italy (Hot dry summer, mild winter)',
+                            'mediterranean_general'  => '🌿 Mediterranean — General (Spain, Greece, Maghreb)',
+                            'continental_north_italy'=> '🌱 Continental — N. Italy / Po Valley (Cold winter, hot summer)',
+                            'temperate_oceanic'      => '🌧 Temperate Oceanic — N. Europe (UK, France, Benelux)',
+                            'continental_central_eu' => '❄️ Continental — Central Europe (Germany, Austria, Poland)',
+                            'subtropical_humid'      => '🌴 Subtropical Humid — SE USA, SE Asia',
+                            'tropical'               => '🌺 Tropical (Year-round warm)',
+                            'arid_desert'            => '🏜 Arid / Desert',
+                            'semi_arid'              => '🌵 Semi-Arid',
+                            'alpine'                 => '⛰ Alpine / Mountain',
+                        ];
+                        $currentZone = $settings['garden.climate_zone'] ?? 'mediterranean_sicily';
+                        foreach ($climateZones as $val => $label): ?>
+                        <option value="<?= e($val) ?>" <?= $currentZone === $val ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <div class="settings-group-title">GPS & Photos</div>
 
                 <div class="settings-field">

@@ -146,19 +146,77 @@ class GardenController
              ORDER BY due_at ASC LIMIT 5"
         );
 
+        // Climate-based planting suggestions
+        $climateRow  = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'garden.climate_zone'");
+        $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
+        $climateSuggestions = $this->getClimateSuggestions($climateZone, $currentMonth);
+
         Response::render('garden/index', [
-            'title'           => 'Garden',
-            'totalSeeds'      => $totalSeeds,
-            'plantNow'        => $plantNow,
-            'harvestSoon'     => $harvestSoon,
-            'harvestMonths'   => $harvestMonths,
-            'lowStock'        => $lowStock,
-            'familyNeeds'     => $familyNeeds,
-            'activeBedRows'   => $activeBedRows,
-            'recentActivity'  => $recentActivity,
-            'harvestReminders'=> $harvestReminders,
-            'currentMonth'    => $currentMonth,
-            'currentYear'     => $currentYear,
+            'title'              => 'Garden',
+            'totalSeeds'         => $totalSeeds,
+            'plantNow'           => $plantNow,
+            'harvestSoon'        => $harvestSoon,
+            'harvestMonths'      => $harvestMonths,
+            'lowStock'           => $lowStock,
+            'familyNeeds'        => $familyNeeds,
+            'activeBedRows'      => $activeBedRows,
+            'recentActivity'     => $recentActivity,
+            'harvestReminders'   => $harvestReminders,
+            'currentMonth'       => $currentMonth,
+            'currentYear'        => $currentYear,
+            'climateSuggestions' => $climateSuggestions,
+            'climateZone'        => $climateZone,
         ]);
+    }
+
+    /**
+     * Built-in seasonal planting calendar keyed by [climate_zone][month].
+     * Returns array of ['name'=>string, 'type'=>string, 'tip'=>string]
+     */
+    private function getClimateSuggestions(string $zone, int $month): array
+    {
+        // Base Mediterranean Sicily calendar (hot dry summer, mild rainy winter)
+        // Other zones override specific months
+        $med_sicily = [
+            1  => [['name'=>'Broad Beans','type'=>'vegetable','tip'=>'Sow direct, frost-hardy'],['name'=>'Peas','type'=>'vegetable','tip'=>'Best month to sow'],['name'=>'Lettuce','type'=>'vegetable','tip'=>'Transplant under cover'],['name'=>'Spinach','type'=>'vegetable','tip'=>'Cold-season leafy green'],['name'=>'Onion sets','type'=>'vegetable','tip'=>'Plant bulbs now']],
+            2  => [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Start indoors for April transplant'],['name'=>'Peppers','type'=>'vegetable','tip'=>'Sow in heated propagator'],['name'=>'Aubergine','type'=>'vegetable','tip'=>'Start indoors'],['name'=>'Early Potatoes','type'=>'vegetable','tip'=>'Chit now for March planting'],['name'=>'Chard','type'=>'vegetable','tip'=>'Sow direct']],
+            3  => [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Transplant seedlings if frosts done'],['name'=>'Zucchini','type'=>'vegetable','tip'=>'Start indoors'],['name'=>'Basil','type'=>'herb','tip'=>'Sow indoors — loves warmth'],['name'=>'Carrots','type'=>'vegetable','tip'=>'Direct sow in prepared bed'],['name'=>'Beets','type'=>'vegetable','tip'=>'Direct sow']],
+            4  => [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Transplant outdoors after last frost'],['name'=>'Peppers','type'=>'vegetable','tip'=>'Transplant with protection'],['name'=>'Cucumber','type'=>'vegetable','tip'=>'Sow indoors or transplant'],['name'=>'Green Beans','type'=>'vegetable','tip'=>'Direct sow warm soil'],['name'=>'Basil','type'=>'herb','tip'=>'Transplant in warm spot']],
+            5  => [['name'=>'Zucchini','type'=>'vegetable','tip'=>'Direct sow — fastest growing'],['name'=>'Pumpkin','type'=>'vegetable','tip'=>'Direct sow with space'],['name'=>'Sweet Corn','type'=>'vegetable','tip'=>'Direct sow in blocks'],['name'=>'Watermelon','type'=>'fruit','tip'=>'Transplant seedlings'],['name'=>'Okra','type'=>'vegetable','tip'=>'Loves heat']],
+            6  => [['name'=>'Autumn Tomatoes','type'=>'vegetable','tip'=>'Second sowing for autumn harvest'],['name'=>'Basil','type'=>'herb','tip'=>'Last chance to sow'],['name'=>'Fennel','type'=>'vegetable','tip'=>'Sow for autumn'],['name'=>'Melon','type'=>'fruit','tip'=>'Best month — peak heat']],
+            7  => [['name'=>'Autumn Carrots','type'=>'vegetable','tip'=>'Sow for autumn harvest'],['name'=>'Lettuce','type'=>'vegetable','tip'=>'Heat-tolerant varieties only'],['name'=>'Beans','type'=>'vegetable','tip'=>'Last summer sowing']],
+            8  => [['name'=>'Autumn Brassicas','type'=>'vegetable','tip'=>'Sow broccoli/cauliflower'],['name'=>'Autumn Lettuce','type'=>'vegetable','tip'=>'Transplant now for cool season'],['name'=>'Radish','type'=>'vegetable','tip'=>'Quick crop before summer ends'],['name'=>'Turnips','type'=>'vegetable','tip'=>'Direct sow for autumn']],
+            9  => [['name'=>'Garlic','type'=>'vegetable','tip'=>'Plant cloves for summer harvest'],['name'=>'Onions','type'=>'vegetable','tip'=>'Sets or seed sowing'],['name'=>'Spinach','type'=>'vegetable','tip'=>'Perfect cool season timing'],['name'=>'Peas','type'=>'vegetable','tip'=>'Autumn/winter crop'],['name'=>'Broad Beans','type'=>'vegetable','tip'=>'Sow for spring harvest']],
+            10 => [['name'=>'Garlic','type'=>'vegetable','tip'=>'Main garlic planting month'],['name'=>'Fava Beans','type'=>'vegetable','tip'=>'Direct sow — overwinters well'],['name'=>'Winter Lettuce','type'=>'vegetable','tip'=>'Under cover or sheltered'],['name'=>'Chicory','type'=>'vegetable','tip'=>'Direct sow'],['name'=>'Parsley','type'=>'herb','tip'=>'Sow for winter use']],
+            11 => [['name'=>'Garlic','type'=>'vegetable','tip'=>'Last chance to plant'],['name'=>'Onion seeds','type'=>'vegetable','tip'=>'Overwinter for early harvest'],['name'=>'Broad Beans','type'=>'vegetable','tip'=>'Sow early varieties'],['name'=>'Cover crops','type'=>'other','tip'=>'Green manure for bed improvement']],
+            12 => [['name'=>'Cover crops','type'=>'other','tip'=>'Legume mix for nitrogen fixing'],['name'=>'Planning','type'=>'other','tip'=>'Order seeds, plan rotations'],['name'=>'Fruit trees','type'=>'fruit','tip'=>'Dormant pruning time'],['name'=>'Garlic maintenance','type'=>'vegetable','tip'=>'Weed around established beds']],
+        ];
+
+        // Temperate oceanic adjustments (UK / N France)
+        $temperate_oceanic = $med_sicily;
+        $temperate_oceanic[3]  = [['name'=>'Onions','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'Brassicas','type'=>'vegetable','tip'=>'Cabbage/broccoli indoors'],['name'=>'Lettuce','type'=>'vegetable','tip'=>'Under glass only'],['name'=>'Peas','type'=>'vegetable','tip'=>'Early varieties direct']];
+        $temperate_oceanic[4]  = [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Sow indoors heated'],['name'=>'Courgette','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'Leeks','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'Carrots','type'=>'vegetable','tip'=>'Direct sow outside']];
+        $temperate_oceanic[5]  = [['name'=>'Runner Beans','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'French Beans','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'Sweetcorn','type'=>'vegetable','tip'=>'Sow indoors in modules'],['name'=>'Cucumber','type'=>'vegetable','tip'=>'Sow indoors']];
+        $temperate_oceanic[6]  = [['name'=>'Runner Beans','type'=>'vegetable','tip'=>'Transplant outside'],['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Plant out after last frost'],['name'=>'Courgette','type'=>'vegetable','tip'=>'Plant out — risk of frost done'],['name'=>'Basil','type'=>'herb','tip'=>'Plant in greenhouse']];
+
+        $zones = [
+            'mediterranean_sicily'    => $med_sicily,
+            'mediterranean_general'   => $med_sicily,
+            'continental_north_italy' => array_merge($med_sicily, [
+                3 => [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Start indoors only — late frosts'],['name'=>'Leeks','type'=>'vegetable','tip'=>'Sow indoors'],['name'=>'Onions','type'=>'vegetable','tip'=>'Sow indoors']],
+                4 => [['name'=>'Potatoes','type'=>'vegetable','tip'=>'Plant after Easter frost risk'],['name'=>'Lettuce','type'=>'vegetable','tip'=>'Transplant outside now'],['name'=>'Carrots','type'=>'vegetable','tip'=>'Direct sow — soil warming']],
+                5 => [['name'=>'Tomatoes','type'=>'vegetable','tip'=>'Transplant post–last frost (mid May)'],['name'=>'Zucchini','type'=>'vegetable','tip'=>'Direct sow or transplant'],['name'=>'Beans','type'=>'vegetable','tip'=>'Direct sow warm soil']],
+            ]),
+            'temperate_oceanic'       => $temperate_oceanic,
+            'continental_central_eu'  => $temperate_oceanic,
+            'subtropical_humid'       => $med_sicily,
+            'tropical'                => array_fill(1, 12, [['name'=>'Year-round planting','type'=>'other','tip'=>'Manage rainfall and heat — see local calendar']]),
+            'arid_desert'             => $med_sicily,
+            'semi_arid'               => $med_sicily,
+            'alpine'                  => $temperate_oceanic,
+        ];
+
+        $calendar = $zones[$zone] ?? $med_sicily;
+        return $calendar[$month] ?? [];
     }
 }

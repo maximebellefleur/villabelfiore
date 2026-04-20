@@ -799,8 +799,8 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
     });
 });
 
-// Log entry detail popup
-(function () {
+// Log entry detail popup — modal HTML lives below this script, use DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function () {
     var backdrop  = document.getElementById('logDetailBackdrop');
     var closeBtn  = document.getElementById('logModalClose');
     var titleEl   = document.getElementById('logModalTitle');
@@ -811,14 +811,16 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
     var photoImg  = document.getElementById('logModalPhotoImg');
     var photoLink = document.getElementById('logModalPhotoLink');
 
+    if (!backdrop || !closeBtn) return;
+
     function openLogModal(data) {
         titleEl.textContent  = data.action || 'Log Entry';
         badgeEl.textContent  = data.action || '';
         dateEl.textContent   = data.date   || '';
         descEl.textContent   = data.description || '—';
         if (data.att_url && data.att_mime && data.att_mime.indexOf('image/') === 0) {
-            photoImg.src         = data.att_url;
-            photoLink.href       = data.att_url;
+            photoImg.src            = data.att_url;
+            photoLink.href          = data.att_url;
             photoWrap.style.display = '';
         } else {
             photoWrap.style.display = 'none';
@@ -849,7 +851,7 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && backdrop.style.display !== 'none') closeLogModal();
     });
-}());
+});
 
 // AI Prompt — shows text in a modal so clipboard copy is a direct user gesture (iOS-safe)
 (function() {

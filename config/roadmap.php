@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.2.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Biodynamic Garden',
+        'features' => [
+            ['title' => 'Maria Thun Biodynamic Calendar', 'detail' => 'Full hourly calendar using Jean Meeus sidereal astronomy. Root/Leaf/Flower/Fruit days, descending moon planting windows, anomaly periods. Crop search highlights the right days.'],
+            ['title' => 'Climate-based planting suggestions', 'detail' => 'Garden Hub now shows what to plant this month based on your climate zone (Mediterranean Sicily default). Configure in Settings → General.'],
+            ['title' => 'Dashboard biodynamic widget', 'detail' => "Today's organ type, ascending/descending moon, anomaly warning, and 7-day biodynamic week strip — all powered by real sidereal astronomy."],
+            ['title' => 'Nav icon logo styling', 'detail' => 'Circular badge style for the nav icon with border and background.'],
+            ['title' => 'Modal null-error fixes', 'detail' => 'Log modal and AI modal no longer crash with null addEventListener.'],
+        ],
+    ],
+
     '2.1.9' => [
         'status'   => 'released',
         'released' => '2026-04-20',

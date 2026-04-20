@@ -156,28 +156,76 @@ for ($i = 0; $i < 7; $i++) {
 </div>
 
 <!-- ============================================================
-     LUNAR CALENDAR
+     LUNAR + BIODYNAMIC CALENDAR
      ============================================================ -->
 <section class="dash-section lunar-section">
     <div class="lunar-section-head">
         <span class="lunar-section-title">🌙 Lunar Garden Calendar</span>
+        <a href="<?= url('/garden/biodynamic') ?>" style="font-size:.75rem;color:var(--color-primary);text-decoration:none;font-weight:600">Full Calendar →</a>
     </div>
-    <div class="lunar-today">
-        <div class="lunar-today-left">
+
+    <!-- Biodynamic today panel -->
+    <?php if (!empty($bioNow)): ?>
+    <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:var(--spacing-3);flex-wrap:wrap">
+        <!-- Moon phase (existing data) -->
+        <div class="lunar-today-left" style="flex:1;min-width:160px">
             <span class="lunar-phase-big"><?= $moonToday['phaseEmoji'] ?></span>
             <div>
                 <div class="lunar-phase-name"><?= $moonToday['phaseName'] ?></div>
                 <div class="lunar-phase-sub"><?= $moonToday['waxing'] ? '↑ Waxing' : '↓ Waning' ?> · <?= $moonToday['sign'] ?></div>
             </div>
         </div>
-        <div class="lunar-today-right">
-            <span class="lunar-type-emoji"><?= $moonToday['dayEmoji'] ?></span>
+        <!-- Biodynamic organ -->
+        <div style="flex:1;min-width:140px;background:<?= \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']] ?? '#f0fdf4' ?>;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.8rem"><?= \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bioNow['organ']] ?? '🌿' ?></span>
             <div>
-                <div class="lunar-type-name"><?= $moonToday['dayType'] ?> Day</div>
-                <div class="lunar-type-desc"><?= $moonToday['dayDesc'] ?></div>
+                <div style="font-weight:700;font-size:.9rem;color:<?= \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d' ?>"><?= $bioNow['organ'] ?> Day</div>
+                <div style="font-size:.75rem;color:var(--color-text-muted)"><?= $bioNow['name'] ?> · <?= $bioNow['element'] ?></div>
             </div>
         </div>
+        <!-- Ascending/Descending -->
+        <div style="flex:1;min-width:140px;background:<?= $bioNow['is_descending'] ? '#eff6ff' : '#faf5ff' ?>;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.8rem"><?= $bioNow['is_descending'] ? '🌱' : '🌾' ?></span>
+            <div>
+                <div style="font-weight:700;font-size:.9rem;color:<?= $bioNow['is_descending'] ? '#1d4ed8' : '#6d28d9' ?>">
+                    <?= $bioNow['is_descending'] ? '↓ Plant Now' : '↑ Harvest Time' ?>
+                </div>
+                <div style="font-size:.75rem;color:var(--color-text-muted)">
+                    <?= $bioNow['is_descending'] ? 'Moon descending — sow &amp; plant' : 'Moon ascending — harvest &amp; pick' ?>
+                </div>
+            </div>
+        </div>
+        <?php if ($bioNow['is_anomaly']): ?>
+        <div style="flex:1;min-width:140px;background:#fef2f2;border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.8rem">⚠️</span>
+            <div>
+                <div style="font-weight:700;font-size:.9rem;color:#dc2626">Avoid Today</div>
+                <div style="font-size:.75rem;color:var(--color-text-muted)">Near lunar node or apse — pause garden work</div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
+    <?php endif; ?>
+
+    <!-- 7-day biodynamic week strip -->
+    <?php if (!empty($bioWeek)): ?>
+    <div class="lunar-week" style="margin-bottom:0">
+        <?php foreach ($bioWeek as $i => $bw):
+            $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $moonInfo = $moonWeek[$i] ?? [];
+            $bgStyle  = 'background:' . (\App\Support\BiodynamicCalendar::ORGAN_BG[$bw['organ']] ?? '#f0fdf4');
+        ?>
+        <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?>" style="<?= $bgStyle ?>">
+            <div class="lunar-day-label"><?= $dayLabel ?></div>
+            <div class="lunar-day-num"><?= $dayNum ?></div>
+            <div class="lunar-day-moon"><?= $moonInfo['phaseEmoji'] ?? '🌑' ?></div>
+            <div class="lunar-day-emoji"><?= \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bw['organ']] ?? '🌿' ?></div>
+            <div class="lunar-day-type" style="color:<?= \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bw['organ']] ?? '#15803d' ?>;font-size:.6rem"><?= $bw['organ'] ?><?= $bw['is_anomaly'] ? ' ⚠' : '' ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php else: ?>
     <div class="lunar-week">
         <?php foreach ($moonWeek as $i => $m):
             $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
@@ -193,6 +241,7 @@ for ($i = 0; $i < 7; $i++) {
         </div>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 </section>
 
 <!-- ============================================================

@@ -152,6 +152,7 @@ $router->post('/settings/calendar/sync',       'CalendarController@sync');
 // Garden hub
 // -------------------------------------------------------------------------
 $router->get('/garden',                   'GardenController@index');
+$router->get('/garden/biodynamic',        'BiodynamicController@index');
 
 // -------------------------------------------------------------------------
 // Seeds

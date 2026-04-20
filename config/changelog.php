@@ -8,6 +8,29 @@
  */
 return [
 
+    '2.2.0' => [
+        'date'  => '2026-04-20',
+        'title' => 'Biodynamic Garden',
+        'new'   => [
+            'Maria Thun Biodynamic Calendar (/garden/biodynamic): full hourly grid using Jean Meeus sidereal astronomy (Fagan-Bradley ayanamsa). Shows Root/Leaf/Flower/Fruit days, descending moon planting windows, and anomaly periods (lunar nodes, apogee/perigee ±6h).',
+            'Crop search in biodynamic calendar: type a crop name (e.g. "tomatoes", "carrots") to highlight the correct organ days.',
+            'Best planting days summary: automatically lists best Root/Leaf/Flower/Fruit days each month with descending moon.',
+            'Climate-based planting suggestions in Garden Hub: built-in seasonal calendar for Mediterranean Sicily (default), N. Italy, Temperate Oceanic, and more. Shows what to plant this month based on your configured zone.',
+            'Climate Zone setting added to Settings → General.',
+            'Dashboard lunar section enhanced with biodynamic data: today\'s organ type, ascending/descending status, anomaly warning, and 7-day biodynamic week strip.',
+        ],
+        'improved' => [
+            'Nav icon logo now shows circular badge style (border, padding, background) matching user\'s design.',
+            'Nav has overflow:hidden to prevent layout overflow.',
+            'Log entry detail modal fixed: DOMContentLoaded ensures modal elements are available before event listeners attach.',
+            'Copy AI button fixed: lazy-init removed; direct getElementById used since modal HTML is before the script block.',
+        ],
+        'fixed' => [
+            'Log modal closeBtn null addEventListener crash fixed.',
+            'AI prompt modal null addEventListener crash fixed.',
+        ],
+    ],
+
     '2.1.9' => [
         'date'  => '2026-04-20',
         'title' => 'Garden Hub',

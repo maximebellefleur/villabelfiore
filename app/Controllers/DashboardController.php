@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
+use App\Support\BiodynamicCalendar;
 
 class DashboardController
 {
@@ -74,6 +75,17 @@ class DashboardController
              ORDER BY i.name"
         );
 
+        // Biodynamic data for today + next 7 days
+        $tzStr = $this->getSetting($db, 'app.timezone', 'Europe/Rome') ?: 'Europe/Rome';
+        $tz    = new \DateTimeZone($tzStr);
+        $bioNow  = BiodynamicCalendar::computePoint(new \DateTime('now', $tz));
+        $bioWeek = [];
+        for ($i = 0; $i < 7; $i++) {
+            $dt = new \DateTime('now', $tz);
+            $dt->modify("+{$i} days")->setTime(12, 0);
+            $bioWeek[$i] = BiodynamicCalendar::computePoint($dt);
+        }
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
@@ -88,6 +100,8 @@ class DashboardController
             'forecastUrl'       => $this->getSetting($db, 'weather.forecast_url', 'https://www.ilmeteo.it/meteo/rosolini'),
             'ownerName'         => $this->getSetting($db, 'app.owner_name', ''),
             'quote'             => $this->fetchQuote($db),
+            'bioNow'            => $bioNow,
+            'bioWeek'           => $bioWeek,
         ]);
     }
 

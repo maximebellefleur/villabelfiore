@@ -58,6 +58,7 @@ class SettingsController
             'reminder.default_lead_days', 'integration.google_calendar',
             'integration.weather', 'quote.api_url',
             'ai.endpoint', 'ai.vision_model',
+            'garden.climate_zone',
         ];
 
         $db = DB::getInstance();
