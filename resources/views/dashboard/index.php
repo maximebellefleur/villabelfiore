@@ -209,7 +209,7 @@ for ($i = 0; $i < 7; $i++) {
 
     <!-- 7-day biodynamic week strip -->
     <?php if (!empty($bioWeek)): ?>
-    <div class="lunar-week" style="margin-bottom:0">
+    <div class="lunar-week bio-week" style="margin-bottom:0">
         <?php foreach ($bioWeek as $i => $bw):
             $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
             $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
@@ -217,8 +217,8 @@ for ($i = 0; $i < 7; $i++) {
             $bgStyle  = 'background:' . (\App\Support\BiodynamicCalendar::ORGAN_BG[$bw['organ']] ?? '#f0fdf4');
         ?>
         <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?>" style="<?= $bgStyle ?>">
-            <div class="lunar-day-label"><?= $dayLabel ?></div>
-            <div class="lunar-day-num"><?= $dayNum ?></div>
+            <div class="lunar-day-label" style="color:rgba(30,50,30,0.55)"><?= $dayLabel ?></div>
+            <div class="lunar-day-num"   style="color:#1a2e1c"><?= $dayNum ?></div>
             <div class="lunar-day-moon"><?= $moonInfo['phaseEmoji'] ?? '🌑' ?></div>
             <div class="lunar-day-emoji"><?= \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bw['organ']] ?? '🌿' ?></div>
             <div class="lunar-day-type" style="color:<?= \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bw['organ']] ?? '#15803d' ?>;font-size:.6rem"><?= $bw['organ'] ?><?= $bw['is_anomaly'] ? ' ⚠' : '' ?></div>
