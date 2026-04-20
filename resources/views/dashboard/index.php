@@ -217,7 +217,12 @@ function _bioAdvice(string $organ, bool $desc, bool $anom): array {
 <section class="dash-section lunar-section" style="padding-bottom:var(--spacing-3)">
     <div class="lunar-section-head" style="align-items:center">
         <span class="lunar-section-title">🌙 Garden — Right Now</span>
-        <a href="<?= url('/garden/biodynamic') ?>" style="margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap">Full Calendar →</a>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <button onclick="document.getElementById('bioInfoModal').style.display='flex'"
+                    style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:26px;height:26px;color:#fff;font-size:.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1"
+                    title="How does this work?">ⓘ</button>
+            <a href="<?= url('/garden/biodynamic') ?>" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap">Full Calendar →</a>
+        </div>
     </div>
 
     <?php if (!empty($bioSegments)): ?>
@@ -522,6 +527,55 @@ function irrMarkDone(id, btn) {
     });
 }());
 </script>
+
+<!-- ============================================================
+     BIODYNAMIC INFO MODAL
+     ============================================================ -->
+<div id="bioInfoModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+        <div style="background:linear-gradient(135deg,#0f2d18,#1a3a1c);border-radius:16px 16px 0 0;padding:20px 24px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:800;font-size:1.05rem;color:#fff">🌙 How Rooted computes this</div>
+            <button onclick="document.getElementById('bioInfoModal').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div style="padding:22px 24px;font-size:.875rem;line-height:1.7;color:#374151">
+
+            <p style="margin:0 0 16px;color:#6b7280;font-size:.82rem">These recommendations combine <strong>precise astronomical calculations</strong> with <strong>Maria Thun's biodynamic method</strong>. Here is exactly what is computed and why.</p>
+
+            <div style="background:#f0fdf4;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:.88rem;color:#15803d;margin-bottom:8px">🔭 Astronomy — Jean Meeus algorithms</div>
+                <p style="margin:0 0 8px">The moon's position is computed using <strong>Jean Meeus' "Astronomical Algorithms"</strong> (2nd ed., 1998) — the professional standard used by observatories and planetariums worldwide.</p>
+                <ul style="margin:0;padding-left:18px;color:#374151">
+                    <li><strong>Lunar longitude</strong>: 40+ periodic terms from Meeus Tables 47.A, accurate to ~0.1°</li>
+                    <li><strong>Sidereal conversion</strong>: Fagan-Bradley ayanamsa (~25.1° in 2026) — subtracts the precession offset to place the moon in its <em>actual constellation</em>, not the seasonal zodiac</li>
+                    <li><strong>Declination</strong>: derived from longitude, latitude and Earth's obliquity — used to detect ascending vs. descending moon</li>
+                    <li><strong>Distance</strong>: from parallax terms — detects apogee (furthest) and perigee (closest)</li>
+                    <li><strong>Nodes</strong>: detected by latitude sign change — marks when the moon crosses the ecliptic</li>
+                </ul>
+            </div>
+
+            <div style="background:#fef3c7;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:.88rem;color:#92400e;margin-bottom:8px">🌱 Biodynamic interpretation — Maria Thun's method</div>
+                <p style="margin:0 0 8px">Maria Thun (1922–2012) conducted field experiments over decades and published annual sowing calendars from 1963. She observed that crops responded differently depending on the moon's sidereal constellation:</p>
+                <ul style="margin:0;padding-left:18px;color:#374151">
+                    <li>🥕 <strong>Root days</strong>: Moon in Earth signs (Taurus, Virgo, Capricorn) → root vegetables</li>
+                    <li>🥬 <strong>Leaf days</strong>: Moon in Water signs (Cancer, Scorpio, Pisces) → leafy greens</li>
+                    <li>🌸 <strong>Flower days</strong>: Moon in Air signs (Gemini, Libra, Aquarius) → flowers & aromatics</li>
+                    <li>🍎 <strong>Fruit days</strong>: Moon in Fire signs (Aries, Leo, Sagittarius) → fruits & seeds</li>
+                </ul>
+                <p style="margin:8px 0 0;font-size:.82rem;color:#78350f">
+                    <strong>↓ Descending moon</strong> (declination decreasing): earth forces active → sow &amp; plant.<br>
+                    <strong>↑ Ascending moon</strong> (increasing): cosmic forces active → harvest &amp; pick.<br>
+                    <strong>⚠ Avoid periods</strong>: ±6 hours around lunar nodes and apogee/perigee — Thun observed disrupted plant responses.
+                </p>
+            </div>
+
+            <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;font-size:.8rem;color:#475569">
+                <div style="font-weight:700;color:#1e293b;margin-bottom:6px">📋 Scientific status</div>
+                The astronomical calculations are <strong>precise and fully verifiable</strong>. The biodynamic interpretation is an <strong>empirical agricultural tradition</strong> — well-documented by practitioners worldwide and used on thousands of farms, but not replicated through conventional double-blind peer review. Treat the calendar as an additional timing layer alongside your own agronomic knowledge and experience.
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ============================================================
      QUICK ACTION STRIP

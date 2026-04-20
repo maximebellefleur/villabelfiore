@@ -184,6 +184,9 @@ $currentHour = (int) date('G');
     <div style="display:flex;align-items:center;gap:12px">
         <a href="<?= url('/garden') ?>" class="btn btn-ghost btn-sm">← Garden</a>
         <div class="bio-nav-month">🌙 <?= $monthName ?> <?= $year ?></div>
+        <button onclick="document.getElementById('bioInfoModalCal').style.display='flex'"
+                style="background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:50%;width:28px;height:28px;color:var(--color-text-muted);font-size:.8rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"
+                title="How does this work?">ⓘ</button>
     </div>
     <div class="bio-nav-btns">
         <a href="<?= url('/garden/biodynamic?year='.$prevYear.'&month='.$prevMonth) ?>" class="btn btn-secondary btn-sm">← <?= $monthNames[$prevMonth] ?></a>
@@ -191,6 +194,44 @@ $currentHour = (int) date('G');
         <a href="<?= url('/garden/biodynamic') ?>" class="btn btn-ghost btn-sm">Today</a>
         <?php endif; ?>
         <a href="<?= url('/garden/biodynamic?year='.$nextYear.'&month='.$nextMonth) ?>" class="btn btn-secondary btn-sm"><?= $monthNames[$nextMonth] ?> →</a>
+    </div>
+</div>
+
+<!-- Biodynamic method info modal -->
+<div id="bioInfoModalCal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+        <div style="background:linear-gradient(135deg,#0f2d18,#1a3a1c);border-radius:16px 16px 0 0;padding:20px 24px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:800;font-size:1.05rem;color:#fff">🌙 How Rooted computes this</div>
+            <button onclick="document.getElementById('bioInfoModalCal').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div style="padding:22px 24px;font-size:.875rem;line-height:1.7;color:#374151">
+            <p style="margin:0 0 16px;color:#6b7280;font-size:.82rem">These recommendations combine <strong>precise astronomical calculations</strong> with <strong>Maria Thun's biodynamic method</strong>.</p>
+            <div style="background:#f0fdf4;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:.88rem;color:#15803d;margin-bottom:8px">🔭 Astronomy — Jean Meeus algorithms</div>
+                <p style="margin:0 0 8px">The moon's position is computed using <strong>Jean Meeus' "Astronomical Algorithms"</strong> (2nd ed., 1998) — the professional standard used by observatories worldwide.</p>
+                <ul style="margin:0;padding-left:18px">
+                    <li><strong>Lunar longitude</strong>: 40+ periodic terms from Meeus Tables 47.A, accurate to ~0.1°</li>
+                    <li><strong>Sidereal conversion</strong>: Fagan-Bradley ayanamsa (~25.1° in 2026) — places the moon in its <em>actual constellation</em></li>
+                    <li><strong>Declination</strong>: determines ascending ↑ vs. descending ↓ moon</li>
+                    <li><strong>Distance + nodes</strong>: detect apogee/perigee and ecliptic crossings for avoid periods (⚠)</li>
+                </ul>
+            </div>
+            <div style="background:#fef3c7;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:.88rem;color:#92400e;margin-bottom:8px">🌱 Biodynamic interpretation — Maria Thun's method</div>
+                <ul style="margin:0;padding-left:18px">
+                    <li>🥕 <strong>Root</strong>: Moon in Earth signs (Taurus, Virgo, Capricorn)</li>
+                    <li>🥬 <strong>Leaf</strong>: Moon in Water signs (Cancer, Scorpio, Pisces)</li>
+                    <li>🌸 <strong>Flower</strong>: Moon in Air signs (Gemini, Libra, Aquarius)</li>
+                    <li>🍎 <strong>Fruit</strong>: Moon in Fire signs (Aries, Leo, Sagittarius)</li>
+                </ul>
+                <p style="margin:8px 0 0;font-size:.82rem;color:#78350f">
+                    <strong>↓ Descending</strong>: sow &amp; plant · <strong>↑ Ascending</strong>: harvest &amp; pick · <strong>⚠ Avoid</strong>: ±6h around nodes &amp; apses
+                </p>
+            </div>
+            <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;font-size:.8rem;color:#475569">
+                <strong>Scientific status:</strong> The astronomical calculations are precise and verifiable. The biodynamic interpretation is an empirical agricultural tradition used on thousands of farms worldwide — not replicated by conventional double-blind peer review. Use as an additional timing layer alongside your own experience.
+            </div>
+        </div>
     </div>
 </div>
 
