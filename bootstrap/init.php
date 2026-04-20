@@ -96,6 +96,44 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // -------------------------------------------------------------------------
+// Remember-me auto-login
+// -------------------------------------------------------------------------
+
+if (empty($_SESSION['user_id']) && !empty($_COOKIE['rooted_remember'])) {
+    try {
+        $db        = \App\Support\DB::getInstance();
+        $raw       = $_COOKIE['rooted_remember'];
+        $hash      = hash('sha256', $raw);
+        $tokenRow  = $db->fetchOne(
+            "SELECT rt.*, u.id AS uid, u.display_name
+             FROM remember_tokens rt
+             JOIN users u ON u.id = rt.user_id
+             WHERE rt.token_hash = ? AND rt.expires_at > NOW() AND u.is_active = 1",
+            [$hash]
+        );
+        if ($tokenRow) {
+            session_regenerate_id(true);
+            $_SESSION['user_id']   = $tokenRow['uid'];
+            $_SESSION['user_name'] = $tokenRow['display_name'];
+            // Roll the expiry window (30 days from now)
+            $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $db->execute('UPDATE remember_tokens SET expires_at = ? WHERE token_hash = ?', [$expires, $hash]);
+            $db->execute('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$tokenRow['uid']]);
+            setcookie('rooted_remember', $raw, [
+                'expires'  => strtotime('+30 days'),
+                'path'     => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        } else {
+            setcookie('rooted_remember', '', ['expires' => 1, 'path' => '/']);
+        }
+    } catch (\Throwable $e) {
+        // silently ignore — table may not exist yet or DB unavailable
+    }
+}
+
+// -------------------------------------------------------------------------
 // Exception + error handler (log to file, show generic message in prod)
 // -------------------------------------------------------------------------
 

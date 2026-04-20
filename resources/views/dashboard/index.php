@@ -365,6 +365,18 @@ for ($i = 0; $i < 7; $i++) {
         <span class="quick-action-icon">🔔</span>
         <span class="quick-action-label">Reminder</span>
     </a>
+    <a href="<?= url('/seeds') ?>" class="quick-action-btn">
+        <span class="quick-action-icon">🌱</span>
+        <span class="quick-action-label">Seeds</span>
+    </a>
+    <a href="<?= url('/seeds/family-needs') ?>" class="quick-action-btn">
+        <span class="quick-action-icon">🧺</span>
+        <span class="quick-action-label">Family Needs</span>
+    </a>
+    <a href="<?= url('/irrigation') ?>" class="quick-action-btn quick-action-btn--irrigation">
+        <span class="quick-action-icon">💧</span>
+        <span class="quick-action-label">Irrigation</span>
+    </a>
 </div>
 
 <!-- ============================================================
@@ -548,6 +560,10 @@ for ($i = 0; $i < 7; $i++) {
 .quick-action-btn--harvest {
     background: linear-gradient(135deg, #f9f7f4, #e8f5e1);
     border-color: rgba(45,90,39,.25);
+}
+.quick-action-btn--irrigation {
+    background: linear-gradient(135deg, #f0f8ff, #ddf0fb);
+    border-color: rgba(2,132,199,.25);
 }
 .quick-action-icon { font-size: 1.75rem; line-height: 1; }
 .quick-action-label { text-align: center; line-height: 1.2; white-space: nowrap; }

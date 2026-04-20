@@ -33,6 +33,40 @@ class IrrigationController
     }
 
     // -------------------------------------------------------------------------
+    // GET /irrigation
+    // -------------------------------------------------------------------------
+    public function index(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $plans = $db->fetchAll(
+            'SELECT ip.*, i.name AS item_name, i.type AS item_type
+             FROM irrigation_plans ip
+             JOIN items i ON i.id = ip.item_id
+             WHERE i.deleted_at IS NULL AND i.status != ?
+             ORDER BY i.name',
+            ['trashed']
+        );
+
+        $withoutPlan = $db->fetchAll(
+            "SELECT i.id, i.name, i.type FROM items i
+             LEFT JOIN irrigation_plans ip ON ip.item_id = i.id
+             WHERE ip.id IS NULL
+               AND i.type IN ('tree','olive_tree','almond_tree','vine','garden','bed')
+               AND i.deleted_at IS NULL AND i.status != 'trashed'
+             ORDER BY i.name"
+        );
+
+        Response::render('irrigation/index', [
+            'title'       => 'Irrigation Plans',
+            'plans'       => $plans,
+            'withoutPlan' => $withoutPlan,
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
     // POST /items/{id}/irrigation
     // -------------------------------------------------------------------------
     public function store(Request $request, array $params = []): void

@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Remember Me & Dashboard Links',
+        'features' => [
+            ['title' => 'Remember Me login', 'detail' => 'Checkbox on the sign-in form stores a secure 30-day token. On return visits the session is restored automatically. Signing out revokes the token immediately.'],
+            ['title' => 'Seeds, Family Needs, Irrigation on dashboard', 'detail' => 'Three new quick-action buttons on the dashboard link directly to Seeds catalog, Family Needs planner, and the new Irrigation Plans overview page.'],
+            ['title' => 'Irrigation Plans overview', 'detail' => 'New /irrigation page lists all active plans (interval, duration, start date) and shows irrigatable items that have no plan yet — each links to the item page to add one.'],
+        ],
+    ],
+
     '2.1.6' => [
         'status'   => 'released',
         'released' => '2026-04-20',

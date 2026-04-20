@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.1.7' => [
+        'date'  => '2026-04-20',
+        'title' => 'Remember Me & Dashboard Links',
+        'new'   => [
+            'Remember Me on login — check the box to stay signed in for 30 days. Uses a secure hashed token stored in the database; signing out immediately revokes it.',
+            'Dashboard quick actions: new Seeds, Family Needs, and Irrigation Plan buttons linking directly to those sections.',
+            'New Irrigation Plans overview page (/irrigation) — lists all active plans with interval, duration, and start date; also shows irrigatable items that have no plan yet.',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '2.1.6' => [
         'date'  => '2026-04-20',
         'title' => 'Map & UX Fixes',
