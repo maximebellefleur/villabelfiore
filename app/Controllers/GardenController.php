@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
+use App\Support\BiodynamicCalendar;
 
 class GardenController
 {
@@ -151,6 +152,17 @@ class GardenController
         $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
         $climateSuggestions = $this->getClimateSuggestions($climateZone, $currentMonth);
 
+        // Biodynamic overview for garden page (7-day snapshot)
+        $tzStr   = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key='app.timezone'")['setting_value_text'] ?? 'Europe/Rome';
+        $tz      = new \DateTimeZone($tzStr ?: 'Europe/Rome');
+        $bioNow  = BiodynamicCalendar::computePoint(new \DateTime('now', $tz));
+        $bioWeek = [];
+        for ($i = 0; $i < 7; $i++) {
+            $dt = new \DateTime('now', $tz);
+            $dt->modify("+{$i} days")->setTime(12, 0);
+            $bioWeek[$i] = BiodynamicCalendar::computePoint($dt);
+        }
+
         Response::render('garden/index', [
             'title'              => 'Garden',
             'totalSeeds'         => $totalSeeds,
@@ -166,6 +178,8 @@ class GardenController
             'currentYear'        => $currentYear,
             'climateSuggestions' => $climateSuggestions,
             'climateZone'        => $climateZone,
+            'bioNow'             => $bioNow,
+            'bioWeek'            => $bioWeek,
         ]);
     }
 

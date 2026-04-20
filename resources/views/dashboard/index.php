@@ -196,52 +196,67 @@ if (!empty($bioNow)) {
     }
 }
 ?>
+<?php
+// Advice lookup helper
+function _bioAdvice(string $organ, bool $desc, bool $anom): array {
+    if ($anom) return ['Avoid garden work — anomaly period', 'Rest, observe, plan.', '⚠️'];
+    $map = [
+        'Root_d'   => ['Sow &amp; plant root crops',            'Carrots · Beets · Garlic · Onions · Potatoes',          '🥕'],
+        'Root_a'   => ['Harvest root crops — best flavour',     'Carrots · Beets · Garlic · Onions · Potatoes',          '🥕'],
+        'Leaf_d'   => ['Transplant &amp; water leafy greens',   'Lettuce · Spinach · Cabbage · Kale · Herbs',            '🥬'],
+        'Leaf_a'   => ['Harvest leafy greens — full of life',   'Lettuce · Spinach · Cabbage · Kale · Herbs',            '🥬'],
+        'Flower_d' => ['Sow flowers, light pruning',            'Roses · Lavender · Chamomile · Broccoli · Cauliflower', '🌸'],
+        'Flower_a' => ['Harvest flowers for drying &amp; cutting','Roses · Lavender · Chamomile · Broccoli · Cauliflower','🌸'],
+        'Fruit_d'  => ['Sow &amp; plant fruiting crops',        'Tomatoes · Peppers · Olives · Almonds · Grapes · Beans','🍎'],
+        'Fruit_a'  => ['Harvest fruits — peak ripeness',        'Tomatoes · Peppers · Olives · Almonds · Grapes · Beans','🍎'],
+    ];
+    $k = $organ . ($desc ? '_d' : '_a');
+    return $map[$k] ?? ['Garden work', '', '🌿'];
+}
+?>
 <section class="dash-section lunar-section" style="padding-bottom:var(--spacing-3)">
-    <div class="lunar-section-head">
+    <div class="lunar-section-head" style="align-items:center">
         <span class="lunar-section-title">🌙 Garden — Right Now</span>
-        <a href="<?= url('/garden/biodynamic') ?>" style="font-size:.75rem;color:var(--color-primary);text-decoration:none;font-weight:600">Full Calendar →</a>
+        <a href="<?= url('/garden/biodynamic') ?>" style="margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap">Full Calendar →</a>
     </div>
 
-    <?php if (!empty($bioNow)): ?>
-    <?php
-        $_organBg    = \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']]    ?? '#f0fdf4';
-        $_organColor = \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d';
-        $_organEmoji = \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bioNow['organ']] ?? '🌿';
-    ?>
-    <!-- Hero: what to do right now -->
-    <?php if ($bioNow['is_anomaly']): ?>
-    <div style="background:#fef2f2;border-radius:var(--radius);padding:14px 16px;margin-bottom:var(--spacing-3);border-left:4px solid #dc2626">
-        <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:2rem">⚠️</span>
-            <div>
-                <div style="font-weight:700;font-size:1rem;color:#dc2626">Anomaly Period — Rest Today</div>
-                <div style="font-size:.82rem;color:#7f1d1d;margin-top:2px"><?= $_bioAdvice ?></div>
-            </div>
-        </div>
-    </div>
-    <?php else: ?>
-    <div style="background:<?= $_organBg ?>;border-radius:var(--radius);padding:14px 16px;margin-bottom:var(--spacing-3)">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span style="font-size:2.4rem;flex-shrink:0"><?= $_organEmoji ?></span>
-            <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:1.05rem;color:<?= $_organColor ?>"><?= $_bioAdvice ?></div>
-                <div style="font-size:.78rem;color:rgba(0,0,0,0.5);margin-top:3px"><?= $_bioCrops ?></div>
-            </div>
-            <div style="flex-shrink:0;text-align:right">
-                <div style="font-size:.75rem;font-weight:600;color:<?= $_organColor ?>"><?= $bioNow['organ'] ?> day</div>
-                <div style="font-size:.7rem;color:rgba(0,0,0,0.4)"><?= $bioNow['name'] ?> · <?= $bioNow['element'] ?></div>
-                <div style="font-size:.7rem;color:<?= $bioNow['is_descending'] ? '#1d4ed8' : '#6d28d9' ?>;margin-top:2px">
-                    <?= $bioNow['is_descending'] ? '↓ Descending' : '↑ Ascending' ?>
+    <?php if (!empty($bioSegments)): ?>
+    <!-- Next 6 hours segments (grouped by organ) -->
+    <div style="display:flex;gap:8px;margin-bottom:var(--spacing-3);flex-wrap:wrap">
+        <?php foreach ($bioSegments as $seg):
+            [$adv, $crops, $segEmoji] = _bioAdvice($seg['organ'], $seg['is_descending'], $seg['is_anomaly']);
+            $segBg    = $seg['is_anomaly'] ? '#fef2f2' : (\App\Support\BiodynamicCalendar::ORGAN_BG[$seg['organ']] ?? '#f0fdf4');
+            $segColor = $seg['is_anomaly'] ? '#dc2626' : (\App\Support\BiodynamicCalendar::ORGAN_COLOR[$seg['organ']] ?? '#15803d');
+            $timeRange = $seg['_count'] === 1 ? $seg['_from'] : $seg['_from'] . '–' . $seg['_to'];
+        ?>
+        <div style="flex:1;min-width:140px;background:<?= $segBg ?>;border-radius:var(--radius);padding:12px;<?= count($bioSegments)===1?'width:100%':'' ?>">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="font-size:1.6rem"><?= $segEmoji ?></span>
+                <div>
+                    <div style="font-weight:700;font-size:.85rem;color:<?= $segColor ?>"><?= $seg['organ'] ?> <?= $seg['is_descending'] ? '↓' : '↑' ?></div>
+                    <div style="font-size:.68rem;color:rgba(0,0,0,0.4)"><?= $timeRange ?> · <?= $seg['name'] ?></div>
                 </div>
             </div>
+            <div style="font-size:.78rem;color:<?= $segColor ?>;font-weight:600"><?= $adv ?></div>
+            <?php if ($crops): ?>
+            <div style="font-size:.68rem;color:rgba(0,0,0,0.45);margin-top:3px"><?= $crops ?></div>
+            <?php endif; ?>
         </div>
+        <?php endforeach; ?>
+    </div>
+    <?php elseif (!empty($bioNow)): ?>
+    <!-- Fallback: current now card -->
+    <?php [$_adv,$_crops,$_segEmoji] = _bioAdvice($bioNow['organ'],$bioNow['is_descending'],$bioNow['is_anomaly']); ?>
+    <div style="background:<?= \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']] ?? '#f0fdf4' ?>;border-radius:var(--radius);padding:14px;margin-bottom:var(--spacing-3)">
+        <div style="font-weight:700;font-size:.95rem;color:<?= \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d' ?>"><?= $_segEmoji ?> <?= $_adv ?></div>
+        <div style="font-size:.75rem;color:rgba(0,0,0,0.45);margin-top:3px"><?= $_crops ?></div>
     </div>
     <?php endif; ?>
 
     <!-- Moon phase + 7-day strip -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:1.2rem"><?= $moonToday['phaseEmoji'] ?></span>
-        <span style="font-size:.8rem;color:var(--color-text-muted);font-weight:500"><?= $moonToday['phaseName'] ?> · <?= $moonToday['sign'] ?></span>
+        <span style="font-size:1.1rem"><?= $moonToday['phaseEmoji'] ?></span>
+        <span style="font-size:.78rem;color:var(--color-text-muted);font-weight:500"><?= $moonToday['phaseName'] ?> · <?= $moonToday['sign'] ?></span>
     </div>
     <div class="lunar-week bio-week" style="margin-bottom:0">
         <?php foreach ($bioWeek as $i => $bw):
@@ -259,24 +274,51 @@ if (!empty($bioNow)) {
         </div>
         <?php endforeach; ?>
     </div>
-    <?php else: ?>
-    <div class="lunar-week">
-        <?php foreach ($moonWeek as $i => $m):
-            $dayLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
-            $dayNum   = date('j',   mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
-            $elemClass = 'lunar-elem-' . strtolower($m['element']);
-        ?>
-        <div class="lunar-day <?= $i===0?'lunar-day--today':'' ?> <?= $elemClass ?>">
-            <div class="lunar-day-label"><?= $dayLabel ?></div>
-            <div class="lunar-day-num"><?= $dayNum ?></div>
-            <div class="lunar-day-moon"><?= $m['phaseEmoji'] ?></div>
-            <div class="lunar-day-emoji"><?= $m['dayEmoji'] ?></div>
-            <div class="lunar-day-type"><?= $m['dayType'] ?></div>
+</section>
+
+<!-- ============================================================
+     GARDEN PLANTING WIDGET
+     ============================================================ -->
+<?php
+// Build upcoming planting opportunities from bioWeek (descending moon days by organ)
+$_gardenDays = [];
+foreach ($bioWeek as $i => $bw) {
+    if ($bw['is_anomaly']) continue;
+    $dayLabel = $i === 0 ? 'Today' : ($i === 1 ? 'Tomorrow' : date('D d', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y'))));
+    [$_adv2,$_crops2] = _bioAdvice($bw['organ'], $bw['is_descending'], false);
+    $_gardenDays[] = [
+        'label'  => $dayLabel,
+        'organ'  => $bw['organ'],
+        'desc'   => $bw['is_descending'],
+        'advice' => $_adv2,
+        'crops'  => $_crops2,
+        'emoji'  => \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bw['organ']] ?? '🌿',
+        'color'  => \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bw['organ']] ?? '#15803d',
+        'bg'     => \App\Support\BiodynamicCalendar::ORGAN_BG[$bw['organ']] ?? '#f0fdf4',
+    ];
+}
+?>
+<?php if (!empty($_gardenDays)): ?>
+<section class="dash-widget" style="margin-bottom:var(--spacing-4)">
+    <div class="dash-widget-header">
+        <span>🌱 What to do in the Garden</span>
+        <a href="<?= url('/garden') ?>" class="dash-widget-link">Garden →</a>
+    </div>
+    <div style="display:flex;overflow-x:auto;gap:8px;padding:12px;scrollbar-width:thin">
+        <?php foreach ($_gardenDays as $gd): ?>
+        <div style="flex-shrink:0;min-width:130px;background:<?= $gd['bg'] ?>;border-radius:var(--radius);padding:10px 12px">
+            <div style="font-size:.68rem;font-weight:700;color:rgba(0,0,0,0.4);margin-bottom:4px;text-transform:uppercase"><?= $gd['label'] ?></div>
+            <div style="font-size:1.4rem"><?= $gd['emoji'] ?></div>
+            <div style="font-size:.78rem;font-weight:700;color:<?= $gd['color'] ?>;margin-top:3px"><?= $gd['organ'] ?></div>
+            <div style="font-size:.68rem;color:rgba(0,0,0,0.45);margin-top:2px;line-height:1.3"><?= $gd['desc'] ? 'Sow &amp; plant' : 'Harvest' ?></div>
         </div>
         <?php endforeach; ?>
     </div>
-    <?php endif; ?>
+    <div style="padding:0 12px 12px">
+        <a href="<?= url('/garden/biodynamic') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none">View full Biodynamic Calendar →</a>
+    </div>
 </section>
+<?php endif; ?>
 
 <!-- ============================================================
      WHAT TO IRRIGATE TODAY
@@ -923,15 +965,18 @@ function irrMarkDone(id, btn) {
 }
 
 .nearby-cards {
-    display: flex; flex-direction: column; gap: var(--spacing-3); flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3);
+    flex: 1;
 }
 
 /* Each nearby card */
 .nearby-card {
     position: relative; border-radius: var(--radius-xl); overflow: hidden;
-    min-height: 180px; display: flex; flex-direction: column;
+    min-height: 140px; display: flex; flex-direction: column;
     background-color: #111; background-size: cover; background-position: center;
-    box-shadow: var(--shadow); flex: 1;
+    box-shadow: var(--shadow);
 }
 .nearby-card-gradient {
     position: absolute; inset: 0;

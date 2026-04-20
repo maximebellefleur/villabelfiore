@@ -107,14 +107,49 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
     <?php endif; ?>
 </div>
 
-<!-- Biodynamic calendar teaser -->
-<a href="<?= url('/garden/biodynamic') ?>" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0f2d18,#1a3a1c);border-radius:var(--radius-lg);padding:var(--spacing-4) var(--spacing-5);color:#fff;text-decoration:none;margin-bottom:var(--spacing-5);transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-    <div>
-        <div style="font-weight:700;font-size:1rem;margin-bottom:4px">🌙 Biodynamic Planting Calendar</div>
-        <div style="font-size:.82rem;opacity:.7">Maria Thun method — Root, Leaf, Flower &amp; Fruit days · Lunar rhythms</div>
+<!-- Biodynamic overview widget -->
+<?php if (!empty($bioNow)): ?>
+<div style="background:linear-gradient(135deg,#0f2d18,#1a3a1c);border-radius:var(--radius-lg);padding:var(--spacing-4) var(--spacing-5);margin-bottom:var(--spacing-5);color:#fff">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-3)">
+        <div style="font-weight:700;font-size:1rem">🌙 Lunar Calendar</div>
+        <a href="<?= url('/garden/biodynamic') ?>" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 14px;font-size:.72rem;font-weight:700;color:#fff;text-decoration:none">Full Calendar →</a>
     </div>
-    <div style="font-size:2.2rem;opacity:.75;flex-shrink:0;margin-left:12px">🗓</div>
-</a>
+    <!-- Today highlight -->
+    <?php
+    $_gBg    = \App\Support\BiodynamicCalendar::ORGAN_BG[$bioNow['organ']] ?? '#f0fdf4';
+    $_gColor = \App\Support\BiodynamicCalendar::ORGAN_COLOR[$bioNow['organ']] ?? '#15803d';
+    $_gEmoji = \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bioNow['organ']] ?? '🌿';
+    $_gCrops = ['Root'=>'Carrots · Beets · Garlic · Onions · Potatoes','Leaf'=>'Lettuce · Spinach · Kale · Herbs','Flower'=>'Roses · Lavender · Broccoli · Cauliflower','Fruit'=>'Tomatoes · Peppers · Olives · Grapes'];
+    $_gAdvice = $bioNow['is_descending'] ? 'Plant &amp; sow' : 'Harvest';
+    ?>
+    <div style="background:rgba(255,255,255,0.1);border-radius:var(--radius);padding:10px 14px;margin-bottom:var(--spacing-3);display:flex;align-items:center;gap:12px">
+        <span style="font-size:2rem;flex-shrink:0"><?= $_gEmoji ?></span>
+        <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:.9rem"><?= $_gAdvice ?> <?= $bioNow['organ'] ?> crops today</div>
+            <div style="font-size:.72rem;opacity:.65;margin-top:2px"><?= $_gCrops[$bioNow['organ']] ?? '' ?></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;font-size:.7rem;opacity:.6">
+            <div><?= $bioNow['name'] ?></div>
+            <div><?= $bioNow['is_descending'] ? '↓ Descending' : '↑ Ascending' ?></div>
+        </div>
+    </div>
+    <!-- 7-day mini strip -->
+    <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none">
+        <?php foreach ($bioWeek as $i => $bw):
+            $_wEmoji = \App\Support\BiodynamicCalendar::ORGAN_EMOJI[$bw['organ']] ?? '🌿';
+            $_wLabel = $i === 0 ? 'Today' : date('D', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+            $_wNum   = date('j', mktime(0,0,0,(int)date('n'),(int)date('j')+$i,(int)date('Y')));
+        ?>
+        <div style="flex-shrink:0;background:rgba(255,255,255,<?= $i===0?'0.18':'0.08' ?>);border-radius:var(--radius);padding:6px 8px;text-align:center;min-width:44px;<?= $bw['is_anomaly']?'opacity:.45':'' ?>">
+            <div style="font-size:.55rem;opacity:.6;text-transform:uppercase;font-weight:600"><?= $_wLabel ?></div>
+            <div style="font-size:.75rem;font-weight:700;margin:1px 0"><?= $_wNum ?></div>
+            <div style="font-size:1rem"><?= $_wEmoji ?></div>
+            <div style="font-size:.5rem;opacity:.6;margin-top:1px"><?= $bw['organ'] ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Assistant hint -->
 <?php if (count($plantNow) > 0 || count($harvestSoon) > 0): ?>

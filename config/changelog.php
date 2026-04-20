@@ -8,6 +8,25 @@
  */
 return [
 
+    '2.3.1' => [
+        'date'  => '2026-04-20',
+        'title' => 'Dashboard Polish',
+        'new'   => [
+            '"What to do in the Garden" dashboard widget — 7-day scroll strip showing organ type and sow/harvest action for each day.',
+            'Biodynamic "Right Now" section shows next 6 hours grouped by organ period — if the same organ runs for multiple hours, shown as one block; if multiple types, shown side by side.',
+            'Garden page biodynamic widget — rich dark card showing today\'s action, crop suggestions, ascending/descending, and a 7-day mini strip.',
+        ],
+        'improved' => [
+            '"Full Calendar" link now styled as a pill button (white on dark background) aligned to the far right of the header.',
+            'Nearest to You cards now show 2 per row on all screen sizes.',
+            'Weather hourly forecast fixed: now picks next 4 hours from the current moment (not just within today), so it always shows regardless of time of day.',
+            'Biodynamic calendar hourly grid: organ emoji shown at each transition point, organ initial letter in each cell, bold hour labels at 0/6/12/18, taller cells (36px), left border on organ change for clear visual segmentation.',
+        ],
+        'fixed' => [
+            'Weather hourly strip was empty when viewed after ~20:00 — fixed by comparing full timestamps instead of just the hour number.',
+        ],
+    ],
+
     '2.3.0' => [
         'date'  => '2026-04-20',
         'title' => 'Smart Irrigation',

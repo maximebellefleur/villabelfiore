@@ -79,8 +79,8 @@ $currentHour = (int) date('G');
 .bio-grid-wrap { overflow-x:auto;-webkit-overflow-scrolling:touch; }
 .bio-grid {
     display:grid;
-    grid-template-columns: 60px repeat(24, minmax(26px, 1fr));
-    min-width: 700px;
+    grid-template-columns: 60px repeat(24, minmax(28px, 1fr));
+    min-width: 750px;
     border-radius:var(--radius-lg);
     overflow:hidden;
     border:1px solid var(--color-border);
@@ -102,16 +102,25 @@ $currentHour = (int) date('G');
 .bio-grid-day-name { font-size:.62rem;opacity:.65; }
 
 .bio-cell {
-    height:30px;
+    height:36px;
     border-bottom:1px solid var(--color-border-subtle,rgba(0,0,0,.04));
-    position:relative;transition:opacity .1s;
+    position:relative;transition:opacity .1s;overflow:hidden;
 }
-.bio-cell:hover { opacity:.75; }
+.bio-cell:hover { opacity:.8; }
 .bio-cell--anomaly { background: repeating-linear-gradient(45deg,#e5e7eb,#e5e7eb 2px,#f3f4f6 2px,#f3f4f6 8px) !important; }
 .bio-cell--filtered-out { opacity:.12; }
+.bio-cell--organ-start { border-left:2.5px solid rgba(0,0,0,0.25) !important; }
+.bio-cell-emoji {
+    position:absolute;top:50%;left:2px;transform:translateY(-50%);
+    font-size:13px;line-height:1;pointer-events:none;
+}
+.bio-cell-initial {
+    position:absolute;top:50%;right:2px;transform:translateY(-50%);
+    font-size:.5rem;font-weight:800;opacity:.4;pointer-events:none;letter-spacing:0;
+}
 .bio-cell-desc-bar {
     position:absolute;bottom:0;left:0;right:0;height:3px;
-    background:#2563eb;opacity:.7;
+    background:#2563eb;opacity:.65;
 }
 .bio-cell-now {
     position:absolute;top:0;bottom:0;left:0;right:0;
@@ -227,10 +236,12 @@ $currentHour = (int) date('G');
 <div class="bio-grid-wrap">
 <div class="bio-grid">
 
-    <!-- Header row: hour labels -->
+    <!-- Header row: hour labels (bold at 0, 6, 12, 18) -->
     <div class="bio-grid-header">Day</div>
-    <?php for ($h = 0; $h < 24; $h++): ?>
-    <div class="bio-grid-header"><?= $h ?></div>
+    <?php for ($h = 0; $h < 24; $h++):
+        $isKey = in_array($h, [0,6,12,18]);
+    ?>
+    <div class="bio-grid-header" style="<?= $isKey ? 'font-size:.72rem;color:var(--color-text);font-weight:800;background:var(--color-surface)' : '' ?>"><?= $h ?></div>
     <?php endfor; ?>
 
     <!-- Day rows -->
@@ -243,21 +254,31 @@ $currentHour = (int) date('G');
         <div class="bio-grid-day-num"><?= $day ?></div>
         <div class="bio-grid-day-name"><?= $dayNames[$dow] ?></div>
     </div>
+    <?php $prevOrgan = null; ?>
     <?php foreach ($hours as $h => $pt):
         $organ   = $pt['organ'];
         $color   = $organColor[$organ];
         $bg      = $organBg[$organ];
+        $emoji   = $organEmoji[$organ] ?? '';
         $isAnom  = $pt['is_anomaly'];
         $isDesc  = $pt['is_descending'];
         $isNow   = $isToday && $h === $currentHour;
         $dimmed  = $effectiveOrgan && $organ !== $effectiveOrgan;
+        $isStart = !$isAnom && $organ !== $prevOrgan;
         $classes = 'bio-cell'
             . ($isAnom  ? ' bio-cell--anomaly' : '')
-            . ($dimmed  ? ' bio-cell--filtered-out' : '');
+            . ($dimmed  ? ' bio-cell--filtered-out' : '')
+            . ($isStart ? ' bio-cell--organ-start' : '');
     ?>
     <div class="<?= $classes ?>"
          style="<?= !$isAnom ? 'background:'.$bg.';border-top:2px solid '.$color : '' ?>"
          title="<?= $day ?> <?= $monthName ?> <?= sprintf('%02d',$h) ?>h — <?= $pt['name'] ?> (<?= $organ ?>) <?= $isDesc ? '↓Plant' : '↑Harvest' ?><?= $isAnom ? ' ⚠Avoid' : '' ?>">
+        <?php if ($isStart): ?>
+        <span class="bio-cell-emoji"><?= $emoji ?></span>
+        <?php endif; ?>
+        <?php if (!$isAnom && !$isStart): ?>
+        <span class="bio-cell-initial" style="color:<?= $color ?>"><?= $organ[0] ?></span>
+        <?php endif; ?>
         <?php if ($isDesc && !$isAnom): ?>
         <div class="bio-cell-desc-bar"></div>
         <?php endif; ?>
@@ -265,6 +286,7 @@ $currentHour = (int) date('G');
         <div class="bio-cell-now"></div>
         <?php endif; ?>
     </div>
+    <?php $prevOrgan = $isAnom ? null : $organ; ?>
     <?php endforeach; ?>
     <?php endforeach; ?>
 

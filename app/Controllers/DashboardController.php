@@ -86,6 +86,33 @@ class DashboardController
             $bioWeek[$i] = BiodynamicCalendar::computePoint($dt);
         }
 
+        // Next 6 hours biodynamic — for the "what to do next" hourly timeline
+        $bioNext6 = [];
+        for ($i = 1; $i <= 6; $i++) {
+            $dt = new \DateTime('now', $tz);
+            $dt->modify("+{$i} hours");
+            $pt = BiodynamicCalendar::computePoint($dt);
+            $pt['_hour'] = (int)$dt->format('G');
+            $pt['_label'] = $dt->format('H:00');
+            $bioNext6[] = $pt;
+        }
+        // Collapse consecutive identical organ segments
+        $bioSegments = [];
+        foreach ($bioNext6 as $pt) {
+            $key = $pt['organ'] . ($pt['is_anomaly'] ? '_anom' : '') . ($pt['is_descending'] ? '_d' : '_a');
+            if (empty($bioSegments) || end($bioSegments)['_key'] !== $key) {
+                $seg = $pt;
+                $seg['_key']      = $key;
+                $seg['_from']     = $pt['_label'];
+                $seg['_to']       = $pt['_label'];
+                $seg['_count']    = 1;
+                $bioSegments[]    = $seg;
+            } else {
+                $bioSegments[count($bioSegments)-1]['_to']    = $pt['_label'];
+                $bioSegments[count($bioSegments)-1]['_count']++;
+            }
+        }
+
         // Today's irrigation plans (active, not already done today)
         $todayIrrigation = [];
         try {
@@ -117,6 +144,7 @@ class DashboardController
             'quote'             => $this->fetchQuote($db),
             'bioNow'            => $bioNow,
             'bioWeek'           => $bioWeek,
+            'bioSegments'       => $bioSegments,
             'todayIrrigation'   => $todayIrrigation,
         ]);
     }
@@ -204,14 +232,14 @@ class DashboardController
         $code = (int)($cur['weather_code'] ?? 0);
         [$icon, $desc] = $this->weatherCode($code);
 
-        $nowH   = (int)date('G');
+        $nowTs  = time();
         $times  = $raw['hourly']['time'] ?? [];
         $temps  = $raw['hourly']['temperature_2m'] ?? [];
         $codes  = $raw['hourly']['weather_code'] ?? [];
         $hours  = [];
         foreach ($times as $i => $t) {
-            $h = (int)substr($t, 11, 2);
-            if ($h > $nowH && count($hours) < 4) {
+            $ts = strtotime($t);
+            if ($ts !== false && $ts > $nowTs && count($hours) < 4) {
                 [$hi] = $this->weatherCode((int)($codes[$i] ?? 0));
                 $hours[] = ['time' => substr($t, 11, 5), 'temp' => round($temps[$i] ?? 0), 'icon' => $hi];
             }
