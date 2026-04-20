@@ -8,6 +8,22 @@
  */
 return [
 
+    '2.1.9' => [
+        'date'  => '2026-04-20',
+        'title' => 'Garden Hub',
+        'new'   => [
+            'Garden Hub page (/garden): smart assistant-style mini-dashboard showing Plant This Month, Harvest Window, Active Bed Rows, Family Needs, Low Stock, and Recent Garden Activity.',
+            'Navigation: top menu and bottom nav "Seeds" replaced with "Garden" linking to the new Garden Hub; Seeds catalog still accessible from within.',
+            'Dashboard quick action "Seeds" button updated to link to the Garden Hub.',
+        ],
+        'improved' => [
+            'Garden Hub stats bar gives an at-a-glance count of seeds, planting and harvest opportunities, active beds, and family needs.',
+        ],
+        'fixed' => [
+            'Copy AI button: replaced lazy initModal() approach with direct getElementById calls now that modal HTML is guaranteed above the script block — resolves "Cannot read properties of null (reading addEventListener)" on every iOS and desktop browser.',
+        ],
+    ],
+
     '2.1.8' => [
         'date'  => '2026-04-20',
         'title' => 'Bug Fixes',

@@ -765,6 +765,23 @@ function irrDelToggle(open) {
     display:flex;gap:var(--spacing-2);margin-top:var(--spacing-3);
 }
 </style>
+
+<!-- AI Prompt modal sheet — must be before the <script> block so getElementById works -->
+<div class="ai-modal-backdrop" id="aiModalBackdrop">
+    <div class="ai-modal-sheet">
+        <div class="ai-modal-header">
+            <strong>🤖 AI Prompt</strong>
+            <button type="button" class="ai-modal-close" id="aiModalCloseX">✕</button>
+        </div>
+        <p style="font-size:.8rem;color:var(--color-text-muted);margin:0 0 var(--spacing-2)">Paste this into Claude, ChatGPT, or any AI assistant.</p>
+        <textarea class="ai-modal-textarea" id="aiModalText" readonly></textarea>
+        <div class="ai-modal-actions">
+            <button type="button" class="btn btn-primary" id="aiModalCopyBtn" style="flex:1">📋 Copy to Clipboard</button>
+            <button type="button" class="btn btn-secondary" id="aiModalCloseBtn">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Log delete inline confirm
 document.querySelectorAll('.show-log-del-btn').forEach(function(btn) {
@@ -836,42 +853,17 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
 
 // AI Prompt — shows text in a modal so clipboard copy is a direct user gesture (iOS-safe)
 (function() {
-    var btn  = document.getElementById('aiPromptBtn');
+    var btn      = document.getElementById('aiPromptBtn');
     if (!btn) return;
-    var icon  = document.getElementById('aiPromptIcon');
-    var label = document.getElementById('aiPromptLabel');
+    var icon     = document.getElementById('aiPromptIcon');
+    var label    = document.getElementById('aiPromptLabel');
+    var backdrop = document.getElementById('aiModalBackdrop');
+    var textarea = document.getElementById('aiModalText');
+    var copyBtn  = document.getElementById('aiModalCopyBtn');
+    var closeX   = document.getElementById('aiModalCloseX');
+    var closeBtn = document.getElementById('aiModalCloseBtn');
 
-    // Modal elements are defined after this script tag — look them up lazily on first click
-    var backdrop, textarea, copyBtn, closeX, closeBtn;
-
-    function initModal() {
-        backdrop = document.getElementById('aiModalBackdrop');
-        textarea = document.getElementById('aiModalText');
-        copyBtn  = document.getElementById('aiModalCopyBtn');
-        closeX   = document.getElementById('aiModalCloseX');
-        closeBtn = document.getElementById('aiModalCloseBtn');
-        if (!backdrop) return false;
-
-        copyBtn.addEventListener('click', function() {
-            var text = textarea.value;
-            function fallback() {
-                textarea.select();
-                try { document.execCommand('copy'); copyBtn.textContent = '✅ Copied!'; }
-                catch(e) { copyBtn.textContent = '⚠️ Select text above and copy'; }
-            }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text)
-                    .then(function() { copyBtn.textContent = '✅ Copied!'; })
-                    .catch(fallback);
-            } else { fallback(); }
-        });
-
-        closeX.addEventListener('click', closeModal);
-        closeBtn.addEventListener('click', closeModal);
-        backdrop.addEventListener('click', function(e) { if (e.target === backdrop) closeModal(); });
-        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
-        return true;
-    }
+    if (!backdrop) return;
 
     function openModal(text) {
         textarea.value = text;
@@ -885,10 +877,7 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
         copyBtn.textContent = '📋 Copy to Clipboard';
     }
 
-    var modalReady = false;
     btn.addEventListener('click', function() {
-        if (!modalReady) { modalReady = initModal(); }
-        if (!modalReady) return;
         icon.textContent = '⏳'; label.textContent = 'Building…';
         fetch(btn.dataset.url)
             .then(function(r) { return r.json(); })
@@ -902,6 +891,25 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
                 setTimeout(function() { icon.textContent = '🤖'; label.textContent = 'Copy AI'; }, 2000);
             });
     });
+
+    copyBtn.addEventListener('click', function() {
+        var text = textarea.value;
+        function fallback() {
+            textarea.select();
+            try { document.execCommand('copy'); copyBtn.textContent = '✅ Copied!'; }
+            catch(e) { copyBtn.textContent = '⚠️ Select text above and copy'; }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(function() { copyBtn.textContent = '✅ Copied!'; })
+                .catch(fallback);
+        } else { fallback(); }
+    });
+
+    closeX.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) closeModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 }());
 
 // Scroll to anchor sections
@@ -1079,22 +1087,6 @@ function preCheckReminder() {
     });
 }());
 </script>
-
-<!-- AI Prompt modal sheet -->
-<div class="ai-modal-backdrop" id="aiModalBackdrop">
-    <div class="ai-modal-sheet">
-        <div class="ai-modal-header">
-            <strong>🤖 AI Prompt</strong>
-            <button type="button" class="ai-modal-close" id="aiModalCloseX">✕</button>
-        </div>
-        <p style="font-size:.8rem;color:var(--color-text-muted);margin:0 0 var(--spacing-2)">Paste this into Claude, ChatGPT, or any AI assistant.</p>
-        <textarea class="ai-modal-textarea" id="aiModalText" readonly></textarea>
-        <div class="ai-modal-actions">
-            <button type="button" class="btn btn-primary" id="aiModalCopyBtn" style="flex:1">📋 Copy to Clipboard</button>
-            <button type="button" class="btn btn-secondary" id="aiModalCloseBtn">Close</button>
-        </div>
-    </div>
-</div>
 
 <style>
 /* =========================================================

@@ -149,6 +149,11 @@ $router->post('/settings/calendar/disconnect', 'CalendarController@disconnect');
 $router->post('/settings/calendar/sync',       'CalendarController@sync');
 
 // -------------------------------------------------------------------------
+// Garden hub
+// -------------------------------------------------------------------------
+$router->get('/garden',                   'GardenController@index');
+
+// -------------------------------------------------------------------------
 // Seeds
 // -------------------------------------------------------------------------
 $router->get('/seeds',                    'SeedController@index');

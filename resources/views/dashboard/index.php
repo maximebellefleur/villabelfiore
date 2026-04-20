@@ -365,9 +365,9 @@ for ($i = 0; $i < 7; $i++) {
         <span class="quick-action-icon">🔔</span>
         <span class="quick-action-label">Reminder</span>
     </a>
-    <a href="<?= url('/seeds') ?>" class="quick-action-btn">
-        <span class="quick-action-icon">🌱</span>
-        <span class="quick-action-label">Seeds</span>
+    <a href="<?= url('/garden') ?>" class="quick-action-btn">
+        <span class="quick-action-icon">🌿</span>
+        <span class="quick-action-label">Garden</span>
     </a>
     <a href="<?= url('/seeds/family-needs') ?>" class="quick-action-btn">
         <span class="quick-action-icon">🧺</span>

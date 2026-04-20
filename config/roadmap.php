@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Garden Hub',
+        'features' => [
+            ['title' => 'Garden Hub page', 'detail' => 'New /garden assistant-style dashboard: Plant This Month, Harvest Window, Active Bed Rows, Family Needs, Low Stock, and Recent Garden Activity — all in one place.'],
+            ['title' => 'Navigation updated', 'detail' => '"Seeds" in the top menu and bottom nav replaced with "Garden" linking to the hub. Seeds catalog still reachable from within.'],
+            ['title' => 'Copy AI definitively fixed', 'detail' => 'Modal HTML moved above the script block; getElementById now always finds elements; no more null addEventListener crash.'],
+        ],
+    ],
+
     '2.1.8' => [
         'status'   => 'released',
         'released' => '2026-04-20',

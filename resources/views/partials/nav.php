@@ -3,7 +3,7 @@ $navLinks = [
     ['href' => '/dashboard',      'label' => 'Dashboard'],
     ['href' => '/dashboard/map',  'label' => 'Map'],
     ['href' => '/items',          'label' => 'Items'],
-    ['href' => '/seeds',          'label' => '🌱 Seeds'],
+    ['href' => '/garden',         'label' => '🌿 Garden'],
     ['href' => '/reminders',      'label' => 'Reminders'],
     ['href' => '/finance',        'label' => 'Finance'],
     ['href' => '/activity-log',   'label' => 'Activity'],
@@ -105,8 +105,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
     <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
         <span class="bottom-nav-icon">🗺</span><span class="bottom-nav-label">Map</span>
     </a>
-    <a href="<?= url('/seeds') ?>" class="bottom-nav-item" data-bnav="seeds">
-        <span class="bottom-nav-icon">🌱</span><span class="bottom-nav-label">Seeds</span>
+    <a href="<?= url('/garden') ?>" class="bottom-nav-item" data-bnav="garden">
+        <span class="bottom-nav-icon">🌿</span><span class="bottom-nav-label">Garden</span>
     </a>
     <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
         <span style="line-height:1;font-size:1.7rem">+</span>
