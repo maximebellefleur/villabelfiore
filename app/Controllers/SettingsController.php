@@ -13,6 +13,8 @@ class SettingsController
     private function requireAuth(): void
     {
         if (empty($_SESSION['user_id'])) { Response::redirect('/login'); }
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
     }
 
     public function index(Request $request, array $params = []): void

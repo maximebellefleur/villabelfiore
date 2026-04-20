@@ -28,6 +28,10 @@ class UpgradeController
     {
         $this->requireAuth();
 
+        // Never let browser or proxy cache the upgrade page — version info must always be live
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
+
         $defaults  = require BASE_PATH . '/config/defaults.php';
         $changelog = require BASE_PATH . '/config/changelog.php';
 
@@ -135,10 +139,13 @@ class UpgradeController
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
 
+        // Append timestamp to bust GitHub CDN cache
+        $fetchUrl = $zipUrl . (str_contains($zipUrl, '?') ? '&' : '?') . '_ts=' . time();
+
         // Try curl first, then fall back to file_get_contents
         $downloaded = false;
         if (function_exists('curl_init')) {
-            $ch = curl_init($zipUrl);
+            $ch = curl_init($fetchUrl);
             $curlOpts = [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
@@ -178,7 +185,7 @@ class UpgradeController
             // Fallback: file_get_contents with SSL context
             $headers = 'User-Agent: Rooted-Updater/1.0' . ($token ? "\r\nAuthorization: token " . $token : '');
             $ctx  = stream_context_create(['http' => ['timeout' => 120, 'header' => $headers, 'follow_location' => true]]);
-            $data = @file_get_contents($zipUrl, false, $ctx);
+            $data = @file_get_contents($fetchUrl, false, $ctx);
             if ($data === false || strlen($data) < 1000) {
                 @unlink($tmpPath);
                 echo json_encode(['success' => false, 'message' => 'Could not download from GitHub. Enable allow_url_fopen or the curl extension.']);
@@ -357,9 +364,10 @@ class UpgradeController
         $tmp = tempnam(sys_get_temp_dir(), 'rooted_ver_check_');
         if (!$tmp) return null;
 
-        $token = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
+        $token    = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
+        $fetchUrl = $zipUrl . (str_contains($zipUrl, '?') ? '&' : '?') . '_ts=' . time();
 
-        $ch = curl_init($zipUrl);
+        $ch = curl_init($fetchUrl);
         $opts = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
