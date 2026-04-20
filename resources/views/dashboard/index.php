@@ -524,10 +524,9 @@ for ($i = 0; $i < 7; $i++) {
    Quick Action Strip
    ----------------------------------------------- */
 .quick-actions-strip {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-3);
-    padding-bottom: var(--spacing-2);
     margin-bottom: var(--spacing-5);
 }
 
@@ -537,17 +536,15 @@ for ($i = 0; $i < 7; $i++) {
     align-items: center;
     justify-content: center;
     gap: var(--spacing-2);
-    min-width: 90px;
-    padding: var(--spacing-4) var(--spacing-3);
+    padding: var(--spacing-4) var(--spacing-2);
     background: var(--color-surface-raised);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     text-decoration: none;
     color: var(--color-text);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     transition: box-shadow .15s, transform .1s;
-    flex-shrink: 0;
     box-shadow: var(--shadow-sm);
     cursor: pointer;
 }
@@ -569,7 +566,7 @@ for ($i = 0; $i < 7; $i++) {
 .quick-action-label { text-align: center; line-height: 1.2; white-space: nowrap; }
 
 @media (min-width: 600px) {
-    .quick-action-btn { min-width: 110px; padding: var(--spacing-4); }
+    .quick-actions-strip { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* -----------------------------------------------
