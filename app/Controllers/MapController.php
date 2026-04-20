@@ -87,12 +87,12 @@ class MapController
                 $boundaries[$row['item_id']] = $row['meta_value_text'];
             }
             $bedRows = $db->fetchAll(
-                "SELECT item_id, meta_value FROM item_meta
+                "SELECT item_id, meta_value_text FROM item_meta
                  WHERE meta_key = 'bed_rows' AND item_id IN ($placeholders)",
                 $ids
             );
             foreach ($bedRows as $br) {
-                $bedRowsMeta[$br['item_id']] = (int)$br['meta_value'];
+                $bedRowsMeta[$br['item_id']] = (int)$br['meta_value_text'];
             }
         }
 
@@ -187,9 +187,9 @@ class MapController
             $val = trim($request->post($key, ''));
             if ($val !== '' && (float)$val > 0) {
                 $db->execute(
-                    "INSERT INTO item_meta (item_id, meta_key, meta_value, value_type, created_at, updated_at)
+                    "INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
                      VALUES (?, ?, ?, 'text', NOW(), NOW())
-                     ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value), updated_at = NOW()",
+                     ON DUPLICATE KEY UPDATE meta_value_text = VALUES(meta_value_text), updated_at = NOW()",
                     [$id, $key, $val]
                 );
             }

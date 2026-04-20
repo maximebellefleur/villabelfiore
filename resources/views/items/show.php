@@ -737,6 +737,33 @@ function irrDelToggle(open) {
 .show-log-del-confirm { display:inline-flex;align-items:center;gap:3px; }
 .show-log-del-yes { background:var(--color-danger,#c0392b);color:#fff;border:none;border-radius:4px;font-size:.72rem;font-weight:700;padding:2px 7px;cursor:pointer; }
 .show-log-del-no  { background:var(--color-border);color:var(--color-text-muted);border:none;border-radius:4px;font-size:.72rem;font-weight:700;padding:2px 7px;cursor:pointer; }
+
+/* AI prompt modal */
+.ai-modal-backdrop {
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+    z-index:2000;align-items:flex-end;justify-content:center;
+}
+.ai-modal-sheet {
+    background:var(--color-surface);border-radius:20px 20px 0 0;
+    width:100%;max-width:640px;padding:var(--spacing-4);
+    box-shadow:0 -4px 32px rgba(0,0,0,.2);
+}
+.ai-modal-header {
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-2);
+}
+.ai-modal-close {
+    background:none;border:none;font-size:1.3rem;cursor:pointer;
+    color:var(--color-text-muted);padding:4px 8px;border-radius:6px;
+}
+.ai-modal-textarea {
+    width:100%;height:200px;font-size:.8rem;line-height:1.5;
+    border:1.5px solid var(--color-border);border-radius:var(--radius-lg);
+    padding:10px 12px;resize:none;font-family:inherit;box-sizing:border-box;
+    background:var(--color-surface);color:var(--color-text);
+}
+.ai-modal-actions {
+    display:flex;gap:var(--spacing-2);margin-top:var(--spacing-3);
+}
 </style>
 <script>
 // Log delete inline confirm
@@ -807,58 +834,64 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
     });
 }());
 
-// Clipboard helper — works on iOS PWA even with capture="environment" inputs present
-function copyText(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        return navigator.clipboard.writeText(text).catch(function() {
-            return copyTextFallback(text);
-        });
-    }
-    return copyTextFallback(text);
-}
-function copyTextFallback(text) {
-    return new Promise(function(resolve, reject) {
-        var ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        try {
-            var ok = document.execCommand('copy');
-            document.body.removeChild(ta);
-            ok ? resolve() : reject(new Error('execCommand failed'));
-        } catch(e) { document.body.removeChild(ta); reject(e); }
-    });
-}
-
-// AI Prompt
+// AI Prompt — shows text in a modal so clipboard copy is a direct user gesture (iOS-safe)
 (function() {
-    var btn = document.getElementById('aiPromptBtn');
+    var btn      = document.getElementById('aiPromptBtn');
     if (!btn) return;
+
+    var backdrop = document.getElementById('aiModalBackdrop');
+    var textarea = document.getElementById('aiModalText');
+    var copyBtn  = document.getElementById('aiModalCopyBtn');
+    var closeX   = document.getElementById('aiModalCloseX');
+    var closeBtn = document.getElementById('aiModalCloseBtn');
+    var icon     = document.getElementById('aiPromptIcon');
+    var label    = document.getElementById('aiPromptLabel');
+
+    function openModal(text) {
+        textarea.value = text;
+        backdrop.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        setTimeout(function() { textarea.focus(); textarea.select(); }, 80);
+    }
+    function closeModal() {
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+        copyBtn.textContent = '📋 Copy to Clipboard';
+    }
+
     btn.addEventListener('click', function() {
-        var icon  = document.getElementById('aiPromptIcon');
-        var label = document.getElementById('aiPromptLabel');
         icon.textContent = '⏳'; label.textContent = 'Building…';
         fetch(btn.dataset.url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.prompt) throw new Error('empty');
-                return copyText(data.prompt);
-            })
-            .then(function() {
-                icon.textContent = '✅'; label.textContent = 'Copied!';
-                setTimeout(function() {
-                    icon.textContent = '🤖'; label.textContent = 'Copy AI';
-                }, 2500);
+                icon.textContent = '🤖'; label.textContent = 'Copy AI';
+                openModal(data.prompt);
             })
             .catch(function() {
                 icon.textContent = '❌'; label.textContent = 'Error';
-                setTimeout(function() {
-                    icon.textContent = '🤖'; label.textContent = 'Copy AI';
-                }, 2000);
+                setTimeout(function() { icon.textContent = '🤖'; label.textContent = 'Copy AI'; }, 2000);
             });
     });
+
+    copyBtn.addEventListener('click', function() {
+        var text = textarea.value;
+        function fallback() {
+            textarea.select();
+            try { document.execCommand('copy'); copyBtn.textContent = '✅ Copied!'; }
+            catch(e) { copyBtn.textContent = '⚠️ Select text above and copy'; }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(function() { copyBtn.textContent = '✅ Copied!'; })
+                .catch(fallback);
+        } else { fallback(); }
+    });
+
+    closeX.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) closeModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 }());
 
 // Scroll to anchor sections
@@ -1037,6 +1070,22 @@ function preCheckReminder() {
 }());
 </script>
 
+<!-- AI Prompt modal sheet -->
+<div class="ai-modal-backdrop" id="aiModalBackdrop">
+    <div class="ai-modal-sheet">
+        <div class="ai-modal-header">
+            <strong>🤖 AI Prompt</strong>
+            <button type="button" class="ai-modal-close" id="aiModalCloseX">✕</button>
+        </div>
+        <p style="font-size:.8rem;color:var(--color-text-muted);margin:0 0 var(--spacing-2)">Paste this into Claude, ChatGPT, or any AI assistant.</p>
+        <textarea class="ai-modal-textarea" id="aiModalText" readonly></textarea>
+        <div class="ai-modal-actions">
+            <button type="button" class="btn btn-primary" id="aiModalCopyBtn" style="flex:1">📋 Copy to Clipboard</button>
+            <button type="button" class="btn btn-secondary" id="aiModalCloseBtn">Close</button>
+        </div>
+    </div>
+</div>
+
 <style>
 /* =========================================================
    Item Show — v1.4.15
@@ -1097,20 +1146,21 @@ function preCheckReminder() {
 
 /* Quick actions */
 .show-quick-actions {
-    display:grid;grid-template-columns:repeat(5,1fr);gap:var(--spacing-2);
-    margin-bottom:var(--spacing-4);
+    display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding-bottom:4px;margin-bottom:var(--spacing-4);
 }
+.show-quick-actions::-webkit-scrollbar{display:none;}
 .show-qa-btn {
-    display:flex;flex-direction:column;align-items:center;gap:4px;
-    padding:12px 6px;border-radius:var(--radius-lg);
+    display:inline-flex;flex-direction:row;align-items:center;gap:7px;
+    padding:9px 16px;border-radius:999px;white-space:nowrap;flex-shrink:0;
     background:var(--color-surface-raised);border:1.5px solid var(--color-border);
     color:var(--color-text);text-decoration:none;cursor:pointer;
-    font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    font-size:.82rem;font-weight:600;
     transition:border-color .15s,background .15s,color .15s;
     box-shadow:var(--shadow-sm);font-family:inherit;
 }
 .show-qa-btn:hover{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary);text-decoration:none;}
-.show-qa-icon{font-size:1.5rem;line-height:1;}
+.show-qa-icon{font-size:1.1rem;line-height:1;}
 
 /* Sections */
 .show-section { margin-bottom:var(--spacing-4); }

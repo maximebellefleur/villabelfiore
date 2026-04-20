@@ -145,6 +145,55 @@ class PwaController
         return $ok;
     }
 
+    /**
+     * Resize source GD image to $size x $size with background fill + 20% safe-zone padding.
+     * Produces a maskable icon that survives Android's circle/squircle crop correctly.
+     */
+    private function resizeMaskableIcon(\GdImage $src, int $size, string $destPath, string $bgHex = '#F5F0EA'): bool
+    {
+        $r = hexdec(substr($bgHex, 1, 2));
+        $g = hexdec(substr($bgHex, 3, 2));
+        $b = hexdec(substr($bgHex, 5, 2));
+
+        $dst = imagecreatetruecolor($size, $size);
+        imagealphablending($dst, true);
+        $bg = imagecolorallocate($dst, $r, $g, $b);
+        imagefill($dst, 0, 0, $bg);
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+
+        $working = $src;
+        $workW   = $srcW;
+        $workH   = $srcH;
+        $owned   = false;
+
+        if ($srcW !== $srcH) {
+            $sq   = min($srcW, $srcH);
+            $offX = (int)(($srcW - $sq) / 2);
+            $offY = (int)(($srcH - $sq) / 2);
+            $sq2  = imagecreatetruecolor($sq, $sq);
+            imagesavealpha($sq2, true);
+            imagealphablending($sq2, false);
+            imagefill($sq2, 0, 0, imagecolorallocatealpha($sq2, 0, 0, 0, 127));
+            imagecopy($sq2, $src, 0, 0, $offX, $offY, $sq, $sq);
+            $working = $sq2; $workW = $workH = $sq; $owned = true;
+        }
+
+        // Logo fills 72% of canvas (safe zone = 80% diameter), centered
+        $logoSize = (int)($size * 0.72);
+        $offset   = (int)(($size - $logoSize) / 2);
+
+        imagealphablending($dst, true);
+        imagecopyresampled($dst, $working, $offset, $offset, 0, 0, $logoSize, $logoSize, $workW, $workH);
+
+        if ($owned) imagedestroy($working);
+
+        $ok = imagepng($dst, $destPath, 6);
+        imagedestroy($dst);
+        return $ok;
+    }
+
     // ── Controller actions ───────────────────────────────────────────────────
 
     public function serveManifest(Request $request, array $params = []): void
@@ -157,6 +206,17 @@ class PwaController
 
         $base     = defined('APP_BASE') ? APP_BASE : '';
         $startUrl = ltrim($cfg['pwa.start_url'] ?? '/dashboard', '/');
+        $iconVer  = $cfg['pwa.icon_version'] ?? '1';
+        $hasMask  = file_exists(PUBLIC_PATH . '/assets/images/icon-maskable-512.png');
+
+        $icons = [
+            ['src' => $base . '/assets/images/icon-192.png?v=' . $iconVer, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => $base . '/assets/images/icon-512.png?v=' . $iconVer, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+        ];
+        if ($hasMask) {
+            $icons[] = ['src' => $base . '/assets/images/icon-maskable-192.png?v=' . $iconVer, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'maskable'];
+            $icons[] = ['src' => $base . '/assets/images/icon-maskable-512.png?v=' . $iconVer, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'];
+        }
 
         $manifest = [
             'name'             => $cfg['pwa.name']        ?? 'Rooted',
@@ -167,20 +227,7 @@ class PwaController
             'start_url'        => $base . '/' . $startUrl,
             'theme_color'      => $cfg['pwa.theme_color'] ?? '#29402B',
             'background_color' => $cfg['pwa.bg_color']    ?? '#F5F0EA',
-            'icons'            => [
-                [
-                    'src'     => $base . '/assets/images/icon-192.png',
-                    'sizes'   => '192x192',
-                    'type'    => 'image/png',
-                    'purpose' => 'any maskable',
-                ],
-                [
-                    'src'     => $base . '/assets/images/icon-512.png',
-                    'sizes'   => '512x512',
-                    'type'    => 'image/png',
-                    'purpose' => 'any maskable',
-                ],
-            ],
+            'icons'            => $icons,
         ];
 
         header('Content-Type: application/manifest+json; charset=utf-8');
@@ -331,7 +378,20 @@ class PwaController
                 }
             }
 
+            // Maskable variants (background-filled, safe-zone padded) for Android adaptive icons
+            $db     = DB::getInstance();
+            $bgHex  = $this->getSetting($db, 'pwa.bg_color', '#F5F0EA') ?: '#F5F0EA';
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $bgHex)) $bgHex = '#F5F0EA';
+            foreach ([512 => 'icon-maskable-512.png', 192 => 'icon-maskable-192.png'] as $size => $name) {
+                if (!$this->resizeMaskableIcon($src, $size, $imgDir . $name, $bgHex)) {
+                    $errors[] = $name;
+                }
+            }
+
             imagedestroy($src);
+
+            // Version stamp so SW cache-busting works when icons change
+            $this->saveSetting($db, 'pwa.icon_version', (string)time());
 
             if ($errors) {
                 flash('error', 'Some icons failed to save: ' . implode(', ', $errors) . '. Check write permissions on ' . $imgDir);

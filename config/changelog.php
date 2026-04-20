@@ -8,6 +8,22 @@
  */
 return [
 
+    '2.1.6' => [
+        'date'  => '2026-04-20',
+        'title' => 'Map & UX Fixes',
+        'new'   => [],
+        'improved' => [
+            'Quick action buttons (Add Photo, Reminder, Log, Copy AI, Survey) are now compact horizontal pills in a scrollable row — much less vertical space, easier to tap on mobile.',
+            'Copy AI now shows the generated prompt in a bottom sheet. Tap "Copy to Clipboard" to copy it with a direct gesture — this fixes silent clipboard failures on iOS PWA where the async fetch broke the user-activation window.',
+            'PWA icons now use separate "any" and "maskable" manifest entries. Uploading an icon generates properly padded maskable variants (logo at 72% of canvas with background fill) so Android adaptive icons no longer clip the edges. Icon URLs include a version stamp so the service worker cache is busted on each upload.',
+            'Service worker bumped to v7 to clear cached icons for all installed PWA clients.',
+        ],
+        'fixed' => [
+            'All items disappeared from the Land Map. The bed-rows query in /api/map/items used a non-existent "meta_value" column (the table only has "meta_value_text"), causing a SQL error that crashed the entire API endpoint and returned no features.',
+            'Saving a boundary in Corner+Size mode also used the wrong "meta_value" column for bed_rows/bed_length_m/bed_width_m — those values were never actually saved to the database.',
+        ],
+    ],
+
     '2.1.5' => [
         'date'  => '2026-04-20',
         'title' => 'Irrigation Plan',

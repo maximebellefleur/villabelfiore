@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.1.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Map & UX Fixes',
+        'features' => [
+            ['title' => 'Map items restored', 'detail' => 'Fixed a SQL column name bug (meta_value vs meta_value_text) that crashed the /api/map/items endpoint and made all items disappear from the Land Map.'],
+            ['title' => 'Copy AI via bottom sheet', 'detail' => 'The AI prompt is now shown in a modal sheet. Clipboard copy is triggered by a direct button tap — fixes iOS PWA where the async fetch broke the user-activation window required by the clipboard API.'],
+            ['title' => 'Compact action pill buttons', 'detail' => 'Item page quick actions redesigned from tall grid cards to horizontal scrollable pills — same actions, much less vertical space.'],
+            ['title' => 'PWA maskable icons', 'detail' => 'Icon upload now generates separate maskable variants (padded to safe zone) so Android adaptive icons show the full logo without clipping.'],
+        ],
+    ],
+
     '2.1.5' => [
         'status'   => 'released',
         'released' => '2026-04-20',
