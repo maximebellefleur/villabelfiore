@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.1.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-20',
+        'title'    => 'Irrigation Plan',
+        'features' => [
+            ['title' => 'Per-item irrigation schedule', 'detail' => 'Add an irrigation plan to any tree, vine, garden, or bed. Choose interval (twice daily to monthly), duration in months, start date, and optional notes. View, edit, and delete from the item detail page.'],
+            ['title' => 'Google Calendar recurring event sync', 'detail' => 'When Google Calendar is connected, saving an irrigation plan creates a recurring calendar event "💧 Water — {name}" at 7:00 AM for the full duration. Edit syncs the series; delete removes the entire series.'],
+        ],
+    ],
+
     '2.1.4' => [
         'status'   => 'released',
         'released' => '2026-04-20',

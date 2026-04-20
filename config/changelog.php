@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.1.5' => [
+        'date'  => '2026-04-20',
+        'title' => 'Irrigation Plan',
+        'new'   => [
+            'Per-item irrigation plans: set interval (twice daily / daily / every 2 days / weekly / biweekly / monthly), duration in months, start date, and optional notes. Available for trees, vines, gardens, and beds.',
+            'If Google Calendar is connected, creating or updating an irrigation plan automatically adds a recurring calendar event titled "💧 Water — {item name}" at 7:00 AM for the full plan duration. Editing or deleting the plan removes and re-creates (or deletes) the calendar event.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '2.1.4' => [
         'date'  => '2026-04-20',
         'title' => 'GPS Accuracy Visual & Bed Corner+Size Mode',

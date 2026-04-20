@@ -18,6 +18,7 @@ use App\Controllers\PublicController;
 use App\Controllers\PwaController;
 use App\Controllers\SeedController;
 use App\Controllers\AiController;
+use App\Controllers\IrrigationController;
 
 /** @var \App\Support\Router $router */
 
@@ -166,6 +167,13 @@ $router->post('/bed-rows/{id}/update',    'SeedController@updateBedRow');
 $router->post('/bed-rows/{id}/trash',     'SeedController@trashBedRow');
 $router->post('/family-needs/{id}/update','SeedController@updateFamilyNeed');
 $router->post('/family-needs/{id}/trash', 'SeedController@trashFamilyNeed');
+
+// -------------------------------------------------------------------------
+// Irrigation plans
+// -------------------------------------------------------------------------
+$router->post('/items/{id}/irrigation',       'IrrigationController@store');
+$router->post('/irrigation/{id}/update',      'IrrigationController@update');
+$router->post('/irrigation/{id}/delete',      'IrrigationController@destroy');
 
 // -------------------------------------------------------------------------
 // Logs

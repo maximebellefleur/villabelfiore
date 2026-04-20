@@ -214,6 +214,12 @@ class ItemController
         );
         $boundaryGeojson = $boundaryRow['meta_value_text'] ?? null;
 
+        // Load irrigation plan if table exists
+        $irrigationPlan = null;
+        try {
+            $irrigationPlan = $db->fetchOne('SELECT * FROM irrigation_plans WHERE item_id = ? LIMIT 1', [$id]);
+        } catch (\Throwable $e) { /* table created on first use */ }
+
         Response::render('items/show', [
             'title'          => e($item['name']),
             'item'           => $item,
@@ -225,6 +231,7 @@ class ItemController
             'finances'       => $finances,
             'miniMapEnabled' => !empty($item['gps_lat']) && !empty($item['gps_lng']),
             'boundaryGeojson'=> $boundaryGeojson,
+            'irrigationPlan' => $irrigationPlan,
         ]);
     }
 
