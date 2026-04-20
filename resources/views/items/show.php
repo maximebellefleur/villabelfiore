@@ -836,16 +836,42 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
 
 // AI Prompt — shows text in a modal so clipboard copy is a direct user gesture (iOS-safe)
 (function() {
-    var btn      = document.getElementById('aiPromptBtn');
+    var btn  = document.getElementById('aiPromptBtn');
     if (!btn) return;
+    var icon  = document.getElementById('aiPromptIcon');
+    var label = document.getElementById('aiPromptLabel');
 
-    var backdrop = document.getElementById('aiModalBackdrop');
-    var textarea = document.getElementById('aiModalText');
-    var copyBtn  = document.getElementById('aiModalCopyBtn');
-    var closeX   = document.getElementById('aiModalCloseX');
-    var closeBtn = document.getElementById('aiModalCloseBtn');
-    var icon     = document.getElementById('aiPromptIcon');
-    var label    = document.getElementById('aiPromptLabel');
+    // Modal elements are defined after this script tag — look them up lazily on first click
+    var backdrop, textarea, copyBtn, closeX, closeBtn;
+
+    function initModal() {
+        backdrop = document.getElementById('aiModalBackdrop');
+        textarea = document.getElementById('aiModalText');
+        copyBtn  = document.getElementById('aiModalCopyBtn');
+        closeX   = document.getElementById('aiModalCloseX');
+        closeBtn = document.getElementById('aiModalCloseBtn');
+        if (!backdrop) return false;
+
+        copyBtn.addEventListener('click', function() {
+            var text = textarea.value;
+            function fallback() {
+                textarea.select();
+                try { document.execCommand('copy'); copyBtn.textContent = '✅ Copied!'; }
+                catch(e) { copyBtn.textContent = '⚠️ Select text above and copy'; }
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(function() { copyBtn.textContent = '✅ Copied!'; })
+                    .catch(fallback);
+            } else { fallback(); }
+        });
+
+        closeX.addEventListener('click', closeModal);
+        closeBtn.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', function(e) { if (e.target === backdrop) closeModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+        return true;
+    }
 
     function openModal(text) {
         textarea.value = text;
@@ -859,7 +885,10 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
         copyBtn.textContent = '📋 Copy to Clipboard';
     }
 
+    var modalReady = false;
     btn.addEventListener('click', function() {
+        if (!modalReady) { modalReady = initModal(); }
+        if (!modalReady) return;
         icon.textContent = '⏳'; label.textContent = 'Building…';
         fetch(btn.dataset.url)
             .then(function(r) { return r.json(); })
@@ -873,25 +902,6 @@ document.querySelectorAll('.show-log-del-no').forEach(function(btn) {
                 setTimeout(function() { icon.textContent = '🤖'; label.textContent = 'Copy AI'; }, 2000);
             });
     });
-
-    copyBtn.addEventListener('click', function() {
-        var text = textarea.value;
-        function fallback() {
-            textarea.select();
-            try { document.execCommand('copy'); copyBtn.textContent = '✅ Copied!'; }
-            catch(e) { copyBtn.textContent = '⚠️ Select text above and copy'; }
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text)
-                .then(function() { copyBtn.textContent = '✅ Copied!'; })
-                .catch(fallback);
-        } else { fallback(); }
-    });
-
-    closeX.addEventListener('click', closeModal);
-    closeBtn.addEventListener('click', closeModal);
-    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) closeModal(); });
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 }());
 
 // Scroll to anchor sections

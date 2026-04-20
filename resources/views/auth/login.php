@@ -18,13 +18,11 @@
                    autocomplete="current-password" required>
         </div>
 
-        <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:var(--spacing-3)">
+        <label for="remember_me" style="display:flex;align-items:center;gap:8px;margin-bottom:var(--spacing-4);cursor:pointer;width:fit-content">
             <input type="checkbox" id="remember_me" name="remember_me" value="1"
-                   style="width:18px;height:18px;accent-color:var(--color-primary);cursor:pointer;flex-shrink:0">
-            <label for="remember_me" style="font-size:.88rem;color:var(--color-text);cursor:pointer;margin:0">
-                Remember me for 30 days
-            </label>
-        </div>
+                   style="width:17px;height:17px;accent-color:var(--color-primary);cursor:pointer;flex-shrink:0;margin:0">
+            <span style="font-size:.88rem;color:var(--color-text)">Remember me for 30 days</span>
+        </label>
 
         <button type="submit" class="btn btn-primary btn-full">Sign In</button>
     </form>
