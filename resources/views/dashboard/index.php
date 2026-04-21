@@ -1157,48 +1157,54 @@ function remAction(id, action, token, inModal) {
 }
 .nearby-card-inner {
     position: relative; z-index: 1;
-    display: flex; align-items: center; gap: var(--spacing-3);
-    padding: var(--spacing-4); flex: 1;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 10px 6px; flex: 1;
     text-decoration: none; color: #fff;
 }
 .nearby-card-inner:hover { text-decoration: none; color: #fff; }
 .nearby-card-emoji {
-    width: 52px; height: 52px; border-radius: var(--radius);
-    font-size: 1.6rem; display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: var(--radius);
+    font-size: 1.25rem; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; backdrop-filter: blur(8px);
 }
 .nearby-card-photo-badge {
-    position: absolute; bottom: 10px; left: 10px;
-    width: 36px; height: 36px; border-radius: 50%;
+    position: absolute; bottom: 8px; left: 8px;
+    width: 30px; height: 30px; border-radius: 50%;
     object-fit: cover; display: block; z-index: 2;
-    border: 2.5px solid rgba(255,255,255,0.9);
+    border: 2px solid rgba(255,255,255,0.9);
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 .nearby-card-info { flex: 1; min-width: 0; }
-.nearby-card-name { font-size: 1.05rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nearby-card-sub  { display: flex; gap: var(--spacing-3); margin-top: 3px; align-items: center; }
-.nearby-card-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,0.8); }
-.nearby-card-dist { font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.95); }
+.nearby-card-name {
+    font-size: 0.82rem; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    line-height: 1.25;
+}
+.nearby-card-sub  { display: flex; flex-direction: column; gap: 1px; margin-top: 3px; }
+.nearby-card-type { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nearby-card-dist { font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.95); white-space: nowrap; }
 
 .nearby-card-btns {
     position: relative; z-index: 1;
     display: flex; align-items: center;
-    padding: 0 var(--spacing-3) var(--spacing-3);
-    gap: var(--spacing-2);
+    padding: 0 8px 8px;
+    gap: 5px;
     justify-content: flex-end;
 }
 .nearby-card-photo-badge {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     object-fit: cover; flex-shrink: 0;
-    border: 2.5px solid rgba(255,255,255,0.9);
+    border: 2px solid rgba(255,255,255,0.9);
     box-shadow: 0 2px 6px rgba(0,0,0,0.45);
     margin-right: auto;
 }
 .nearby-card-btn {
-    width: 42px; height: 42px; border-radius: var(--radius);
+    width: 34px; height: 34px; border-radius: var(--radius);
     background: rgba(255,255,255,0.18); backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; text-decoration: none; border: 1px solid rgba(255,255,255,0.25);
+    font-size: 0.9rem; text-decoration: none; border: 1px solid rgba(255,255,255,0.25);
     transition: background 0.15s;
 }
 .nearby-card-btn:hover { background: rgba(255,255,255,0.32); text-decoration: none; }
