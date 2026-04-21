@@ -8,6 +8,31 @@
  */
 return [
 
+    '2.4.3' => [
+        'date'  => '2026-04-21',
+        'title' => 'Polish & Favicon',
+        'new'   => [
+            'Favicon upload in Settings — supports ICO, PNG, SVG with live 16/32/48 px previews and size guide.',
+            'Task inline tags: type (TAG) at the start of a task to assign a category — shown as a colored pill badge. Same tag always gets the same color across all tasks.',
+            'Live tag preview in the quick-add bar as you type the (TAG) prefix.',
+            'Tasks item name shown as subtitle in the Reminders tab.',
+        ],
+        'improved' => [
+            'Tasks quick-add: Enter to save instantly via AJAX, no form or submit button needed.',
+            'Nearest to You cards: text no longer overflows in 2-column grid — name wraps, type/distance stack vertically.',
+            'Google Calendar sync: snooze (+1d/+1w) now immediately updates the event time in Google Calendar.',
+            'Completing or dismissing a reminder now deletes its Google Calendar event.',
+            'Full calendar sync now updates all existing events, not only creates missing ones.',
+            'Navigation icons replaced with clean SVG line icons (Lucide-style, white on transparent).',
+            'Garden nav icon updated to basket shape.',
+            'Reminder item name shown under title throughout the app.',
+        ],
+        'fixed'    => [
+            'Dashboard reminder widget overdue items showing in red correctly.',
+            'Snooze AJAX correctly updates the displayed date without page reload.',
+        ],
+    ],
+
     '2.4.2' => [
         'date'  => '2026-04-21',
         'title' => 'Calendar Sync Fix',

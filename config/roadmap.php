@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.4.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-21',
+        'title'    => 'Polish & Favicon',
+        'features' => [
+            ['title' => 'Favicon upload', 'detail' => 'Upload a custom favicon (ICO/PNG/SVG) from Settings. Live previews at 16, 32, and 48 px with size requirements guide.'],
+            ['title' => 'Task inline tags', 'detail' => 'Type (TAG) at the start of a task to auto-categorize it. Tag shown as a colored pill badge — same tag always same color.'],
+            ['title' => 'SVG nav icons', 'detail' => 'All navigation icons replaced with clean Lucide-style SVG icons — white on transparent, scales perfectly.'],
+            ['title' => 'Calendar sync fixes', 'detail' => 'Snooze, complete, and dismiss all properly update or remove Google Calendar events.'],
+        ],
+    ],
+
     '2.4.2' => [
         'status'   => 'released',
         'released' => '2026-04-21',
