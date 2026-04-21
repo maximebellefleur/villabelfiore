@@ -144,6 +144,8 @@ $router->get('/offline',                       'PublicController@offline');
 $router->post('/settings/map',                 'SettingsController@updateMap');
 $router->post('/settings/logo',                'SettingsController@uploadLogo');
 $router->post('/settings/logo/delete',         'SettingsController@deleteLogo');
+$router->post('/settings/favicon',             'SettingsController@uploadFavicon');
+$router->post('/settings/favicon/delete',      'SettingsController@deleteFavicon');
 $router->get('/settings/calendar',             'CalendarController@index');
 $router->post('/settings/calendar/save',       'CalendarController@save');
 $router->get('/settings/calendar/connect',     'CalendarController@connect');

@@ -11,6 +11,21 @@
     <link rel="manifest" href="<?= url('/manifest.json') ?>">
     <meta name="theme-color" content="#29402B">
     <link rel="apple-touch-icon" href="<?= url('/assets/images/apple-touch-icon.png') ?>">
+    <?php
+    // Custom favicon — prefer .ico, then .png, then .svg
+    $_faviconUrl = null;
+    foreach (['ico','png','svg'] as $_fext) {
+        $_ff = PUBLIC_PATH . '/assets/images/favicon.' . $_fext;
+        if (file_exists($_ff)) {
+            $_faviconUrl = url('/assets/images/favicon.' . $_fext) . '?v=' . filemtime($_ff);
+            $_faviconType = $_fext === 'ico' ? 'image/x-icon' : ($_fext === 'svg' ? 'image/svg+xml' : 'image/png');
+            break;
+        }
+    }
+    if ($_faviconUrl): ?>
+    <link rel="icon" type="<?= $_faviconType ?>" href="<?= $_faviconUrl ?>">
+    <link rel="shortcut icon" href="<?= $_faviconUrl ?>">
+    <?php endif; ?>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rooted">

@@ -189,6 +189,101 @@
             <?php endforeach; ?>
         </div>
 
+        <!-- Favicon upload -->
+        <div class="settings-group" style="margin-top:var(--spacing-6)" id="favicon">
+            <div class="settings-group-title">Favicon</div>
+            <p class="settings-hint" style="margin-bottom:var(--spacing-4)">
+                The small icon shown in browser tabs and bookmarks.
+                Upload an <strong>.ico</strong>, <strong>.png</strong>, or <strong>.svg</strong> file.
+                Recommended sizes: <strong>32×32 px</strong> minimum (ICO/PNG), or a square SVG.
+                For best cross-browser support use a <strong>multi-size .ico</strong> containing 16×16, 32×32, and 48×48 variants.
+            </p>
+            <?php
+            $_faviconCurrent = null; $_faviconExt = null;
+            foreach (['ico','png','svg'] as $_fext) {
+                $_ff = PUBLIC_PATH . '/assets/images/favicon.' . $_fext;
+                if (file_exists($_ff)) {
+                    $_faviconCurrent = url('/assets/images/favicon.' . $_fext) . '?v=' . filemtime($_ff);
+                    $_faviconExt = $_fext;
+                    break;
+                }
+            }
+            ?>
+            <div style="display:flex;align-items:flex-start;gap:var(--spacing-4);flex-wrap:wrap">
+                <!-- Preview -->
+                <div style="flex-shrink:0">
+                    <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:8px">
+                        <!-- 16×16 sim -->
+                        <div style="text-align:center">
+                            <div style="width:32px;height:32px;background:#f1f5f0;border:1px solid var(--color-border);border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                                <?php if ($_faviconCurrent && $_faviconExt !== 'ico'): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:16px;height:16px;object-fit:contain">
+                                <?php elseif ($_faviconCurrent): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:16px;height:16px;object-fit:contain">
+                                <?php else: ?>
+                                <span style="font-size:9px;color:#aaa">none</span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="font-size:.6rem;color:var(--color-text-muted);margin-top:3px">16 px</div>
+                        </div>
+                        <!-- 32×32 sim -->
+                        <div style="text-align:center">
+                            <div style="width:48px;height:48px;background:#f1f5f0;border:1px solid var(--color-border);border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                                <?php if ($_faviconCurrent && $_faviconExt !== 'ico'): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:32px;height:32px;object-fit:contain">
+                                <?php elseif ($_faviconCurrent): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:32px;height:32px;object-fit:contain">
+                                <?php else: ?>
+                                <span style="font-size:10px;color:#aaa">none</span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="font-size:.6rem;color:var(--color-text-muted);margin-top:3px">32 px</div>
+                        </div>
+                        <!-- 48×48 sim -->
+                        <div style="text-align:center">
+                            <div style="width:58px;height:58px;background:#f1f5f0;border:1px solid var(--color-border);border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                                <?php if ($_faviconCurrent && $_faviconExt !== 'ico'): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:48px;height:48px;object-fit:contain">
+                                <?php elseif ($_faviconCurrent): ?>
+                                <img src="<?= $_faviconCurrent ?>" style="width:48px;height:48px;object-fit:contain">
+                                <?php else: ?>
+                                <span style="font-size:11px;color:#aaa">none</span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="font-size:.6rem;color:var(--color-text-muted);margin-top:3px">48 px</div>
+                        </div>
+                    </div>
+                    <?php if ($_faviconCurrent): ?>
+                    <div style="font-size:.72rem;color:var(--color-text-muted)">Current: <strong><?= strtoupper($_faviconExt) ?></strong></div>
+                    <?php else: ?>
+                    <div style="font-size:.72rem;color:var(--color-text-muted)">No favicon uploaded</div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Upload + requirements -->
+                <div style="flex:1;min-width:220px">
+                    <form method="POST" action="<?= url('/settings/favicon') ?>" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:var(--spacing-3)">
+                        <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                        <input type="file" name="favicon_file" accept=".ico,.png,.svg,image/x-icon,image/png,image/svg+xml" required style="font-size:.85rem;flex:1;min-width:160px">
+                        <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+                    </form>
+                    <?php if ($_faviconCurrent): ?>
+                    <form method="POST" action="<?= url('/settings/favicon/delete') ?>" onsubmit="return confirm('Remove favicon?')" style="margin-bottom:var(--spacing-3)">
+                        <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                        <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc3545">✕ Remove favicon</button>
+                    </form>
+                    <?php endif; ?>
+                    <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:10px 14px;font-size:.78rem;color:var(--color-text-muted);line-height:1.7">
+                        <strong style="color:var(--color-text);display:block;margin-bottom:4px">Size requirements</strong>
+                        <div><strong>.ico</strong> — Best option. Should contain 16×16, 32×32, and 48×48 px layers.</div>
+                        <div><strong>.png</strong> — Use a square image. 32×32 px minimum, 64×64 px recommended.</div>
+                        <div><strong>.svg</strong> — Must be square viewBox. Scales perfectly at any size.</div>
+                        <div style="margin-top:6px">💡 Free tool: <strong>favicon.io</strong> can generate an .ico from any image or text.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- AI / Ollama settings -->
         <div class="settings-group" style="margin-top:var(--spacing-6)">
             <div class="settings-group-title">🤖 Local AI (Ollama)</div>

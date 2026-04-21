@@ -357,12 +357,77 @@ class SettingsController
         }
 
         $imgDir = PUBLIC_PATH . '/assets/images/';
-        foreach (['png','jpg','webp','svg'] as $ext) {
+        foreach (['png','jpg','webp','svg','ico'] as $ext) {
             $f = $imgDir . 'logo-' . $slot . '.' . $ext;
             if (file_exists($f)) { @unlink($f); }
         }
 
         flash('success', ucwords(str_replace('-', ' ', $slot)) . ' logo removed.');
         Response::redirect('/settings');
+    }
+
+    // ── Favicon upload ────────────────────────────────────────────────────────
+
+    public function uploadFavicon(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $file = $_FILES['favicon_file'] ?? null;
+        if (!$file || ($file['error'] ?? -1) !== UPLOAD_ERR_OK) {
+            flash('error', 'No file uploaded or upload error.');
+            Response::redirect('/settings#favicon');
+        }
+
+        try {
+            $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name'] ?? '') ?: '';
+        } catch (\Throwable $e) { $mime = ''; }
+
+        $origExt = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
+        $allowed = ['ico' => 'ico', 'png' => 'png', 'svg' => 'svg',
+                    'image/x-icon' => 'ico', 'image/vnd.microsoft.icon' => 'ico',
+                    'image/png' => 'png', 'image/svg+xml' => 'svg'];
+
+        $ext = $allowed[$mime] ?? $allowed[$origExt] ?? null;
+        if (!$ext) {
+            flash('error', 'Only ICO, PNG, or SVG files are accepted for favicons.');
+            Response::redirect('/settings#favicon');
+        }
+
+        $imgDir = PUBLIC_PATH . '/assets/images/';
+        if (!is_dir($imgDir) && !@mkdir($imgDir, 0755, true)) {
+            flash('error', 'Cannot create images directory.');
+            Response::redirect('/settings#favicon');
+        }
+
+        // Remove all previous favicon files
+        foreach (['ico','png','svg'] as $oldExt) {
+            $old = $imgDir . 'favicon.' . $oldExt;
+            if (file_exists($old)) { @unlink($old); }
+        }
+
+        $dest = $imgDir . 'favicon.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            flash('error', 'Failed to save favicon. Check folder write permissions.');
+            Response::redirect('/settings#favicon');
+        }
+
+        flash('success', 'Favicon updated.');
+        Response::redirect('/settings#favicon');
+    }
+
+    public function deleteFavicon(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $imgDir = PUBLIC_PATH . '/assets/images/';
+        foreach (['ico','png','svg'] as $ext) {
+            $f = $imgDir . 'favicon.' . $ext;
+            if (file_exists($f)) { @unlink($f); }
+        }
+
+        flash('success', 'Favicon removed.');
+        Response::redirect('/settings#favicon');
     }
 }
