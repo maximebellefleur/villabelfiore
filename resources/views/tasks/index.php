@@ -1,16 +1,16 @@
 <?php
-$categoryIcons = [
-    'Building'    => '🏗',
-    'Planting'    => '🌱',
-    'Pruning'     => '✂️',
-    'Harvest'     => '🌾',
-    'Maintenance' => '🔧',
-    'Watering'    => '💧',
-    'Cleaning'    => '🧹',
-    'Shopping'    => '🛒',
-    'Other'       => '📌',
-];
-$suggestedCategories = array_keys($categoryIcons);
+// Deterministic tag color — same algorithm mirrored in JS below
+function taskTagColor(string $tag): string {
+    $tag = strtoupper(trim($tag));
+    $hash = 0;
+    for ($i = 0; $i < strlen($tag); $i++) {
+        $hash = (($hash * 31) + ord($tag[$i])) & 0x7fffffff;
+    }
+    $palette = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce',
+                '#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+    return $palette[$hash % count($palette)];
+}
+
 $csrfToken = \App\Support\CSRF::getToken();
 ?>
 <style>
@@ -62,6 +62,16 @@ $csrfToken = \App\Support\CSRF::getToken();
 }
 .task-quick-input::placeholder { color: var(--color-text-muted); }
 .task-quick-hint { font-size: .7rem; color: var(--color-text-muted); flex-shrink: 0; white-space: nowrap; }
+
+/* Tag badge */
+.task-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px; border-radius: 999px;
+    font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: #fff; white-space: nowrap;
+    flex-shrink: 0; line-height: 1.6;
+}
+.task-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 /* Task list */
 .task-list { display: flex; flex-direction: column; gap: 2px; }
@@ -174,8 +184,9 @@ $csrfToken = \App\Support\CSRF::getToken();
 <!-- Quick-add bar -->
 <div class="task-quick-bar" id="taskQuickBar">
     <div class="task-quick-plus">+</div>
+    <span id="taskTagPreview" style="display:none"></span>
     <input type="text" class="task-quick-input" id="taskQuickInput"
-           placeholder="Add a task… press Enter to save"
+           placeholder="(TAG) task… or just type and Enter"
            autocomplete="off" autocorrect="off" spellcheck="true">
     <span class="task-quick-hint" id="taskQuickHint" style="display:none">↵ save</span>
 </div>
@@ -199,8 +210,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 <?php else: ?>
 <div class="task-list" id="taskList">
     <?php foreach ($tasks as $t):
-        $isDone   = (bool)$t['is_done'];
-        $catIcon  = $categoryIcons[$t['category']] ?? '📌';
+        $isDone    = (bool)$t['is_done'];
         $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
     ?>
     <div class="task-row <?= $isDone ? 'done' : '' ?>" id="taskRow<?= $t['id'] ?>">
@@ -213,20 +223,24 @@ $csrfToken = \App\Support\CSRF::getToken();
 
         <!-- Body -->
         <div class="task-body">
-            <div class="task-title <?= $isDone ? 'done-text' : '' ?>"><?= e($t['title']) ?></div>
-            <div class="task-meta">
+            <div class="task-title-row">
                 <?php if (!empty($t['category'])): ?>
-                <span class="task-category"><?= e($catIcon . ' ' . $t['category']) ?></span>
+                <span class="task-tag" style="background:<?= taskTagColor($t['category']) ?>"><?= e(strtoupper($t['category'])) ?></span>
                 <?php endif; ?>
+                <span class="task-title <?= $isDone ? 'done-text' : '' ?>"><?= e($t['title']) ?></span>
+            </div>
+            <?php if (!empty($t['due_date']) || ($isDone && !empty($t['done_at']))): ?>
+            <div class="task-meta" style="margin-top:3px">
                 <?php if (!empty($t['due_date'])): ?>
                 <span class="task-due <?= $isOverdue ? 'overdue' : '' ?>">
-                    <?= $isOverdue ? '⚠ ' : '📅 ' ?><?= e(date('d M', strtotime($t['due_date']))) ?>
+                    <?= $isOverdue ? '⚠ ' : '' ?><?= e(date('d M', strtotime($t['due_date']))) ?>
                 </span>
                 <?php endif; ?>
                 <?php if ($isDone && !empty($t['done_at'])): ?>
                 <span style="font-size:.65rem;color:var(--color-text-muted)">Done <?= e(date('d M', strtotime($t['done_at']))) ?></span>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
             <?php if (!empty($t['notes'])): ?>
             <div class="task-notes"><?= e($t['notes']) ?></div>
             <?php endif; ?>
@@ -344,27 +358,62 @@ $csrfToken = \App\Support\CSRF::getToken();
 var CSRF = '<?= e($csrfToken) ?>';
 var BASE = '<?= url('/') ?>';
 
+/* ---- Tag color (mirrors PHP taskTagColor) ---- */
+function tagColor(tag) {
+    tag = tag.toUpperCase().trim();
+    var hash = 0;
+    for (var i = 0; i < tag.length; i++) hash = ((hash * 31) + tag.charCodeAt(i)) & 0x7fffffff;
+    var p = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce',
+             '#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+    return p[hash % p.length];
+}
+
+/* ---- Parse (TAG) from start of input ---- */
+function parseTag(val) {
+    var m = val.match(/^\(([^)]+)\)\s*/);
+    if (m) return { tag: m[1].trim().toUpperCase(), title: val.slice(m[0].length).trim() };
+    return { tag: '', title: val.trim() };
+}
+
 /* ---- Quick-add ---- */
 (function () {
-    var input = document.getElementById('taskQuickInput');
-    var hint  = document.getElementById('taskQuickHint');
+    var input   = document.getElementById('taskQuickInput');
+    var hint    = document.getElementById('taskQuickHint');
+    var preview = document.getElementById('taskTagPreview');
     if (!input) return;
 
     input.addEventListener('input', function () {
-        hint.style.display = input.value.trim() ? 'inline' : 'none';
+        var val = input.value;
+        hint.style.display = val.trim() ? 'inline' : 'none';
+
+        // Live tag badge preview
+        var parsed = parseTag(val);
+        if (parsed.tag) {
+            preview.style.display = 'inline-flex';
+            preview.innerHTML = '<span class="task-tag" style="background:' + tagColor(parsed.tag) + '">' + escHtml(parsed.tag) + '</span>';
+        } else {
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        }
     });
 
     input.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        var title = input.value.trim();
-        if (!title) return;
+        var raw = input.value.trim();
+        if (!raw) return;
+
+        var parsed = parseTag(raw);
+        if (!parsed.title) return; // tag but no title yet
+
         input.disabled = true;
 
         fetch(BASE + 'tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-            body: '_token=' + encodeURIComponent(CSRF) + '&title=' + encodeURIComponent(title)
+            body: '_token=' + encodeURIComponent(CSRF)
+                + '&title='    + encodeURIComponent(parsed.title)
+                + '&category=' + encodeURIComponent(parsed.tag)
         })
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -372,9 +421,11 @@ var BASE = '<?= url('/') ?>';
             if (!d.success) { input.focus(); return; }
             input.value = '';
             hint.style.display = 'none';
+            preview.style.display = 'none';
+            preview.innerHTML = '';
             input.focus();
 
-            var list = document.getElementById('taskList');
+            var list  = document.getElementById('taskList');
             var empty = document.querySelector('.task-empty');
             if (empty) empty.remove();
             if (!list) {
@@ -393,7 +444,6 @@ var BASE = '<?= url('/') ?>';
                 row.style.opacity = '1';
             });
 
-            // update counter
             var ctr = document.getElementById('taskCounter');
             if (ctr) {
                 var n = list.querySelectorAll('.task-row').length;
@@ -404,12 +454,17 @@ var BASE = '<?= url('/') ?>';
     });
 
     function buildTaskRow(t) {
+        var tagHtml = t.category
+            ? '<span class="task-tag" style="background:' + tagColor(t.category) + '">' + escHtml(t.category.toUpperCase()) + '</span>'
+            : '';
         var row = document.createElement('div');
         row.className = 'task-row';
         row.id = 'taskRow' + t.id;
         row.innerHTML =
             '<button class="task-checkbox" onclick="toggleTask(' + t.id + ', this)" title="Mark done"></button>' +
-            '<div class="task-body"><div class="task-title">' + escHtml(t.title) + '</div></div>' +
+            '<div class="task-body">' +
+              '<div class="task-title-row">' + tagHtml + '<span class="task-title">' + escHtml(t.title) + '</span></div>' +
+            '</div>' +
             '<div class="task-actions">' +
             '<button class="task-act-btn" title="Archive" onclick="archiveTask(' + t.id + ', this)">📦</button>' +
             '<button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(' + t.id + ', this)">✕</button>' +
@@ -418,7 +473,7 @@ var BASE = '<?= url('/') ?>';
     }
 
     function escHtml(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 }());
 
