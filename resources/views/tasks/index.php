@@ -281,6 +281,9 @@ $csrfToken = \App\Support\CSRF::getToken();
         <div class="reminder-dot <?= $isOverdueR ? 'overdue' : '' ?>"></div>
         <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:.88rem"><?= e($r['title']) ?></div>
+            <?php if (!empty($r['item_name'])): ?>
+            <div style="font-size:.72rem;font-style:italic;color:var(--color-text-muted);margin-top:1px"><?= e($r['item_name']) ?></div>
+            <?php endif; ?>
             <div style="font-size:.72rem;color:<?= $isOverdueR ? '#dc2626' : 'var(--color-text-muted)' ?>">
                 <?= $isOverdueR ? '⚠ Overdue · ' : '' ?><?= e(date('d M Y, H:i', strtotime($r['due_at']))) ?>
             </div>

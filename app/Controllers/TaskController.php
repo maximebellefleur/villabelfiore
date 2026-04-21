@@ -53,7 +53,7 @@ class TaskController
 
         // Reminders (for the Reminders tab)
         $reminders = $db->fetchAll(
-            "SELECT * FROM reminders WHERE status = 'pending' ORDER BY due_at ASC LIMIT 30"
+            "SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status = 'pending' ORDER BY r.due_at ASC LIMIT 30"
         );
 
         // Irrigation plans (for the Irrigation tab)
