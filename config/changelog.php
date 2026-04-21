@@ -8,6 +8,22 @@
  */
 return [
 
+    '2.4.2' => [
+        'date'  => '2026-04-21',
+        'title' => 'Calendar Sync Fix',
+        'new'   => [],
+        'improved' => [
+            'Tasks quick-add: always-visible input bar, press Enter to save — no form, no button, instant AJAX row.',
+            'Nearest to You cards: name now wraps 2 lines instead of clipping, type/distance stack vertically, smaller buttons.',
+        ],
+        'fixed' => [
+            'Google Calendar events now update immediately when you snooze (+1d/+1w) a reminder.',
+            'Completing or dismissing a reminder now deletes its Google Calendar event instead of leaving it orphaned.',
+            'Full calendar sync (Settings → Calendar) now updates ALL existing events, not only creates missing ones.',
+            'syncPendingReminders (auto-sync on reminders page load) now upserts all pending future reminders.',
+        ],
+    ],
+
     '2.4.1' => [
         'date'  => '2026-04-21',
         'title' => 'Smart Reminders',

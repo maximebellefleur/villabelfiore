@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.4.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-21',
+        'title'    => 'Calendar Sync Fix',
+        'features' => [
+            ['title' => 'Snooze syncs to Google Calendar', 'detail' => '+1 Day and +1 Week now update the event time in Google Calendar immediately.'],
+            ['title' => 'Complete/dismiss removes GCal event', 'detail' => 'Marking a reminder done or dismissed deletes the orphaned event from your calendar.'],
+            ['title' => 'Full sync updates existing events', 'detail' => 'Settings → Calendar sync now PUTs updated data to all existing events, not just creates new ones.'],
+        ],
+    ],
+
     '2.4.1' => [
         'status'   => 'released',
         'released' => '2026-04-21',
