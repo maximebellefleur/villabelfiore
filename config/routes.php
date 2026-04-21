@@ -20,6 +20,8 @@ use App\Controllers\SeedController;
 use App\Controllers\AiController;
 use App\Controllers\IrrigationController;
 
+use App\Controllers\TaskController;
+
 /** @var \App\Support\Router $router */
 
 // -------------------------------------------------------------------------
@@ -173,6 +175,17 @@ $router->post('/bed-rows/{id}/update',    'SeedController@updateBedRow');
 $router->post('/bed-rows/{id}/trash',     'SeedController@trashBedRow');
 $router->post('/family-needs/{id}/update','SeedController@updateFamilyNeed');
 $router->post('/family-needs/{id}/trash', 'SeedController@trashFamilyNeed');
+
+// -------------------------------------------------------------------------
+// Tasks (to-do hub)
+// -------------------------------------------------------------------------
+$router->get('/tasks',                    'TaskController@index');
+$router->get('/tasks/archive',            'TaskController@archive');
+$router->post('/tasks',                   'TaskController@store');
+$router->post('/tasks/{id}/toggle',       'TaskController@toggle');
+$router->post('/tasks/{id}/archive',      'TaskController@archiveTask');
+$router->post('/tasks/{id}/unarchive',    'TaskController@unarchive');
+$router->post('/tasks/{id}/delete',       'TaskController@destroy');
 
 // -------------------------------------------------------------------------
 // Irrigation plans

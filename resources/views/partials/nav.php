@@ -4,6 +4,7 @@ $navLinks = [
     ['href' => '/dashboard/map',  'label' => '🗺 Map'],
     ['href' => '/items',          'label' => '🌳 Items'],
     ['href' => '/garden',         'label' => '🧺 Garden'],
+    ['href' => '/tasks',          'label' => '✅ Tasks'],
     ['href' => '/reminders',      'label' => '🔔 Reminders'],
     ['href' => '/finance',        'label' => '💰 Finance'],
     ['href' => '/activity-log',   'label' => '📋 Activity'],

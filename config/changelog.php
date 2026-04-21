@@ -8,6 +8,23 @@
  */
 return [
 
+    '2.4.0' => [
+        'date'  => '2026-04-20',
+        'title' => 'Tasks Hub',
+        'new'   => [
+            'Tasks section (/tasks) — a unified to-do hub with three tabs: To-Do, Reminders, and Irrigation.',
+            'General To-Do list: add tasks with open categories (Building, Planting, Pruning, Maintenance, etc.), optional due date, and notes.',
+            'Tick/untick tasks instantly via AJAX — no page reload.',
+            'Archive tasks (📦) — removed from main list, kept in /tasks/archive with restore option.',
+            'Show/hide completed tasks toggle.',
+            'Overdue tasks flagged in red with ⚠ indicator.',
+            'Slide-out animation when archiving or deleting tasks.',
+            'Tasks added to top navigation (desktop + mobile drawer).',
+        ],
+        'improved' => [],
+        'fixed'    => [],
+    ],
+
     '2.3.1' => [
         'date'  => '2026-04-20',
         'title' => 'Dashboard Polish',
