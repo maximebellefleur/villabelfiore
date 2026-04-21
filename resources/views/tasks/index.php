@@ -33,19 +33,35 @@ $csrfToken = \App\Support\CSRF::getToken();
     background: var(--color-primary); color: #fff;
 }
 
-/* Add task form */
-.task-add-form {
+/* Quick-add bar */
+.task-quick-bar {
+    display: flex; align-items: center; gap: 10px;
     background: var(--color-surface-raised);
-    border: 1px solid var(--color-border);
+    border: 1.5px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
-    margin-bottom: var(--spacing-4);
+    padding: 10px 14px;
+    margin-bottom: var(--spacing-3);
+    transition: border-color .15s, box-shadow .15s;
 }
-.task-add-toggle {
-    display: flex; align-items: center; gap: 8px;
-    font-weight: 700; font-size: .9rem; color: var(--color-primary);
-    cursor: pointer; background: none; border: none; padding: 0;
+.task-quick-bar:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
+.task-quick-plus {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px dashed var(--color-border);
+    background: none; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-muted); font-size: 1rem; line-height: 1;
+    pointer-events: none;
+}
+.task-quick-input {
+    flex: 1; border: none; background: none; outline: none;
+    font-size: .95rem; font-family: inherit; color: var(--color-text);
+    min-width: 0;
+}
+.task-quick-input::placeholder { color: var(--color-text-muted); }
+.task-quick-hint { font-size: .7rem; color: var(--color-text-muted); flex-shrink: 0; white-space: nowrap; }
 
 /* Task list */
 .task-list { display: flex; flex-direction: column; gap: 2px; }
@@ -155,42 +171,13 @@ $csrfToken = \App\Support\CSRF::getToken();
      ============================================================ -->
 <?php if ($tab === 'todos'): ?>
 
-<!-- Add task form -->
-<div class="task-add-form">
-    <button type="button" class="task-add-toggle" onclick="document.getElementById('taskFormBody').style.display=document.getElementById('taskFormBody').style.display==='none'?'block':'none'">
-        <span style="font-size:1.2rem">＋</span> Add a task
-    </button>
-    <div id="taskFormBody" style="display:none;margin-top:var(--spacing-3);border-top:1px solid var(--color-border);padding-top:var(--spacing-3)">
-        <form method="POST" action="<?= url('/tasks') ?>" class="form">
-            <input type="hidden" name="_token" value="<?= e($csrfToken) ?>">
-            <input type="hidden" name="tab" value="todos">
-            <div class="form-group" style="margin-bottom:var(--spacing-3)">
-                <input type="text" name="title" class="form-input" placeholder="What needs to be done?" required autofocus style="font-size:.95rem">
-            </div>
-            <div class="form-row" style="margin-bottom:var(--spacing-3)">
-                <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <input type="text" name="category" class="form-input" list="taskCategoryList" placeholder="e.g. Building, Planting…">
-                    <datalist id="taskCategoryList">
-                        <?php foreach ($suggestedCategories as $cat): ?>
-                        <option value="<?= $cat ?>">
-                        <?php endforeach; ?>
-                    </datalist>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Due date <small class="text-muted">(optional)</small></label>
-                    <input type="date" name="due_date" class="form-input">
-                </div>
-            </div>
-            <div class="form-group" style="margin-bottom:var(--spacing-3)">
-                <textarea name="notes" class="form-input" rows="2" placeholder="Notes (optional)"></textarea>
-            </div>
-            <div style="display:flex;gap:8px">
-                <button type="submit" class="btn btn-primary btn-sm">Add Task</button>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('taskFormBody').style.display='none'">Cancel</button>
-            </div>
-        </form>
-    </div>
+<!-- Quick-add bar -->
+<div class="task-quick-bar" id="taskQuickBar">
+    <div class="task-quick-plus">+</div>
+    <input type="text" class="task-quick-input" id="taskQuickInput"
+           placeholder="Add a task… press Enter to save"
+           autocomplete="off" autocorrect="off" spellcheck="true">
+    <span class="task-quick-hint" id="taskQuickHint" style="display:none">↵ save</span>
 </div>
 
 <!-- Toolbar: show/hide done -->
@@ -357,59 +344,133 @@ $csrfToken = \App\Support\CSRF::getToken();
 var CSRF = '<?= e($csrfToken) ?>';
 var BASE = '<?= url('/') ?>';
 
+/* ---- Quick-add ---- */
+(function () {
+    var input = document.getElementById('taskQuickInput');
+    var hint  = document.getElementById('taskQuickHint');
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+        hint.style.display = input.value.trim() ? 'inline' : 'none';
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        var title = input.value.trim();
+        if (!title) return;
+        input.disabled = true;
+
+        fetch(BASE + 'tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: '_token=' + encodeURIComponent(CSRF) + '&title=' + encodeURIComponent(title)
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            input.disabled = false;
+            if (!d.success) { input.focus(); return; }
+            input.value = '';
+            hint.style.display = 'none';
+            input.focus();
+
+            var list = document.getElementById('taskList');
+            var empty = document.querySelector('.task-empty');
+            if (empty) empty.remove();
+            if (!list) {
+                list = document.createElement('div');
+                list.className = 'task-list';
+                list.id = 'taskList';
+                var bar = document.getElementById('taskQuickBar');
+                bar.parentNode.insertBefore(list, bar.nextSibling.nextSibling);
+            }
+
+            var row = buildTaskRow(d.task);
+            row.style.opacity = '0';
+            list.insertBefore(row, list.firstChild);
+            requestAnimationFrame(function () {
+                row.style.transition = 'opacity .2s';
+                row.style.opacity = '1';
+            });
+
+            // update counter
+            var ctr = document.getElementById('taskCounter');
+            if (ctr) {
+                var n = list.querySelectorAll('.task-row').length;
+                ctr.textContent = n + ' task' + (n !== 1 ? 's' : '');
+            }
+        })
+        .catch(function () { input.disabled = false; input.focus(); });
+    });
+
+    function buildTaskRow(t) {
+        var row = document.createElement('div');
+        row.className = 'task-row';
+        row.id = 'taskRow' + t.id;
+        row.innerHTML =
+            '<button class="task-checkbox" onclick="toggleTask(' + t.id + ', this)" title="Mark done"></button>' +
+            '<div class="task-body"><div class="task-title">' + escHtml(t.title) + '</div></div>' +
+            '<div class="task-actions">' +
+            '<button class="task-act-btn" title="Archive" onclick="archiveTask(' + t.id + ', this)">📦</button>' +
+            '<button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(' + t.id + ', this)">✕</button>' +
+            '</div>';
+        return row;
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+}());
+
+/* ---- Toggle done ---- */
 function toggleTask(id, btn) {
     fetch(BASE + 'tasks/' + id + '/toggle', {
         method: 'POST',
         headers: {'Content-Type':'application/x-www-form-urlencoded'},
         body: '_token=' + encodeURIComponent(CSRF)
-    }).then(r => r.json()).then(d => {
+    }).then(function(r){return r.json();}).then(function(d) {
         if (!d.success) return;
         var row = document.getElementById('taskRow' + id);
         var title = row.querySelector('.task-title');
         if (d.is_done) {
-            btn.classList.add('checked');
-            btn.textContent = '✓';
-            row.classList.add('done');
-            title.classList.add('done-text');
+            btn.classList.add('checked'); btn.textContent = '✓';
+            row.classList.add('done'); title.classList.add('done-text');
             btn.title = 'Mark undone';
         } else {
-            btn.classList.remove('checked');
-            btn.textContent = '';
-            row.classList.remove('done');
-            title.classList.remove('done-text');
+            btn.classList.remove('checked'); btn.textContent = '';
+            row.classList.remove('done'); title.classList.remove('done-text');
             btn.title = 'Mark done';
         }
     });
 }
 
+/* ---- Archive ---- */
 function archiveTask(id, btn) {
-    if (!confirm('Archive this task?')) return;
     fetch(BASE + 'tasks/' + id + '/archive', {
         method: 'POST',
         headers: {'Content-Type':'application/x-www-form-urlencoded'},
         body: '_token=' + encodeURIComponent(CSRF) + '&ajax=1'
-    }).then(r => r.json()).then(d => {
+    }).then(function(r){return r.json();}).then(function(d) {
         if (d.success) {
             var row = document.getElementById('taskRow' + id);
-            row.style.opacity = '0';
-            row.style.transform = 'translateX(30px)';
+            row.style.opacity = '0'; row.style.transform = 'translateX(30px)';
             row.style.transition = 'opacity .25s, transform .25s';
             setTimeout(function(){ row.remove(); }, 260);
         }
     });
 }
 
+/* ---- Delete ---- */
 function deleteTask(id, btn) {
-    if (!confirm('Delete this task permanently?')) return;
+    if (!confirm('Delete permanently?')) return;
     fetch(BASE + 'tasks/' + id + '/delete', {
         method: 'POST',
         headers: {'Content-Type':'application/x-www-form-urlencoded'},
         body: '_token=' + encodeURIComponent(CSRF) + '&ajax=1'
-    }).then(r => r.json()).then(d => {
+    }).then(function(r){return r.json();}).then(function(d) {
         if (d.success) {
             var row = document.getElementById('taskRow' + id);
-            row.style.opacity = '0';
-            row.style.transition = 'opacity .2s';
+            row.style.opacity = '0'; row.style.transition = 'opacity .2s';
             setTimeout(function(){ row.remove(); }, 220);
         }
     });

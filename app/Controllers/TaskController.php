@@ -114,6 +114,9 @@ class TaskController
         $dueDate  = trim($request->post('due_date', '')) ?: null;
 
         if ($title === '') {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+                Response::json(['success' => false, 'message' => 'Title required']);
+            }
             flash('error', 'Task title is required.');
             Response::redirect('/tasks');
             return;
@@ -123,6 +126,18 @@ class TaskController
             'INSERT INTO tasks (title, category, notes, due_date, created_at, updated_at) VALUES (?,?,?,?,NOW(),NOW())',
             [$title, $category, $notes, $dueDate]
         );
+        $newId = (int)$db->lastInsertId();
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+            Response::json(['success' => true, 'task' => [
+                'id'       => $newId,
+                'title'    => $title,
+                'category' => $category,
+                'due_date' => $dueDate,
+                'is_done'  => 0,
+            ]]);
+            return;
+        }
 
         Response::redirect('/tasks' . ($request->post('tab') ? '?tab=' . urlencode($request->post('tab')) : ''));
     }
