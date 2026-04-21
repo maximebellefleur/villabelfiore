@@ -67,7 +67,9 @@ class ReminderController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
-        DB::getInstance()->execute("UPDATE reminders SET status='completed', updated_at=NOW() WHERE id=?", [$id]);
+        $db = DB::getInstance();
+        $db->execute("UPDATE reminders SET status='completed', updated_at=NOW() WHERE id=?", [$id]);
+        try { (new \App\Controllers\CalendarController())->deleteReminderEvent($db, $id); } catch (\Throwable $e) {}
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
             Response::json(['success' => true]);
         }
@@ -80,7 +82,9 @@ class ReminderController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
-        DB::getInstance()->execute("UPDATE reminders SET status='dismissed', updated_at=NOW() WHERE id=?", [$id]);
+        $db = DB::getInstance();
+        $db->execute("UPDATE reminders SET status='dismissed', updated_at=NOW() WHERE id=?", [$id]);
+        try { (new \App\Controllers\CalendarController())->deleteReminderEvent($db, $id); } catch (\Throwable $e) {}
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
             Response::json(['success' => true]);
         }
@@ -95,12 +99,15 @@ class ReminderController
         $id   = (int) ($params['id'] ?? 0);
         $days = (int) $request->post('days', 1);
         if ($days < 1 || $days > 30) $days = 1;
-        DB::getInstance()->execute(
+        $db = DB::getInstance();
+        $db->execute(
             "UPDATE reminders SET due_at = DATE_ADD(due_at, INTERVAL ? DAY), updated_at=NOW() WHERE id=?",
             [$days, $id]
         );
+        // Push the updated date to Google Calendar
+        try { (new \App\Controllers\CalendarController())->upsertReminderEvent($db, $id); } catch (\Throwable $e) {}
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
-            $r = DB::getInstance()->fetchOne("SELECT due_at FROM reminders WHERE id=?", [$id]);
+            $r = $db->fetchOne("SELECT due_at FROM reminders WHERE id=?", [$id]);
             Response::json(['success' => true, 'due_at' => $r['due_at'] ?? null]);
         }
         flash('success', 'Reminder pushed by ' . $days . ' day' . ($days > 1 ? 's' : '') . '.');

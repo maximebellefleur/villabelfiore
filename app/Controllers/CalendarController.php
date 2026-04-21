@@ -220,21 +220,16 @@ class CalendarController
                 try {
                     $event = $this->buildCalendarEvent($reminder);
                     if (!empty($reminder['google_calendar_event_id'])) {
-                        // Update existing event
                         $this->httpPut(
                             self::CALENDAR_API . '/calendars/' . urlencode($calendarId) .
                             '/events/' . urlencode($reminder['google_calendar_event_id']),
-                            $event,
-                            $token
+                            $event, $token
                         );
                         $updated++;
                     } else {
-                        // Create new event
                         $result = $this->httpPost(
                             self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
-                            $event,
-                            $token,
-                            true
+                            $event, $token, true
                         );
                         if (!empty($result['id'])) {
                             $db->execute(
@@ -266,11 +261,12 @@ class CalendarController
     // -------------------------------------------------------------------------
 
     /**
-     * Push one reminder to Google Calendar immediately.
-     * Returns true on success, false if not connected or already synced.
+     * Create OR update a reminder's Google Calendar event.
+     * Replaces the old pushReminderById (which skipped already-synced reminders).
+     * Returns true on success, false if not connected.
      * Never throws — failure is non-fatal.
      */
-    public function pushReminderById(DB $db, int $reminderId): bool
+    public function upsertReminderEvent(DB $db, int $reminderId): bool
     {
         try {
             $settings = $this->loadCalendarSettings();
@@ -282,12 +278,23 @@ class CalendarController
                 [$reminderId]
             );
             if (!$reminder) return false;
-            if (!empty($reminder['google_calendar_event_id'])) return true; // already synced
 
             $token      = $this->getValidAccessToken($settings);
             $calendarId = $settings['google_calendar.calendar_id'] ?: 'primary';
             $event      = $this->buildCalendarEvent($reminder);
 
+            if (!empty($reminder['google_calendar_event_id'])) {
+                // Update existing event
+                $this->httpPut(
+                    self::CALENDAR_API . '/calendars/' . urlencode($calendarId) .
+                    '/events/' . urlencode($reminder['google_calendar_event_id']),
+                    $event,
+                    $token
+                );
+                return true;
+            }
+
+            // Create new event
             $result = $this->httpPost(
                 self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
                 $event, $token, true
@@ -301,7 +308,51 @@ class CalendarController
                 return true;
             }
         } catch (\Throwable $e) {
-            \App\Support\Logger::warning('Google Calendar auto-push failed: ' . $e->getMessage());
+            \App\Support\Logger::warning('Calendar upsert failed for reminder ' . $reminderId . ': ' . $e->getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * @deprecated Use upsertReminderEvent() instead — kept for back-compat.
+     */
+    public function pushReminderById(DB $db, int $reminderId): bool
+    {
+        return $this->upsertReminderEvent($db, $reminderId);
+    }
+
+    /**
+     * Delete a reminder's Google Calendar event (called on complete/dismiss).
+     * Clears google_calendar_event_id in DB after deletion.
+     */
+    public function deleteReminderEvent(DB $db, int $reminderId): bool
+    {
+        try {
+            $settings = $this->loadCalendarSettings();
+            if (empty($settings['google_calendar.refresh_token'])) return false;
+
+            $reminder = $db->fetchOne(
+                'SELECT google_calendar_event_id FROM reminders WHERE id = ?',
+                [$reminderId]
+            );
+            if (empty($reminder['google_calendar_event_id'])) return true;
+
+            $token      = $this->getValidAccessToken($settings);
+            $calendarId = $settings['google_calendar.calendar_id'] ?: 'primary';
+
+            $this->httpDelete(
+                self::CALENDAR_API . '/calendars/' . urlencode($calendarId) .
+                '/events/' . urlencode($reminder['google_calendar_event_id']),
+                $token
+            );
+
+            $db->execute(
+                'UPDATE reminders SET google_calendar_event_id = NULL WHERE id = ?',
+                [$reminderId]
+            );
+            return true;
+        } catch (\Throwable $e) {
+            \App\Support\Logger::warning('Calendar delete failed for reminder ' . $reminderId . ': ' . $e->getMessage());
         }
         return false;
     }
@@ -321,40 +372,48 @@ class CalendarController
             $settings = $this->loadCalendarSettings();
             if (empty($settings['google_calendar.refresh_token'])) return 0;
 
+            // Sync ALL pending future reminders (create missing, update existing)
             $reminders = $db->fetchAll(
                 "SELECT r.*, i.name AS item_name
                  FROM reminders r
                  LEFT JOIN items i ON i.id = r.item_id
                  WHERE r.status = 'pending'
                  AND r.due_at >= NOW()
-                 AND (r.google_calendar_event_id IS NULL OR r.google_calendar_event_id = '')
                  ORDER BY r.due_at ASC
-                 LIMIT 30"
+                 LIMIT 50"
             );
             if (!$reminders) return 0;
 
             $token      = $this->getValidAccessToken($settings);
             $calendarId = $settings['google_calendar.calendar_id'] ?: 'primary';
-            $pushed     = 0;
+            $synced     = 0;
 
             foreach ($reminders as $reminder) {
                 try {
-                    $result = $this->httpPost(
-                        self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
-                        $this->buildCalendarEvent($reminder),
-                        $token,
-                        true
-                    );
-                    if (!empty($result['id'])) {
-                        $db->execute(
-                            'UPDATE reminders SET google_calendar_event_id = ? WHERE id = ?',
-                            [$result['id'], $reminder['id']]
+                    $event = $this->buildCalendarEvent($reminder);
+                    if (!empty($reminder['google_calendar_event_id'])) {
+                        $this->httpPut(
+                            self::CALENDAR_API . '/calendars/' . urlencode($calendarId) .
+                            '/events/' . urlencode($reminder['google_calendar_event_id']),
+                            $event, $token
                         );
-                        $pushed++;
+                        $synced++;
+                    } else {
+                        $result = $this->httpPost(
+                            self::CALENDAR_API . '/calendars/' . urlencode($calendarId) . '/events',
+                            $event, $token, true
+                        );
+                        if (!empty($result['id'])) {
+                            $db->execute(
+                                'UPDATE reminders SET google_calendar_event_id = ? WHERE id = ?',
+                                [$result['id'], $reminder['id']]
+                            );
+                            $synced++;
+                        }
                     }
                 } catch (\Throwable $e) { /* skip individual failures */ }
             }
-            return $pushed;
+            return $synced;
         } catch (\Throwable $e) {
             \App\Support\Logger::warning('Calendar auto-sync failed: ' . $e->getMessage());
             return 0;
@@ -441,6 +500,16 @@ class CalendarController
         ]]);
         $response = @file_get_contents($url, false, $context);
         return $response ? (json_decode($response, true) ?? []) : [];
+    }
+
+    private function httpDelete(string $url, string $bearerToken): void
+    {
+        $context = stream_context_create(['http' => [
+            'method'        => 'DELETE',
+            'header'        => 'Authorization: Bearer ' . $bearerToken,
+            'ignore_errors' => true,
+        ]]);
+        @file_get_contents($url, false, $context);
     }
 
     private function httpGet(string $url, string $bearerToken): array
