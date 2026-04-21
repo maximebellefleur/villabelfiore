@@ -383,28 +383,178 @@ function irrMarkDone(id, btn) {
 <?php endif; ?>
 
 <!-- ============================================================
-     UPCOMING REMINDERS
+     REMINDERS WIDGET (merged overdue + upcoming)
      ============================================================ -->
-<?php if (!empty($upcomingReminders)): ?>
-<section class="dash-widget dash-upcoming-widget">
+<?php
+$_allReminders = array_merge(
+    array_map(fn($r) => $r + ['_overdue' => true],  $overdueReminders),
+    array_map(fn($r) => $r + ['_overdue' => false], $upcomingReminders)
+);
+usort($_allReminders, fn($a, $b) => strtotime($a['due_at']) <=> strtotime($b['due_at']));
+$_remFirst5  = array_slice($_allReminders, 0, 5);
+$_remRest    = array_slice($_allReminders, 5);
+$_csrfRem    = \App\Support\CSRF::getToken();
+?>
+<?php if (!empty($_allReminders)): ?>
+<section class="dash-widget dash-upcoming-widget" id="dashRemWidget">
     <div class="dash-widget-header">
-        <span>📅 Upcoming Reminders</span>
-        <a href="<?= url('/reminders') ?>" class="dash-widget-link">All &rarr;</a>
+        <span>🔔 Upcoming Reminders</span>
+        <div style="display:flex;gap:8px;align-items:center">
+            <?php if (count($_allReminders) > 5): ?>
+            <button class="dash-widget-link" style="background:none;border:none;cursor:pointer;padding:0" onclick="document.getElementById('allRemModal').classList.add('open')">All <?= count($_allReminders) ?> &rarr;</button>
+            <?php else: ?>
+            <a href="<?= url('/reminders') ?>" class="dash-widget-link">All &rarr;</a>
+            <?php endif; ?>
+        </div>
     </div>
-    <div class="dash-widget-body">
-        <ul class="dash-reminder-list">
-            <?php foreach ($upcomingReminders as $r): ?>
-            <li class="dash-reminder-item">
-                <span class="dash-reminder-dot"></span>
-                <div class="dash-reminder-body">
-                    <span class="dash-reminder-title"><?= e($r['title']) ?></span>
-                    <span class="text-muted text-sm"><?= e(date('d M', strtotime($r['due_at']))) ?></span>
+    <div class="dash-widget-body" style="padding:0">
+        <div class="drem-list" id="dremList">
+        <?php foreach ($_remFirst5 as $r):
+            $isOD = $r['_overdue'];
+            $rid  = (int)$r['id'];
+        ?>
+        <div class="drem-row <?= $isOD ? 'drem-row--overdue' : '' ?>" id="drem-<?= $rid ?>">
+            <div class="drem-body">
+                <div class="drem-title"><?= $isOD ? '<span class="drem-overdue-dot">●</span> ' : '' ?><?= e($r['title']) ?></div>
+                <div class="drem-meta">
+                    <?= $isOD ? '<span style="color:#c0392b;font-weight:700">⚠ ' . e(date('d M', strtotime($r['due_at']))) . '</span>' : e(date('d M Y', strtotime($r['due_at']))) ?>
+                    <?php if (!empty($r['item_name'])): ?> · <span class="drem-item"><?= e($r['item_name']) ?></span><?php endif; ?>
                 </div>
-            </li>
-            <?php endforeach; ?>
-        </ul>
+            </div>
+            <div class="drem-actions">
+                <button class="drem-btn drem-btn--done"  title="Done"    onclick="remAction(<?= $rid ?>,'complete','<?= e($_csrfRem) ?>')">✓</button>
+                <button class="drem-btn drem-btn--snooze" title="+1 Day"  onclick="remAction(<?= $rid ?>,'snooze1','<?= e($_csrfRem) ?>')">+1d</button>
+                <button class="drem-btn drem-btn--snooze" title="+1 Week" onclick="remAction(<?= $rid ?>,'snooze7','<?= e($_csrfRem) ?>')">+1w</button>
+                <button class="drem-btn drem-btn--dismiss" title="Dismiss" onclick="remAction(<?= $rid ?>,'dismiss','<?= e($_csrfRem) ?>')">✕</button>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        </div>
     </div>
 </section>
+
+<!-- All Reminders Modal -->
+<?php if (count($_allReminders) > 5): ?>
+<div class="drem-modal-backdrop" id="allRemModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="drem-modal">
+        <div class="drem-modal-head">
+            <span>🔔 All Reminders</span>
+            <button onclick="document.getElementById('allRemModal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--color-text-muted)">✕</button>
+        </div>
+        <div class="drem-modal-body">
+        <?php foreach ($_allReminders as $r):
+            $isOD = $r['_overdue'];
+            $rid  = (int)$r['id'];
+        ?>
+        <div class="drem-row <?= $isOD ? 'drem-row--overdue' : '' ?>" id="drem-m-<?= $rid ?>">
+            <div class="drem-body">
+                <div class="drem-title"><?= $isOD ? '<span class="drem-overdue-dot">●</span> ' : '' ?><?= e($r['title']) ?></div>
+                <div class="drem-meta">
+                    <?= $isOD ? '<span style="color:#c0392b;font-weight:700">⚠ ' . e(date('d M', strtotime($r['due_at']))) . '</span>' : e(date('d M Y', strtotime($r['due_at']))) ?>
+                    <?php if (!empty($r['item_name'])): ?> · <span class="drem-item"><?= e($r['item_name']) ?></span><?php endif; ?>
+                </div>
+            </div>
+            <div class="drem-actions">
+                <button class="drem-btn drem-btn--done"   title="Done"    onclick="remAction(<?= $rid ?>,'complete','<?= e($_csrfRem) ?>',true)">✓</button>
+                <button class="drem-btn drem-btn--snooze" title="+1 Day"  onclick="remAction(<?= $rid ?>,'snooze1','<?= e($_csrfRem) ?>',true)">+1d</button>
+                <button class="drem-btn drem-btn--snooze" title="+1 Week" onclick="remAction(<?= $rid ?>,'snooze7','<?= e($_csrfRem) ?>',true)">+1w</button>
+                <button class="drem-btn drem-btn--dismiss" title="Dismiss" onclick="remAction(<?= $rid ?>,'dismiss','<?= e($_csrfRem) ?>',true)">✕</button>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--color-border)">
+            <a href="<?= url('/reminders') ?>" class="btn btn-ghost btn-sm btn-full">Manage all reminders →</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<script>
+function remAction(id, action, token, inModal) {
+    var url, body;
+    if (action === 'snooze1' || action === 'snooze7') {
+        url  = '<?= url('/reminders/') ?>' + id + '/snooze';
+        body = '_token=' + encodeURIComponent(token) + '&days=' + (action === 'snooze7' ? 7 : 1) + '&_ajax=1';
+    } else {
+        url  = '<?= url('/reminders/') ?>' + id + '/' + action;
+        body = '_token=' + encodeURIComponent(token) + '&_ajax=1';
+    }
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }, body: body })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (!data.success) return;
+            // Remove from both the widget list and modal list
+            var rowW = document.getElementById('drem-' + id);
+            var rowM = document.getElementById('drem-m-' + id);
+            if (action === 'snooze1' || action === 'snooze7') {
+                // Update date display
+                if (data.due_at) {
+                    var d = new Date(data.due_at.replace(' ','T'));
+                    var label = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                    [rowW, rowM].forEach(function(row) {
+                        if (!row) return;
+                        var meta = row.querySelector('.drem-meta');
+                        if (meta) {
+                            var item = meta.querySelector('.drem-item');
+                            meta.innerHTML = label + (item ? ' · <span class="drem-item">' + item.textContent + '</span>' : '');
+                        }
+                        row.classList.remove('drem-row--overdue');
+                        var dot = row.querySelector('.drem-overdue-dot');
+                        if (dot) dot.remove();
+                    });
+                }
+            } else {
+                [rowW, rowM].forEach(function(row) {
+                    if (row) { row.style.transition='opacity .3s'; row.style.opacity='0'; setTimeout(function(){ row.remove(); },300); }
+                });
+            }
+        });
+}
+</script>
+
+<style>
+.drem-list { display:flex;flex-direction:column; }
+.drem-row {
+    display:flex;align-items:center;gap:8px;
+    padding:9px 14px;border-bottom:1px solid var(--color-border);
+}
+.drem-row:last-child { border-bottom:none; }
+.drem-row--overdue { background:#fff5f5; }
+.drem-body { flex:1;min-width:0; }
+.drem-title { font-size:.875rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.drem-overdue-dot { color:#c0392b;font-size:.6rem;vertical-align:middle; }
+.drem-meta { font-size:.7rem;color:var(--color-text-muted);margin-top:1px; }
+.drem-item { font-style:italic; }
+.drem-actions { display:flex;gap:3px;flex-shrink:0 }
+.drem-btn {
+    height:26px;border:none;border-radius:5px;cursor:pointer;font-size:.72rem;font-weight:700;
+    padding:0 7px;line-height:26px;transition:opacity .15s;white-space:nowrap;
+}
+.drem-btn--done    { background:var(--color-primary-soft);color:var(--color-primary); }
+.drem-btn--done:hover { background:var(--color-primary);color:#fff; }
+.drem-btn--snooze  { background:rgba(0,0,0,.06);color:var(--color-text-muted); }
+.drem-btn--snooze:hover { background:rgba(0,0,0,.13); }
+.drem-btn--dismiss { background:rgba(0,0,0,.06);color:#c0392b; }
+.drem-btn--dismiss:hover { background:#ffd5d5; }
+/* All Reminders Modal */
+.drem-modal-backdrop {
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;
+    align-items:center;justify-content:center;
+}
+.drem-modal-backdrop.open { display:flex; }
+.drem-modal {
+    background:var(--color-surface);border-radius:18px;width:min(540px,92vw);
+    max-height:80vh;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 8px 40px rgba(0,0,0,.25);
+}
+.drem-modal-head {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--color-border);
+    font-weight:700;font-size:1rem;
+}
+.drem-modal-body { overflow-y:auto;flex:1; }
+</style>
 <?php endif; ?>
 
 <!-- ============================================================
@@ -633,37 +783,6 @@ function irrMarkDone(id, btn) {
     </div>
 </div>
 
-<!-- ============================================================
-     OVERDUE REMINDERS (if any)
-     ============================================================ -->
-<?php if (!empty($overdueReminders)): ?>
-<section class="dash-section">
-    <h2 class="dash-section-title">⚠️ Overdue Reminders</h2>
-    <div class="dash-overdue-list">
-        <?php foreach ($overdueReminders as $r): ?>
-        <div class="dash-overdue-item">
-            <div class="dash-overdue-info">
-                <strong><?= e($r['title']) ?></strong>
-                <span class="text-muted text-sm"><?= e(date('d M Y', strtotime($r['due_at']))) ?></span>
-                <?php if ($r['item_id']): ?>
-                <a href="<?= url('/items/' . ((int)$r['item_id'])) ?>" class="text-sm">View Item</a>
-                <?php endif; ?>
-            </div>
-            <div class="dash-overdue-actions">
-                <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/complete') ?>" style="display:inline">
-                    <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                    <button class="btn btn-sm btn-success">✓ Done</button>
-                </form>
-                <form method="POST" action="<?= url('/reminders/' . ((int)$r['id']) . '/dismiss') ?>" style="display:inline">
-                    <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                    <button class="btn btn-sm btn-secondary">Dismiss</button>
-                </form>
-            </div>
-        </div>
-        <?php endforeach; ?>
-    </div>
-</section>
-<?php endif; ?>
 
 <!-- ============================================================
      HARVEST CHART

@@ -68,6 +68,9 @@ class ReminderController
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
         DB::getInstance()->execute("UPDATE reminders SET status='completed', updated_at=NOW() WHERE id=?", [$id]);
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
+            Response::json(['success' => true]);
+        }
         flash('success', 'Reminder marked as complete.');
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/reminders');
     }
@@ -78,7 +81,29 @@ class ReminderController
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
         DB::getInstance()->execute("UPDATE reminders SET status='dismissed', updated_at=NOW() WHERE id=?", [$id]);
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
+            Response::json(['success' => true]);
+        }
         flash('success', 'Reminder dismissed.');
+        Response::redirect($_SERVER['HTTP_REFERER'] ?? '/reminders');
+    }
+
+    public function snooze(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id   = (int) ($params['id'] ?? 0);
+        $days = (int) $request->post('days', 1);
+        if ($days < 1 || $days > 30) $days = 1;
+        DB::getInstance()->execute(
+            "UPDATE reminders SET due_at = DATE_ADD(due_at, INTERVAL ? DAY), updated_at=NOW() WHERE id=?",
+            [$days, $id]
+        );
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || $request->post('_ajax')) {
+            $r = DB::getInstance()->fetchOne("SELECT due_at FROM reminders WHERE id=?", [$id]);
+            Response::json(['success' => true, 'due_at' => $r['due_at'] ?? null]);
+        }
+        flash('success', 'Reminder pushed by ' . $days . ' day' . ($days > 1 ? 's' : '') . '.');
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/reminders');
     }
 

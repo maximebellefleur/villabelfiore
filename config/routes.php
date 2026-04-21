@@ -98,6 +98,7 @@ $router->get('/reminders',                     'ReminderController@index');
 $router->post('/reminders',                    'ReminderController@store');
 $router->post('/reminders/{id}/complete',      'ReminderController@complete');
 $router->post('/reminders/{id}/dismiss',       'ReminderController@dismiss');
+$router->post('/reminders/{id}/snooze',        'ReminderController@snooze');
 
 // -------------------------------------------------------------------------
 // Harvests

@@ -8,6 +8,25 @@
  */
 return [
 
+    '2.4.1' => [
+        'date'  => '2026-04-21',
+        'title' => 'Smart Reminders',
+        'new'   => [
+            '+1 Day / +1 Week snooze buttons on every reminder row — push the due date forward without opening any form.',
+            'Dashboard reminder widget now merges overdue and upcoming into one section, sorted by date.',
+            '"All Reminders" popup modal on the dashboard when there are more than 5 pending reminders.',
+            'Reminders section moved to the top of each item page — the first thing you see when opening an item.',
+            'Item page reminders: full list of pending reminders with Done, +1d, +1w, and Dismiss quick-action buttons.',
+            'Overdue reminders highlighted in red throughout the app (dashboard widget, item page, reminders page).',
+            'Item name shown under reminder title on the dashboard widget.',
+        ],
+        'improved' => [
+            'All reminder action buttons are now AJAX — no page reload needed.',
+            'Reminders page action buttons restyled as compact pill buttons matching the rest of the app.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.4.0' => [
         'date'  => '2026-04-20',
         'title' => 'Tasks Hub',

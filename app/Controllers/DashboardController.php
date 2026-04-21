@@ -32,11 +32,11 @@ class DashboardController
         );
 
         $upcomingReminders = $db->fetchAll(
-            "SELECT * FROM reminders WHERE status = 'pending' AND due_at >= NOW() ORDER BY due_at ASC LIMIT 5"
+            "SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at >= NOW() ORDER BY r.due_at ASC LIMIT 10"
         );
 
         $overdueReminders = $db->fetchAll(
-            "SELECT * FROM reminders WHERE status = 'pending' AND due_at < NOW() ORDER BY due_at ASC LIMIT 5"
+            "SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status='pending' AND r.due_at < NOW() ORDER BY r.due_at ASC LIMIT 10"
         );
 
         // Harvest totals grouped by item type (current year)

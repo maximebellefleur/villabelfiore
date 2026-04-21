@@ -118,6 +118,99 @@ $recentReminders = array_slice($reminders, 0, 3);
 </div>
 
 <!-- =========================================================
+     REMINDERS — TOP SECTION
+     ========================================================= -->
+<?php if (!empty($reminders)): ?>
+<div class="show-section" id="itemRemSection">
+    <div class="show-section-head">
+        <span class="show-section-title">🔔 Reminders</span>
+        <a href="<?= url('/reminders') ?>" class="show-section-link">All reminders →</a>
+    </div>
+    <?php $_iremCsrf = \App\Support\CSRF::getToken(); ?>
+    <div class="irem-list">
+    <?php foreach ($reminders as $r):
+        $iremOD = strtotime($r['due_at']) < time();
+        $iremId = (int)$r['id'];
+    ?>
+    <div class="irem-row <?= $iremOD ? 'irem-row--overdue' : '' ?>" id="irem-<?= $iremId ?>">
+        <div class="irem-body">
+            <div class="irem-title"><?= e($r['title']) ?></div>
+            <div class="irem-meta">
+                <?php if ($iremOD): ?>
+                <span style="color:#c0392b;font-weight:700">⚠ Overdue · <?= e(date('d M Y', strtotime($r['due_at']))) ?></span>
+                <?php else: ?>
+                <?= e(date('d M Y', strtotime($r['due_at']))) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="irem-actions">
+            <button class="irem-btn irem-btn--done"   title="Done"    onclick="iremAction(<?= $iremId ?>,'complete','<?= e($_iremCsrf) ?>')">✓ Done</button>
+            <button class="irem-btn irem-btn--snooze" title="+1 Day"  onclick="iremAction(<?= $iremId ?>,'snooze1','<?= e($_iremCsrf) ?>')">+1d</button>
+            <button class="irem-btn irem-btn--snooze" title="+1 Week" onclick="iremAction(<?= $iremId ?>,'snooze7','<?= e($_iremCsrf) ?>')">+1w</button>
+            <button class="irem-btn irem-btn--dismiss" title="Dismiss" onclick="iremAction(<?= $iremId ?>,'dismiss','<?= e($_iremCsrf) ?>')">✕</button>
+        </div>
+    </div>
+    <?php endforeach; ?>
+    </div>
+</div>
+<script>
+function iremAction(id, action, token) {
+    var url, body;
+    if (action === 'snooze1' || action === 'snooze7') {
+        url  = '<?= url('/reminders/') ?>' + id + '/snooze';
+        body = '_token=' + encodeURIComponent(token) + '&days=' + (action === 'snooze7' ? 7 : 1) + '&_ajax=1';
+    } else {
+        url  = '<?= url('/reminders/') ?>' + id + '/' + action;
+        body = '_token=' + encodeURIComponent(token) + '&_ajax=1';
+    }
+    fetch(url, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'}, body:body })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (!data.success) return;
+            var row = document.getElementById('irem-' + id);
+            if (!row) return;
+            if (action === 'snooze1' || action === 'snooze7') {
+                if (data.due_at) {
+                    var d = new Date(data.due_at.replace(' ','T'));
+                    var label = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                    var meta = row.querySelector('.irem-meta');
+                    if (meta) meta.innerHTML = label;
+                }
+                row.classList.remove('irem-row--overdue');
+            } else {
+                row.style.transition = 'opacity .3s';
+                row.style.opacity = '0';
+                setTimeout(function(){ row.remove(); }, 300);
+            }
+        });
+}
+</script>
+<style>
+.irem-list { display:flex;flex-direction:column;gap:2px; }
+.irem-row {
+    display:flex;align-items:center;gap:8px;
+    padding:9px 12px;background:var(--color-surface-raised);
+    border:1px solid var(--color-border);border-radius:var(--radius);
+}
+.irem-row--overdue { background:#fff5f5;border-left:3px solid #c0392b; }
+.irem-body { flex:1;min-width:0; }
+.irem-title { font-size:.875rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.irem-meta { font-size:.7rem;color:var(--color-text-muted);margin-top:1px; }
+.irem-actions { display:flex;gap:3px;flex-shrink:0; }
+.irem-btn {
+    height:26px;border:none;border-radius:5px;cursor:pointer;font-size:.72rem;font-weight:700;
+    padding:0 7px;line-height:26px;transition:opacity .15s;white-space:nowrap;
+}
+.irem-btn--done    { background:var(--color-primary-soft);color:var(--color-primary); }
+.irem-btn--done:hover { background:var(--color-primary);color:#fff; }
+.irem-btn--snooze  { background:rgba(0,0,0,.06);color:var(--color-text-muted); }
+.irem-btn--snooze:hover { background:rgba(0,0,0,.13); }
+.irem-btn--dismiss { background:rgba(0,0,0,.06);color:#c0392b; }
+.irem-btn--dismiss:hover { background:#ffd5d5; }
+</style>
+<?php endif; ?>
+
+<!-- =========================================================
      PHOTO PREVIEW STRIP
      ========================================================= -->
 <?php if (!empty($previewPhotos)): ?>

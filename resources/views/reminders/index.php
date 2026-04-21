@@ -69,31 +69,35 @@ $gpsItems = array_map(fn($i) => [
 <!-- =========================================================
      OVERDUE
      ========================================================= -->
+<?php
+$_remPageCsrf = \App\Support\CSRF::getToken();
+function _remRow(array $r, string $csrf, bool $isOD): string {
+    $id    = (int)$r['id'];
+    $title = e($r['title']);
+    $meta  = e(date('d M Y', strtotime($r['due_at'])));
+    $item  = !empty($r['item_name']) ? ' · <a href="' . url('/items/'.(int)$r['item_id']) . '" class="rem-item-link">' . e($r['item_name']) . ' →</a>' : '';
+    $od    = $isOD ? 'rem-item--overdue' : '';
+    return <<<HTML
+    <div class="rem-item {$od}" id="remp-{$id}">
+        <div class="rem-item-body">
+            <div class="rem-item-title">{$title}</div>
+            <div class="rem-item-meta">{$meta}{$item}</div>
+        </div>
+        <div class="rem-item-actions">
+            <button class="rem-btn rem-btn--done"    title="Done"    onclick="rempAct({$id},'complete','{$csrf}')">✓</button>
+            <button class="rem-btn rem-btn--snooze"  title="+1 Day"  onclick="rempAct({$id},'snooze1','{$csrf}')">+1d</button>
+            <button class="rem-btn rem-btn--snooze"  title="+1 Week" onclick="rempAct({$id},'snooze7','{$csrf}')">+1w</button>
+            <button class="rem-btn rem-btn--dismiss" title="Dismiss" onclick="rempAct({$id},'dismiss','{$csrf}')">✕</button>
+        </div>
+    </div>
+    HTML;
+}
+?>
 <?php if (!empty($overdue)): ?>
 <div class="rem-section-title rem-section-title--danger">⚠️ Overdue (<?= count($overdue) ?>)</div>
 <div class="rem-list">
     <?php foreach ($overdue as $r): ?>
-    <div class="rem-item rem-item--overdue">
-        <div class="rem-item-body">
-            <div class="rem-item-title"><?= e($r['title']) ?></div>
-            <div class="rem-item-meta">
-                <?= e(date('d M Y', strtotime($r['due_at']))) ?>
-                <?php if ($r['item_name']): ?>
-                · <a href="<?= url('/items/' . (int)$r['item_id']) ?>" class="rem-item-link"><?= e($r['item_name']) ?> →</a>
-                <?php endif; ?>
-            </div>
-        </div>
-        <div class="rem-item-actions">
-            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/complete') ?>" style="display:inline">
-                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="rem-btn rem-btn--done">✓</button>
-            </form>
-            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/dismiss') ?>" style="display:inline">
-                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="rem-btn rem-btn--dismiss">✕</button>
-            </form>
-        </div>
-    </div>
+    <?= _remRow($r, $_remPageCsrf, true) ?>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
@@ -107,30 +111,46 @@ $gpsItems = array_map(fn($i) => [
 <?php else: ?>
 <div class="rem-list">
     <?php foreach ($upcoming as $r): ?>
-    <div class="rem-item">
-        <div class="rem-item-body">
-            <div class="rem-item-title"><?= e($r['title']) ?></div>
-            <div class="rem-item-meta">
-                <?= e(date('d M Y', strtotime($r['due_at']))) ?>
-                <?php if ($r['item_name']): ?>
-                · <a href="<?= url('/items/' . (int)$r['item_id']) ?>" class="rem-item-link"><?= e($r['item_name']) ?> →</a>
-                <?php endif; ?>
-            </div>
-        </div>
-        <div class="rem-item-actions">
-            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/complete') ?>" style="display:inline">
-                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="rem-btn rem-btn--done">✓</button>
-            </form>
-            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/dismiss') ?>" style="display:inline">
-                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button class="rem-btn rem-btn--dismiss">✕</button>
-            </form>
-        </div>
-    </div>
+    <?= _remRow($r, $_remPageCsrf, false) ?>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<script>
+function rempAct(id, action, token) {
+    var url, body;
+    if (action === 'snooze1' || action === 'snooze7') {
+        url  = '<?= url('/reminders/') ?>' + id + '/snooze';
+        body = '_token=' + encodeURIComponent(token) + '&days=' + (action === 'snooze7' ? 7 : 1) + '&_ajax=1';
+    } else {
+        url  = '<?= url('/reminders/') ?>' + id + '/' + action;
+        body = '_token=' + encodeURIComponent(token) + '&_ajax=1';
+    }
+    fetch(url, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'}, body:body })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (!data.success) return;
+            var row = document.getElementById('remp-' + id);
+            if (!row) return;
+            if (action === 'snooze1' || action === 'snooze7') {
+                if (data.due_at) {
+                    var d = new Date(data.due_at.replace(' ','T'));
+                    var label = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                    var meta = row.querySelector('.rem-item-meta');
+                    if (meta) {
+                        var itemLink = meta.querySelector('.rem-item-link');
+                        meta.innerHTML = label + (itemLink ? ' · ' + itemLink.outerHTML : '');
+                    }
+                    row.classList.remove('rem-item--overdue');
+                }
+            } else {
+                row.style.transition = 'opacity .3s';
+                row.style.opacity = '0';
+                setTimeout(function(){ row.remove(); }, 300);
+            }
+        });
+}
+</script>
 
 <script>
 (function() {
@@ -233,11 +253,13 @@ $gpsItems = array_map(fn($i) => [
 .rem-item-link:hover { text-decoration:underline; }
 .rem-item-actions { display:flex;gap:4px;flex-shrink:0; }
 .rem-btn {
-    width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;
-    font-weight:800;font-size:.85rem;transition:background .15s;
+    height:30px;border-radius:6px;border:none;cursor:pointer;
+    font-weight:700;font-size:.8rem;padding:0 8px;transition:background .15s;white-space:nowrap;
 }
 .rem-btn--done { background:var(--color-primary-soft);color:var(--color-primary); }
 .rem-btn--done:hover { background:var(--color-primary);color:#fff; }
-.rem-btn--dismiss { background:rgba(0,0,0,.06);color:var(--color-text-muted); }
-.rem-btn--dismiss:hover { background:rgba(0,0,0,.12); }
+.rem-btn--snooze { background:rgba(0,0,0,.06);color:var(--color-text-muted);font-size:.7rem; }
+.rem-btn--snooze:hover { background:rgba(0,0,0,.13); }
+.rem-btn--dismiss { background:rgba(0,0,0,.06);color:#c0392b; }
+.rem-btn--dismiss:hover { background:#ffd5d5; }
 </style>

@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.4.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-21',
+        'title'    => 'Smart Reminders',
+        'features' => [
+            ['title' => 'Snooze reminders (+1 Day / +1 Week)', 'detail' => 'Push any reminder forward by one day or one week with a single tap — available everywhere reminders appear.'],
+            ['title' => 'Merged dashboard reminder widget', 'detail' => 'Overdue and upcoming reminders combined in one widget, overdue shown in red, item name shown below title.'],
+            ['title' => 'Reminders at top of item page', 'detail' => "Pending reminders are now the first section when you open an item — you can't miss them."],
+            ['title' => 'AJAX reminder actions', 'detail' => 'Done, Dismiss, +1d, and +1w all update instantly without reloading the page.'],
+            ['title' => '"All Reminders" popup modal', 'detail' => 'Dashboard shows up to 5 reminders inline; a popup lists all of them with full actions.'],
+        ],
+    ],
+
     '2.3.0' => [
         'status'   => 'released',
         'released' => '2026-04-20',
