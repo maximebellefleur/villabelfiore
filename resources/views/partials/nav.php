@@ -58,7 +58,7 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 <nav class="nav" id="mainNav" style="overflow:hidden">
     <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px">
         <?php if ($_navIconUrl && $_navLogoUrl): ?>
-            <img src="<?= $_navIconUrl ?>" alt="" style="height:44px;width:44px;object-fit:cover;flex-shrink:0;background:#2b552d;padding:4px;border-radius:100px;border:3px solid #fff;margin:0 3px 0 -15px">
+            <img src="<?= $_navIconUrl ?>" alt="" style="height:84px;width:84px;object-fit:cover;flex-shrink:0;padding:4px;border-radius:100px;margin:0 -7px 0 -40px">
             <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:26px;max-width:120px;object-fit:contain">
         <?php elseif ($_navEffective): ?>
             <img src="<?= $_navEffective ?>" alt="Logo" style="height:44px;width:44px;object-fit:cover;flex-shrink:0;background:#2b552d;padding:4px;border-radius:100px;border:3px solid #fff;margin:0 3px 0 -15px">
@@ -138,24 +138,24 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 
 <!-- ─── Bottom nav ───────────────────────────────────────────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="<?= url('/dashboard') ?>" class="bottom-nav-item" data-bnav="home">
+        <span class="bottom-nav-icon"><?= _navIcon('dashboard') ?></span>
+        <span class="bottom-nav-label">Home</span>
+    </a>
     <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
         <span class="bottom-nav-icon"><?= _navIcon('map') ?></span>
         <span class="bottom-nav-label">Map</span>
+    </a>
+    <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
+        <?= _navIcon('plus') ?>
     </a>
     <a href="<?= url('/garden') ?>" class="bottom-nav-item" data-bnav="garden">
         <span class="bottom-nav-icon"><?= _navIcon('garden') ?></span>
         <span class="bottom-nav-label">Garden</span>
     </a>
-    <a href="<?= url('/items/create') ?>" class="bottom-nav-fab" aria-label="Add item">
-        <?= _navIcon('plus') ?>
-    </a>
-    <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
-        <span class="bottom-nav-icon"><?= _navIcon('harvest') ?></span>
-        <span class="bottom-nav-label">Harvest</span>
-    </a>
-    <a href="<?= url('/items') ?>" class="bottom-nav-item" data-bnav="items">
-        <span class="bottom-nav-icon"><?= _navIcon('items') ?></span>
-        <span class="bottom-nav-label">Items</span>
+    <a href="<?= url('/tasks') ?>" class="bottom-nav-item" data-bnav="tasks">
+        <span class="bottom-nav-icon"><?= _navIcon('tasks') ?></span>
+        <span class="bottom-nav-label">Tasks</span>
     </a>
 </nav>
 
@@ -187,8 +187,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 .nav-drawer-list li.active .nav-drawer-icon { opacity: 1; }
 
 /* Bottom nav SVG icons */
-.bottom-nav-icon svg { width: 22px; height: 22px; }
-.bottom-nav-fab svg  { width: 26px; height: 26px; }
+.bottom-nav-icon svg { width: 20px; height: 20px; }
+.bottom-nav-fab svg  { width: 22px; height: 22px; }
 </style>
 
 <script>
@@ -197,9 +197,12 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
     var path = window.location.pathname;
     document.querySelectorAll('.bottom-nav-item[data-bnav]').forEach(function (el) {
         var href = el.getAttribute('href');
-        if (href && (path === href || (href.length > 1 && path.startsWith(href)))) {
-            el.classList.add('active');
-        }
+        var bnav = el.getAttribute('data-bnav');
+        // Home: exact match only (avoid matching /dashboard/map, etc.)
+        var isActive = bnav === 'home'
+            ? (path === href || path === href + '/')
+            : href && (path === href || (href.length > 1 && path.startsWith(href)));
+        if (isActive) el.classList.add('active');
     });
 
     /* Drawer */

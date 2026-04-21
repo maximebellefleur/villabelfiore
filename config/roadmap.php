@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.4.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-21',
+        'title'    => 'Nav & Tasks Upgrade',
+        'features' => [
+            ['title' => 'Redesigned bottom nav', 'detail' => 'Home and Tasks added to the bottom nav (far left and far right). FAB made smaller and raised higher to make room.'],
+            ['title' => 'Achats shopping tab', 'detail' => 'New Achats tab in Tasks for your shopping list. Use (STORE) tag syntax to group items by shop.'],
+            ['title' => 'Important tasks', 'detail' => 'Star any task to mark it important — starred tasks always appear at the top of your list.'],
+            ['title' => 'Drag-to-reorder tasks', 'detail' => 'Grab the drag handle on any task row to reorder your to-do list manually.'],
+        ],
+    ],
+
     '2.4.3' => [
         'status'   => 'released',
         'released' => '2026-04-21',

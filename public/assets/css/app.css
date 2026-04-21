@@ -321,11 +321,11 @@ h3 { font-size: 1.1rem;  font-weight: 600; line-height: 1.3; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   text-decoration: none;
   color: var(--color-text-muted);
-  padding: 8px 4px;
-  min-height: 56px;
+  padding: 6px 2px;
+  min-height: 48px;
   transition: color var(--transition-fast);
   position: relative;
 }
@@ -361,8 +361,8 @@ h3 { font-size: 1.1rem;  font-weight: 600; line-height: 1.3; }
 /* FAB — center action */
 .bottom-nav-fab {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--color-primary);
   color: #fff;
@@ -370,10 +370,10 @@ h3 { font-size: 1.1rem;  font-weight: 600; line-height: 1.3; }
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 16px rgba(45,106,79,0.40), 0 1px 4px rgba(0,0,0,0.12);
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   text-decoration: none;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  margin-top: -16px;
+  margin-top: -28px;
 }
 .bottom-nav-fab:hover {
   background: var(--color-primary-light);

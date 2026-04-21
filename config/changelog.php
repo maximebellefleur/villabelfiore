@@ -8,6 +8,23 @@
  */
 return [
 
+    '2.4.4' => [
+        'date'  => '2026-04-21',
+        'title' => 'Nav & Tasks Upgrade',
+        'new'   => [
+            'Bottom nav restructured: Home (far left) and Tasks (far right) replace Harvest and Items for faster one-thumb access.',
+            'Tasks: important flag — mark any task as important with a ⭐ button; important tasks float to the top.',
+            'Tasks: drag-to-reorder — grab the handle to reorder your to-do list.',
+            'Achats tab in Tasks — a dedicated shopping list with (STORE) category tags, grouped by store.',
+        ],
+        'improved' => [
+            'FAB (+ button) made smaller and raised higher above the footer bar, freeing space for 5 nav items.',
+            'Nav icon image enlarged to 84 × 84 px with tighter negative margin for a more prominent brand presence.',
+            'Bottom nav items use tighter padding and smaller icons to fit 5 items comfortably.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.4.3' => [
         'date'  => '2026-04-21',
         'title' => 'Polish & Favicon',
