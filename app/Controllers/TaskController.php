@@ -285,4 +285,27 @@ class TaskController
         flash('success', 'Task deleted.');
         Response::redirect(strpos($_SERVER['HTTP_REFERER'] ?? '', 'archive') !== false ? '/tasks/archive' : '/tasks');
     }
+
+    public function rename(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id    = (int)($params['id'] ?? 0);
+        $title = trim($request->post('title', ''));
+        if (!$title) { Response::json(['success' => false, 'error' => 'Empty title']); return; }
+        DB::getInstance()->execute('UPDATE tasks SET title=?, updated_at=NOW() WHERE id=?', [$title, $id]);
+        Response::json(['success' => true, 'title' => $title]);
+    }
+
+    public function clearCompleted(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $listType = in_array($request->post('list_type'), ['todo', 'achat']) ? $request->post('list_type') : 'todo';
+        DB::getInstance()->execute(
+            'DELETE FROM tasks WHERE is_done=1 AND list_type=? AND is_archived=0',
+            [$listType]
+        );
+        Response::json(['success' => true]);
+    }
 }

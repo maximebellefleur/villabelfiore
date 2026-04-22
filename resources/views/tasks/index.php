@@ -49,6 +49,11 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-section-title { font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted); }
 .task-empty { text-align:center;padding:var(--spacing-6);color:var(--color-text-muted);font-size:.88rem;background:var(--color-surface-raised);border:1px dashed var(--color-border);border-radius:var(--radius-lg); }
 .achat-group-head { font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);padding:10px 12px 4px;display:flex;align-items:center;gap:6px; }
+.task-clear-done-btn { background:none;border:1px solid var(--color-border);border-radius:var(--radius-pill);padding:3px 10px;font-size:.7rem;font-weight:600;color:var(--color-text-muted);cursor:pointer;transition:background .12s,color .12s; }
+.task-clear-done-btn:hover { background:var(--color-danger-soft);color:var(--color-danger);border-color:var(--color-danger); }
+.task-title { cursor:default; }
+.task-title.editing { cursor:text; }
+.task-inline-input { border:none;outline:none;background:transparent;width:100%;font:inherit;color:inherit;padding:0;margin:0; }
 .reminder-row { display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius);margin-bottom:2px; }
 .reminder-dot { width:8px;height:8px;border-radius:50%;background:var(--color-primary);flex-shrink:0; }
 .reminder-dot.overdue { background:#dc2626; }
@@ -84,10 +89,13 @@ $csrfToken = \App\Support\CSRF::getToken();
 
 <div class="task-section-head">
     <span class="task-section-title" id="taskCounter"><?= count($tasks) ?> task<?= count($tasks) !== 1 ? 's' : '' ?></span>
-    <a href="<?= url('/tasks?tab=todos' . ($showDone ? '' : '&done=1')) ?>"
-       style="font-size:.75rem;color:var(--color-text-muted);text-decoration:none">
-        <?= $showDone ? 'Hide completed' : 'Show completed' ?>
-    </a>
+    <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="clearCompleted('todo')" class="task-clear-done-btn" id="todoClearBtn" style="<?= $showDone ? '' : 'display:none' ?>">🗑 Clear done</button>
+        <a href="<?= url('/tasks?tab=todos' . ($showDone ? '' : '&done=1')) ?>"
+           style="font-size:.75rem;color:var(--color-text-muted);text-decoration:none">
+            <?= $showDone ? 'Hide completed' : 'Show completed' ?>
+        </a>
+    </div>
 </div>
 
 <?php if (empty($tasks)): ?>
@@ -110,7 +118,7 @@ $csrfToken = \App\Support\CSRF::getToken();
             <?php if (!empty($t['category'])): ?>
             <span class="task-tag" style="background:<?= taskTagColor($t['category']) ?>"><?= e(strtoupper($t['category'])) ?></span>
             <?php endif; ?>
-            <span class="task-title <?= $isDone ? 'done-text' : '' ?>"><?= e($t['title']) ?></span>
+            <span class="task-title <?= $isDone ? 'done-text' : '' ?>" ondblclick="startInlineEdit(<?= $t['id'] ?>, this)"><?= e($t['title']) ?></span>
         </div>
         <?php if (!empty($t['due_date'])): ?>
         <div class="task-meta">
@@ -142,6 +150,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 
 <div class="task-section-head">
     <span class="task-section-title"><?= $achatsTotal ?> item<?= $achatsTotal !== 1 ? 's' : '' ?></span>
+    <button onclick="clearCompleted('achat')" class="task-clear-done-btn">🗑 Clear done</button>
 </div>
 
 <?php if (empty($achats)): ?>
@@ -167,7 +176,7 @@ $csrfToken = \App\Support\CSRF::getToken();
                 onclick="toggleTask(<?= $a['id'] ?>, this)"><?= $a['is_done'] ? '✓' : '' ?></button>
         <div class="task-body">
             <div class="task-title-row">
-                <span class="task-title <?= $a['is_done'] ? 'done-text' : '' ?>"><?= e($a['title']) ?></span>
+                <span class="task-title <?= $a['is_done'] ? 'done-text' : '' ?>" ondblclick="startInlineEdit(<?= $a['id'] ?>, this)"><?= e($a['title']) ?></span>
             </div>
         </div>
         <div class="task-actions">
@@ -320,7 +329,7 @@ function escHtml(s) {
         el.className = 'task-row'; el.id = 'taskRow'+t.id; el.dataset.id = t.id; el.draggable = true;
         el.innerHTML = '<span class="task-drag-handle" title="Drag to reorder">⠿</span>'
             +'<button class="task-checkbox" onclick="toggleTask('+t.id+', this)"></button>'
-            +'<div class="task-body"><div class="task-title-row">'+tagHtml+'<span class="task-title">'+escHtml(t.title)+'</span></div></div>'
+            +'<div class="task-body"><div class="task-title-row">'+tagHtml+'<span class="task-title" ondblclick="startInlineEdit('+t.id+', this)">'+escHtml(t.title)+'</span></div></div>'
             +'<div class="task-actions">'
             +'<button class="task-imp-btn" title="Important" onclick="toggleImportant('+t.id+', this)">⭐</button>'
             +'<button class="task-act-btn" title="Archive" onclick="archiveTask('+t.id+', this)">📦</button>'
@@ -373,7 +382,7 @@ function escHtml(s) {
             var row   = document.createElement('div');
             row.className='task-row'; row.id='taskRow'+d.task.id; row.dataset.id=d.task.id;
             row.innerHTML='<button class="task-checkbox" onclick="toggleTask('+d.task.id+', this)"></button>'
-                +'<div class="task-body"><div class="task-title-row"><span class="task-title">'+escHtml(d.task.title)+'</span></div></div>'
+                +'<div class="task-body"><div class="task-title-row"><span class="task-title" ondblclick="startInlineEdit('+d.task.id+', this)">'+escHtml(d.task.title)+'</span></div></div>'
                 +'<div class="task-actions"><button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask('+d.task.id+', this)">✕</button></div>';
             row.style.opacity='0'; items.appendChild(row);
             requestAnimationFrame(function(){ row.style.transition='opacity .2s'; row.style.opacity='1'; });
@@ -457,4 +466,62 @@ function saveOrder(list) {
     fetch(BASE+'tasks/reorder', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF)+'&ids='+encodeURIComponent(JSON.stringify(ids)) });
 }
 document.querySelectorAll('#taskList .task-row[data-id]').forEach(initDrag);
+
+/* ---- Inline rename (double-click) ---- */
+function startInlineEdit(id, titleEl) {
+    if (titleEl.querySelector('input')) return;
+    var prev = titleEl.textContent.trim();
+    titleEl.classList.add('editing');
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = prev;
+    inp.className = 'task-inline-input';
+    titleEl.textContent = '';
+    titleEl.appendChild(inp);
+    inp.focus();
+    inp.select();
+    var saved = false;
+    function save() {
+        if (saved) return; saved = true;
+        var val = inp.value.trim() || prev;
+        titleEl.textContent = val;
+        titleEl.classList.remove('editing');
+        if (val === prev) return;
+        fetch(BASE+'tasks/'+id+'/rename', {
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'_token='+encodeURIComponent(CSRF)+'&title='+encodeURIComponent(val)
+        }).then(function(r){return r.json();}).then(function(d){
+            if (!d.success) titleEl.textContent = prev;
+        }).catch(function(){ titleEl.textContent = prev; });
+    }
+    function cancel() {
+        if (saved) return; saved = true;
+        titleEl.textContent = prev;
+        titleEl.classList.remove('editing');
+    }
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); inp.removeEventListener('blur', save); save(); }
+        if (e.key === 'Escape') { inp.removeEventListener('blur', save); cancel(); }
+    });
+}
+
+/* ---- Clear completed tasks ---- */
+function clearCompleted(listType) {
+    var label = listType === 'achat' ? 'completed achats' : 'completed tasks';
+    if (!confirm('Delete all ' + label + '?')) return;
+    fetch(BASE+'tasks/clear-completed', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_token='+encodeURIComponent(CSRF)+'&list_type='+encodeURIComponent(listType)
+    }).then(function(r){return r.json();}).then(function(d){
+        if (!d.success) return;
+        document.querySelectorAll('.task-row.done').forEach(function(row){
+            row.style.transition='opacity .2s';
+            row.style.opacity='0';
+            setTimeout(function(){ row.remove(); }, 220);
+        });
+    });
+}
 </script>

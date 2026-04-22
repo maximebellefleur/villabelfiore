@@ -566,6 +566,7 @@ function remAction(id, action, token, inModal) {
         <span>✅ Tasks</span>
         <a href="<?= url('/tasks') ?>" class="dash-widget-link">Go to Tasks →</a>
     </div>
+<?php $dashCsrf = e(\App\Support\CSRF::getToken()); ?>
     <div class="dash-tasks-layout">
         <!-- Left: tab buttons stacked -->
         <div class="dash-tasks-tabs">
@@ -580,6 +581,9 @@ function remAction(id, action, token, inModal) {
         <div class="dash-tasks-content">
             <!-- To-Do panel -->
             <div id="dashTabTodos" class="dash-tasks-panel">
+                <div style="display:flex;justify-content:flex-end;padding:4px 12px 0">
+                    <button onclick="dashClearDone('todo')" style="font-size:.65rem;font-weight:600;color:var(--color-text-muted);background:none;border:1px solid var(--color-border);border-radius:999px;padding:2px 8px;cursor:pointer">🗑 Clear done</button>
+                </div>
                 <?php if (empty($dashTasks)): ?>
                 <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">All done! 🎉</div>
                 <?php else: ?>
@@ -603,7 +607,7 @@ function remAction(id, action, token, inModal) {
                     </button>
                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                         <?= $tagHtml ?>
-                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>"><?= e($dt['title']) ?></span>
+                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
                         <?php if ($isImp): ?><span style="font-size:.8rem">⭐</span><?php endif; ?>
                     </div>
                 </div>
@@ -615,6 +619,9 @@ function remAction(id, action, token, inModal) {
             </div>
             <!-- Achats panel -->
             <div id="dashTabAchats" class="dash-tasks-panel" style="display:none">
+                <div style="display:flex;justify-content:flex-end;padding:4px 12px 0">
+                    <button onclick="dashClearDone('achat')" style="font-size:.65rem;font-weight:600;color:var(--color-text-muted);background:none;border:1px solid var(--color-border);border-radius:999px;padding:2px 8px;cursor:pointer">🗑 Clear done</button>
+                </div>
                 <?php if (empty($dashAchats)): ?>
                 <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">Shopping list is empty.</div>
                 <?php else: ?>
@@ -636,7 +643,7 @@ function remAction(id, action, token, inModal) {
                     </button>
                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                         <?= $tagHtml2 ?>
-                        <span style="font-size:.875rem"><?= e($da['title']) ?></span>
+                        <span style="font-size:.875rem" ondblclick="dashInlineEdit(<?= $da['id'] ?>, this)"><?= e($da['title']) ?></span>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -672,8 +679,11 @@ function switchDashTab(tab, btn) {
     document.getElementById('dashTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = 'flex';
     document.getElementById('dashTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.flexDirection = 'column';
 }
+var DASH_CSRF = '<?= $dashCsrf ?>';
+var DASH_BASE = '<?= url('/') ?>';
+
 function dtToggle(id, token, btn) {
-    fetch('<?= url('/tasks/') ?>' + id + '/toggle', {
+    fetch(DASH_BASE + 'tasks/' + id + '/toggle', {
         method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'_token='+encodeURIComponent(token)
     }).then(function(r){return r.json();}).then(function(d){
@@ -686,6 +696,53 @@ function dtToggle(id, token, btn) {
         } else {
             btn.classList.remove('checked'); btn.textContent='';
         }
+    });
+}
+
+function dashInlineEdit(id, titleEl) {
+    if (titleEl.querySelector('input')) return;
+    var prev = titleEl.textContent.trim();
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.value = prev;
+    inp.style.cssText = 'border:none;outline:none;background:transparent;width:100%;font:inherit;color:inherit;padding:0;margin:0;';
+    titleEl.textContent = ''; titleEl.appendChild(inp);
+    inp.focus(); inp.select();
+    var saved = false;
+    function save() {
+        if (saved) return; saved = true;
+        var val = inp.value.trim() || prev;
+        titleEl.textContent = val;
+        if (val === prev) return;
+        fetch(DASH_BASE + 'tasks/' + id + '/rename', {
+            method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'_token='+encodeURIComponent(DASH_CSRF)+'&title='+encodeURIComponent(val)
+        }).then(function(r){return r.json();}).then(function(d){ if(!d.success) titleEl.textContent=prev; })
+          .catch(function(){ titleEl.textContent=prev; });
+    }
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', function(e) {
+        if (e.key==='Enter') { e.preventDefault(); inp.removeEventListener('blur',save); save(); }
+        if (e.key==='Escape') { inp.removeEventListener('blur',save); saved=true; titleEl.textContent=prev; }
+    });
+}
+
+function dashClearDone(listType) {
+    var label = listType === 'achat' ? 'completed achats' : 'completed tasks';
+    if (!confirm('Delete all ' + label + '?')) return;
+    fetch(DASH_BASE + 'tasks/clear-completed', {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_token='+encodeURIComponent(DASH_CSRF)+'&list_type='+encodeURIComponent(listType)
+    }).then(function(r){return r.json();}).then(function(d){
+        if (!d.success) return;
+        var panel = listType === 'achat' ? document.getElementById('dashTabAchats') : document.getElementById('dashTabTodos');
+        if (!panel) return;
+        panel.querySelectorAll('.dash-task-row').forEach(function(row){
+            var chk = row.querySelector('.dash-task-chk');
+            if (chk && chk.classList.contains('checked')) {
+                row.style.transition='opacity .2s'; row.style.opacity='0';
+                setTimeout(function(){ row.remove(); }, 220);
+            }
+        });
     });
 }
 </script>

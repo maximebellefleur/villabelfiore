@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.4.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-22',
+        'title'    => 'Task Inline Edit',
+        'features' => [
+            ['title' => 'Inline task rename', 'detail' => 'Double-click/tap any task or achat title to edit it in place. Works on Tasks page and Dashboard widget.'],
+            ['title' => 'Clear done button', 'detail' => '"Clear done" button at the top of each list deletes all completed items at once.'],
+        ],
+    ],
+
     '2.4.8' => [
         'status'   => 'released',
         'released' => '2026-04-22',

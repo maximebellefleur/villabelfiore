@@ -193,6 +193,8 @@ $router->post('/tasks/{id}/important',    'TaskController@toggleImportant');
 $router->post('/tasks/{id}/archive',      'TaskController@archiveTask');
 $router->post('/tasks/{id}/unarchive',    'TaskController@unarchive');
 $router->post('/tasks/{id}/delete',       'TaskController@destroy');
+$router->post('/tasks/{id}/rename',       'TaskController@rename');
+$router->post('/tasks/clear-completed',   'TaskController@clearCompleted');
 
 // -------------------------------------------------------------------------
 // Irrigation plans

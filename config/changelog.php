@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.4.9' => [
+        'date'  => '2026-04-22',
+        'title' => 'Task Inline Edit',
+        'new'   => [
+            'Double-click (or double-tap) any task or achat title to rename it inline — works on both the Tasks page and the Dashboard widget.',
+            '"Clear done" button at the top of each list removes all completed tasks/achats in one tap.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '2.4.8' => [
         'date'  => '2026-04-22',
         'title' => 'Nav & Cache',
