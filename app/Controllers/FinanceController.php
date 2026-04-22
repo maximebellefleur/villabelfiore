@@ -128,6 +128,7 @@ class FinanceController
         CSRF::validate($request->post('_token', ''));
         $id = (int)($params['id'] ?? 0);
         $db = DB::getInstance();
+        $this->ensureColumns($db);
 
         $scope    = $request->post('scope', 'general');
         $itemType = $scope === 'item_type' ? trim($request->post('item_type', '')) : '';

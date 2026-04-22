@@ -324,28 +324,36 @@ function cancelEdit(id) {
     document.getElementById('row-display-' + id).style.display = '';
 }
 
+var FINANCE_BASE = '<?= url('/finance/') ?>';
+
 // Submit inline edit via AJAX
 function saveEntry(event, id) {
     event.preventDefault();
     var form = event.target;
-    var data = new FormData(form);
+    var params = new URLSearchParams(new FormData(form)).toString();
 
-    fetch('/finance/' + id + '/update', {
+    fetch(FINANCE_BASE + id + '/update', {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: data
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: params
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (!r.ok) { return r.text().then(function(t){ throw new Error(t); }); }
+        return r.json();
+    })
     .then(function(json) {
         if (json.success) {
-            // Full page reload to refresh display values
             window.location.reload();
         } else {
-            alert('Save failed. Please try again.');
+            alert('Save failed: ' + (json.message || 'unknown error'));
         }
     })
-    .catch(function() {
-        alert('Network error. Please try again.');
+    .catch(function(err) {
+        console.error('Finance save error:', err);
+        alert('Save failed. Check console for details.');
     });
 }
 
