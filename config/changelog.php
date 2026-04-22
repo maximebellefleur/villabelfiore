@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.4.6' => [
+        'date'  => '2026-04-22',
+        'title' => 'Tasks & Finance',
+        'new'   => [],
+        'improved' => [],
+        'fixed' => [
+            'Achats quick-add: first item now saves correctly when the list was empty (parent node was lost after removing empty state).',
+        ],
+    ],
+
     '2.4.5' => [
         'date'  => '2026-04-22',
         'title' => 'Tasks & Finance',

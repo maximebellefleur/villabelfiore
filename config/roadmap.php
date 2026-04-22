@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.4.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-22',
+        'title'    => 'Tasks & Finance',
+        'features' => [
+            ['title' => 'Achats save fix', 'detail' => 'Fixed first item not saving when the shopping list was empty.'],
+        ],
+    ],
+
     '2.4.5' => [
         'status'   => 'released',
         'released' => '2026-04-22',

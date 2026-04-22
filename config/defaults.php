@@ -11,7 +11,7 @@ return [
     'gps_accuracy_threshold_m'   => 20,
     'image_refresh_interval_days'=> 365,
     'reminder_default_lead_days' => 7,
-    'version'                    => '2.4.5',
+    'version'                    => '2.4.6',
     'version_name'               => 'Tasks & Finance',
     'update_zip_url'             => 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/claude/create-rooted-project-RVbog/rooted-cpanel-update.zip',
     'items_per_page'             => 20,
