@@ -128,6 +128,20 @@ class DashboardController
             );
         } catch (\Throwable $e) { /* table may not exist yet */ }
 
+        // Tasks widget
+        $dashTasks  = [];
+        $dashAchats = [];
+        try {
+            $dashTasks = $db->fetchAll(
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0
+                 ORDER BY is_important DESC, sort_order ASC, created_at DESC LIMIT 5"
+            );
+            $dashAchats = $db->fetchAll(
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'achat' AND is_done = 0
+                 ORDER BY category ASC, sort_order ASC, created_at DESC LIMIT 6"
+            );
+        } catch (\Throwable $e) {}
+
         Response::render('dashboard/index', [
             'title'             => 'Dashboard',
             'itemCounts'        => $itemCounts,
@@ -146,6 +160,8 @@ class DashboardController
             'bioWeek'           => $bioWeek,
             'bioSegments'       => $bioSegments,
             'todayIrrigation'   => $todayIrrigation,
+            'dashTasks'         => $dashTasks,
+            'dashAchats'        => $dashAchats,
         ]);
     }
 

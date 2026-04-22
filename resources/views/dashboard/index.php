@@ -558,6 +558,140 @@ function remAction(id, action, token, inModal) {
 <?php endif; ?>
 
 <!-- ============================================================
+     TASKS WIDGET
+     ============================================================ -->
+<?php if (!empty($dashTasks) || !empty($dashAchats)): ?>
+<section class="dash-widget dash-tasks-widget" style="margin-bottom:var(--spacing-5)">
+    <div class="dash-widget-header">
+        <span>✅ Tasks</span>
+        <a href="<?= url('/tasks') ?>" class="dash-widget-link">Go to Tasks →</a>
+    </div>
+    <div class="dash-tasks-layout">
+        <!-- Left: tab buttons stacked -->
+        <div class="dash-tasks-tabs">
+            <button class="dash-tasks-tab active" onclick="switchDashTab('todos', this)">
+                ✅<span>To-Do</span>
+            </button>
+            <button class="dash-tasks-tab" onclick="switchDashTab('achats', this)">
+                🛒<span>Achats</span>
+            </button>
+        </div>
+        <!-- Right: content panels -->
+        <div class="dash-tasks-content">
+            <!-- To-Do panel -->
+            <div id="dashTabTodos" class="dash-tasks-panel">
+                <?php if (empty($dashTasks)): ?>
+                <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">All done! 🎉</div>
+                <?php else: ?>
+                <?php foreach ($dashTasks as $dt):
+                    $isImp = (bool)$dt['is_important'];
+                    $tagHtml = '';
+                    if (!empty($dt['category'])) {
+                        // simple color hash
+                        $h = 0; $tag = strtoupper(trim($dt['category']));
+                        for ($ci = 0; $ci < strlen($tag); $ci++) $h = (($h*31)+ord($tag[$ci]))&0x7fffffff;
+                        $pal = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce','#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+                        $tc = $pal[$h % count($pal)];
+                        $tagHtml = '<span style="background:'.$tc.';color:#fff;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;flex-shrink:0">'.e($tag).'</span>';
+                    }
+                ?>
+                <div class="dash-task-row <?= $isImp ? 'dash-task-row--imp' : '' ?>" id="dtRow<?= $dt['id'] ?>">
+                    <button class="dash-task-chk <?= $dt['is_done'] ? 'checked' : '' ?>"
+                            onclick="dtToggle(<?= $dt['id'] ?>, '<?= e(\App\Support\CSRF::getToken()) ?>', this)"
+                            title="Toggle done">
+                        <?= $dt['is_done'] ? '✓' : '' ?>
+                    </button>
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <?= $tagHtml ?>
+                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>"><?= e($dt['title']) ?></span>
+                        <?php if ($isImp): ?><span style="font-size:.8rem">⭐</span><?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+                <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none">See all to-dos →</a>
+                </div>
+            </div>
+            <!-- Achats panel -->
+            <div id="dashTabAchats" class="dash-tasks-panel" style="display:none">
+                <?php if (empty($dashAchats)): ?>
+                <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">Shopping list is empty.</div>
+                <?php else: ?>
+                <?php foreach ($dashAchats as $da):
+                    $tagHtml2 = '';
+                    if (!empty($da['category']) && $da['category'] !== '__none__') {
+                        $h = 0; $tag = strtoupper(trim($da['category']));
+                        for ($ci = 0; $ci < strlen($tag); $ci++) $h = (($h*31)+ord($tag[$ci]))&0x7fffffff;
+                        $pal = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce','#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+                        $tc = $pal[$h % count($pal)];
+                        $tagHtml2 = '<span style="background:'.$tc.';color:#fff;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;flex-shrink:0">'.e($tag).'</span>';
+                    }
+                ?>
+                <div class="dash-task-row" id="daRow<?= $da['id'] ?>">
+                    <button class="dash-task-chk <?= $da['is_done'] ? 'checked' : '' ?>"
+                            onclick="dtToggle(<?= $da['id'] ?>, '<?= e(\App\Support\CSRF::getToken()) ?>', this)"
+                            title="Toggle">
+                        <?= $da['is_done'] ? '✓' : '' ?>
+                    </button>
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <?= $tagHtml2 ?>
+                        <span style="font-size:.875rem"><?= e($da['title']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+                <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
+                    <a href="<?= url('/tasks?tab=achats') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none">See shopping list →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.dash-tasks-layout { display:flex; min-height:120px; }
+.dash-tasks-tabs { display:flex;flex-direction:column;gap:2px;padding:8px 6px;background:var(--color-surface);border-right:1px solid var(--color-border);flex-shrink:0;min-width:72px; }
+.dash-tasks-tab { background:none;border:none;cursor:pointer;padding:8px 6px;border-radius:var(--radius);font-size:.68rem;font-weight:700;color:var(--color-text-muted);display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:uppercase;letter-spacing:.03em;transition:background .12s,color .12s; }
+.dash-tasks-tab.active { background:var(--color-primary-soft);color:var(--color-primary); }
+.dash-tasks-tab:hover:not(.active) { background:var(--color-border); }
+.dash-tasks-content { flex:1;min-width:0; }
+.dash-tasks-panel { display:flex;flex-direction:column; }
+.dash-task-row { display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--color-border); }
+.dash-task-row:last-of-type { border-bottom:none; }
+.dash-task-row--imp { border-left:3px solid #f59e0b;background:#fffbeb; }
+.dash-task-chk { width:20px;height:20px;border-radius:5px;border:2px solid var(--color-border);background:#fff;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:border-color .12s,background .12s; }
+.dash-task-chk.checked { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
+</style>
+
+<script>
+function switchDashTab(tab, btn) {
+    document.querySelectorAll('.dash-tasks-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.dash-tasks-panel').forEach(function(p){ p.style.display='none'; });
+    document.getElementById('dashTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = 'flex';
+    document.getElementById('dashTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.flexDirection = 'column';
+}
+function dtToggle(id, token, btn) {
+    fetch('<?= url('/tasks/') ?>' + id + '/toggle', {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_token='+encodeURIComponent(token)
+    }).then(function(r){return r.json();}).then(function(d){
+        if (!d.success) return;
+        var row = btn.closest('.dash-task-row');
+        if (d.is_done) {
+            btn.classList.add('checked'); btn.textContent='✓';
+            row.style.opacity='0'; row.style.transition='opacity .4s';
+            setTimeout(function(){ row.remove(); }, 420);
+        } else {
+            btn.classList.remove('checked'); btn.textContent='';
+        }
+    });
+}
+</script>
+<?php endif; ?>
+
+<!-- ============================================================
      NEAREST TO YOU — hero section
      ============================================================ -->
 <section class="nearby-hero" id="nearbySection">

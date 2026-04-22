@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.4.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-22',
+        'title'    => 'Tasks & Finance',
+        'features' => [
+            ['title' => 'Achats shopping tab', 'detail' => 'Dedicated shopping list in Tasks. Use (STORE) tag to group items by store.'],
+            ['title' => 'Task drag-to-reorder', 'detail' => 'Grab the ⠿ handle on any to-do row to reorder your list manually.'],
+            ['title' => 'Task important flag', 'detail' => '⭐ button marks a task important — gold border, floats to top.'],
+            ['title' => 'Dashboard tasks widget', 'detail' => 'To-Do and Achats shown on the dashboard with AJAX completion, right after reminders.'],
+            ['title' => 'Finance overhaul', 'detail' => 'Year navigation, inline edit/delete, item-type scoping, CSV export, and financial tracking toggle in Harvest settings.'],
+        ],
+    ],
+
     '2.4.4' => [
         'status'   => 'released',
         'released' => '2026-04-21',

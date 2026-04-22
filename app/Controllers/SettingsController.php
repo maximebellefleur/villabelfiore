@@ -103,11 +103,13 @@ class SettingsController
 
         foreach ($itemTypes as $typeKey => $typeCfg) {
             $config[$typeKey] = [
-                'enabled'      => $request->post('enabled_' . $typeKey) === '1' ? 1 : 0,
-                'max_per_year' => max(1,    (int)   $request->post('max_per_year_' . $typeKey, 1)),
-                'unit'         => (trim((string) $request->post('unit_' . $typeKey, 'units')) ?: 'units'),
-                'slider_max'   => max(0.25, (float) $request->post('slider_max_'  . $typeKey, 5)),
-                'slider_step'  => max(0.05, (float) $request->post('slider_step_' . $typeKey, 0.25)),
+                'enabled'         => $request->post('enabled_' . $typeKey) === '1' ? 1 : 0,
+                'max_per_year'    => max(1,    (int)   $request->post('max_per_year_' . $typeKey, 1)),
+                'unit'            => (trim((string) $request->post('unit_' . $typeKey, 'units')) ?: 'units'),
+                'slider_max'      => max(0.25, (float) $request->post('slider_max_'  . $typeKey, 5)),
+                'slider_step'     => max(0.05, (float) $request->post('slider_step_' . $typeKey, 0.25)),
+                'finance_enabled' => $request->post('finance_enabled_' . $typeKey) === '1' ? 1 : 0,
+                'finance_rule'    => trim((string) $request->post('finance_rule_' . $typeKey, '')),
             ];
         }
 

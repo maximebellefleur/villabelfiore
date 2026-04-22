@@ -8,6 +8,26 @@
  */
 return [
 
+    '2.4.5' => [
+        'date'  => '2026-04-22',
+        'title' => 'Tasks & Finance',
+        'new'   => [
+            'Tasks — Achats tab: dedicated shopping list with (STORE) tag grouping by store.',
+            'Tasks — Drag-to-reorder: grab the ⠿ handle to reorder your to-do list manually.',
+            'Tasks — Important flag: ⭐ button per task; important tasks get a gold border and float to the top.',
+            'Tasks widget on Dashboard: tabbed To-Do / Achats panel with AJAX toggle, right after reminders.',
+            'Finance — year navigation: browse entries by year with a select box.',
+            'Finance — inline edit & delete on every entry row.',
+            'Finance — association by item type (Olive Tree, Almond Tree, Vine…) or general land.',
+            'Finance — CSV export per year and all-time.',
+            'Settings › Harvest — financial tracking toggle per crop type with optional cost/revenue rule note.',
+        ],
+        'improved' => [
+            'Finance form no longer requires picking a specific item — scope can be General, Item Type, or specific Item.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.4.4' => [
         'date'  => '2026-04-21',
         'title' => 'Nav & Tasks Upgrade',

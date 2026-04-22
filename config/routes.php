@@ -114,6 +114,7 @@ $router->post('/harvests/{id}/trash',          'HarvestController@trash');
 // Finance
 // -------------------------------------------------------------------------
 $router->get('/finance',                       'FinanceController@index');
+$router->get('/finance/export',                'FinanceController@export');
 $router->get('/items/{id}/finance',            'FinanceController@forItem');
 $router->post('/finance',                      'FinanceController@store');
 $router->post('/finance/{id}/update',          'FinanceController@update');

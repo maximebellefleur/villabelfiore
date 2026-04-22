@@ -90,6 +90,29 @@ $typeIcons = [
                                value="<?= (float)($cfg['slider_step'] ?? 0.25) ?>" min="0.05" max="100" step="0.05">
                     </div>
                 </div>
+
+                <!-- Finance tracking toggle -->
+                <div class="settings-field settings-field--inline" style="margin-top:var(--spacing-2)">
+                    <div>
+                        <label class="settings-label">Enable Financial Tracking</label>
+                        <p class="settings-hint">Track costs &amp; revenue for this crop type in the Finance module.</p>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="hidden"   name="finance_enabled_<?= e($typeKey) ?>" value="0">
+                        <input type="checkbox" name="finance_enabled_<?= e($typeKey) ?>" value="1"
+                               id="finChk_<?= e($typeKey) ?>"
+                               <?= !empty($cfg['finance_enabled']) ? 'checked' : '' ?>
+                               onchange="toggleFinRule('<?= e($typeKey) ?>')">
+                        <span class="settings-toggle-track"></span>
+                    </label>
+                </div>
+                <div id="finRule_<?= e($typeKey) ?>" style="<?= empty($cfg['finance_enabled']) ? 'display:none' : '' ?>;margin-top:var(--spacing-2)">
+                    <label class="settings-label">Cost/Revenue Rule <span style="font-weight:400;color:var(--color-text-muted)">(optional note for AI or reference)</span></label>
+                    <p class="settings-hint">Describe how costs &amp; revenues are calculated for this type — e.g. "€0.45/kg harvest, pruning cost split equally across trees".</p>
+                    <textarea name="finance_rule_<?= e($typeKey) ?>" class="settings-input" rows="2"
+                              placeholder="e.g. Harvest revenue = kg × market price. Pruning shared across all olive trees."
+                              style="resize:vertical"><?= e($cfg['finance_rule'] ?? '') ?></textarea>
+                </div>
             </div>
             <?php endforeach; ?>
 
@@ -99,4 +122,11 @@ $typeIcons = [
         </form>
     </div>
 </div>
+<script>
+function toggleFinRule(key) {
+    var chk = document.getElementById('finChk_' + key);
+    var box = document.getElementById('finRule_' + key);
+    if (box) box.style.display = chk.checked ? '' : 'none';
+}
+</script>
 
