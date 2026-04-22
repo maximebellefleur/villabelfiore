@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.4.8' => [
+        'date'  => '2026-04-22',
+        'title' => 'Nav & Cache',
+        'new'   => [
+            'Bottom nav: 7 items — Home, Photos, Map, +, Garden, Harvest, Tasks.',
+            'Image caching: proper Cache-Control + ETag headers on attachment downloads; browsers cache images for 1 year.',
+            'Settings: "Clear Image Cache" button forces all browsers to reload fresh images.',
+        ],
+        'improved' => [
+            'Attachment images served inline (not as download) for faster display in the browser.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.4.7' => [
         'date'  => '2026-04-22',
         'title' => 'Infinite Scroll Items',

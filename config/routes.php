@@ -125,6 +125,7 @@ $router->post('/finance/{id}/trash',           'FinanceController@trash');
 // -------------------------------------------------------------------------
 $router->get('/settings',                      'SettingsController@index');
 $router->post('/settings/update',              'SettingsController@update');
+$router->post('/settings/clear-image-cache',   'SettingsController@clearImageCache');
 $router->get('/settings/storage',              'SettingsController@storage');
 $router->post('/settings/storage',             'SettingsController@updateStorage');
 $router->get('/settings/harvest',              'SettingsController@harvest');

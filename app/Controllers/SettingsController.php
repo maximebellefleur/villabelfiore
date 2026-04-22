@@ -78,6 +78,21 @@ class SettingsController
         Response::redirect('/settings');
     }
 
+    public function clearImageCache(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $ver = (string) time();
+        DB::getInstance()->execute(
+            "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+             VALUES ('att_cache_ver',?,?,0,NOW())
+             ON DUPLICATE KEY UPDATE setting_value_text=VALUES(setting_value_text), updated_at=NOW()",
+            [$ver, 'text']
+        );
+        flash('success', 'Image cache cleared. Browsers will reload fresh images.');
+        Response::redirect('/settings');
+    }
+
     // ── Harvest settings ──────────────────────────────────────────────────────
 
     public function harvest(Request $request, array $params = []): void

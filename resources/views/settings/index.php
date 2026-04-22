@@ -399,6 +399,18 @@ ollama create my-plant-model -f Modelfile</code>
             </form>
         </div>
 
+        <!-- Image Cache -->
+        <div class="settings-group" style="margin-top:var(--spacing-6)">
+            <div class="settings-group-title">Image Cache</div>
+            <p class="settings-hint" style="margin-bottom:var(--spacing-4)">
+                Item photos are cached in the browser for up to 1 year for fast loading. If you replaced a photo and the old version is still showing, use this button to force all browsers to reload fresh images.
+            </p>
+            <form method="POST" action="<?= url('/settings/clear-image-cache') ?>">
+                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+                <button type="submit" class="btn btn-ghost">🗑 Clear Image Cache</button>
+            </form>
+        </div>
+
     </div>
 </div>
 

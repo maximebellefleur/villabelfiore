@@ -284,8 +284,32 @@ class AttachmentController
         $path = STORAGE_PATH . '/' . $att['storage_path'];
         if (!file_exists($path)) { http_response_code(404); echo 'File not found'; return; }
 
+        $mtime = filemtime($path);
+        $etag  = '"' . $mtime . '-' . filesize($path) . '"';
+
         header('Content-Type: ' . $att['mime_type']);
-        header('Content-Disposition: attachment; filename="' . $att['original_filename'] . '"');
+
+        $isImage = strpos($att['mime_type'], 'image/') === 0;
+        if ($isImage) {
+            header('Content-Disposition: inline; filename="' . $att['original_filename'] . '"');
+            header('Cache-Control: private, max-age=31536000, immutable');
+        } else {
+            header('Content-Disposition: attachment; filename="' . $att['original_filename'] . '"');
+            header('Cache-Control: private, max-age=86400');
+        }
+
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
+        header('ETag: ' . $etag);
+
+        // Conditional GET — return 304 if browser already has this version
+        $ifNoneMatch    = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+        $ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
+        if (($ifNoneMatch && trim($ifNoneMatch) === $etag) ||
+            (!$ifNoneMatch && $ifModifiedSince && strtotime($ifModifiedSince) >= $mtime)) {
+            http_response_code(304);
+            exit;
+        }
+
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

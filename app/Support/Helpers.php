@@ -40,6 +40,47 @@ if (!function_exists('asset')) {
     }
 }
 
+if (!function_exists('att_url')) {
+    /**
+     * Build a cache-busted URL for an attachment download.
+     * The version is stored in the settings table under 'att_cache_ver'
+     * and incremented by the "Clear Image Cache" button in Settings.
+     */
+    function att_url(int $id): string
+    {
+        static $ver = null;
+        if ($ver === null) {
+            try {
+                $row = \App\Support\DB::getInstance()->fetchOne(
+                    "SELECT setting_value_text FROM settings WHERE setting_key='att_cache_ver' LIMIT 1"
+                );
+                $ver = $row['setting_value_text'] ?? '1';
+            } catch (\Throwable $e) {
+                $ver = '1';
+            }
+        }
+        return url('/attachments/' . $id . '/download') . '?v=' . $ver;
+    }
+}
+
+if (!function_exists('att_cache_ver')) {
+    function att_cache_ver(): string
+    {
+        static $ver = null;
+        if ($ver === null) {
+            try {
+                $row = \App\Support\DB::getInstance()->fetchOne(
+                    "SELECT setting_value_text FROM settings WHERE setting_key='att_cache_ver' LIMIT 1"
+                );
+                $ver = $row['setting_value_text'] ?? '1';
+            } catch (\Throwable $e) {
+                $ver = '1';
+            }
+        }
+        return $ver;
+    }
+}
+
 // -----------------------------------------------------------------------
 // Redirect
 // -----------------------------------------------------------------------

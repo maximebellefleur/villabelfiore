@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.4.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-22',
+        'title'    => 'Nav & Cache',
+        'features' => [
+            ['title' => 'Bottom nav expanded', 'detail' => '7-item bottom nav: Home, Photos, Map, +, Garden, Harvest, Tasks.'],
+            ['title' => 'Image caching', 'detail' => 'Attachment images now cached in browser for 1 year with ETag revalidation. Clear Image Cache button in Settings.'],
+        ],
+    ],
+
     '2.4.7' => [
         'status'   => 'released',
         'released' => '2026-04-22',
