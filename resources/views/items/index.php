@@ -99,7 +99,7 @@ $typeColor = [
         <a href="<?= url('/items/' . (int)$item['id']) ?>" class="item-row-main">
             <?php if ($photoId): ?>
             <div class="item-row-icon item-row-icon--photo">
-                <img src="<?= url('/attachments/' . $photoId . '/download') ?>" alt="">
+                <img src="<?= att_url((int)$photoId) ?>" alt="">
             </div>
             <?php else: ?>
             <div class="item-row-icon" style="background:<?= $color ?>18;color:<?= $color ?>"><?= $emoji ?></div>

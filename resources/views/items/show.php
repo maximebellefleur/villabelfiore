@@ -54,7 +54,7 @@ $recentReminders = array_slice($reminders, 0, 3);
 <div class="show-hero" style="--item-color:<?= $color ?>">
     <?php if ($idPhoto): ?>
     <div class="show-hero-photo show-hero-photo--clickable" onclick="openGallery(<?= $idPhotoGalleryIndex ?>)" title="View photos">
-        <img src="<?= url('/attachments/' . (int)$idPhoto['id'] . '/download') ?>"
+        <img src="<?= att_url((int)$idPhoto['id']) ?>"
              alt="<?= e($item['name']) ?>" loading="eager">
         <div class="show-hero-photo-overlay"></div>
     </div>
@@ -77,7 +77,7 @@ $recentReminders = array_slice($reminders, 0, 3);
         </div>
         <?php if ($idPhoto): ?>
         <div class="show-hero-avatar">
-            <img src="<?= url('/attachments/' . (int)$idPhoto['id'] . '/download') ?>" alt="">
+            <img src="<?= att_url((int)$idPhoto['id']) ?>" alt="">
         </div>
         <?php endif; ?>
         <div class="show-hero-badge"><?= $emoji ?> <?= e($typeLabel) ?></div>
@@ -225,7 +225,7 @@ function iremAction(id, action, token) {
         <?php foreach ($previewPhotos as $i => $att): ?>
         <div class="show-photo-thumb" onclick="openGallery(<?= $i ?>)" role="button" tabindex="0"
              onkeydown="if(event.key==='Enter'||event.key===' ')openGallery(<?= $i ?>)">
-            <img src="<?= url('/attachments/' . (int)$att['id'] . '/download') ?>"
+            <img src="<?= att_url((int)$att['id']) ?>"
                  alt="" loading="lazy">
             <?php if ($i === 3 && $totalPhotos > 4): ?>
             <div class="show-photo-more">+<?= $totalPhotos - 4 ?></div>
@@ -274,8 +274,8 @@ function iremAction(id, action, token) {
                 <div class="show-feed-date"><?= e($a['action_label']) ?> · <?= e(date('d M Y', strtotime($a['performed_at']))) ?><?= !empty($a['att_id']) ? ' · 📷' : '' ?></div>
             </div>
             <?php if (!empty($a['att_id'])): ?>
-            <a href="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" target="_blank" class="show-feed-thumb-link">
-                <img src="<?= url('/attachments/' . (int)$a['att_id'] . '/download') ?>" class="show-feed-thumb" alt="">
+            <a href="<?= att_url((int)$a['att_id']) ?>" target="_blank" class="show-feed-thumb-link">
+                <img src="<?= att_url((int)$a['att_id']) ?>" class="show-feed-thumb" alt="">
             </a>
             <?php endif; ?>
         </div>
@@ -757,7 +757,7 @@ function irrPresetToggle(sel, targetId) {
                         'description' => $a['description'] ?? '',
                         'att_id'      => $a['att_id'] ?? null,
                         'att_mime'    => $a['att_mime'] ?? null,
-                        'att_url'     => !empty($a['att_id']) ? url('/attachments/' . (int)$a['att_id'] . '/download') : null,
+                        'att_url'     => !empty($a['att_id']) ? att_url((int)$a['att_id']) : null,
                         'log_id'      => $logId,
                     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
                 ?>
@@ -1942,7 +1942,7 @@ function preCheckReminder() {
         $galleryData = [];
         foreach ($imageAttachments as $att) {
             $galleryData[] = [
-                'src'     => url('/attachments/' . (int)$att['id'] . '/download'),
+                'src'     => att_url((int)$att['id']),
                 'caption' => $att['caption'] ?? ($att['original_name'] ?? ''),
             ];
         }

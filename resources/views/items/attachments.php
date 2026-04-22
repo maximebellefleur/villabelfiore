@@ -22,7 +22,7 @@
 <div class="attachment-grid">
     <?php foreach ($attachments as $att): ?>
     <div class="attachment-card">
-        <a href="<?= url('/attachments/' . ((int)$att['id']) . '/download') ?>"><?= e($att['original_filename']) ?></a>
+        <a href="<?= att_url((int)$att['id']) ?>"><?= e($att['original_filename']) ?></a>
         <span class="text-muted text-sm"><?= e($att['category']) ?></span>
     </div>
     <?php endforeach; ?>

@@ -95,8 +95,8 @@ $gallery = array_values($gallery);
 ?>
 <div class="photos-gallery-item" id="gitem_<?= $attId ?>">
     <?php if ($isImg): ?>
-    <div class="photos-gallery-img-wrap" onclick="openFullscreen('<?= url('/attachments/' . $attId . '/download') ?>')">
-        <img src="<?= url('/attachments/' . $attId . '/download') ?>"
+    <div class="photos-gallery-img-wrap" onclick="openFullscreen('<?= att_url((int)$attId) ?>')">
+        <img src="<?= att_url((int)$attId) ?>"
              class="photos-gallery-img" loading="lazy" alt="<?= e($catLabel) ?>">
         <div class="photos-gallery-zoom">🔍</div>
     </div>
