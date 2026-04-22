@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.4.7' => [
+        'date'  => '2026-04-22',
+        'title' => 'Infinite Scroll Items',
+        'new'   => [
+            'Items list — infinite scroll: rows load automatically as you scroll, with staggered fade-up animation.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '2.4.6' => [
         'date'  => '2026-04-22',
         'title' => 'Tasks & Finance',

@@ -129,109 +129,185 @@ $typeColor = [
     <?php endforeach; ?>
 </div>
 
-<?php if ($lastPage > 1): ?>
-<div class="pagination" style="margin-top:var(--spacing-6)">
-    <?php for ($p = 1; $p <= $lastPage; $p++): ?>
-    <a href="?<?= http_build_query(array_merge($filters, ['page' => $p])) ?>"
-       class="page-btn <?= ($p === $page) ? 'active' : '' ?>"><?= $p ?></a>
-    <?php endfor; ?>
+<?php endif; ?>
+
+<!-- Infinite scroll sentinel -->
+<div id="scrollSentinel" style="height:1px;margin-top:24px"></div>
+<div id="scrollLoader" style="display:none;text-align:center;padding:24px 0">
+    <span class="items-spinner"></span>
 </div>
-<?php endif; ?>
-<?php endif; ?>
 
 </div>
 
 <script>
+var BASE_URL   = '<?= url('/') ?>';
+var _curPage   = <?= $page ?>;
+var _lastPage  = <?= $lastPage ?>;
+var _loading   = false;
 var _distSortActive = false;
+var _filters   = <?= json_encode(['type' => $filters['type'], 'status' => $filters['status'], 'search' => $filters['search']]) ?>;
+
+var TYPE_COLOR = {olive_tree:'#2d6a4f',almond_tree:'#92400e',vine:'#6d28d9',tree:'#166534',garden:'#0369a1',bed:'#0369a1',orchard:'#c2410c',zone:'#4338ca',prep_zone:'#b45309',water_point:'#0284c7',mobile_coop:'#991b1b',building:'#374151',line:'#1d4ed8'};
+var TYPE_EMOJI = {olive_tree:'🫒',tree:'🌳',vine:'🍇',almond_tree:'🌰',garden:'🌿',zone:'🛖',orchard:'🏕',bed:'🌱','line':'〰️',prep_zone:'🟫',mobile_coop:'🐓',building:'🏠',water_point:'💧'};
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function buildRow(item, idx) {
+    var color   = TYPE_COLOR[item.type] || '#2d6a4f';
+    var emoji   = TYPE_EMOJI[item.type] || '📦';
+    var label   = item.label;
+    var inactive= item.status !== 'active' ? ' item-row--inactive' : '';
+    var photoHtml = item.photoId
+        ? '<div class="item-row-icon item-row-icon--photo"><img src="'+BASE_URL+'attachments/'+item.photoId+'/download" alt="" loading="lazy"></div>'
+        : '<div class="item-row-icon" style="background:'+color+'18;color:'+color+'">'+emoji+'</div>';
+    var gpsHtml = item.hasGps
+        ? ' <span class="item-row-gps">📍</span>'
+          + '<span class="item-row-dist" style="display:none"></span>'
+        : '<span class="item-row-dist" style="display:none"></span>';
+    var statusHtml = item.status !== 'active'
+        ? '<span class="item-row-status">'+esc(item.status)+'</span>' : '';
+    var el = document.createElement('div');
+    el.className = 'item-row item-row--animate' + inactive;
+    el.dataset.id  = item.id;
+    el.dataset.lat = item.lat  || '';
+    el.dataset.lng = item.lng  || '';
+    el.dataset.origIndex = idx;
+    el.style.animationDelay = (idx * 40) + 'ms';
+    el.innerHTML =
+        '<div class="item-row-accent" style="background:'+color+'"></div>'
+      + '<a href="'+BASE_URL+'items/'+item.id+'" class="item-row-main">'
+      +   photoHtml
+      +   '<div class="item-row-body">'
+      +     '<div class="item-row-name">'+esc(item.name)+'</div>'
+      +     '<div class="item-row-meta">'
+      +       '<span class="item-row-type" style="color:'+color+'">'+esc(label)+'</span>'
+      +       gpsHtml + statusHtml
+      +     '</div>'
+      +   '</div>'
+      +   '<svg class="item-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'
+      + '</a>'
+      + '<div class="item-row-actions">'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/photos" class="item-row-btn" title="Photos">📷</a>'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/edit"   class="item-row-btn" title="Edit">✏️</a>'
+      + '</div>';
+    return el;
+}
+
+function loadNextPage() {
+    if (_loading || _curPage >= _lastPage) return;
+    _loading = true;
+    document.getElementById('scrollLoader').style.display = 'block';
+
+    var params = new URLSearchParams(_filters);
+    params.set('page', _curPage + 1);
+    params.set('_ajax', '1');
+
+    fetch(BASE_URL + 'items?' + params.toString())
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            _loading  = false;
+            _curPage  = d.page;
+            _lastPage = d.lastPage;
+            document.getElementById('scrollLoader').style.display = 'none';
+
+            var list  = document.getElementById('itemsList');
+            var base  = list.querySelectorAll('.item-row').length;
+            d.items.forEach(function(item, i) {
+                var row = buildRow(item, i);
+                list.appendChild(row);
+                // Force reflow then add visible class for animation
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() { row.classList.add('item-row--visible'); });
+                });
+            });
+
+            if (_distSortActive && _pos) doDistanceSort(_pos);
+        })
+        .catch(function() {
+            _loading = false;
+            document.getElementById('scrollLoader').style.display = 'none';
+        });
+}
+
+// Animate initial rows on load
+document.querySelectorAll('.item-row').forEach(function(row, i) {
+    row.dataset.origIndex = i;
+    row.classList.add('item-row--animate');
+    row.style.animationDelay = Math.min(i * 35, 400) + 'ms';
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() { row.classList.add('item-row--visible'); });
+    });
+});
+
+// IntersectionObserver for infinite scroll
+var sentinel = document.getElementById('scrollSentinel');
+if (sentinel && 'IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) loadNextPage();
+    }, { rootMargin: '200px' });
+    observer.observe(sentinel);
+}
+
+// ── Distance sort ──────────────────────────────────────────────────
+var _pos = null;
 
 function doDistanceSort(pos) {
     var list = document.getElementById('itemsList');
     if (!list) return;
     var rows = Array.from(list.querySelectorAll('.item-row'));
     rows.forEach(function(row) {
-        var lat = parseFloat(row.dataset.lat);
-        var lng = parseFloat(row.dataset.lng);
-        if (!isNaN(lat) && !isNaN(lng)) {
-            row._dist = haversineM(pos.lat, pos.lng, lat, lng);
-        } else {
-            row._dist = Infinity;
-        }
+        var lat = parseFloat(row.dataset.lat), lng = parseFloat(row.dataset.lng);
+        row._dist = (!isNaN(lat) && !isNaN(lng)) ? haversineM(pos.lat, pos.lng, lat, lng) : Infinity;
         var distEl = row.querySelector('.item-row-dist');
-        if (row._dist < Infinity) {
-            distEl.textContent = fmtDist(row._dist);
-            distEl.style.display = '';
-        }
+        if (distEl) { distEl.textContent = row._dist < Infinity ? fmtDist(row._dist) : ''; distEl.style.display = row._dist < Infinity ? '' : 'none'; }
     });
-    rows.sort(function(a, b) { return a._dist - b._dist; });
-    rows.forEach(function(row) { list.appendChild(row); });
+    rows.sort(function(a,b){ return a._dist - b._dist; });
+    rows.forEach(function(row){ list.appendChild(row); });
 }
 
-// Sort by distance using RootedGPS
 document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-        document.querySelectorAll('.items-sort-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.items-sort-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
-
         if (btn.dataset.sort === 'default') {
             _distSortActive = false;
-            // Restore original DOM order
             var list = document.getElementById('itemsList');
-            Array.from(list.children).sort(function(a, b) {
-                return a.dataset.origIndex - b.dataset.origIndex;
-            }).forEach(function(row) { list.appendChild(row); });
-            list.querySelectorAll('.item-row-dist').forEach(function(el) { el.style.display = 'none'; });
+            Array.from(list.children).sort(function(a,b){ return a.dataset.origIndex - b.dataset.origIndex; }).forEach(function(r){ list.appendChild(r); });
+            list.querySelectorAll('.item-row-dist').forEach(function(el){ el.style.display='none'; });
             return;
         }
-
-        // Sort by distance
         _distSortActive = true;
         btn.textContent = '⏳ Locating…';
         RootedGPS.get(function(pos) {
             btn.textContent = '📍 Distance';
-            if (!pos) { btn.textContent = '📍 Distance (unavailable)'; _distSortActive = false; return; }
-            doDistanceSort(pos);
+            if (!pos) { btn.classList.remove('active'); _distSortActive=false; return; }
+            _pos = pos; doDistanceSort(pos);
         }, 5000);
     });
 });
 
-// Tag each row with its original index for restoring order
-document.querySelectorAll('.item-row').forEach(function(row, i) { row.dataset.origIndex = i; });
-
-// Auto-sort by distance on page load
 (function() {
     var distBtn = document.getElementById('sortByDist');
     var nameBtn = document.querySelector('[data-sort="default"]');
     if (!distBtn || typeof RootedGPS === 'undefined') return;
-
-    distBtn.classList.add('active');
-    if (nameBtn) nameBtn.classList.remove('active');
-    distBtn.textContent = '⏳ Locating…';
-    _distSortActive = true;
-
+    distBtn.classList.add('active'); if (nameBtn) nameBtn.classList.remove('active');
+    distBtn.textContent = '⏳ Locating…'; _distSortActive = true;
     RootedGPS.get(function(pos) {
         distBtn.textContent = '📍 Distance';
-        if (!pos) {
-            // No GPS available — fall back to name order
-            distBtn.classList.remove('active');
-            if (nameBtn) nameBtn.classList.add('active');
-            _distSortActive = false;
-            return;
-        }
-        doDistanceSort(pos);
+        if (!pos) { distBtn.classList.remove('active'); if (nameBtn) nameBtn.classList.add('active'); _distSortActive=false; return; }
+        _pos = pos; doDistanceSort(pos);
     }, 5000);
 }());
 
-// Auto-resort by distance as GPS accuracy improves (only when distance sort is active)
-RootedGPS.onAccuracyImprove(function(pos) {
-    if (_distSortActive) doDistanceSort(pos);
-});
+RootedGPS.onAccuracyImprove(function(pos) { _pos=pos; if (_distSortActive) doDistanceSort(pos); });
 
-function haversineM(lat1, lon1, lat2, lon2) {
-    var R = 6371000, d1 = (lat2-lat1)*Math.PI/180, d2 = (lon2-lon1)*Math.PI/180;
-    var a = Math.sin(d1/2)*Math.sin(d1/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-function fmtDist(m) { return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(1) + ' km'; }
+function haversineM(lat1,lon1,lat2,lon2){var R=6371000,d1=(lat2-lat1)*Math.PI/180,d2=(lon2-lon1)*Math.PI/180,a=Math.sin(d1/2)*Math.sin(d1/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(d2/2)*Math.sin(d2/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
+
+// Re-submit filter form without page reload if user changes filters
+document.getElementById('itemsFilter').addEventListener('submit', function() {
+    _curPage = 0; _lastPage = 1;
+});
 </script>
 
 <style>
@@ -338,4 +414,17 @@ function fmtDist(m) { return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(
     color: var(--color-text-muted); transition: background 0.12s;
 }
 .item-row-btn:hover { background: var(--color-primary-soft); text-decoration: none; }
+
+/* Infinite scroll animations */
+.item-row--animate { opacity: 0; transform: translateY(16px); }
+.item-row--visible { animation: itemRowIn 0.32s ease-out forwards; }
+@keyframes itemRowIn { to { opacity: 1; transform: none; } }
+
+/* Spinner */
+.items-spinner {
+    display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+    border: 3px solid var(--color-border); border-top-color: var(--color-primary);
+    animation: spinnerSpin 0.7s linear infinite;
+}
+@keyframes spinnerSpin { to { transform: rotate(360deg); } }
 </style>

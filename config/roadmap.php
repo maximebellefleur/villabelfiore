@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.4.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-22',
+        'title'    => 'Infinite Scroll Items',
+        'features' => [
+            ['title' => 'Items infinite scroll', 'detail' => 'Items list loads more rows automatically as you scroll down, with staggered fade-up animations.'],
+        ],
+    ],
+
     '2.4.6' => [
         'status'   => 'released',
         'released' => '2026-04-22',
