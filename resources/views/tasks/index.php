@@ -360,7 +360,7 @@ function escHtml(s) {
             var catKey = p.tag || '__none__';
             var list   = document.getElementById('achatList');
             var empty  = document.querySelector('.task-empty');
-            if (empty) { empty.remove(); list=document.createElement('div'); list.id='achatList'; empty.parentNode.appendChild(list); }
+            if (empty) { var _p=empty.parentNode; empty.remove(); list=document.createElement('div'); list.id='achatList'; _p.appendChild(list); }
             var group = list ? list.querySelector('[data-cat="'+CSS.escape(catKey)+'"]') : null;
             if (!group) {
                 group = document.createElement('div');
