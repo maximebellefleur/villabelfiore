@@ -19,7 +19,7 @@
         </div>
 
         <label for="remember_me" style="display:flex;align-items:center;gap:8px;margin-bottom:var(--spacing-4);cursor:pointer;width:fit-content">
-            <input type="checkbox" id="remember_me" name="remember_me" value="1"
+            <input type="checkbox" id="remember_me" name="remember_me" value="1" checked
                    style="width:17px;height:17px;accent-color:var(--color-primary);cursor:pointer;flex-shrink:0;margin:0">
             <span style="font-size:.88rem;color:var(--color-text)">Remember me for 30 days</span>
         </label>

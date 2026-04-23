@@ -8,6 +8,24 @@
  */
 return [
 
+    '2.5.0' => [
+        'date'  => '2026-04-23',
+        'title' => 'Survey & Quick Actions',
+        'new'   => [
+            'Photo survey flow: staged multi-step survey (General 4 photos → Budding 3 photos → Health 2 photos) accessible from every item.',
+            'Budding scale 1–10 slider in the survey for olive trees and almond trees, logged as an activity entry.',
+            'Four quick action buttons on every item row: Irrigation, Photo, Survey, Log.',
+            'Garden bed positioning: anchor GPS point + corner selector + Height N–S / Width E–W dimensions + line direction (NS/EW).',
+            'Polygon nudge controls: move a saved bed boundary ←→↑↓ by 0.5 m / 1 m / 5 m without re-entering GPS.',
+        ],
+        'improved' => [
+            'Tasks: group-by-tag toggle to re-order tasks under tag headers; auto-suggest tags on ( + 1 letter.',
+            'Session lifetime extended to 30 days; remember_me enabled by default — no more surprise logouts after updates.',
+            'Bottom nav: Photos entry replaced with Items for faster item list access.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.4.9' => [
         'date'  => '2026-04-22',
         'title' => 'Task Inline Edit',

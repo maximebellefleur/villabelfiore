@@ -252,6 +252,25 @@ class AttachmentController
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 
+    public function survey(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $id   = (int)($params['id'] ?? 0);
+        $db   = DB::getInstance();
+        $item = $db->fetchOne('SELECT * FROM items WHERE id=? AND deleted_at IS NULL', [$id]);
+        if (!$item) { http_response_code(404); echo '<h1>Not found</h1>'; return; }
+
+        // Determine which stages apply to this item type
+        $budgingTypes = ['olive_tree', 'almond_tree'];
+        $hasBudding   = in_array($item['type'], $budgingTypes);
+
+        Response::render('photos/survey', [
+            'title'      => 'Survey — ' . e($item['name']),
+            'item'       => $item,
+            'hasBudding' => $hasBudding,
+        ]);
+    }
+
     public function quickPhotos(Request $request, array $params = []): void
     {
         $this->requireAuth();

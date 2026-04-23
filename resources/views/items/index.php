@@ -122,8 +122,18 @@ $typeColor = [
 
         <!-- Action buttons -->
         <div class="item-row-actions">
-            <a href="<?= url('/items/' . (int)$item['id'] . '/photos') ?>" class="item-row-btn" title="Photos">📷</a>
-            <a href="<?= url('/items/' . (int)$item['id'] . '/edit') ?>"   class="item-row-btn" title="Edit">✏️</a>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/irrigation') ?>" class="item-row-btn" title="Irrigation">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2C6 8 4 13 4 16a8 8 0 0 0 16 0c0-3-2-8-8-14z"/></svg>
+            </a>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/photos') ?>" class="item-row-btn" title="Photo">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            </a>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/survey') ?>" class="item-row-btn" title="Survey">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+            </a>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/actions') ?>" class="item-row-btn" title="Log">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </a>
         </div>
     </div>
     <?php endforeach; ?>
@@ -187,8 +197,10 @@ function buildRow(item, idx) {
       +   '<svg class="item-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'
       + '</a>'
       + '<div class="item-row-actions">'
-      +   '<a href="'+BASE_URL+'items/'+item.id+'/photos" class="item-row-btn" title="Photos">📷</a>'
-      +   '<a href="'+BASE_URL+'items/'+item.id+'/edit"   class="item-row-btn" title="Edit">✏️</a>'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/irrigation" class="item-row-btn" title="Irrigation"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2C6 8 4 13 4 16a8 8 0 0 0 16 0c0-3-2-8-8-14z"/></svg></a>'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/photos"     class="item-row-btn" title="Photo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></a>'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/survey"     class="item-row-btn" title="Survey"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></a>'
+      +   '<a href="'+BASE_URL+'items/'+item.id+'/actions"    class="item-row-btn" title="Log"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>'
       + '</div>';
     return el;
 }
@@ -406,14 +418,14 @@ document.getElementById('itemsFilter').addEventListener('submit', function() {
 .item-row-chevron { color: var(--color-text-subtle); flex-shrink: 0; }
 
 /* Action buttons */
-.item-row-actions { display: flex; align-items: center; gap: 2px; padding: 0 var(--spacing-2) 0 0; flex-shrink: 0; }
+.item-row-actions { display: flex; align-items: center; gap: 1px; padding: 0 6px 0 0; flex-shrink: 0; }
 .item-row-btn {
-    width: 38px; height: 38px; border-radius: var(--radius);
+    width: 30px; height: 30px; border-radius: var(--radius);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; text-decoration: none;
-    color: var(--color-text-muted); transition: background 0.12s;
+    text-decoration: none;
+    color: var(--color-text-subtle); transition: background 0.12s, color 0.12s;
 }
-.item-row-btn:hover { background: var(--color-primary-soft); text-decoration: none; }
+.item-row-btn:hover { background: var(--color-primary-soft); color: var(--color-primary); text-decoration: none; }
 
 /* Infinite scroll animations */
 .item-row--animate { opacity: 0; transform: translateY(16px); }

@@ -107,8 +107,8 @@
 
             <div id="editCornerForm" style="display:none;margin-top:var(--spacing-3)">
                 <div class="form-group" style="margin-bottom:var(--spacing-2)">
-                    <label class="form-label">Which corner are you standing at?</label>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                    <label class="form-label">Which corner are you at?</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:200px;margin-top:4px">
                         <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="NW">↖ NW</button>
                         <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="NE">↗ NE</button>
                         <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="SW">↙ SW</button>
@@ -117,20 +117,54 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Length N↔S (m)</label>
+                        <label class="form-label">Height N–S (m)</label>
                         <input type="number" id="editBedLengthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 8">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Width E↔W (m)</label>
+                        <label class="form-label">Width E–W (m)</label>
                         <input type="number" id="editBedWidthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 1.2">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Planting rows (optional)</label>
-                    <input type="number" id="editBedRows" class="form-input" min="1" step="1" placeholder="e.g. 4">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Number of lines</label>
+                        <input type="number" id="editBedRows" class="form-input" min="1" step="1" placeholder="e.g. 4">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lines run in direction</label>
+                        <div style="display:flex;gap:8px;margin-top:6px">
+                            <label style="display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer">
+                                <input type="radio" name="editLineDir" id="editLineDirNS" value="NS" checked style="accent-color:var(--color-primary)"> N–S
+                            </label>
+                            <label style="display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer">
+                                <input type="radio" name="editLineDir" id="editLineDirEW" value="EW" style="accent-color:var(--color-primary)"> E–W
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <button type="button" id="editCornerPreviewBtn" class="btn btn-secondary btn-sm">👁 Preview on Map</button>
                 <div id="editCornerMsg" class="text-sm" style="margin-top:6px"></div>
+            </div>
+
+            <!-- Nudge controls — shown after polygon is previewed or already saved -->
+            <div id="editNudgeSection" style="display:none;margin-top:var(--spacing-3);padding:10px;background:var(--color-surface);border-radius:var(--radius);border:1px solid var(--color-border)">
+                <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:8px">Move Polygon</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;max-width:150px;margin:0 auto 8px">
+                    <div></div>
+                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="N">↑</button>
+                    <div></div>
+                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="W">←</button>
+                    <div style="display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--color-text-muted)">move</div>
+                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="E">→</button>
+                    <div></div>
+                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="S">↓</button>
+                    <div></div>
+                </div>
+                <div style="display:flex;justify-content:center;gap:6px">
+                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="0.5" checked style="accent-color:var(--color-primary)">0.5m</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="1" style="accent-color:var(--color-primary)">1m</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="5" style="accent-color:var(--color-primary)">5m</label>
+                </div>
             </div>
         </div>
         <?php endif; ?>
@@ -404,8 +438,11 @@
             else { sw=[cornerLat,cornerLng]; se=[cornerLat,cornerLng+dLng]; nw=[cornerLat+dLat,cornerLng]; ne=[cornerLat+dLat,cornerLng+dLng]; }
 
             pendingPts = [nw, ne, se, sw];
-            var rows = parseInt(document.getElementById('editBedRows').value) || 0;
-            pendingBedMeta = { bed_rows: rows, bed_length_m: lM, bed_width_m: wM };
+            var rows    = parseInt(document.getElementById('editBedRows').value) || 0;
+            var lineDir = document.querySelector('input[name="editLineDir"]:checked');
+            var lineDirVal = lineDir ? lineDir.value : 'NS';
+            pendingBedMeta = { bed_rows: rows, bed_length_m: lM, bed_width_m: wM, line_direction: lineDirVal };
+            document.getElementById('editNudgeSection').style.display = 'block';
 
             var m = mm();
             if (m) {
@@ -442,9 +479,10 @@
         fd.append('_token', CSRF);
         fd.append('geojson', JSON.stringify(geojson));
         if (pendingBedMeta) {
-            if (pendingBedMeta.bed_rows > 0) fd.append('bed_rows', pendingBedMeta.bed_rows);
-            if (pendingBedMeta.bed_length_m > 0) fd.append('bed_length_m', pendingBedMeta.bed_length_m);
-            if (pendingBedMeta.bed_width_m > 0) fd.append('bed_width_m', pendingBedMeta.bed_width_m);
+            if (pendingBedMeta.bed_rows > 0)      fd.append('bed_rows',       pendingBedMeta.bed_rows);
+            if (pendingBedMeta.bed_length_m > 0)  fd.append('bed_length_m',   pendingBedMeta.bed_length_m);
+            if (pendingBedMeta.bed_width_m > 0)   fd.append('bed_width_m',    pendingBedMeta.bed_width_m);
+            if (pendingBedMeta.line_direction)     fd.append('line_direction', pendingBedMeta.line_direction);
         }
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SAVE_URL, true);
@@ -521,6 +559,50 @@
         });
     }
     wireDeleteBtn();
+
+    // Show nudge section if boundary already saved
+    if (EXISTING) { setTimeout(function(){ document.getElementById('editNudgeSection').style.display='block'; }, 400); }
+
+    // ── Nudge polygon ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.nudge-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!pendingPts && !EXISTING) return;
+            var amtInput = document.querySelector('input[name="editNudgeAmt"]:checked');
+            var amt = amtInput ? parseFloat(amtInput.value) : 1;
+            var dir = this.dataset.dir;
+
+            // Load pendingPts from existing if not already in pending state
+            if (!pendingPts && EXISTING) {
+                try {
+                    var geo = typeof EXISTING === 'string' ? JSON.parse(EXISTING) : EXISTING;
+                    var coords = geo.coordinates[0];
+                    pendingPts = coords.slice(0,-1).map(function(c){ return [c[1], c[0]]; });
+                } catch(e) { return; }
+            }
+            if (!pendingPts || !pendingPts.length) return;
+
+            var refLat  = pendingPts[0][0];
+            var latPerM = 1 / 111111;
+            var lngPerM = 1 / (111111 * Math.cos(refLat * Math.PI / 180));
+            var dLat = 0, dLng = 0;
+            if (dir === 'N') dLat =  amt * latPerM;
+            if (dir === 'S') dLat = -amt * latPerM;
+            if (dir === 'E') dLng =  amt * lngPerM;
+            if (dir === 'W') dLng = -amt * lngPerM;
+
+            pendingPts = pendingPts.map(function(p){ return [p[0]+dLat, p[1]+dLng]; });
+
+            var m = mm();
+            if (m) {
+                if (cornerPolygon) { m.removeLayer(cornerPolygon); }
+                cornerPolygon = L.polygon(pendingPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.18, weight: 2 }).addTo(m);
+                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20] });
+            }
+            if (!pendingBedMeta) pendingBedMeta = {};
+            document.getElementById('editBoundaryActions').style.display = 'flex';
+            if (document.getElementById('editBoundaryStatus')) document.getElementById('editBoundaryStatus').textContent = '📐 Moved — tap Save to confirm';
+        });
+    });
 
     // ── Geo utilities ─────────────────────────────────────────────────────────
     function haversine(lat1, lng1, lat2, lng2) {

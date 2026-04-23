@@ -143,9 +143,9 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <span class="bottom-nav-icon"><?= _navIcon('dashboard') ?></span>
         <span class="bottom-nav-label">Home</span>
     </a>
-    <a href="<?= url('/photos/quick') ?>" class="bottom-nav-item" data-bnav="photos">
-        <span class="bottom-nav-icon"><?= _navIcon('photos') ?></span>
-        <span class="bottom-nav-label">Photos</span>
+    <a href="<?= url('/items') ?>" class="bottom-nav-item" data-bnav="items">
+        <span class="bottom-nav-icon"><?= _navIcon('items') ?></span>
+        <span class="bottom-nav-label">Items</span>
     </a>
     <a href="<?= url('/dashboard/map') ?>" class="bottom-nav-item" data-bnav="map">
         <span class="bottom-nav-icon"><?= _navIcon('map') ?></span>

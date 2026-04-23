@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.5.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-23',
+        'title'    => 'Survey & Quick Actions',
+        'features' => [
+            ['title' => 'Photo survey flow', 'detail' => 'Staged multi-step survey: 4 general photos, 3 budding photos (olive/almond), 2 health photos. Photos upload per stage with skip option.'],
+            ['title' => 'Budding scale', 'detail' => '1–10 slider during the budding stage for olive and almond trees. Scale value logged as an activity entry.'],
+            ['title' => 'Item row quick actions', 'detail' => 'Four inline action buttons on every item row: Irrigation, Photo, Survey, Log.'],
+            ['title' => 'Garden bed positioning', 'detail' => 'Anchor GPS + corner + Height N–S / Width E–W + line direction. Nudge controls move polygon ±0.5/1/5 m in any compass direction.'],
+            ['title' => 'Task group-by-tag', 'detail' => 'Toggle button groups tasks under their tag headers. Tag autocomplete triggers on ( + 1 letter.'],
+        ],
+    ],
+
     '2.4.9' => [
         'status'   => 'released',
         'released' => '2026-04-22',

@@ -182,7 +182,7 @@ class MapController
             [$id, json_encode($decoded)]
         );
 
-        // Optionally save bed dimensions / row count (sent from corner+size mode)
+        // Optionally save bed dimensions / row count / line direction (sent from corner+size mode)
         foreach (['bed_rows', 'bed_length_m', 'bed_width_m'] as $key) {
             $val = trim($request->post($key, ''));
             if ($val !== '' && (float)$val > 0) {
@@ -193,6 +193,16 @@ class MapController
                     [$id, $key, $val]
                 );
             }
+        }
+
+        $lineDir = trim($request->post('line_direction', ''));
+        if (in_array($lineDir, ['NS', 'EW'])) {
+            $db->execute(
+                "INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+                 VALUES (?, 'line_direction', ?, 'text', NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE meta_value_text = VALUES(meta_value_text), updated_at = NOW()",
+                [$id, $lineDir]
+            );
         }
 
         Response::json(['success' => true, 'message' => 'Boundary saved for ' . $item['name']]);

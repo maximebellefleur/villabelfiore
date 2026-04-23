@@ -81,7 +81,9 @@ ini_set('session.use_strict_mode', '1');
 ini_set('session.cookie_samesite', 'Lax');
 
 $sessionName     = (string) env('SESSION_NAME', 'rooted_session');
-$sessionLifetime = (int) env('SESSION_LIFETIME', 7200);
+$sessionLifetime = (int) env('SESSION_LIFETIME', 2592000); // 30 days default
+
+ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_name($sessionName);
 session_set_cookie_params([

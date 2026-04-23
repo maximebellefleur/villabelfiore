@@ -51,6 +51,11 @@ $csrfToken = \App\Support\CSRF::getToken();
 .achat-group-head { font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);padding:10px 12px 4px;display:flex;align-items:center;gap:6px; }
 .task-clear-done-btn { background:none;border:1px solid var(--color-border);border-radius:var(--radius-pill);padding:3px 10px;font-size:.7rem;font-weight:600;color:var(--color-text-muted);cursor:pointer;transition:background .12s,color .12s; }
 .task-clear-done-btn:hover { background:var(--color-danger-soft);color:var(--color-danger);border-color:var(--color-danger); }
+.task-clear-done-btn.active { background:var(--color-primary-soft);color:var(--color-primary);border-color:var(--color-primary); }
+.task-group-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);padding:10px 12px 4px;display:flex;align-items:center;gap:6px; }
+.task-tag-suggest { position:absolute;left:0;right:0;top:100%;z-index:200;background:var(--color-surface-raised);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,.12);margin-top:2px;overflow:hidden; }
+.task-tag-suggest-item { padding:9px 14px;font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s; }
+.task-tag-suggest-item:hover,.task-tag-suggest-item.sel { background:var(--color-primary-soft); }
 .task-title { cursor:default; }
 .task-title.editing { cursor:text; }
 .task-inline-input { border:none;outline:none;background:transparent;width:100%;font:inherit;color:inherit;padding:0;margin:0; }
@@ -78,6 +83,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 
 <?php /* ===================== TO-DO TAB ===================== */ if ($tab === 'todos'): ?>
 
+<div style="position:relative">
 <div class="task-quick-bar" id="taskQuickBar">
     <div class="task-quick-plus">+</div>
     <span id="taskTagPreview" style="display:none"></span>
@@ -86,10 +92,13 @@ $csrfToken = \App\Support\CSRF::getToken();
            autocomplete="off" spellcheck="true">
     <span class="task-quick-hint" id="taskQuickHint" style="display:none">↵ save</span>
 </div>
+<div id="taskTagSuggest" class="task-tag-suggest" style="display:none"></div>
+</div>
 
 <div class="task-section-head">
     <span class="task-section-title" id="taskCounter"><?= count($tasks) ?> task<?= count($tasks) !== 1 ? 's' : '' ?></span>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="toggleGroupBy()" id="groupByBtn" class="task-clear-done-btn" title="Group by tag">⊞</button>
         <button onclick="clearCompleted('todo')" class="task-clear-done-btn" id="todoClearBtn" style="<?= $showDone ? '' : 'display:none' ?>">🗑 Clear done</button>
         <a href="<?= url('/tasks?tab=todos' . ($showDone ? '' : '&done=1')) ?>"
            style="font-size:.75rem;color:var(--color-text-muted);text-decoration:none">
@@ -139,6 +148,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 
 <?php /* ===================== ACHATS TAB ===================== */ elseif ($tab === 'achats'): ?>
 
+<div style="position:relative">
 <div class="task-quick-bar" id="achatQuickBar">
     <div class="task-quick-plus">+</div>
     <span id="achatTagPreview" style="display:none"></span>
@@ -146,6 +156,8 @@ $csrfToken = \App\Support\CSRF::getToken();
            placeholder="(STORE) item to buy… then Enter"
            autocomplete="off" spellcheck="true">
     <span class="task-quick-hint" id="achatQuickHint" style="display:none">↵ save</span>
+</div>
+<div id="achatTagSuggest" class="task-tag-suggest" style="display:none"></div>
 </div>
 
 <div class="task-section-head">
@@ -466,6 +478,99 @@ function saveOrder(list) {
     fetch(BASE+'tasks/reorder', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF)+'&ids='+encodeURIComponent(JSON.stringify(ids)) });
 }
 document.querySelectorAll('#taskList .task-row[data-id]').forEach(initDrag);
+
+/* ---- Tag autocomplete ---- */
+(function() {
+    function collectTags(listId) {
+        var tags = {};
+        document.querySelectorAll('#' + listId + ' .task-row').forEach(function(row) {
+            var tag = row.querySelector('.task-tag');
+            if (tag) tags[tag.textContent.trim()] = true;
+        });
+        return Object.keys(tags);
+    }
+    function makeSuggest(inputId, suggestId, listId) {
+        var inp = document.getElementById(inputId);
+        var box = document.getElementById(suggestId);
+        if (!inp || !box) return;
+        var selIdx = -1;
+        function close() { box.style.display='none'; box.innerHTML=''; selIdx=-1; }
+        function choose(tag) {
+            var cur = inp.value;
+            var m = cur.match(/^\(([^)]*)/);
+            if (m) inp.value = '(' + tag + ') ' + cur.slice(m[0].length).replace(/^\)\s*/,'').trim();
+            else   inp.value = '(' + tag + ') ';
+            close(); inp.focus();
+            inp.dispatchEvent(new Event('input'));
+        }
+        inp.addEventListener('input', function() {
+            var m = inp.value.match(/\(([A-Za-z]+)$/);
+            if (!m || m[1].length < 1) { close(); return; }
+            var q = m[1].toUpperCase();
+            var tags = collectTags(listId).filter(function(t){ return t.toUpperCase().startsWith(q) && t.toUpperCase() !== q; });
+            if (!tags.length) { close(); return; }
+            box.innerHTML = tags.map(function(t,i){
+                return '<div class="task-tag-suggest-item" data-tag="'+escHtml(t)+'">'
+                    + '<span class="task-tag" style="background:'+tagColor(t)+'">'+escHtml(t)+'</span>'
+                    + '</div>';
+            }).join('');
+            box.style.display='block'; selIdx=-1;
+            box.querySelectorAll('.task-tag-suggest-item').forEach(function(el){
+                el.addEventListener('mousedown',function(e){ e.preventDefault(); choose(el.dataset.tag); });
+            });
+        });
+        inp.addEventListener('keydown', function(e) {
+            var items = box.querySelectorAll('.task-tag-suggest-item');
+            if (!items.length) return;
+            if (e.key==='ArrowDown') { e.preventDefault(); selIdx=Math.min(selIdx+1,items.length-1); items.forEach(function(i,n){i.classList.toggle('sel',n===selIdx);}); }
+            else if (e.key==='ArrowUp') { e.preventDefault(); selIdx=Math.max(selIdx-1,-1); items.forEach(function(i,n){i.classList.toggle('sel',n===selIdx);}); }
+            else if (e.key==='Tab' && selIdx>=0) { e.preventDefault(); choose(items[selIdx].dataset.tag); }
+            else if (e.key==='Escape') close();
+        });
+        inp.addEventListener('blur', function(){ setTimeout(close, 150); });
+    }
+    makeSuggest('taskQuickInput',  'taskTagSuggest',  'taskList');
+    makeSuggest('achatQuickInput', 'achatTagSuggest', 'achatList');
+}());
+
+/* ---- Group by tag toggle ---- */
+var _groupByActive = localStorage.getItem('tasks_groupBy') === '1';
+(function() {
+    var btn = document.getElementById('groupByBtn');
+    if (btn) btn.classList.toggle('active', _groupByActive);
+    if (_groupByActive) applyGroupBy();
+}());
+function toggleGroupBy() {
+    _groupByActive = !_groupByActive;
+    localStorage.setItem('tasks_groupBy', _groupByActive ? '1' : '0');
+    var btn = document.getElementById('groupByBtn');
+    if (btn) btn.classList.toggle('active', _groupByActive);
+    if (_groupByActive) applyGroupBy(); else removeGroupBy();
+}
+function applyGroupBy() {
+    var list = document.getElementById('taskList'); if (!list) return;
+    removeGroupBy();
+    var rows = Array.from(list.querySelectorAll('.task-row[data-id]'));
+    var groups = {};
+    rows.forEach(function(row) {
+        var tag = row.querySelector('.task-tag');
+        var key = tag ? tag.textContent.trim() : '__none__';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(row);
+    });
+    var keys = Object.keys(groups).sort(function(a,b){ return a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b); });
+    keys.forEach(function(key) {
+        var hdr = document.createElement('div');
+        hdr.className = 'task-group-header task-group-hdr-injected';
+        if (key === '__none__') { hdr.innerHTML = '<span style="color:var(--color-text-muted)">No tag</span>'; }
+        else { hdr.innerHTML = '<span class="task-tag" style="background:'+tagColor(key)+'">'+escHtml(key)+'</span>'; }
+        list.appendChild(hdr);
+        groups[key].forEach(function(row){ list.appendChild(row); });
+    });
+}
+function removeGroupBy() {
+    document.querySelectorAll('.task-group-hdr-injected').forEach(function(el){ el.remove(); });
+}
 
 /* ---- Inline rename (double-click) ---- */
 function startInlineEdit(id, titleEl) {
