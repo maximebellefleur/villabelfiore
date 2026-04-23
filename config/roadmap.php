@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.5.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-23',
+        'title'    => 'Today Tab',
+        'features' => [
+            ['title' => 'Today tab on dashboard', 'detail' => 'Separate ☀️ Today tab shown first on the dashboard task widget. Auto-selected when you have tasks planned. Backlog tab shows remaining tasks up to 5.'],
+            ['title' => 'Today card on tasks page', 'detail' => 'Today tasks render in a green card at the top of the full task list, with a task count. Backlog starts below.'],
+        ],
+    ],
+
     '2.5.1' => [
         'status'   => 'released',
         'released' => '2026-04-23',

@@ -560,7 +560,10 @@ function remAction(id, action, token, inModal) {
 <!-- ============================================================
      TASKS WIDGET
      ============================================================ -->
-<?php if (!empty($dashTasks) || !empty($dashAchats)): ?>
+<?php
+$_hasToday = !empty($dashTodayTasks);
+$_defaultTab = $_hasToday ? 'today' : 'todos';
+if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday): ?>
 <section class="dash-widget dash-tasks-widget" style="margin-bottom:var(--spacing-5)">
     <div class="dash-widget-header">
         <span>✅ Tasks</span>
@@ -570,8 +573,11 @@ function remAction(id, action, token, inModal) {
     <div class="dash-tasks-layout">
         <!-- Left: tab buttons stacked -->
         <div class="dash-tasks-tabs">
-            <button class="dash-tasks-tab active" onclick="switchDashTab('todos', this)">
-                ✅<span>To-Do</span>
+            <button class="dash-tasks-tab dash-tasks-tab--today <?= $_defaultTab === 'today' ? 'active' : '' ?>" onclick="switchDashTab('today', this)">
+                ☀️<span>Today</span>
+            </button>
+            <button class="dash-tasks-tab <?= $_defaultTab === 'todos' ? 'active' : '' ?>" onclick="switchDashTab('todos', this)">
+                ✅<span>Tasks</span>
             </button>
             <button class="dash-tasks-tab" onclick="switchDashTab('achats', this)">
                 🛒<span>Achats</span>
@@ -579,19 +585,18 @@ function remAction(id, action, token, inModal) {
         </div>
         <!-- Right: content panels -->
         <div class="dash-tasks-content">
-            <!-- To-Do panel -->
-            <div id="dashTabTodos" class="dash-tasks-panel">
-                <div style="display:flex;justify-content:flex-end;padding:4px 12px 0">
-                    <button onclick="dashClearDone('todo')" style="font-size:.65rem;font-weight:600;color:var(--color-text-muted);background:none;border:1px solid var(--color-border);border-radius:999px;padding:2px 8px;cursor:pointer">🗑 Clear done</button>
+            <!-- Today panel -->
+            <div id="dashTabToday" class="dash-tasks-panel" <?= $_defaultTab !== 'today' ? 'style="display:none"' : '' ?>>
+                <?php if (empty($dashTodayTasks)): ?>
+                <div style="padding:20px 16px;text-align:center">
+                    <div style="font-size:2rem;margin-bottom:6px">☀️</div>
+                    <div style="font-size:.85rem;color:var(--color-text-muted)">No tasks planned for today.</div>
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none;display:block;margin-top:8px">Plan your day →</a>
                 </div>
-                <?php if (empty($dashTasks)): ?>
-                <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">All done! 🎉</div>
                 <?php else: ?>
-                <?php foreach ($dashTasks as $dt):
-                    $isImp = (bool)$dt['is_important'];
+                <?php foreach ($dashTodayTasks as $dt):
                     $tagHtml = '';
                     if (!empty($dt['category'])) {
-                        // simple color hash
                         $h = 0; $tag = strtoupper(trim($dt['category']));
                         for ($ci = 0; $ci < strlen($tag); $ci++) $h = (($h*31)+ord($tag[$ci]))&0x7fffffff;
                         $pal = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce','#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
@@ -599,7 +604,7 @@ function remAction(id, action, token, inModal) {
                         $tagHtml = '<span style="background:'.$tc.';color:#fff;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;flex-shrink:0">'.e($tag).'</span>';
                     }
                 ?>
-                <div class="dash-task-row <?= $isImp ? 'dash-task-row--imp' : '' ?>" id="dtRow<?= $dt['id'] ?>">
+                <div class="dash-task-row dash-task-row--today" id="dtRow<?= $dt['id'] ?>">
                     <button class="dash-task-chk <?= $dt['is_done'] ? 'checked' : '' ?>"
                             onclick="dtToggle(<?= $dt['id'] ?>, '<?= e(\App\Support\CSRF::getToken()) ?>', this)"
                             title="Toggle done">
@@ -607,14 +612,48 @@ function remAction(id, action, token, inModal) {
                     </button>
                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                         <?= $tagHtml ?>
-                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>;color:<?= $isImp ? '#16a34a' : 'inherit' ?>" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
-                        <?php if ($isImp): ?><span style="font-size:.8rem" title="Today">☀️</span><?php endif; ?>
+                        <span style="font-size:.875rem;font-weight:600;color:#15803d" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:#16a34a;font-weight:600;text-decoration:none">See all tasks →</a>
+                </div>
+                <?php endif; ?>
+            </div>
+            <!-- To-Do panel -->
+            <div id="dashTabTodos" class="dash-tasks-panel" <?= $_defaultTab !== 'todos' ? 'style="display:none"' : '' ?>>
+                <div style="display:flex;justify-content:flex-end;padding:4px 12px 0">
+                    <button onclick="dashClearDone('todo')" style="font-size:.65rem;font-weight:600;color:var(--color-text-muted);background:none;border:1px solid var(--color-border);border-radius:999px;padding:2px 8px;cursor:pointer">🗑 Clear done</button>
+                </div>
+                <?php if (empty($dashTasks)): ?>
+                <div style="padding:16px;color:var(--color-text-muted);font-size:.85rem;text-align:center">All done! 🎉</div>
+                <?php else: ?>
+                <?php foreach ($dashTasks as $dt):
+                    $tagHtml = '';
+                    if (!empty($dt['category'])) {
+                        $h = 0; $tag = strtoupper(trim($dt['category']));
+                        for ($ci = 0; $ci < strlen($tag); $ci++) $h = (($h*31)+ord($tag[$ci]))&0x7fffffff;
+                        $pal = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce','#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+                        $tc = $pal[$h % count($pal)];
+                        $tagHtml = '<span style="background:'.$tc.';color:#fff;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;flex-shrink:0">'.e($tag).'</span>';
+                    }
+                ?>
+                <div class="dash-task-row" id="dtRow<?= $dt['id'] ?>">
+                    <button class="dash-task-chk <?= $dt['is_done'] ? 'checked' : '' ?>"
+                            onclick="dtToggle(<?= $dt['id'] ?>, '<?= e(\App\Support\CSRF::getToken()) ?>', this)"
+                            title="Toggle done">
+                        <?= $dt['is_done'] ? '✓' : '' ?>
+                    </button>
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <?= $tagHtml ?>
+                        <span style="font-size:.875rem;font-weight:500" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
                     </div>
                 </div>
                 <?php endforeach; ?>
                 <?php endif; ?>
                 <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
-                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none">See all to-dos →</a>
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none">See all tasks →</a>
                 </div>
             </div>
             <!-- Achats panel -->
@@ -666,7 +705,9 @@ function remAction(id, action, token, inModal) {
 .dash-tasks-panel { display:flex;flex-direction:column; }
 .dash-task-row { display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--color-border); }
 .dash-task-row:last-of-type { border-bottom:none; }
-.dash-task-row--imp { border-left:3px solid #f59e0b;background:#fffbeb; }
+.dash-task-row--imp { border-left:3px solid #16a34a;background:#f0fdf4; }
+.dash-task-row--today { border-left:3px solid #16a34a;background:#f0fdf4; }
+.dash-tasks-tab--today.active { background:#dcfce7;color:#15803d; }
 .dash-task-chk { width:20px;height:20px;border-radius:5px;border:2px solid var(--color-border);background:#fff;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:border-color .12s,background .12s; }
 .dash-task-chk.checked { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
 </style>

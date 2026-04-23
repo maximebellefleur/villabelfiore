@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.5.2' => [
+        'date'  => '2026-04-23',
+        'title' => 'Today Tab',
+        'new'   => [],
+        'improved' => [
+            'Dashboard: "Today" tab shown first — all today-planned tasks in a dedicated green panel. Defaults to Today when tasks are planned.',
+            'Dashboard "Tasks" tab now shows only backlog tasks (non-today), up to 5.',
+            'Tasks page: today tasks rendered in a green card section above the backlog with a task count. Backlog label appears below.',
+            'Group-by-tag merges today and backlog rows together so tags span both sections.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.5.1' => [
         'date'  => '2026-04-23',
         'title' => 'Today Focus',

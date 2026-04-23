@@ -129,12 +129,17 @@ class DashboardController
         } catch (\Throwable $e) { /* table may not exist yet */ }
 
         // Tasks widget
-        $dashTasks  = [];
-        $dashAchats = [];
+        $dashTodayTasks = [];
+        $dashTasks      = [];
+        $dashAchats     = [];
         try {
+            $dashTodayTasks = $db->fetchAll(
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0 AND is_important = 1
+                 ORDER BY sort_order ASC, created_at DESC"
+            );
             $dashTasks = $db->fetchAll(
-                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0
-                 ORDER BY is_important DESC, sort_order ASC, created_at DESC LIMIT 5"
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0 AND is_important = 0
+                 ORDER BY sort_order ASC, created_at DESC LIMIT 5"
             );
             $dashAchats = $db->fetchAll(
                 "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'achat' AND is_done = 0
@@ -160,6 +165,7 @@ class DashboardController
             'bioWeek'           => $bioWeek,
             'bioSegments'       => $bioSegments,
             'todayIrrigation'   => $todayIrrigation,
+            'dashTodayTasks'    => $dashTodayTasks,
             'dashTasks'         => $dashTasks,
             'dashAchats'        => $dashAchats,
         ]);

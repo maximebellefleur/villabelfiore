@@ -26,8 +26,11 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-row:hover { background:var(--color-surface); }
 .task-row.done { opacity:.5; }
 .task-row--important { border-left:3px solid #16a34a;background:#f0fdf4; }
-.task-today-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:0 0 6px;display:flex;align-items:center;gap:5px; }
-.task-backlog-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);padding:12px 0 6px;display:flex;align-items:center;gap:5px; }
+.task-today-header { font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#15803d;background:#dcfce7;border:1.5px solid #bbf7d0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 14px;display:flex;align-items:center;gap:6px;margin-bottom:0; }
+.task-today-section { border:1.5px solid #bbf7d0;border-radius:var(--radius-lg);margin-bottom:var(--spacing-3);overflow:hidden; }
+.task-today-section .task-row { border-color:#dcfce7; }
+.task-today-section .task-row:last-child { border-bottom:none; }
+.task-backlog-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);padding:8px 0 6px;display:flex;align-items:center;gap:5px; }
 .task-row.dragging { opacity:.3; }
 .task-row.drag-over { box-shadow:0 -2px 0 var(--color-primary); }
 .task-drag-handle { cursor:grab;color:var(--color-text-muted);padding:2px 3px;font-size:.9rem;user-select:none;flex-shrink:0;opacity:.4;line-height:1;margin-top:3px; }
@@ -113,23 +116,56 @@ $csrfToken = \App\Support\CSRF::getToken();
 <div class="task-empty"><div style="font-size:2rem;margin-bottom:8px">✅</div>
 <?= $showDone ? 'No tasks yet.' : 'All done! No pending tasks.' ?></div>
 <?php else: ?>
-<div class="task-list" id="taskList">
 <?php
-$_shownTodayHead   = false;
-$_shownBacklogHead = false;
-foreach ($tasks as $t):
-    $isDone    = (bool)$t['is_done'];
-    $isImp     = (bool)$t['is_important'];
-    $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
-    if ($isImp && !$_shownTodayHead):
-        $_shownTodayHead = true; ?>
-<div class="task-today-header">☀️ Today</div>
-<?php   endif;
-    if (!$isImp && !$_shownBacklogHead && $_shownTodayHead):
-        $_shownBacklogHead = true; ?>
+$_todayTasks   = array_values(array_filter($tasks, fn($t) => (bool)$t['is_important']));
+$_backlogTasks = array_values(array_filter($tasks, fn($t) => !(bool)$t['is_important']));
+$_hasTodayTasks = !empty($_todayTasks);
+?>
+<?php if ($_hasTodayTasks): ?>
+<div class="task-today-section" id="taskTodaySection">
+    <div class="task-today-header">☀️ Today — <?= count($_todayTasks) ?> task<?= count($_todayTasks) !== 1 ? 's' : '' ?></div>
+    <div class="task-list" id="taskTodayList">
+    <?php foreach ($_todayTasks as $t):
+        $isDone    = (bool)$t['is_done'];
+        $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
+    ?>
+    <div class="task-row task-row--important <?= $isDone ? 'done' : '' ?>"
+         id="taskRow<?= $t['id'] ?>" data-id="<?= $t['id'] ?>" draggable="true">
+        <span class="task-drag-handle" title="Drag to reorder">⠿</span>
+        <button class="task-checkbox <?= $isDone ? 'checked' : '' ?>"
+                onclick="toggleTask(<?= $t['id'] ?>, this)"><?= $isDone ? '✓' : '' ?></button>
+        <div class="task-body">
+            <div class="task-title-row">
+                <?php if (!empty($t['category'])): ?>
+                <span class="task-tag" style="background:<?= taskTagColor($t['category']) ?>"><?= e(strtoupper($t['category'])) ?></span>
+                <?php endif; ?>
+                <span class="task-title <?= $isDone ? 'done-text' : '' ?>" ondblclick="startInlineEdit(<?= $t['id'] ?>, this)"><?= e($t['title']) ?></span>
+            </div>
+            <?php if (!empty($t['due_date'])): ?>
+            <div class="task-meta"><span class="task-due <?= $isOverdue ? 'overdue' : '' ?>"><?= $isOverdue ? '⚠ ' : '' ?><?= e(date('d M', strtotime($t['due_date']))) ?></span></div>
+            <?php endif; ?>
+            <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
+        </div>
+        <div class="task-actions">
+            <button class="task-imp-btn active" title="Remove from today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+            <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
+            <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
+        </div>
+    </div>
+    <?php endforeach; ?>
+    </div>
+</div>
+<?php if (!empty($_backlogTasks)): ?>
 <div class="task-backlog-header">— Backlog</div>
-<?php   endif; ?>
-<div class="task-row <?= $isDone ? 'done' : '' ?> <?= $isImp ? 'task-row--important' : '' ?>"
+<?php endif; ?>
+<?php endif; ?>
+
+<div class="task-list" id="taskList">
+<?php foreach ($_backlogTasks as $t):
+    $isDone    = (bool)$t['is_done'];
+    $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
+?>
+<div class="task-row <?= $isDone ? 'done' : '' ?>"
      id="taskRow<?= $t['id'] ?>" data-id="<?= $t['id'] ?>" draggable="true">
     <span class="task-drag-handle" title="Drag to reorder">⠿</span>
     <button class="task-checkbox <?= $isDone ? 'checked' : '' ?>"
@@ -149,7 +185,7 @@ foreach ($tasks as $t):
         <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
     </div>
     <div class="task-actions">
-        <button class="task-imp-btn <?= $isImp ? 'active' : '' ?>" title="Plan for today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+        <button class="task-imp-btn" title="Plan for today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
         <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
         <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
     </div>
@@ -562,8 +598,10 @@ function toggleGroupBy() {
 function applyGroupBy() {
     var list = document.getElementById('taskList'); if (!list) return;
     removeGroupBy();
-    document.querySelectorAll('.task-today-header,.task-backlog-header').forEach(function(el){ el.style.display='none'; });
-    var rows = Array.from(list.querySelectorAll('.task-row[data-id]'));
+    document.querySelectorAll('.task-today-section,.task-backlog-header').forEach(function(el){ el.style.display='none'; });
+    // Collect rows from both today and backlog lists
+    var todayRows = Array.from((document.getElementById('taskTodayList')||{querySelectorAll:function(){return[];}}).querySelectorAll('.task-row[data-id]'));
+    var rows = todayRows.concat(Array.from(list.querySelectorAll('.task-row[data-id]')));
     var groups = {};
     rows.forEach(function(row) {
         var tag = row.querySelector('.task-tag');
@@ -583,7 +621,7 @@ function applyGroupBy() {
 }
 function removeGroupBy() {
     document.querySelectorAll('.task-group-hdr-injected').forEach(function(el){ el.remove(); });
-    document.querySelectorAll('.task-today-header,.task-backlog-header').forEach(function(el){ el.style.display=''; });
+    document.querySelectorAll('.task-today-section,.task-backlog-header').forEach(function(el){ el.style.display=''; });
 }
 
 /* ---- Inline rename (double-click) ---- */
