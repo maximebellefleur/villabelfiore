@@ -25,7 +25,9 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-row { display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius);transition:opacity .2s,background .15s;cursor:default; }
 .task-row:hover { background:var(--color-surface); }
 .task-row.done { opacity:.5; }
-.task-row--important { border-left:3px solid #f59e0b;background:#fffbeb; }
+.task-row--important { border-left:3px solid #16a34a;background:#f0fdf4; }
+.task-today-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#16a34a;padding:0 0 6px;display:flex;align-items:center;gap:5px; }
+.task-backlog-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);padding:12px 0 6px;display:flex;align-items:center;gap:5px; }
 .task-row.dragging { opacity:.3; }
 .task-row.drag-over { box-shadow:0 -2px 0 var(--color-primary); }
 .task-drag-handle { cursor:grab;color:var(--color-text-muted);padding:2px 3px;font-size:.9rem;user-select:none;flex-shrink:0;opacity:.4;line-height:1;margin-top:3px; }
@@ -43,7 +45,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-act-btn { background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:var(--radius);color:var(--color-text-muted);font-size:.8rem;line-height:1;transition:background .12s,color .12s; }
 .task-act-btn:hover { background:var(--color-border);color:var(--color-text); }
 .task-imp-btn { background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:var(--radius);font-size:.85rem;line-height:1;color:var(--color-text-muted);transition:background .12s; }
-.task-imp-btn.active { color:#f59e0b; }
+.task-imp-btn.active { color:#16a34a; }
 .task-imp-btn:hover { background:var(--color-border); }
 .task-section-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-3); }
 .task-section-title { font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted); }
@@ -112,11 +114,21 @@ $csrfToken = \App\Support\CSRF::getToken();
 <?= $showDone ? 'No tasks yet.' : 'All done! No pending tasks.' ?></div>
 <?php else: ?>
 <div class="task-list" id="taskList">
-<?php foreach ($tasks as $t):
+<?php
+$_shownTodayHead   = false;
+$_shownBacklogHead = false;
+foreach ($tasks as $t):
     $isDone    = (bool)$t['is_done'];
     $isImp     = (bool)$t['is_important'];
     $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
-?>
+    if ($isImp && !$_shownTodayHead):
+        $_shownTodayHead = true; ?>
+<div class="task-today-header">☀️ Today</div>
+<?php   endif;
+    if (!$isImp && !$_shownBacklogHead && $_shownTodayHead):
+        $_shownBacklogHead = true; ?>
+<div class="task-backlog-header">— Backlog</div>
+<?php   endif; ?>
 <div class="task-row <?= $isDone ? 'done' : '' ?> <?= $isImp ? 'task-row--important' : '' ?>"
      id="taskRow<?= $t['id'] ?>" data-id="<?= $t['id'] ?>" draggable="true">
     <span class="task-drag-handle" title="Drag to reorder">⠿</span>
@@ -137,7 +149,7 @@ $csrfToken = \App\Support\CSRF::getToken();
         <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
     </div>
     <div class="task-actions">
-        <button class="task-imp-btn <?= $isImp ? 'active' : '' ?>" title="Important" onclick="toggleImportant(<?= $t['id'] ?>, this)">⭐</button>
+        <button class="task-imp-btn <?= $isImp ? 'active' : '' ?>" title="Plan for today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
         <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
         <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
     </div>
@@ -343,7 +355,7 @@ function escHtml(s) {
             +'<button class="task-checkbox" onclick="toggleTask('+t.id+', this)"></button>'
             +'<div class="task-body"><div class="task-title-row">'+tagHtml+'<span class="task-title" ondblclick="startInlineEdit('+t.id+', this)">'+escHtml(t.title)+'</span></div></div>'
             +'<div class="task-actions">'
-            +'<button class="task-imp-btn" title="Important" onclick="toggleImportant('+t.id+', this)">⭐</button>'
+            +'<button class="task-imp-btn" title="Plan for today" onclick="toggleToday('+t.id+', this)">☀️</button>'
             +'<button class="task-act-btn" title="Archive" onclick="archiveTask('+t.id+', this)">📦</button>'
             +'<button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask('+t.id+', this)">✕</button>'
             +'</div>';
@@ -414,8 +426,8 @@ function toggleTask(id, btn) {
     });
 }
 
-/* ---- Toggle important ---- */
-function toggleImportant(id, btn) {
+/* ---- Toggle today ---- */
+function toggleToday(id, btn) {
     fetch(BASE+'tasks/'+id+'/important', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF) })
     .then(function(r){return r.json();}).then(function(d){
         if (!d.success) return;
@@ -550,6 +562,7 @@ function toggleGroupBy() {
 function applyGroupBy() {
     var list = document.getElementById('taskList'); if (!list) return;
     removeGroupBy();
+    document.querySelectorAll('.task-today-header,.task-backlog-header').forEach(function(el){ el.style.display='none'; });
     var rows = Array.from(list.querySelectorAll('.task-row[data-id]'));
     var groups = {};
     rows.forEach(function(row) {
@@ -570,6 +583,7 @@ function applyGroupBy() {
 }
 function removeGroupBy() {
     document.querySelectorAll('.task-group-hdr-injected').forEach(function(el){ el.remove(); });
+    document.querySelectorAll('.task-today-header,.task-backlog-header').forEach(function(el){ el.style.display=''; });
 }
 
 /* ---- Inline rename (double-click) ---- */

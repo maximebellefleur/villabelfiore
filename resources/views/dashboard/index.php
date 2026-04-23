@@ -607,8 +607,8 @@ function remAction(id, action, token, inModal) {
                     </button>
                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                         <?= $tagHtml ?>
-                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
-                        <?php if ($isImp): ?><span style="font-size:.8rem">⭐</span><?php endif; ?>
+                        <span style="font-size:.875rem;font-weight:<?= $isImp ? '700' : '500' ?>;color:<?= $isImp ? '#16a34a' : 'inherit' ?>" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
+                        <?php if ($isImp): ?><span style="font-size:.8rem" title="Today">☀️</span><?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>

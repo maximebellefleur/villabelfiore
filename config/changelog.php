@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.5.1' => [
+        'date'  => '2026-04-23',
+        'title' => 'Today Focus',
+        'new'   => [],
+        'improved' => [
+            '"Important" renamed to "Today" — mark tasks the night before to build your focus list for the next day.',
+            'Today tasks show a green left border and "☀️ Today" section header; backlog tasks appear below a "— Backlog" divider.',
+            'Dashboard task list highlights today tasks in green with a ☀️ badge.',
+            'Group-by-tag toggle hides the Today/Backlog section headers to avoid conflicts.',
+        ],
+        'fixed' => [],
+    ],
+
     '2.5.0' => [
         'date'  => '2026-04-23',
         'title' => 'Survey & Quick Actions',

@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-23',
+        'title'    => 'Today Focus',
+        'features' => [
+            ['title' => 'Today task planning', 'detail' => 'The ☀️ button replaces the star. Mark tasks the night before; they appear under a "Today" section header at the top of your list the next day.'],
+        ],
+    ],
+
     '2.5.0' => [
         'status'   => 'released',
         'released' => '2026-04-23',
