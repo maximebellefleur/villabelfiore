@@ -108,6 +108,7 @@ class GardenBedController
             'prepNext'       => $prepNext,
             'climateZone'    => $climateZone,
             'hasCompanionApi'=> $hasCompanionApi,
+            'currentMonth'   => (int)date('n'),
         ]);
     }
 
