@@ -36,7 +36,6 @@ class GardenBedController
 
     public function show(Request $request, array $params = []): void
     {
-        try {
         $this->requireAuth();
         $db = DB::getInstance();
         $id = (int)($params['id'] ?? 0);

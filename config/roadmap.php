@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Upgrade via GitHub API',
+        'features' => [
+            ['title' => 'CDN-free upgrade', 'detail' => '"Update Now" fetches the ZIP via the GitHub API (api.github.com) instead of raw CDN, bypassing all caching permanently.'],
+        ],
+    ],
+
     '2.5.8' => [
         'status'   => 'released',
         'released' => '2026-04-24',

@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.5.9' => [
+        'date'  => '2026-04-24',
+        'title' => 'Upgrade via GitHub API',
+        'improved' => [
+            '"Update Now" now downloads via the GitHub API instead of raw CDN — always fetches the latest version, no more stale cache.',
+        ],
+        'fixed' => [
+            'PHP syntax error in GardenBedController (orphaned try block removed).',
+        ],
+    ],
+
     '2.5.8' => [
         'date'  => '2026-04-24',
         'title' => 'Bed Lines & Garden Workflow',

@@ -132,35 +132,36 @@ class UpgradeController
 
         // Download the ZIP directly from the repository
         $defaults = require BASE_PATH . '/config/defaults.php';
-        $zipUrl   = $defaults['update_zip_url'] ?? 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/main/rooted-cpanel-update.zip';
+        $rawUrl   = $defaults['update_zip_url'] ?? 'https://raw.githubusercontent.com/maximebellefleur/villabelfiore/main/rooted-cpanel-update.zip';
 
         // Optional GitHub token — set GITHUB_TOKEN in .env for private repos
         $token = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
 
-        // Append timestamp to bust GitHub CDN cache
-        $fetchUrl = $zipUrl . (str_contains($zipUrl, '?') ? '&' : '?') . '_ts=' . time();
+        // Convert raw.githubusercontent.com URL → GitHub API URL to bypass CDN cache.
+        // api.github.com with Accept: application/vnd.github.v3.raw always serves fresh content.
+        $apiUrl = $this->rawUrlToApiUrl($rawUrl);
 
-        // Try curl first, then fall back to file_get_contents
         $downloaded = false;
-        if (function_exists('curl_init')) {
-            $ch = curl_init($fetchUrl);
-            $curlOpts = [
+        if (function_exists('curl_init') && $apiUrl) {
+            $apiHeaders = [
+                'Accept: application/vnd.github.v3.raw',
+                'User-Agent: Rooted-Updater/1.0',
+                'Cache-Control: no-cache',
+            ];
+            if ($token) $apiHeaders[] = 'Authorization: token ' . $token;
+
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_TIMEOUT        => 120,
                 CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
-            ];
-            $ghHeaders = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
-            if ($token) {
-                $ghHeaders[] = 'Authorization: token ' . $token;
-            }
-            $curlOpts[CURLOPT_HTTPHEADER] = $ghHeaders;
-            curl_setopt_array($ch, $curlOpts);
+                CURLOPT_HTTPHEADER     => $apiHeaders,
+            ]);
             $data     = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlErr  = curl_error($ch);
             curl_close($ch);
 
@@ -174,7 +175,7 @@ class UpgradeController
                 return;
             } elseif ($httpCode !== 200) {
                 @unlink($tmpPath);
-                echo json_encode(['success' => false, 'message' => 'GitHub returned HTTP ' . $httpCode . '.']);
+                echo json_encode(['success' => false, 'message' => 'GitHub API returned HTTP ' . $httpCode . ($curlErr ? ': ' . $curlErr : '') . '.']);
                 return;
             } else {
                 @unlink($tmpPath);
@@ -389,5 +390,19 @@ class UpgradeController
 
         $json = json_decode($data, true);
         return $json['version'] ?? null;
+    }
+
+    /**
+     * Convert raw.githubusercontent.com/OWNER/REPO/BRANCH/PATH
+     * → https://api.github.com/repos/OWNER/REPO/contents/PATH?ref=BRANCH
+     * The API with Accept: application/vnd.github.v3.raw bypasses CDN caching.
+     */
+    private function rawUrlToApiUrl(string $rawUrl): ?string
+    {
+        if (preg_match('#raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)#', $rawUrl, $m)) {
+            return 'https://api.github.com/repos/' . $m[1] . '/' . $m[2]
+                 . '/contents/' . $m[4] . '?ref=' . urlencode($m[3]);
+        }
+        return null;
     }
 }
