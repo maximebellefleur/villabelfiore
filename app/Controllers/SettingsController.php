@@ -59,6 +59,7 @@ class SettingsController
             'integration.weather', 'quote.api_url',
             'ai.endpoint', 'ai.vision_model',
             'garden.climate_zone',
+            'companion_api_provider', 'companion_api_key', 'companion_api_model', 'companion_api_url',
         ];
 
         $db = DB::getInstance();

@@ -364,7 +364,7 @@ function deleteEntry(id, token) {
     var data = new FormData();
     data.append('_token', token);
 
-    fetch('/finance/' + id + '/trash', {
+    fetch(FINANCE_BASE + id + '/trash', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: data

@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.5.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Garden Beds & Task Fixes',
+        'features' => [
+            ['title' => 'Garden bed planting view', 'detail' => 'Per-line crop management for each bed: crop name, variety, status, planted/harvest dates. SVG schematic preview with proportional rows.'],
+            ['title' => 'Visual garden schematic', 'detail' => 'Proportional bed rectangles on the Garden hub, grouped by parent garden and colour-coded by crop status. Click any bed to open its planting view.'],
+            ['title' => 'Companion planting AI', 'detail' => 'AI-powered companion and antagonist suggestions per crop line. Configurable API provider (OpenAI, Anthropic, or custom) in Settings.'],
+            ['title' => 'Finance delete fix', 'detail' => 'Fixed 404 error when deleting a finance entry when the app runs in a subdirectory.'],
+            ['title' => 'Today task toggle fix', 'detail' => 'Fixed JSON parse error when marking a task as Today. The task now moves immediately between Today and Backlog sections.'],
+            ['title' => 'Today tasks drag-to-reorder', 'detail' => 'Today tasks now support drag-to-reorder, matching the Backlog list behaviour.'],
+        ],
+    ],
+
     '2.5.2' => [
         'status'   => 'released',
         'released' => '2026-04-23',

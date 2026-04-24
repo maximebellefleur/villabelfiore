@@ -8,6 +8,24 @@
  */
 return [
 
+    '2.5.3' => [
+        'date'  => '2026-04-24',
+        'title' => 'Garden Beds & Task Fixes',
+        'new'   => [
+            'Garden schematic: proportional bed rectangles on the Garden hub, grouped by garden, coloured by crop status (green=growing, amber=planned, blue=harvested, grey=empty). Click any bed to open its planting view.',
+            'Bed planting view (/items/{id}/planting): manage what is planted per line, with status, planted/harvest dates, and inline editing.',
+            'Companion planting AI: ☘ Companions button on each line fetches suggestions (companions, antagonists, succession tip) from a configurable OpenAI/Anthropic/custom endpoint.',
+            'Companion API settings: provider, API key, model, and custom URL configurable in Settings.',
+        ],
+        'improved' => [
+            'Today tasks can now be dragged to reorder within the Today section.',
+            '☀️ Today button now correctly moves tasks between Today and Backlog sections after toggling.',
+        ],
+        'fixed' => [
+            'Finance delete button returned 404 due to hardcoded /finance/ path — now uses BASE URL.',
+        ],
+    ],
+
     '2.5.2' => [
         'date'  => '2026-04-23',
         'title' => 'Today Tab',

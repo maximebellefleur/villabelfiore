@@ -21,6 +21,7 @@ use App\Controllers\AiController;
 use App\Controllers\IrrigationController;
 
 use App\Controllers\TaskController;
+use App\Controllers\GardenBedController;
 
 /** @var \App\Support\Router $router */
 
@@ -159,8 +160,14 @@ $router->post('/settings/calendar/sync',       'CalendarController@sync');
 // -------------------------------------------------------------------------
 // Garden hub
 // -------------------------------------------------------------------------
-$router->get('/garden',                   'GardenController@index');
-$router->get('/garden/biodynamic',        'BiodynamicController@index');
+$router->get('/garden',                          'GardenController@index');
+$router->get('/garden/biodynamic',               'BiodynamicController@index');
+
+// Garden bed planting
+$router->get('/items/{id}/planting',             'GardenBedController@show');
+$router->post('/items/{id}/planting',            'GardenBedController@storeLine');
+$router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
+$router->get('/api/garden/companions',           'GardenBedController@companions');
 
 // -------------------------------------------------------------------------
 // Seeds

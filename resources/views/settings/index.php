@@ -91,6 +91,43 @@
             </div>
 
             <div class="settings-group">
+                <div class="settings-group-title">Companion Planting AI</div>
+                <p class="settings-hint" style="margin:0 0 12px">Powers the ☘ Companions button on bed planting pages. Supports OpenAI, Anthropic (Claude), or any OpenAI-compatible endpoint.</p>
+
+                <div class="settings-field">
+                    <label class="settings-label">Provider</label>
+                    <select name="companion_api_provider" class="settings-input">
+                        <?php $companionProvider = $settings['companion_api_provider'] ?? 'openai'; ?>
+                        <option value="openai"     <?= $companionProvider === 'openai'     ? 'selected' : '' ?>>OpenAI (GPT-4o, GPT-4o-mini…)</option>
+                        <option value="anthropic"  <?= $companionProvider === 'anthropic'  ? 'selected' : '' ?>>Anthropic (Claude)</option>
+                        <option value="custom"     <?= $companionProvider === 'custom'     ? 'selected' : '' ?>>Custom / OpenAI-compatible</option>
+                    </select>
+                </div>
+
+                <div class="settings-field">
+                    <label class="settings-label">API Key</label>
+                    <input type="password" name="companion_api_key" class="settings-input"
+                           value="<?= e($settings['companion_api_key'] ?? '') ?>"
+                           placeholder="sk-… or your API key" autocomplete="new-password">
+                </div>
+
+                <div class="settings-field">
+                    <label class="settings-label">Model</label>
+                    <input type="text" name="companion_api_model" class="settings-input settings-input--sm"
+                           value="<?= e($settings['companion_api_model'] ?? '') ?>"
+                           placeholder="gpt-4o-mini  or  claude-haiku-4-5-20251001">
+                </div>
+
+                <div class="settings-field">
+                    <label class="settings-label">Custom endpoint URL</label>
+                    <p class="settings-hint">Leave blank for OpenAI or Anthropic. Set for local models (Ollama, LM Studio, etc.).</p>
+                    <input type="text" name="companion_api_url" class="settings-input"
+                           value="<?= e($settings['companion_api_url'] ?? '') ?>"
+                           placeholder="https://your-server/v1/chat/completions">
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <div class="settings-group-title">GPS & Photos</div>
 
                 <div class="settings-field">

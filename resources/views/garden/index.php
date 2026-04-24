@@ -77,6 +77,113 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
+<?php if (!empty($schematicBeds)): ?>
+<?php
+// Group beds by parent_id
+$bedsByGarden = [];
+foreach ($schematicBeds as $bed) {
+    $key = $bed['parent_id'] ?? 0;
+    $bedsByGarden[$key][] = $bed;
+}
+$statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6','empty'=>'#e2e8f0'];
+?>
+<style>
+.schematic-section { margin-bottom:var(--spacing-5); }
+.schematic-section-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-3); }
+.schematic-section-title { font-size:1rem;font-weight:700;display:flex;align-items:center;gap:6px; }
+.schematic-group { margin-bottom:var(--spacing-4); }
+.schematic-group-label { font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px; }
+.schematic-beds-row { display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end; }
+.schematic-bed-card { display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:inherit;cursor:pointer;transition:transform .15s; }
+.schematic-bed-card:hover { transform:translateY(-2px); }
+.schematic-bed-card svg { display:block;border-radius:4px;box-shadow:0 1px 6px rgba(0,0,0,.12);transition:box-shadow .15s; }
+.schematic-bed-card:hover svg { box-shadow:0 3px 12px rgba(0,0,0,.2); }
+.schematic-bed-name { font-size:.7rem;font-weight:600;color:var(--color-text-muted);text-align:center;max-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.schematic-legend { display:flex;gap:10px;flex-wrap:wrap;margin-top:8px; }
+.schematic-legend-item { display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--color-text-muted); }
+.schematic-legend-dot { width:10px;height:10px;border-radius:2px;flex-shrink:0; }
+</style>
+
+<div class="schematic-section">
+    <div class="schematic-section-head">
+        <span class="schematic-section-title">🌱 Garden Beds</span>
+    </div>
+
+    <?php foreach ($bedsByGarden as $gardenId => $beds): ?>
+    <div class="schematic-group">
+        <div class="schematic-group-label">
+            <?php if ($gardenId && isset($schematicGardens[$gardenId])): ?>
+                🌿 <?= e($schematicGardens[$gardenId]) ?>
+            <?php else: ?>
+                🛖 No garden
+            <?php endif; ?>
+        </div>
+        <div class="schematic-beds-row">
+        <?php
+        // Scale: fixed display height 120px, vary width by aspect ratio; max width 180px
+        $dispH = 120;
+        foreach ($beds as $bed):
+            $lM = (float)($bed['length_m'] ?? 0);
+            $wM = (float)($bed['width_m']  ?? 0);
+            if ($lM > 0 && $wM > 0) {
+                $dispW = min(180, round($dispH * ($wM / $lM)));
+                $dispW = max(40, $dispW);
+            } else {
+                $dispW = 80;
+            }
+            $numLines = max(1, (int)($bed['bed_rows'] ?? 1));
+            $lineDir  = $bed['line_dir'] ?? 'NS';
+            $plantings = $bed['plantings'] ?? [];
+        ?>
+        <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" class="schematic-bed-card" title="<?= e($bed['name']) ?>">
+            <svg width="<?= $dispW ?>" height="<?= $dispH ?>" viewBox="0 0 <?= $dispW ?> <?= $dispH ?>" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="0" width="<?= $dispW ?>" height="<?= $dispH ?>" fill="#f1f5f9" rx="3"/>
+                <?php if ($lineDir === 'EW'):
+                    $sw = $dispW / $numLines;
+                    for ($li = 0; $li < $numLines; $li++):
+                        $p = $plantings[$li+1] ?? null;
+                        $col = $statusColors[$p['status'] ?? 'empty'];
+                        $x = round($li * $sw);
+                ?>
+                <rect x="<?= $x ?>" y="0" width="<?= round($sw) ?>" height="<?= $dispH ?>" fill="<?= $col ?>" fill-opacity="0.8"/>
+                <?php if ($li > 0): ?><line x1="<?= $x ?>" y1="0" x2="<?= $x ?>" y2="<?= $dispH ?>" stroke="#fff" stroke-width="1"/><?php endif; ?>
+                <?php endfor; else:
+                    $sh = $dispH / $numLines;
+                    for ($li = 0; $li < $numLines; $li++):
+                        $p = $plantings[$li+1] ?? null;
+                        $col = $statusColors[$p['status'] ?? 'empty'];
+                        $y = round($li * $sh);
+                ?>
+                <rect x="0" y="<?= $y ?>" width="<?= $dispW ?>" height="<?= round($sh) ?>" fill="<?= $col ?>" fill-opacity="0.8"/>
+                <?php if ($li > 0): ?><line x1="0" y1="<?= $y ?>" x2="<?= $dispW ?>" y2="<?= $y ?>" stroke="#fff" stroke-width="1"/><?php endif; ?>
+                <?php if (!empty($plantings[$li+1]['crop_name'])): ?>
+                <text x="<?= $dispW/2 ?>" y="<?= $y + $sh/2 + 3 ?>" text-anchor="middle"
+                      font-size="<?= min(10, max(7, $sh * 0.4)) ?>" fill="#1e293b"
+                      font-family="sans-serif"><?= e(mb_substr($plantings[$li+1]['crop_name'], 0, 8)) ?></text>
+                <?php endif; ?>
+                <?php endfor; endif; ?>
+                <rect x="0" y="0" width="<?= $dispW ?>" height="<?= $dispH ?>" fill="none" stroke="#94a3b8" stroke-width="1.5" rx="3"/>
+            </svg>
+            <span class="schematic-bed-name"><?= e($bed['name']) ?></span>
+            <?php if ($lM > 0 && $wM > 0): ?>
+            <span style="font-size:.62rem;color:var(--color-text-muted)"><?= $wM ?>×<?= $lM ?>m</span>
+            <?php endif; ?>
+        </a>
+        <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endforeach; ?>
+
+    <div class="schematic-legend">
+        <div class="schematic-legend-item"><div class="schematic-legend-dot" style="background:#22c55e"></div> Growing</div>
+        <div class="schematic-legend-item"><div class="schematic-legend-dot" style="background:#f59e0b"></div> Planned</div>
+        <div class="schematic-legend-item"><div class="schematic-legend-dot" style="background:#3b82f6"></div> Harvested</div>
+        <div class="schematic-legend-item"><div class="schematic-legend-dot" style="background:#e2e8f0"></div> Empty</div>
+    </div>
+</div>
+<hr style="border:none;border-top:1px solid var(--color-border);margin-bottom:var(--spacing-5)">
+<?php endif; ?>
+
 <!-- Stats at a glance -->
 <div class="garden-stats">
     <div class="garden-stat">

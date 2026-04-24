@@ -152,6 +152,63 @@ class GardenController
         $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
         $climateSuggestions = $this->getClimateSuggestions($climateZone, $currentMonth);
 
+        // Garden bed schematic — beds with dimensions, grouped by parent garden
+        $schematicBeds = [];
+        $schematicGardens = [];
+        try {
+            $db->execute("CREATE TABLE IF NOT EXISTS garden_plantings (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                item_id INT UNSIGNED NOT NULL,
+                line_number SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+                crop_name VARCHAR(200) DEFAULT NULL,
+                variety VARCHAR(200) DEFAULT NULL,
+                status ENUM('empty','planned','growing','harvested') NOT NULL DEFAULT 'empty',
+                planted_at DATE DEFAULT NULL,
+                expected_harvest_at DATE DEFAULT NULL,
+                notes TEXT DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $rawBeds = $db->fetchAll(
+                "SELECT i.id, i.name, i.parent_id,
+                        MAX(CASE WHEN m.meta_key='bed_length_m'    THEN m.meta_value_text END) AS length_m,
+                        MAX(CASE WHEN m.meta_key='bed_width_m'     THEN m.meta_value_text END) AS width_m,
+                        MAX(CASE WHEN m.meta_key='bed_rows'        THEN m.meta_value_text END) AS bed_rows,
+                        MAX(CASE WHEN m.meta_key='line_direction'  THEN m.meta_value_text END) AS line_dir
+                 FROM items i
+                 LEFT JOIN item_meta m ON m.item_id = i.id
+                   AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
+                 WHERE i.type = 'bed' AND i.deleted_at IS NULL AND i.status = 'active'
+                 GROUP BY i.id ORDER BY i.parent_id, i.name"
+            );
+
+            $bedIds = array_column($rawBeds, 'id');
+            $plantingsByBed = [];
+            if ($bedIds) {
+                $ph = implode(',', array_fill(0, count($bedIds), '?'));
+                $prows = $db->fetchAll(
+                    "SELECT item_id, line_number, crop_name, status FROM garden_plantings WHERE item_id IN ($ph) ORDER BY line_number",
+                    $bedIds
+                );
+                foreach ($prows as $pr) {
+                    $plantingsByBed[$pr['item_id']][$pr['line_number']] = $pr;
+                }
+            }
+
+            foreach ($rawBeds as $bed) {
+                $schematicBeds[$bed['id']] = array_merge($bed, [
+                    'plantings' => $plantingsByBed[$bed['id']] ?? [],
+                ]);
+            }
+
+            // Gardens for grouping headers
+            $gardenRows = $db->fetchAll(
+                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY name"
+            );
+            foreach ($gardenRows as $g) $schematicGardens[$g['id']] = $g['name'];
+        } catch (\Throwable $e) { /* non-fatal */ }
+
         // Biodynamic overview for garden page (7-day snapshot)
         $tzStr   = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key='app.timezone'")['setting_value_text'] ?? 'Europe/Rome';
         $tz      = new \DateTimeZone($tzStr ?: 'Europe/Rome');
@@ -180,6 +237,8 @@ class GardenController
             'climateZone'        => $climateZone,
             'bioNow'             => $bioNow,
             'bioWeek'            => $bioWeek,
+            'schematicBeds'      => $schematicBeds,
+            'schematicGardens'   => $schematicGardens,
         ]);
     }
 

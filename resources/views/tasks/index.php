@@ -464,13 +464,18 @@ function toggleTask(id, btn) {
 
 /* ---- Toggle today ---- */
 function toggleToday(id, btn) {
-    fetch(BASE+'tasks/'+id+'/important', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF) })
-    .then(function(r){return r.json();}).then(function(d){
+    fetch(BASE+'tasks/'+id+'/important', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/x-www-form-urlencoded', 'X-Requested-With':'XMLHttpRequest' },
+        body: '_token='+encodeURIComponent(CSRF)+'&_ajax=1'
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
         if (!d.success) return;
-        var row = document.getElementById('taskRow'+id);
-        if (d.is_important) { btn.classList.add('active'); row.classList.add('task-row--important'); }
-        else                { btn.classList.remove('active'); row.classList.remove('task-row--important'); }
-    });
+        // Reload so the task moves between Today and Backlog sections
+        location.reload();
+    })
+    .catch(function(){ alert('Network error. Please try again.'); });
 }
 
 /* ---- Archive ---- */
@@ -514,6 +519,8 @@ function initDrag(el) {
             var rows = Array.from(list.querySelectorAll('.task-row[data-id]'));
             var si   = rows.indexOf(_dragSrc);
             var di   = rows.indexOf(el);
+            // Prevent cross-list drag (today ↔ backlog)
+            if (si === -1) { el.classList.remove('drag-over'); return; }
             if (si < di) list.insertBefore(_dragSrc, el.nextSibling);
             else         list.insertBefore(_dragSrc, el);
             saveOrder(list);
@@ -525,7 +532,7 @@ function saveOrder(list) {
     var ids = Array.from(list.querySelectorAll('.task-row[data-id]')).map(function(r){ return r.dataset.id; });
     fetch(BASE+'tasks/reorder', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF)+'&ids='+encodeURIComponent(JSON.stringify(ids)) });
 }
-document.querySelectorAll('#taskList .task-row[data-id]').forEach(initDrag);
+document.querySelectorAll('#taskList .task-row[data-id], #taskTodayList .task-row[data-id]').forEach(initDrag);
 
 /* ---- Tag autocomplete ---- */
 (function() {
