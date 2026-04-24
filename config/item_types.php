@@ -71,6 +71,7 @@ return [
 
     'garden' => [
         'label'                => 'Garden',
+        'hidden_from_create'   => true,
         'allowed_parents'      => [null],
         'allowed_children'     => ['bed'],
         'required_meta'        => [],
@@ -84,11 +85,11 @@ return [
     ],
 
     'bed' => [
-        'label'                => 'Bed',
-        'allowed_parents'      => ['garden'],
+        'label'                => 'Garden Bed',
+        'allowed_parents'      => ['garden', null],
         'allowed_children'     => ['line'],
         'required_meta'        => [],
-        'optional_meta'        => ['bed_length_m', 'bed_width_m', 'irrigation_type', 'soil_type'],
+        'optional_meta'        => ['irrigation_type', 'soil_type'],
         'harvest_enabled'      => false,
         'finance_enabled'      => false,
         'mobile_asset'         => false,
@@ -100,6 +101,7 @@ return [
 
     'line' => [
         'label'                => 'Line',
+        'hidden_from_create'   => true,
         'allowed_parents'      => ['bed'],
         'allowed_children'     => [],
         'required_meta'        => [],

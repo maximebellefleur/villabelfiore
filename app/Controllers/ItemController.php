@@ -121,15 +121,18 @@ class ItemController
     public function create(Request $request, array $params = []): void
     {
         $this->requireAuth();
+        $db          = DB::getInstance();
         $itemTypes   = require BASE_PATH . '/config/item_types.php';
-        $row         = DB::getInstance()->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
+        $row         = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
         $customTypes = ($row && !empty($row['setting_value_json']))
             ? (json_decode($row['setting_value_json'], true) ?: [])
             : [];
+        $zoomRow     = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'gps.detect_zoom_level' LIMIT 1");
         Response::render('items/create', [
-            'title'       => 'Add Item',
-            'itemTypes'   => $itemTypes,
-            'customTypes' => $customTypes,
+            'title'          => 'Add Item',
+            'itemTypes'      => $itemTypes,
+            'customTypes'    => $customTypes,
+            'gpsDetectZoom'  => (int)($zoomRow['setting_value_text'] ?? 18),
         ]);
     }
 
@@ -420,6 +423,7 @@ class ItemController
             ? (json_decode($btRow['setting_value_json'], true) ?: $defaultBoundaryTypes)
             : $defaultBoundaryTypes;
 
+        $zoomRow = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'gps.detect_zoom_level' LIMIT 1");
         Response::render('items/edit', [
             'title'          => 'Edit ' . e($item['name']),
             'item'           => $item,
@@ -428,6 +432,7 @@ class ItemController
             'customTypes'    => $customTypes,
             'boundaryTypes'  => $boundaryTypes,
             'boundaryGeojson'=> $boundaryGeojson,
+            'gpsDetectZoom'  => (int)($zoomRow['setting_value_text'] ?? 18),
         ]);
     }
 

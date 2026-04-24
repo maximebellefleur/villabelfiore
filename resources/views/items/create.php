@@ -32,7 +32,9 @@
                     <option value="">— Select type —</option>
                     <?php
                     $preType = getFlash('old')['type'] ?? (isset($_GET['type']) ? htmlspecialchars_decode($_GET['type']) : '');
-                    foreach ($itemTypes as $typeKey => $typeCfg): ?>
+                    foreach ($itemTypes as $typeKey => $typeCfg):
+                        if (!empty($typeCfg['hidden_from_create']) && $typeKey !== $preType) continue;
+                    ?>
                     <option value="<?= e($typeKey) ?>" <?= $preType === $typeKey ? 'selected' : '' ?>>
                         <?= e($typeCfg['label']) ?>
                     </option>
@@ -78,6 +80,7 @@
 </form>
 
 <script>
+var GPS_DETECT_ZOOM = <?= (int)($gpsDetectZoom ?? 18) ?>;
 var itemTypeMeta = <?= json_encode(array_map(fn($t) => [
     'required_meta' => $t['required_meta'],
     'optional_meta' => $t['optional_meta'],
@@ -178,6 +181,9 @@ function applyGpsPosition(pos) {
     $('#gpsSource').val('device');
     $('#gpsStatus').text('✅ Located ±' + Math.round(pos.accuracy) + 'm — drag pin to adjust.').show();
     $('#detectGps').prop('disabled', false).text('📍 Locate Me');
+    if (window.miniMapLeaflet) {
+        window.miniMapLeaflet.setView([pos.lat, pos.lng], GPS_DETECT_ZOOM);
+    }
 }
 
 $('#detectGps').on('click', function() {

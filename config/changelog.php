@@ -8,6 +8,21 @@
  */
 return [
 
+    '2.5.11' => [
+        'date'  => '2026-04-24',
+        'title' => 'Garden Bed UX & GPS Zoom',
+        'new' => [
+            'Garden Bed edit page now shows a layout card at the top — set width, length, lines, and direction with a live SVG preview that updates as you type.',
+            'GPS Detect Zoom Level setting in Settings → GPS & Photos — choose how far to zoom in after tapping "Locate Me" (default: 18).',
+        ],
+        'improved' => [
+            '"Garden" and "Line" item types are now hidden from the + New Item dropdown — beds are created directly, lines are managed inside beds.',
+            'Renamed item type "Bed" to "Garden Bed" throughout the interface.',
+            'Map preview (corner wizard and walk boundary) now stays zoomed in (maxZoom 20) after drawing a polygon.',
+            '"Locate Me" button now zooms the map to the configured GPS detect zoom level after getting a fix.',
+        ],
+    ],
+
     '2.5.10' => [
         'date'  => '2026-04-24',
         'title' => 'PWA & CSRF Fixes',

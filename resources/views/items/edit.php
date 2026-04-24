@@ -5,6 +5,62 @@
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
+<?php if ($item['type'] === 'bed'): ?>
+<div class="card" style="margin-bottom:var(--spacing-3)">
+    <div class="card-body">
+        <div class="form-group-label" style="margin-bottom:var(--spacing-3)">🌿 Garden Bed Layout</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Length N–S (m)</label>
+                <input type="number" id="bedCfgLength" class="form-input form-input--touch"
+                       min="0.1" step="0.1" placeholder="e.g. 8"
+                       value="<?= e($meta['bed_length_m'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Width E–W (m)</label>
+                <input type="number" id="bedCfgWidth" class="form-input form-input--touch"
+                       min="0.1" step="0.1" placeholder="e.g. 1.2"
+                       value="<?= e($meta['bed_width_m'] ?? '') ?>">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Number of Lines</label>
+                <input type="number" id="bedCfgLines" class="form-input form-input--touch"
+                       min="0" step="1" placeholder="e.g. 4"
+                       value="<?= e($meta['bed_rows'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Lines Direction</label>
+                <div style="display:flex;gap:14px;margin-top:8px">
+                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+                        <input type="radio" name="bedCfgDir" value="NS"
+                               <?= ($meta['line_direction'] ?? 'NS') === 'NS' ? 'checked' : '' ?>
+                               style="accent-color:var(--color-primary)"> N–S
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+                        <input type="radio" name="bedCfgDir" value="EW"
+                               <?= ($meta['line_direction'] ?? 'NS') === 'EW' ? 'checked' : '' ?>
+                               style="accent-color:var(--color-primary)"> E–W
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="bedCfgSpacing" class="text-sm" style="color:var(--color-text-muted);margin-bottom:var(--spacing-2)"></div>
+
+        <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-2);margin-bottom:var(--spacing-3)">
+            <svg id="bedPreviewSvg" width="100%" viewBox="0 0 300 180" style="display:block;max-height:180px"></svg>
+        </div>
+
+        <button type="button" id="bedCfgSave" class="btn btn-primary btn-sm">💾 Save Layout</button>
+        <span id="bedCfgMsg" style="font-size:.85rem;margin-left:8px"></span>
+    </div>
+</div>
+<?php endif; ?>
+
 <form method="POST" action="<?= url('/items/' . ((int)$item['id']) . '/update') ?>" class="form item-form-mobile" id="itemForm">
     <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
     <input type="hidden" name="type"   value="<?= e($item['type']) ?>">
@@ -330,7 +386,7 @@
         if (m) {
             if (walkPolygon) m.removeLayer(walkPolygon);
             walkPolygon = L.polygon(pendingPts, { color: '#3c8dbc', fillColor: '#3c8dbc', fillOpacity: 0.15, weight: 2 }).addTo(m);
-            m.fitBounds(walkPolygon.getBounds(), { padding: [20, 20] });
+            m.fitBounds(walkPolygon.getBounds(), { padding: [20, 20], maxZoom: 20 });
         }
         if (statusEl) statusEl.textContent = '✅ ' + pendingPts.length + ' points · ' + Math.round(walkDist) + ' m — tap Save to confirm';
         actionsEl.style.display = 'flex';
@@ -461,7 +517,7 @@
                         }).addTo(m);
                     }
                 }
-                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20] });
+                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20], maxZoom: 20 });
             }
             if (statusEl) statusEl.textContent = '✅ Preview ready — tap Save Boundary to confirm';
             actionsEl.style.display = 'flex';
@@ -596,7 +652,7 @@
             if (m) {
                 if (cornerPolygon) { m.removeLayer(cornerPolygon); }
                 cornerPolygon = L.polygon(pendingPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.18, weight: 2 }).addTo(m);
-                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20] });
+                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20], maxZoom: 20 });
             }
             if (!pendingBedMeta) pendingBedMeta = {};
             document.getElementById('editBoundaryActions').style.display = 'flex';
@@ -645,6 +701,7 @@
 <script>
 window.MINI_MAP_LAT = <?= (float)($item['gps_lat'] ?? 41.9) ?>;
 window.MINI_MAP_LNG = <?= (float)($item['gps_lng'] ?? 12.5) ?>;
+var GPS_DETECT_ZOOM = <?= (int)($gpsDetectZoom ?? 18) ?>;
 
 var itemTypeMeta = <?= json_encode(array_map(fn($t) => [
     'required_meta' => $t['required_meta'],
@@ -784,6 +841,107 @@ function wireCustomTreeType() {
 // Auto-build meta fields for this item's type on page load
 buildMetaFields(CURRENT_TYPE);
 
+// ── Bed layout card ────────────────────────────────────────────
+<?php if ($item['type'] === 'bed'): ?>
+(function() {
+    var CSRF_BED = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+    var BED_CFG_URL = <?= json_encode(url('/items/' . (int)$item['id'] . '/bed-config')) ?>;
+
+    function redrawBed() {
+        var len   = parseFloat(document.getElementById('bedCfgLength').value) || 0;
+        var wid   = parseFloat(document.getElementById('bedCfgWidth').value) || 0;
+        var lines = parseInt(document.getElementById('bedCfgLines').value) || 0;
+        var dirEl = document.querySelector('input[name="bedCfgDir"]:checked');
+        var dir   = dirEl ? dirEl.value : 'NS';
+
+        var spacingEl = document.getElementById('bedCfgSpacing');
+        if (lines > 0) {
+            var dim = dir === 'NS' ? wid : len;
+            spacingEl.textContent = dim > 0
+                ? '≈ ' + (dim / lines).toFixed(2) + ' m per row (' + lines + ' line' + (lines !== 1 ? 's' : '') + ')'
+                : '';
+        } else {
+            spacingEl.textContent = '';
+        }
+        drawBedSvg(len, wid, lines, dir);
+    }
+
+    function drawBedSvg(len, wid, lines, dir) {
+        var svg = document.getElementById('bedPreviewSvg');
+        var W = 300, H = 180, pad = 32;
+
+        if (!len || !wid) {
+            svg.innerHTML = '<text x="150" y="95" text-anchor="middle" fill="#aaa" font-size="13">Enter length and width to preview</text>';
+            return;
+        }
+
+        var scale = Math.min((W - 2*pad) / wid, (H - 2*pad) / len);
+        var rW = wid * scale, rH = len * scale;
+        var rX = (W - rW) / 2, rY = (H - rH) / 2;
+
+        var out = [];
+        out.push('<rect x="'+rX+'" y="'+rY+'" width="'+rW+'" height="'+rH+'" fill="#e8f5e9" stroke="#2d8a27" stroke-width="2.5" rx="2"/>');
+
+        for (var i = 1; i <= lines; i++) {
+            if (dir === 'NS') {
+                var x = rX + (rW * i / (lines + 1));
+                out.push('<line x1="'+x+'" y1="'+(rY+4)+'" x2="'+x+'" y2="'+(rY+rH-4)+'" stroke="#4caf50" stroke-width="1.5" stroke-dasharray="5 3"/>');
+            } else {
+                var y = rY + (rH * i / (lines + 1));
+                out.push('<line x1="'+(rX+4)+'" y1="'+y+'" x2="'+(rX+rW-4)+'" y2="'+y+'" stroke="#4caf50" stroke-width="1.5" stroke-dasharray="5 3"/>');
+            }
+        }
+
+        out.push('<text x="'+(rX+rW/2)+'" y="'+(rY-7)+'" text-anchor="middle" fill="#555" font-size="11" font-weight="600">E–W '+wid+' m</text>');
+        out.push('<text x="'+(rX+rW+8)+'" y="'+(rY+rH/2)+'" dominant-baseline="middle" fill="#555" font-size="11" font-weight="600">N–S '+len+' m</text>');
+        out.push('<text x="'+(W-18)+'" y="16" text-anchor="middle" fill="#999" font-size="10" font-weight="bold">N</text>');
+        out.push('<polygon points="'+(W-18)+',18 '+(W-21)+',26 '+(W-18)+',24 '+(W-15)+',26" fill="#bbb"/>');
+
+        svg.innerHTML = out.join('');
+    }
+
+    ['bedCfgLength','bedCfgWidth','bedCfgLines'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', redrawBed);
+    });
+    document.querySelectorAll('input[name="bedCfgDir"]').forEach(function(r) {
+        r.addEventListener('change', redrawBed);
+    });
+    redrawBed();
+
+    document.getElementById('bedCfgSave').addEventListener('click', function() {
+        var btn = this, msg = document.getElementById('bedCfgMsg');
+        btn.disabled = true; btn.textContent = '⏳ Saving…'; msg.textContent = '';
+        var fd = new FormData();
+        fd.append('_token', CSRF_BED);
+        fd.append('bed_rows', parseInt(document.getElementById('bedCfgLines').value) || 0);
+        fd.append('bed_length_m', parseFloat(document.getElementById('bedCfgLength').value) || 0);
+        fd.append('bed_width_m', parseFloat(document.getElementById('bedCfgWidth').value) || 0);
+        var dirEl = document.querySelector('input[name="bedCfgDir"]:checked');
+        fd.append('line_direction', dirEl ? dirEl.value : 'NS');
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', BED_CFG_URL, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.addEventListener('load', function() {
+            btn.disabled = false; btn.textContent = '💾 Save Layout';
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) {}
+            if (res && res.success) {
+                msg.textContent = '✅ Saved';
+                msg.style.color = '';
+                setTimeout(function() { if (msg.textContent === '✅ Saved') msg.textContent = ''; }, 3000);
+            } else {
+                msg.textContent = '❌ ' + (res && res.error ? res.error : 'Save failed');
+                msg.style.color = 'var(--color-danger,red)';
+            }
+        });
+        xhr.addEventListener('error', function() {
+            btn.disabled = false; btn.textContent = '💾 Save Layout';
+            msg.textContent = '❌ Network error'; msg.style.color = 'var(--color-danger,red)';
+        });
+        xhr.send(fd);
+    });
+}());
+<?php endif; ?>
+
 // ── GPS detection (uses shared RootedGPS) ──────────────────────
 document.getElementById('detectGps').addEventListener('click', function () {
     if (!navigator.geolocation) {
@@ -808,6 +966,9 @@ document.getElementById('detectGps').addEventListener('click', function () {
         document.getElementById('gpsSource').value = 'device';
         document.getElementById('gpsStatus').textContent = '✅ Located ±' + Math.round(pos.accuracy) + 'm — drag pin to adjust.';
         updateCoordsDisplay();
+        if (window.miniMapLeaflet) {
+            window.miniMapLeaflet.setView([pos.lat, pos.lng], GPS_DETECT_ZOOM);
+        }
     }, 20000);
 });
 </script>

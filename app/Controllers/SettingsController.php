@@ -54,7 +54,7 @@ class SettingsController
 
         $allowed = [
             'app.name', 'app.owner_name', 'app.currency', 'app.language', 'app.timezone',
-            'gps.accuracy_threshold', 'image.refresh_interval_days',
+            'gps.accuracy_threshold', 'gps.detect_zoom_level', 'image.refresh_interval_days',
             'reminder.default_lead_days', 'integration.google_calendar',
             'integration.weather', 'quote.api_url',
             'ai.endpoint', 'ai.vision_model',

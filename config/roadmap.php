@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.5.11' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Garden Bed UX & GPS Zoom',
+        'features' => [
+            ['title' => 'Bed layout card', 'detail' => 'Top of the bed edit page shows width, length, lines count, and direction with a live SVG preview. Save independently from the boundary.'],
+            ['title' => 'GPS detect zoom setting', 'detail' => 'Settings → GPS & Photos lets you set how far the map zooms after "Locate Me". Default is 18, configurable 10–21.'],
+            ['title' => 'Simplified create menu', 'detail' => '"Garden" and "Line" are hidden from the New Item dropdown. Garden Beds can be created without any dimensions; configure layout in edit.'],
+        ],
+    ],
+
     '2.5.10' => [
         'status'   => 'released',
         'released' => '2026-04-24',

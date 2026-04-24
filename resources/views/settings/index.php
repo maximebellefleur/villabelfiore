@@ -138,6 +138,13 @@
                 </div>
 
                 <div class="settings-field">
+                    <label class="settings-label">GPS Detect Map Zoom Level</label>
+                    <p class="settings-hint">Map zoom level after tapping "Locate Me" on item forms. Higher = more zoomed in. Max usable is 19–20 (satellite tiles). Default: 18.</p>
+                    <input type="number" name="gps_detect_zoom_level" class="settings-input settings-input--sm"
+                           value="<?= e($settings['gps.detect_zoom_level'] ?? '18') ?>" min="10" max="21">
+                </div>
+
+                <div class="settings-field">
                     <label class="settings-label">Image Refresh Interval (days)</label>
                     <p class="settings-hint">How often to remind you to update directional photos.</p>
                     <input type="number" name="image_refresh_interval_days" class="settings-input settings-input--sm"
