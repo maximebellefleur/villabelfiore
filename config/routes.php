@@ -166,6 +166,7 @@ $router->get('/garden/biodynamic',               'BiodynamicController@index');
 // Garden bed planting
 $router->get('/items/{id}/planting',             'GardenBedController@show');
 $router->post('/items/{id}/planting',            'GardenBedController@storeLine');
+$router->post('/items/{id}/bed-config',          'GardenBedController@updateConfig');
 $router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
 $router->get('/api/garden/companions',           'GardenBedController@companions');
 

@@ -76,6 +76,15 @@ $statusLabels = ['growing'=>'Growing','planned'=>'Planned','harvested'=>'Harvest
 .bed-edit-input:focus { outline:none;border-color:var(--color-primary); }
 .bed-edit-actions { display:flex;gap:6px;justify-content:flex-end; }
 
+/* Config panel */
+.bed-config-bar { background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:var(--spacing-4);display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.bed-config-summary { flex:1;min-width:0;font-size:.83rem;color:var(--color-text-muted); }
+.bed-config-summary strong { color:var(--color-text);font-weight:700; }
+.bed-config-form { border-top:1px solid var(--color-border);padding:14px 16px;background:#f8fafc;display:none; }
+.bed-config-form.open { display:block; }
+.bed-config-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px; }
+.bed-config-spacing { font-size:.82rem;color:#15803d;font-weight:700;padding:6px 0; }
+
 /* Prep section */
 .bed-prep { background:linear-gradient(135deg,rgba(34,197,94,.07),rgba(34,197,94,.02));border:1.5px solid #bbf7d0;border-radius:var(--radius-lg);padding:16px 18px;margin-top:var(--spacing-4); }
 .bed-prep-title { font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#15803d;margin-bottom:10px;display:flex;align-items:center;gap:6px; }
@@ -98,6 +107,53 @@ $statusLabels = ['growing'=>'Growing','planned'=>'Planned','harvested'=>'Harvest
 </div>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
+
+<!-- Bed configuration -->
+<?php
+$_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 100 : null;
+?>
+<div class="bed-config-bar" id="bedConfigBar">
+    <div class="bed-config-summary">
+        <?php if ($bedRows > 0): ?>
+            <strong><?= $bedRows ?> line<?= $bedRows !== 1 ? 's' : '' ?></strong>
+            · <?= $lineDir === 'NS' ? 'N–S' : 'E–W' ?> rows
+            <?php if ($widthM > 0): ?> · <?= $widthM ?>m wide<?php endif; ?>
+            <?php if ($lengthM > 0): ?> × <?= $lengthM ?>m long<?php endif; ?>
+            <?php if ($_spacing): ?> · <span style="color:#15803d;font-weight:700"><?= $_spacing ?>m spacing</span><?php endif; ?>
+        <?php else: ?>
+            <span style="color:#f59e0b;font-weight:600">⚠ Lines not configured yet</span>
+        <?php endif; ?>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="toggleBedConfig()">⚙ Configure Lines</button>
+</div>
+<div class="bed-config-form" id="bedConfigForm">
+    <div class="bed-config-grid">
+        <div>
+            <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Lines</label>
+            <input type="number" min="1" max="50" class="bed-edit-input" id="cfgRows" value="<?= (int)($bedRows ?: 1) ?>" oninput="updateSpacing()">
+        </div>
+        <div>
+            <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Direction</label>
+            <select class="bed-edit-input" id="cfgDir" onchange="updateSpacing()">
+                <option value="NS" <?= $lineDir === 'NS' ? 'selected' : '' ?>>N–S (across width)</option>
+                <option value="EW" <?= $lineDir === 'EW' ? 'selected' : '' ?>>E–W (across length)</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Width (m)</label>
+            <input type="number" min="0" step="0.1" class="bed-edit-input" id="cfgWidth" value="<?= $widthM ?: '' ?>" placeholder="e.g. 1.2" oninput="updateSpacing()">
+        </div>
+        <div>
+            <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Length (m)</label>
+            <input type="number" min="0" step="0.1" class="bed-edit-input" id="cfgLength" value="<?= $lengthM ?: '' ?>" placeholder="e.g. 5">
+        </div>
+    </div>
+    <div class="bed-config-spacing" id="cfgSpacing"></div>
+    <div class="bed-edit-actions">
+        <button class="btn btn-ghost btn-sm" onclick="toggleBedConfig()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveBedConfig()">Save</button>
+    </div>
+</div>
 
 <!-- Schematic -->
 <div class="bed-schematic">
@@ -376,4 +432,38 @@ function renderCompanions(line, data) {
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleBedConfig() {
+    var f = document.getElementById('bedConfigForm');
+    f.classList.toggle('open');
+    if (f.classList.contains('open')) updateSpacing();
+}
+
+function updateSpacing() {
+    var rows  = parseInt(document.getElementById('cfgRows').value) || 0;
+    var dir   = document.getElementById('cfgDir').value;
+    var w     = parseFloat(document.getElementById('cfgWidth').value) || 0;
+    var l     = parseFloat(document.getElementById('cfgLength').value) || 0;
+    var dim   = dir === 'NS' ? w : l;
+    var el    = document.getElementById('cfgSpacing');
+    if (rows > 0 && dim > 0) {
+        el.textContent = '→ ' + (Math.round(dim / rows * 100) / 100) + 'm spacing per line';
+    } else {
+        el.textContent = '';
+    }
+}
+
+function saveBedConfig() {
+    var fd = new FormData();
+    fd.append('_token',         BED_CSRF);
+    fd.append('_ajax',          '1');
+    fd.append('bed_rows',       document.getElementById('cfgRows').value);
+    fd.append('line_direction', document.getElementById('cfgDir').value);
+    fd.append('bed_width_m',    document.getElementById('cfgWidth').value);
+    fd.append('bed_length_m',   document.getElementById('cfgLength').value);
+    fetch(BED_BASE + 'items/' + BED_ITEM + '/bed-config', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.success) location.reload(); else alert('Save failed.'); })
+    .catch(function(){ alert('Network error.'); });
+}
 </script>

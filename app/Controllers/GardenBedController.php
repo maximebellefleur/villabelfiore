@@ -50,10 +50,10 @@ class GardenBedController
             return;
         }
 
-        $metaRows = $db->fetchAll("SELECT meta_key, meta_value FROM item_meta WHERE item_id = ?", [$id]);
+        $metaRows = $db->fetchAll("SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?", [$id]);
         $meta = [];
         foreach ($metaRows as $row) {
-            $meta[$row['meta_key']] = $row['meta_value'];
+            $meta[$row['meta_key']] = $row['meta_value_text'];
         }
 
         $bedRows   = (int)($meta['bed_rows'] ?? 0);
@@ -111,15 +111,37 @@ class GardenBedController
             'hasCompanionApi'=> $hasCompanionApi,
             'currentMonth'   => (int)date('n'),
         ]);
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo '<pre style="background:#fff;color:#c00;padding:20px;font-size:13px;white-space:pre-wrap">';
-            echo '<strong>DEBUG ERROR — GardenBedController::show</strong>' . "\n\n";
-            echo htmlspecialchars($e->getMessage()) . "\n\n";
-            echo htmlspecialchars($e->getFile()) . ':' . $e->getLine() . "\n\n";
-            echo htmlspecialchars($e->getTraceAsString());
-            echo '</pre>';
+    }
+
+    public function updateConfig(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db     = DB::getInstance();
+        $itemId = (int)($params['id'] ?? 0);
+
+        $item = $db->fetchOne("SELECT id FROM items WHERE id = ? AND deleted_at IS NULL", [$itemId]);
+        if (!$item) {
+            Response::json(['success' => false, 'error' => 'Not found']);
+            return;
         }
+
+        $bedRows   = max(1, (int)$request->post('bed_rows', 1));
+        $lineDir   = in_array($request->post('line_direction', 'NS'), ['NS', 'EW'], true)
+                     ? $request->post('line_direction', 'NS') : 'NS';
+        $widthM    = max(0, (float)$request->post('bed_width_m', 0));
+        $lengthM   = max(0, (float)$request->post('bed_length_m', 0));
+
+        $upsert = "INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+                   VALUES (?, ?, ?, 'text', NOW(), NOW())
+                   ON DUPLICATE KEY UPDATE meta_value_text = VALUES(meta_value_text), updated_at = NOW()";
+
+        $db->execute($upsert, [$itemId, 'bed_rows',       (string)$bedRows]);
+        $db->execute($upsert, [$itemId, 'line_direction', $lineDir]);
+        if ($widthM > 0)  $db->execute($upsert, [$itemId, 'bed_width_m',  (string)$widthM]);
+        if ($lengthM > 0) $db->execute($upsert, [$itemId, 'bed_length_m', (string)$lengthM]);
+
+        Response::json(['success' => true]);
     }
 
     public function storeLine(Request $request, array $params = []): void

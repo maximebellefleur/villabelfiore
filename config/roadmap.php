@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.5.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Bed Lines & Garden Workflow',
+        'features' => [
+            ['title' => 'Configure Lines on bed page', 'detail' => 'Set number of lines, direction, and dimensions directly from the bed planting page. Spacing auto-calculated as width ÷ lines.'],
+            ['title' => 'Garden hub quick-create', 'detail' => '"+ New Garden" and "+ New Bed" buttons on the Garden hub create the correct item type instantly.'],
+            ['title' => 'Bed page 500 fix', 'detail' => 'Fixed wrong column name in meta query that caused a 500 on every bed planting page visit.'],
+        ],
+    ],
+
     '2.5.6' => [
         'status'   => 'released',
         'released' => '2026-04-24',

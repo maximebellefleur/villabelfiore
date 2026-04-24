@@ -30,8 +30,10 @@
                 <label class="form-label">Item Type <span class="required">*</span></label>
                 <select name="type" id="itemType" class="form-input form-input--touch" required>
                     <option value="">— Select type —</option>
-                    <?php foreach ($itemTypes as $typeKey => $typeCfg): ?>
-                    <option value="<?= e($typeKey) ?>" <?= (getFlash('old')['type'] ?? '') === $typeKey ? 'selected' : '' ?>>
+                    <?php
+                    $preType = getFlash('old')['type'] ?? (isset($_GET['type']) ? htmlspecialchars_decode($_GET['type']) : '');
+                    foreach ($itemTypes as $typeKey => $typeCfg): ?>
+                    <option value="<?= e($typeKey) ?>" <?= $preType === $typeKey ? 'selected' : '' ?>>
                         <?= e($typeCfg['label']) ?>
                     </option>
                     <?php endforeach; ?>

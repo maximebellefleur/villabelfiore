@@ -69,9 +69,10 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 <div class="garden-header">
     <h1>🌿 Garden</h1>
     <div class="garden-actions">
-        <a href="<?= url('/seeds/create') ?>" class="btn btn-primary btn-sm">+ Add Seed</a>
-        <a href="<?= url('/seeds') ?>" class="btn btn-secondary btn-sm">📖 Catalog</a>
-        <a href="<?= url('/seeds/family-needs') ?>" class="btn btn-secondary btn-sm">👨‍👩‍👧 Family Needs</a>
+        <a href="<?= url('/items/create?type=garden') ?>" class="btn btn-primary btn-sm">+ New Garden</a>
+        <a href="<?= url('/items/create?type=bed') ?>" class="btn btn-secondary btn-sm">+ New Bed</a>
+        <a href="<?= url('/seeds/create') ?>" class="btn btn-secondary btn-sm">+ Seed</a>
+        <a href="<?= url('/seeds') ?>" class="btn btn-ghost btn-sm">📖 Catalog</a>
     </div>
 </div>
 

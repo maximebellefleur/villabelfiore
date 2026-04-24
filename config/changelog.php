@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.5.8' => [
+        'date'  => '2026-04-24',
+        'title' => 'Bed Lines & Garden Workflow',
+        'new'   => [
+            'Garden hub: "+ New Garden" and "+ New Bed" buttons create the right item type directly.',
+            'Bed planting page: Configure Lines panel — set number of lines, direction (N–S / E–W), width and length, with live spacing calculation.',
+        ],
+        'fixed' => [
+            'CRITICAL: Bed planting page crashed with 500 — wrong column name (meta_value vs meta_value_text) in the meta query.',
+            'Items create: URL ?type=garden or ?type=bed pre-selects the type in the dropdown.',
+        ],
+    ],
+
     '2.5.6' => [
         'date'  => '2026-04-24',
         'title' => 'Instant Version Check',
