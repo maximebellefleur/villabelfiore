@@ -36,6 +36,7 @@ class GardenBedController
 
     public function show(Request $request, array $params = []): void
     {
+        try {
         $this->requireAuth();
         $db = DB::getInstance();
         $id = (int)($params['id'] ?? 0);
@@ -110,6 +111,15 @@ class GardenBedController
             'hasCompanionApi'=> $hasCompanionApi,
             'currentMonth'   => (int)date('n'),
         ]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo '<pre style="background:#fff;color:#c00;padding:20px;font-size:13px;white-space:pre-wrap">';
+            echo '<strong>DEBUG ERROR — GardenBedController::show</strong>' . "\n\n";
+            echo htmlspecialchars($e->getMessage()) . "\n\n";
+            echo htmlspecialchars($e->getFile()) . ':' . $e->getLine() . "\n\n";
+            echo htmlspecialchars($e->getTraceAsString());
+            echo '</pre>';
+        }
     }
 
     public function storeLine(Request $request, array $params = []): void
