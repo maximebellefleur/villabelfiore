@@ -62,7 +62,7 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-tag-suggest-item { padding:9px 14px;font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s; }
 .task-tag-suggest-item:hover,.task-tag-suggest-item.sel { background:var(--color-primary-soft); }
 .task-title { cursor:default; }
-.task-title.editing { cursor:text; }
+.task-title.editing { cursor:text; flex:1; min-width:0; display:block; }
 .task-inline-input { border:none;outline:none;background:transparent;width:100%;font:inherit;color:inherit;padding:0;margin:0; }
 .reminder-row { display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius);margin-bottom:2px; }
 .reminder-dot { width:8px;height:8px;border-radius:50%;background:var(--color-primary);flex-shrink:0; }
