@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.5.6' => [
+        'date'  => '2026-04-24',
+        'title' => 'Instant Version Check',
+        'improved' => [
+            'Upgrade panel now checks for new versions via a tiny version.json file instead of downloading the full 400 KB ZIP — instant and always current.',
+        ],
+        'fixed' => [
+            'Upgrade: added no-cache request headers so GitHub CDN always serves the latest ZIP.',
+            'Garden bed page: $currentMonth now has a safe fallback so the page never crashes if the variable is missing.',
+        ],
+    ],
+
     '2.5.5' => [
         'date'  => '2026-04-24',
         'title' => 'Hardening & Cache Fix',

@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.5.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Instant Version Check',
+        'features' => [
+            ['title' => 'Fast version check', 'detail' => 'Upgrade panel reads a tiny version.json instead of downloading the full ZIP to detect new versions — instant and always up to date.'],
+            ['title' => 'Upgrade cache fix', 'detail' => 'No-cache headers on GitHub requests prevent CDN from serving stale ZIPs.'],
+            ['title' => 'Bed page hardening', 'detail' => 'Garden bed planting page no longer crashes if currentMonth is not passed by the controller.'],
+        ],
+    ],
+
     '2.5.5' => [
         'status'   => 'released',
         'released' => '2026-04-24',

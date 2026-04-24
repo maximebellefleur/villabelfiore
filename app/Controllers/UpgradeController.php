@@ -43,9 +43,9 @@ class UpgradeController
         // Quick check: peek at the remote ZIP to get the latest available version.
         // Uses a HEAD+Range request so we only pull the first ~8KB (enough for defaults.php).
         $latestVersion  = null;
-        $latestName     = null;
-        if ($zipUrl && $zipSupported && function_exists('curl_init')) {
-            $latestVersion = $this->fetchLatestVersion($zipUrl);
+        $versionUrl     = $defaults['update_version_url'] ?? '';
+        if ($versionUrl && function_exists('curl_init')) {
+            $latestVersion = $this->fetchLatestVersion($versionUrl);
         }
 
         Response::render('settings/upgrade', [
@@ -358,52 +358,36 @@ class UpgradeController
     }
 
     /**
-     * Download the remote ZIP and read the version from rooted-files/config/defaults.php inside it.
-     * Returns the version string or null on failure.
+     * Fetch version.json from the remote URL and return the version string.
+     * Much faster than downloading the full ZIP.
      */
-    private function fetchLatestVersion(string $zipUrl): ?string
+    private function fetchLatestVersion(string $versionUrl): ?string
     {
-        $tmp = tempnam(sys_get_temp_dir(), 'rooted_ver_check_');
-        if (!$tmp) return null;
-
         $token    = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
-        $fetchUrl = $zipUrl . (str_contains($zipUrl, '?') ? '&' : '?') . '_ts=' . time();
+        $fetchUrl = $versionUrl . '?_ts=' . time();
 
         $ch = curl_init($fetchUrl);
-        $verHeaders = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
+        $headers = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
         if ($token) {
-            $verHeaders[] = 'Authorization: token ' . $token;
+            $headers[] = 'Authorization: token ' . $token;
         }
-        $opts = [
+        curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_TIMEOUT        => 8,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
-            CURLOPT_HTTPHEADER     => $verHeaders,
-        ];
-        curl_setopt_array($ch, $opts);
+            CURLOPT_HTTPHEADER     => $headers,
+        ]);
         $data     = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        if ($data === false || $httpCode !== 200 || strlen($data) < 1000) {
-            @unlink($tmp);
+        if ($data === false || $httpCode !== 200) {
             return null;
         }
 
-        file_put_contents($tmp, $data);
-
-        try {
-            $zip = new \ZipArchive();
-            if ($zip->open($tmp) !== true) { @unlink($tmp); return null; }
-            $arr = $this->readPhpArrayFromZip($zip, 'rooted-files/config/defaults.php');
-            $zip->close();
-            @unlink($tmp);
-            return $arr['version'] ?? null;
-        } catch (\Throwable $e) {
-            @unlink($tmp);
-            return null;
-        }
+        $json = json_decode($data, true);
+        return $json['version'] ?? null;
     }
 }
