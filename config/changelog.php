@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.10' => [
+        'date'  => '2026-04-24',
+        'title' => 'PWA & CSRF Fixes',
+        'fixed' => [
+            'Service worker (v8) no longer caches authenticated HTML pages — prevents stale CSRF tokens when using the installed PWA.',
+            'CSRF failure now redirects back to the previous page with a clear error message instead of showing a raw 403 page.',
+        ],
+    ],
+
     '2.5.9' => [
         'date'  => '2026-04-24',
         'title' => 'Upgrade via GitHub API',

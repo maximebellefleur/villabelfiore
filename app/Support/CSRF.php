@@ -67,7 +67,13 @@ class CSRF
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'error' => 'Session expired — please refresh the page.']);
             } else {
-                echo '<h1>403 — Invalid or missing CSRF token.</h1>';
+                $back = $_SERVER['HTTP_REFERER'] ?? (BASE_URL ?? '/');
+                if (isset($_SESSION)) {
+                    $_SESSION['_flash']['error'] = 'Your session expired. Please refresh and try again.';
+                }
+                if (!headers_sent()) {
+                    header('Location: ' . $back);
+                }
             }
             exit;
         }

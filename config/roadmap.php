@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.5.10' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'PWA & CSRF Fixes',
+        'features' => [
+            ['title' => 'SW v8 — no HTML caching', 'detail' => 'Service worker no longer caches authenticated pages. CSRF tokens are always fresh, fixing invalid token errors in the installed PWA.'],
+            ['title' => 'Graceful CSRF failure', 'detail' => 'Session-expired errors now redirect back to the form with a clear message instead of a blank 403 page.'],
+        ],
+    ],
+
     '2.5.9' => [
         'status'   => 'released',
         'released' => '2026-04-24',

@@ -1,10 +1,10 @@
-/* Rooted — Service Worker v7 */
+/* Rooted — Service Worker v8 */
 
 // Derive base path from this SW's own URL so subdirectory installs work.
 // e.g. if SW is at /rooted/sw.js then BASE = '/rooted'
 var BASE = self.location.pathname.replace(/\/sw\.js(\?.*)?$/, '').replace(/\/$/, '');
 
-var CACHE_NAME = 'rooted-v7';
+var CACHE_NAME = 'rooted-v8';
 var OFFLINE_URL = BASE + '/offline';
 
 var SHELL_ASSETS = [
@@ -24,7 +24,6 @@ self.addEventListener('install', function (event) {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
-            // Cache offline page first (must succeed), then shell assets best-effort
             return cache.add(OFFLINE_URL).then(function () {
                 return cache.addAll(SHELL_ASSETS).catch(function (err) {
                     console.warn('[SW] Failed to cache some assets:', err);
@@ -56,19 +55,17 @@ self.addEventListener('fetch', function (event) {
     if (url.origin !== self.location.origin) return;
     if (event.request.method !== 'GET') return;
 
-    // Navigation (HTML pages): always network-first so CSRF tokens are never stale
+    // HTML navigation: always network-only, fall back to offline page (never cache — CSRF tokens must always be fresh)
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request).catch(function () {
-                return caches.match(event.request).then(function (cached) {
-                    return cached || caches.match(BASE + '/offline');
-                });
+                return caches.match(OFFLINE_URL);
             })
         );
         return;
     }
 
-    // API routes: network first, no cache fallback
+    // API routes: network only, no cache
     if (url.pathname.startsWith(BASE + '/api/')) {
         event.respondWith(
             fetch(event.request).catch(function () {
@@ -80,7 +77,7 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // Static assets + manifest: cache first, network fallback, update cache
+    // Static assets + manifest: cache first, network fallback, update cache in background
     if (
         url.pathname.startsWith(BASE + '/assets/') ||
         url.pathname === BASE + '/manifest.json'
@@ -100,18 +97,6 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // HTML pages: network first, cache fallback, offline page last resort
-    event.respondWith(
-        fetch(event.request).then(function (resp) {
-            if (resp && resp.status === 200) {
-                var clone = resp.clone();
-                caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, clone); });
-            }
-            return resp;
-        }).catch(function () {
-            return caches.match(event.request).then(function (cached) {
-                return cached || caches.match(OFFLINE_URL);
-            });
-        })
-    );
+    // Everything else (photos, uploads, etc.): network only
+    event.respondWith(fetch(event.request));
 });
