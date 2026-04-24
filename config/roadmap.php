@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.5.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Hardening & Cache Fix',
+        'features' => [
+            ['title' => 'Upgrade cache fix', 'detail' => 'Upgrade panel now sends no-cache headers so GitHub CDN always delivers the latest version.'],
+            ['title' => 'Bed page hardening', 'detail' => 'Garden bed planting page no longer crashes if currentMonth is not passed by the controller.'],
+        ],
+    ],
+
     '2.5.4' => [
         'status'   => 'released',
         'released' => '2026-04-24',

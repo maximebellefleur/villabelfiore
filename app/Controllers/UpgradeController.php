@@ -153,9 +153,11 @@ class UpgradeController
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
             ];
+            $ghHeaders = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
             if ($token) {
-                $curlOpts[CURLOPT_HTTPHEADER] = ['Authorization: token ' . $token];
+                $ghHeaders[] = 'Authorization: token ' . $token;
             }
+            $curlOpts[CURLOPT_HTTPHEADER] = $ghHeaders;
             curl_setopt_array($ch, $curlOpts);
             $data     = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -368,16 +370,18 @@ class UpgradeController
         $fetchUrl = $zipUrl . (str_contains($zipUrl, '?') ? '&' : '?') . '_ts=' . time();
 
         $ch = curl_init($fetchUrl);
+        $verHeaders = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
+        if ($token) {
+            $verHeaders[] = 'Authorization: token ' . $token;
+        }
         $opts = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_USERAGENT      => 'Rooted-Updater/1.0',
+            CURLOPT_HTTPHEADER     => $verHeaders,
         ];
-        if ($token) {
-            $opts[CURLOPT_HTTPHEADER] = ['Authorization: token ' . $token];
-        }
         curl_setopt_array($ch, $opts);
         $data     = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

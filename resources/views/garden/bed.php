@@ -1,7 +1,8 @@
 <?php
-$csrfToken   = \App\Support\CSRF::getToken();
-$numLines    = max(1, $bedRows);
-$monthNames  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+$csrfToken    = \App\Support\CSRF::getToken();
+$numLines     = max(1, $bedRows);
+$currentMonth = $currentMonth ?? (int)date('n');
+$monthNames   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 // SVG dimensions
 $svgMaxW = 380; $svgMaxH = 260;

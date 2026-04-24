@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.5' => [
+        'date'  => '2026-04-24',
+        'title' => 'Hardening & Cache Fix',
+        'fixed' => [
+            'Upgrade: added no-cache request headers so GitHub CDN always serves the latest ZIP.',
+            'Garden bed page: $currentMonth now has a safe fallback so the page never crashes if the variable is missing.',
+        ],
+    ],
+
     '2.5.4' => [
         'date'  => '2026-04-24',
         'title' => 'Bed Page & Edit Fixes',
