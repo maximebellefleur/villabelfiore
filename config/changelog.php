@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.5.12' => [
+        'date'  => '2026-04-24',
+        'title' => 'Fix Upgrade URL (slash branch)',
+        'fixed' => [
+            'CRITICAL: "Update Now" returned 404 — the raw.githubusercontent.com URL regex did not handle branch names containing slashes (e.g. claude/feature-xyz). Both update_zip_url and update_version_url now use the GitHub API URL format directly, bypassing the regex entirely.',
+        ],
+    ],
+
     '2.5.11' => [
         'date'  => '2026-04-24',
         'title' => 'Garden Bed UX & GPS Zoom',

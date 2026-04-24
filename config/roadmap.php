@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.12' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Fix Upgrade URL (slash branch)',
+        'features' => [
+            ['title' => 'Upgrade URL fix', 'detail' => 'Branch names with slashes (e.g. claude/feature) were silently misparse by the raw URL → API URL converter, causing 404. Both ZIP and version URLs now use the GitHub API format directly.'],
+        ],
+    ],
+
     '2.5.11' => [
         'status'   => 'released',
         'released' => '2026-04-24',

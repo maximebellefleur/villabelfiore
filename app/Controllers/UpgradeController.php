@@ -139,9 +139,15 @@ class UpgradeController
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'rooted_gh_update_');
 
-        // Convert raw.githubusercontent.com URL → GitHub API URL to bypass CDN cache.
-        // api.github.com with Accept: application/vnd.github.v3.raw always serves fresh content.
-        $apiUrl = $this->rawUrlToApiUrl($rawUrl);
+        // If URL is already an api.github.com URL, use it directly.
+        // Otherwise convert raw.githubusercontent.com URL → GitHub API URL.
+        // NOTE: raw.githubusercontent.com branch names with slashes (e.g. "claude/feature-x")
+        // are ambiguous in the URL path; using the API URL avoids this entirely.
+        if (str_starts_with($rawUrl, 'https://api.github.com/')) {
+            $apiUrl = $rawUrl;
+        } else {
+            $apiUrl = $this->rawUrlToApiUrl($rawUrl);
+        }
 
         $downloaded = false;
         if (function_exists('curl_init') && $apiUrl) {
@@ -364,14 +370,25 @@ class UpgradeController
      */
     private function fetchLatestVersion(string $versionUrl): ?string
     {
-        $token    = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
-        $fetchUrl = $versionUrl . '?_ts=' . time();
+        $token = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?? '';
 
-        $ch = curl_init($fetchUrl);
-        $headers = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
+        // Use GitHub API URL if given; otherwise append cache-buster
+        if (str_starts_with($versionUrl, 'https://api.github.com/')) {
+            $fetchUrl = $versionUrl;
+            $headers  = [
+                'Accept: application/vnd.github.v3.raw',
+                'User-Agent: Rooted-Updater/1.0',
+                'Cache-Control: no-cache',
+            ];
+        } else {
+            $fetchUrl = $versionUrl . '?_ts=' . time();
+            $headers  = ['Cache-Control: no-cache, no-store', 'Pragma: no-cache'];
+        }
         if ($token) {
             $headers[] = 'Authorization: token ' . $token;
         }
+
+        $ch = curl_init($fetchUrl);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
