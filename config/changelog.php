@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.4' => [
+        'date'  => '2026-04-24',
+        'title' => 'Bed Page & Edit Fixes',
+        'fixed' => [
+            'Garden bed planting page crashed with "Something went wrong" — missing $currentMonth variable passed to view.',
+            'Task inline edit input now stretches to full row width when double-clicking to rename.',
+        ],
+    ],
+
     '2.5.3' => [
         'date'  => '2026-04-24',
         'title' => 'Garden Beds & Task Fixes',

@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.5.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-24',
+        'title'    => 'Bed Page & Edit Fixes',
+        'features' => [
+            ['title' => 'Garden bed page fix', 'detail' => 'Fixed "Something went wrong" crash on the bed planting page caused by a missing variable.'],
+            ['title' => 'Task inline edit width', 'detail' => 'The rename input now stretches to the full available row width when double-clicking a task title.'],
+        ],
+    ],
+
     '2.5.3' => [
         'status'   => 'released',
         'released' => '2026-04-24',
