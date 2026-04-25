@@ -67,6 +67,11 @@ $csrfToken = \App\Support\CSRF::getToken();
 .reminder-row { display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius);margin-bottom:2px; }
 .reminder-dot { width:8px;height:8px;border-radius:50%;background:var(--color-primary);flex-shrink:0; }
 .reminder-dot.overdue { background:#dc2626; }
+.bulk-mode-wrap { display:none;margin-top:4px;background:var(--color-surface-raised);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);overflow:hidden; }
+.bulk-hint { font-size:.75rem;color:var(--color-text-muted);padding:8px 14px 2px;line-height:1.5; }
+.bulk-textarea { width:100%;border:none;background:none;outline:none;font-family:inherit;font-size:.9rem;color:var(--color-text);padding:10px 14px;min-height:120px;resize:vertical;line-height:1.65;box-sizing:border-box; }
+.bulk-textarea::placeholder { color:var(--color-text-muted); }
+.bulk-footer { display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--color-border);background:var(--color-surface);flex-wrap:wrap; }
 </style>
 
 <div class="tasks-page">
@@ -206,6 +211,21 @@ $_hasTodayTasks = !empty($_todayTasks);
     <span class="task-quick-hint" id="achatQuickHint" style="display:none">↵ save</span>
 </div>
 <div id="achatTagSuggest" class="task-tag-suggest" style="display:none"></div>
+</div>
+
+<div style="margin-top:4px;margin-bottom:var(--spacing-2);text-align:right">
+    <button type="button" id="achatBulkBtn" class="task-clear-done-btn" onclick="toggleBulkMode()">📋 Bulk</button>
+</div>
+
+<div class="bulk-mode-wrap" id="bulkModeWrap">
+    <div class="bulk-hint">Start with <strong>(CATEGORY)</strong> then each item on its own line. Press Enter for a new line, "Done" to save all at once.</div>
+    <textarea class="bulk-textarea" id="bulkTextarea"
+              placeholder="(CHINOIS)&#10;petite poubelle&#10;cure-dent&#10;vase plantes x3"></textarea>
+    <div class="bulk-footer">
+        <button type="button" id="bulkDoneBtn" class="btn btn-primary btn-sm" onclick="saveBulkItems()">✓ Done</button>
+        <button type="button" class="task-clear-done-btn" style="padding:5px 12px" onclick="toggleBulkMode()">✕ Cancel</button>
+        <span id="bulkStatus" style="font-size:.75rem;color:var(--color-text-muted);margin-left:auto"></span>
+    </div>
 </div>
 
 <div class="task-section-head">
@@ -448,6 +468,120 @@ function escHtml(s) {
             requestAnimationFrame(function(){ row.style.transition='opacity .2s'; row.style.opacity='1'; });
         }).catch(function(){ input.disabled=false; input.focus(); });
     });
+}());
+
+/* ---- Achats bulk-add ---- */
+(function () {
+    window.toggleBulkMode = function () {
+        var wrap = document.getElementById('bulkModeWrap');
+        var btn  = document.getElementById('achatBulkBtn');
+        var ta   = document.getElementById('bulkTextarea');
+        var inp  = document.getElementById('achatQuickInput');
+        if (!wrap) return;
+        var opening = !wrap.style.display || wrap.style.display === 'none';
+        if (opening) {
+            wrap.style.display = 'block';
+            // Pre-fill with whatever the user already typed (e.g. "(CHINOIS)")
+            if (inp && inp.value.trim()) {
+                ta.value = inp.value.trim() + '\n';
+                inp.value = '';
+                inp.dispatchEvent(new Event('input'));
+            }
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            if (btn) { btn.textContent = '✕ Bulk'; btn.classList.add('active'); }
+        } else {
+            wrap.style.display = 'none';
+            ta.value = '';
+            document.getElementById('bulkStatus').textContent = '';
+            var doneBtn = document.getElementById('bulkDoneBtn');
+            if (doneBtn) { doneBtn.disabled = false; doneBtn.textContent = '✓ Done'; }
+            if (btn) { btn.textContent = '📋 Bulk'; btn.classList.remove('active'); }
+            if (inp) inp.focus();
+        }
+    };
+
+    window.saveBulkItems = function () {
+        var ta     = document.getElementById('bulkTextarea');
+        var status = document.getElementById('bulkStatus');
+        var btn    = document.getElementById('bulkDoneBtn');
+
+        var lines    = ta.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+        var category = '';
+        var items    = [];
+
+        lines.forEach(function (line) {
+            var m = line.match(/^\(([^)]+)\)\s*(.*)$/);
+            if (m) {
+                category = m[1].trim().toUpperCase();
+                if (m[2].trim()) items.push(m[2].trim());
+            } else {
+                items.push(line);
+            }
+        });
+
+        if (!items.length) { status.textContent = '⚠ No items to add.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Saving…';
+        status.textContent = '';
+
+        var idx = 0, saved = [], cat = category;
+
+        function next() {
+            if (idx >= items.length) {
+                btn.disabled = false; btn.textContent = '✓ Done';
+                _renderBulkRows(saved, cat);
+                toggleBulkMode();
+                return;
+            }
+            var title = items[idx++];
+            status.textContent = idx + ' / ' + items.length;
+            fetch(BASE + 'tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: '_token=' + encodeURIComponent(CSRF) + '&title=' + encodeURIComponent(title)
+                    + '&category=' + encodeURIComponent(cat) + '&list_type=achat'
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (d.success) saved.push(d.task);
+                next();
+            }).catch(next);
+        }
+        next();
+    };
+
+    function _renderBulkRows(tasks, category) {
+        if (!tasks.length) return;
+        var catKey = category || '__none__';
+        var list   = document.getElementById('achatList');
+        var empty  = document.querySelector('.task-empty');
+        if (!list && empty) {
+            var p = empty.parentNode; empty.remove();
+            list = document.createElement('div'); list.id = 'achatList'; p.appendChild(list);
+        }
+        if (!list) return;
+        var group = list.querySelector('[data-cat="' + CSS.escape(catKey) + '"]');
+        if (!group) {
+            group = document.createElement('div');
+            group.className = 'achat-group'; group.dataset.cat = catKey;
+            var lbl = category
+                ? '<span class="task-tag" style="background:' + tagColor(category) + '">' + escHtml(category) + '</span>'
+                : '<span style="color:var(--color-text-muted)">No category</span>';
+            group.innerHTML = '<div class="achat-group-head">' + lbl + '</div><div class="task-list achat-group-items"></div>';
+            list.appendChild(group);
+        }
+        var itemsEl = group.querySelector('.achat-group-items');
+        tasks.forEach(function (task, i) {
+            var row = document.createElement('div');
+            row.className = 'task-row'; row.id = 'taskRow' + task.id; row.dataset.id = task.id;
+            row.innerHTML = '<button class="task-checkbox" onclick="toggleTask(' + task.id + ', this)"></button>'
+                + '<div class="task-body"><div class="task-title-row"><span class="task-title" ondblclick="startInlineEdit(' + task.id + ', this)">' + escHtml(task.title) + '</span></div></div>'
+                + '<div class="task-actions"><button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(' + task.id + ', this)">✕</button></div>';
+            row.style.opacity = '0';
+            itemsEl.appendChild(row);
+            (function (r, n) { setTimeout(function () { r.style.transition = 'opacity .2s'; r.style.opacity = '1'; }, n * 40); })(row, i);
+        });
+    }
 }());
 
 /* ---- Toggle done ---- */

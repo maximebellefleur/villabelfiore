@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.5.13' => [
+        'status'   => 'released',
+        'released' => '2026-04-25',
+        'title'    => 'Achats Bulk Add',
+        'features' => [
+            ['title' => 'Bulk add for Achats', 'detail' => 'Tap "📋 Bulk" in the Achats tab to open a multi-line editor. Write (CATEGORY) then items one per line. "Done" saves everything at once.'],
+        ],
+    ],
+
     '2.5.12' => [
         'status'   => 'released',
         'released' => '2026-04-24',

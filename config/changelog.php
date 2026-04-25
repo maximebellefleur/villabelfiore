@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.5.13' => [
+        'date'  => '2026-04-25',
+        'title' => 'Achats Bulk Add',
+        'new' => [
+            'Achats tab: "📋 Bulk" button below the input opens a multi-line textarea. Type (CATEGORY) on the first line then one item per line, press Enter for a new line, then "Done" to save them all at once as individual achat items.',
+        ],
+    ],
+
     '2.5.12' => [
         'date'  => '2026-04-24',
         'title' => 'Fix Upgrade URL (slash branch)',
