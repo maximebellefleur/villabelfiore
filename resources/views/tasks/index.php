@@ -30,7 +30,14 @@ $csrfToken = \App\Support\CSRF::getToken();
 .task-today-section { border:1.5px solid #bbf7d0;border-radius:var(--radius-lg);margin-bottom:var(--spacing-3);overflow:hidden; }
 .task-today-section .task-row { border-color:#dcfce7; }
 .task-today-section .task-row:last-child { border-bottom:none; }
+.task-week-header { font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 14px;display:flex;align-items:center;gap:6px;margin-bottom:0; }
+.task-week-section { border:1.5px solid #fde68a;border-radius:var(--radius-lg);margin-bottom:var(--spacing-3);overflow:hidden; }
+.task-week-section .task-row { border-color:#fef3c7;border-left:3px solid #f59e0b;background:#fffbeb; }
+.task-week-section .task-row:last-child { border-bottom:none; }
 .task-backlog-header { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);padding:8px 0 6px;display:flex;align-items:center;gap:5px; }
+.task-week-btn { background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:var(--radius);font-size:.85rem;line-height:1;color:var(--color-text-muted);transition:background .12s; }
+.task-week-btn.active { color:#d97706; }
+.task-week-btn:hover { background:var(--color-border); }
 .task-row.dragging { opacity:.3; }
 .task-row.drag-over { box-shadow:0 -2px 0 var(--color-primary); }
 .task-drag-handle { cursor:grab;color:var(--color-text-muted);padding:2px 3px;font-size:.9rem;user-select:none;flex-shrink:0;opacity:.4;line-height:1;margin-top:3px; }
@@ -123,8 +130,10 @@ $csrfToken = \App\Support\CSRF::getToken();
 <?php else: ?>
 <?php
 $_todayTasks   = array_values(array_filter($tasks, fn($t) => (bool)$t['is_important']));
-$_backlogTasks = array_values(array_filter($tasks, fn($t) => !(bool)$t['is_important']));
+$_weekTasks    = array_values(array_filter($tasks, fn($t) => !(bool)$t['is_important'] && (bool)($t['is_this_week'] ?? 0)));
+$_backlogTasks = array_values(array_filter($tasks, fn($t) => !(bool)$t['is_important'] && !(bool)($t['is_this_week'] ?? 0)));
 $_hasTodayTasks = !empty($_todayTasks);
+$_hasWeekTasks  = !empty($_weekTasks);
 ?>
 <?php if ($_hasTodayTasks): ?>
 <div class="task-today-section" id="taskTodaySection">
@@ -152,7 +161,8 @@ $_hasTodayTasks = !empty($_todayTasks);
             <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
         </div>
         <div class="task-actions">
-            <button class="task-imp-btn active" title="Remove from today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+            <button class="task-imp-btn active" title="Remove from Today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+            <button class="task-week-btn" title="Move to This Week" onclick="toggleWeek(<?= $t['id'] ?>, this)">📅</button>
             <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
             <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
         </div>
@@ -160,9 +170,47 @@ $_hasTodayTasks = !empty($_todayTasks);
     <?php endforeach; ?>
     </div>
 </div>
-<?php if (!empty($_backlogTasks)): ?>
-<div class="task-backlog-header">— Backlog</div>
 <?php endif; ?>
+
+<?php if ($_hasWeekTasks): ?>
+<div class="task-week-section" id="taskWeekSection">
+    <div class="task-week-header">📅 This Week — <?= count($_weekTasks) ?> task<?= count($_weekTasks) !== 1 ? 's' : '' ?></div>
+    <div class="task-list" id="taskWeekList">
+    <?php foreach ($_weekTasks as $t):
+        $isDone    = (bool)$t['is_done'];
+        $isOverdue = !$isDone && !empty($t['due_date']) && strtotime($t['due_date']) < mktime(0,0,0,(int)date('n'),(int)date('j'),(int)date('Y'));
+    ?>
+    <div class="task-row <?= $isDone ? 'done' : '' ?>"
+         id="taskRow<?= $t['id'] ?>" data-id="<?= $t['id'] ?>" draggable="true">
+        <span class="task-drag-handle" title="Drag to reorder">⠿</span>
+        <button class="task-checkbox <?= $isDone ? 'checked' : '' ?>"
+                onclick="toggleTask(<?= $t['id'] ?>, this)"><?= $isDone ? '✓' : '' ?></button>
+        <div class="task-body">
+            <div class="task-title-row">
+                <?php if (!empty($t['category'])): ?>
+                <span class="task-tag" style="background:<?= taskTagColor($t['category']) ?>"><?= e(strtoupper($t['category'])) ?></span>
+                <?php endif; ?>
+                <span class="task-title <?= $isDone ? 'done-text' : '' ?>" ondblclick="startInlineEdit(<?= $t['id'] ?>, this)"><?= e($t['title']) ?></span>
+            </div>
+            <?php if (!empty($t['due_date'])): ?>
+            <div class="task-meta"><span class="task-due <?= $isOverdue ? 'overdue' : '' ?>"><?= $isOverdue ? '⚠ ' : '' ?><?= e(date('d M', strtotime($t['due_date']))) ?></span></div>
+            <?php endif; ?>
+            <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
+        </div>
+        <div class="task-actions">
+            <button class="task-imp-btn" title="Move to Today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+            <button class="task-week-btn active" title="Remove from This Week" onclick="toggleWeek(<?= $t['id'] ?>, this)">📅</button>
+            <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
+            <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
+        </div>
+    </div>
+    <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($_backlogTasks) && ($_hasTodayTasks || $_hasWeekTasks)): ?>
+<div class="task-backlog-header">— Backlog</div>
 <?php endif; ?>
 
 <div class="task-list" id="taskList">
@@ -190,7 +238,8 @@ $_hasTodayTasks = !empty($_todayTasks);
         <?php if (!empty($t['notes'])): ?><div class="task-notes"><?= e($t['notes']) ?></div><?php endif; ?>
     </div>
     <div class="task-actions">
-        <button class="task-imp-btn" title="Plan for today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+        <button class="task-imp-btn" title="Plan for Today" onclick="toggleToday(<?= $t['id'] ?>, this)">☀️</button>
+        <button class="task-week-btn" title="Plan for This Week" onclick="toggleWeek(<?= $t['id'] ?>, this)">📅</button>
         <button class="task-act-btn" title="Archive" onclick="archiveTask(<?= $t['id'] ?>, this)">📦</button>
         <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $t['id'] ?>, this)">✕</button>
     </div>
@@ -411,7 +460,8 @@ function escHtml(s) {
             +'<button class="task-checkbox" onclick="toggleTask('+t.id+', this)"></button>'
             +'<div class="task-body"><div class="task-title-row">'+tagHtml+'<span class="task-title" ondblclick="startInlineEdit('+t.id+', this)">'+escHtml(t.title)+'</span></div></div>'
             +'<div class="task-actions">'
-            +'<button class="task-imp-btn" title="Plan for today" onclick="toggleToday('+t.id+', this)">☀️</button>'
+            +'<button class="task-imp-btn" title="Plan for Today" onclick="toggleToday('+t.id+', this)">☀️</button>'
+            +'<button class="task-week-btn" title="Plan for This Week" onclick="toggleWeek('+t.id+', this)">📅</button>'
             +'<button class="task-act-btn" title="Archive" onclick="archiveTask('+t.id+', this)">📦</button>'
             +'<button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask('+t.id+', this)">✕</button>'
             +'</div>';
@@ -606,7 +656,21 @@ function toggleToday(id, btn) {
     .then(function(r){ return r.json(); })
     .then(function(d){
         if (!d.success) return;
-        // Reload so the task moves between Today and Backlog sections
+        location.reload();
+    })
+    .catch(function(){ alert('Network error. Please try again.'); });
+}
+
+/* ---- Toggle this week ---- */
+function toggleWeek(id, btn) {
+    fetch(BASE+'tasks/'+id+'/week', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/x-www-form-urlencoded', 'X-Requested-With':'XMLHttpRequest' },
+        body: '_token='+encodeURIComponent(CSRF)+'&_ajax=1'
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (!d.success) return;
         location.reload();
     })
     .catch(function(){ alert('Network error. Please try again.'); });
@@ -666,7 +730,7 @@ function saveOrder(list) {
     var ids = Array.from(list.querySelectorAll('.task-row[data-id]')).map(function(r){ return r.dataset.id; });
     fetch(BASE+'tasks/reorder', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_token='+encodeURIComponent(CSRF)+'&ids='+encodeURIComponent(JSON.stringify(ids)) });
 }
-document.querySelectorAll('#taskList .task-row[data-id], #taskTodayList .task-row[data-id]').forEach(initDrag);
+document.querySelectorAll('#taskList .task-row[data-id], #taskTodayList .task-row[data-id], #taskWeekList .task-row[data-id]').forEach(initDrag);
 
 /* ---- Tag autocomplete ---- */
 (function() {
@@ -739,10 +803,11 @@ function toggleGroupBy() {
 function applyGroupBy() {
     var list = document.getElementById('taskList'); if (!list) return;
     removeGroupBy();
-    document.querySelectorAll('.task-today-section,.task-backlog-header').forEach(function(el){ el.style.display='none'; });
-    // Collect rows from both today and backlog lists
+    document.querySelectorAll('.task-today-section,.task-week-section,.task-backlog-header').forEach(function(el){ el.style.display='none'; });
+    // Collect rows from today, week, and backlog lists
     var todayRows = Array.from((document.getElementById('taskTodayList')||{querySelectorAll:function(){return[];}}).querySelectorAll('.task-row[data-id]'));
-    var rows = todayRows.concat(Array.from(list.querySelectorAll('.task-row[data-id]')));
+    var weekRows  = Array.from((document.getElementById('taskWeekList') ||{querySelectorAll:function(){return[];}}).querySelectorAll('.task-row[data-id]'));
+    var rows = todayRows.concat(weekRows).concat(Array.from(list.querySelectorAll('.task-row[data-id]')));
     var groups = {};
     rows.forEach(function(row) {
         var tag = row.querySelector('.task-tag');
@@ -762,7 +827,7 @@ function applyGroupBy() {
 }
 function removeGroupBy() {
     document.querySelectorAll('.task-group-hdr-injected').forEach(function(el){ el.remove(); });
-    document.querySelectorAll('.task-today-section,.task-backlog-header').forEach(function(el){ el.style.display=''; });
+    document.querySelectorAll('.task-today-section,.task-week-section,.task-backlog-header').forEach(function(el){ el.style.display=''; });
 }
 
 /* ---- Inline rename (double-click) ---- */
@@ -804,6 +869,16 @@ function startInlineEdit(id, titleEl) {
         if (e.key === 'Escape') { inp.removeEventListener('blur', save); cancel(); }
     });
 }
+
+/* ---- CSRF refresh on PWA reopen (fixes stale-session input bug) ---- */
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        fetch(BASE + 'api/csrf').then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.token) { CSRF = d.token; }
+            else if (d && d.logged_out) { location.reload(); }
+        }).catch(function(){});
+    }
+});
 
 /* ---- Clear completed tasks ---- */
 function clearCompleted(listType) {

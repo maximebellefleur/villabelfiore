@@ -130,6 +130,7 @@ class DashboardController
 
         // Tasks widget
         $dashTodayTasks = [];
+        $dashWeekTasks  = [];
         $dashTasks      = [];
         $dashAchats     = [];
         try {
@@ -137,8 +138,14 @@ class DashboardController
                 "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0 AND is_important = 1
                  ORDER BY sort_order ASC, created_at DESC"
             );
+            $dashWeekTasks = $db->fetchAll(
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0
+                 AND is_important = 0 AND COALESCE(is_this_week,0) = 1
+                 ORDER BY sort_order ASC, created_at DESC LIMIT 5"
+            );
             $dashTasks = $db->fetchAll(
-                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0 AND is_important = 0
+                "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' AND is_done = 0
+                 AND is_important = 0 AND COALESCE(is_this_week,0) = 0
                  ORDER BY sort_order ASC, created_at DESC LIMIT 5"
             );
             $dashAchats = $db->fetchAll(
@@ -166,6 +173,7 @@ class DashboardController
             'bioSegments'       => $bioSegments,
             'todayIrrigation'   => $todayIrrigation,
             'dashTodayTasks'    => $dashTodayTasks,
+            'dashWeekTasks'     => $dashWeekTasks,
             'dashTasks'         => $dashTasks,
             'dashAchats'        => $dashAchats,
         ]);

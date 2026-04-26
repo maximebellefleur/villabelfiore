@@ -562,8 +562,9 @@ function remAction(id, action, token, inModal) {
      ============================================================ -->
 <?php
 $_hasToday = !empty($dashTodayTasks);
-$_defaultTab = $_hasToday ? 'today' : 'todos';
-if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday): ?>
+$_hasWeek  = !empty($dashWeekTasks ?? []);
+$_defaultTab = $_hasToday ? 'today' : ($hasWeek ? 'week' : 'todos');
+if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday || $_hasWeek): ?>
 <section class="dash-widget dash-tasks-widget" style="margin-bottom:var(--spacing-5)">
     <div class="dash-widget-header">
         <span>✅ Tasks</span>
@@ -575,6 +576,9 @@ if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday): ?>
         <div class="dash-tasks-tabs">
             <button class="dash-tasks-tab dash-tasks-tab--today <?= $_defaultTab === 'today' ? 'active' : '' ?>" onclick="switchDashTab('today', this)">
                 ☀️<span>Today</span>
+            </button>
+            <button class="dash-tasks-tab dash-tasks-tab--week <?= $_defaultTab === 'week' ? 'active' : '' ?>" onclick="switchDashTab('week', this)">
+                📅<span>Week</span>
             </button>
             <button class="dash-tasks-tab <?= $_defaultTab === 'todos' ? 'active' : '' ?>" onclick="switchDashTab('todos', this)">
                 ✅<span>Tasks</span>
@@ -618,6 +622,42 @@ if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday): ?>
                 <?php endforeach; ?>
                 <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
                     <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:#16a34a;font-weight:600;text-decoration:none">See all tasks →</a>
+                </div>
+                <?php endif; ?>
+            </div>
+            <!-- This Week panel -->
+            <div id="dashTabWeek" class="dash-tasks-panel" style="display:none">
+                <?php if (empty($dashWeekTasks ?? [])): ?>
+                <div style="padding:20px 16px;text-align:center">
+                    <div style="font-size:2rem;margin-bottom:6px">📅</div>
+                    <div style="font-size:.85rem;color:var(--color-text-muted)">Nothing planned for this week.</div>
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:var(--color-primary);font-weight:600;text-decoration:none;display:block;margin-top:8px">Plan your week →</a>
+                </div>
+                <?php else: ?>
+                <?php foreach ($dashWeekTasks as $dt):
+                    $tagHtml = '';
+                    if (!empty($dt['category'])) {
+                        $h = 0; $tag = strtoupper(trim($dt['category']));
+                        for ($ci = 0; $ci < strlen($tag); $ci++) $h = (($h*31)+ord($tag[$ci]))&0x7fffffff;
+                        $pal = ['#2d6a4f','#4338ca','#c05621','#0369a1','#7e22ce','#0f766e','#be123c','#6b21a8','#1e40af','#854d0e','#065f46','#9d174d'];
+                        $tc = $pal[$h % count($pal)];
+                        $tagHtml = '<span style="background:'.$tc.';color:#fff;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;flex-shrink:0">'.e($tag).'</span>';
+                    }
+                ?>
+                <div class="dash-task-row dash-task-row--week" id="dtRow<?= $dt['id'] ?>">
+                    <button class="dash-task-chk <?= $dt['is_done'] ? 'checked' : '' ?>"
+                            onclick="dtToggle(<?= $dt['id'] ?>, '<?= e(\App\Support\CSRF::getToken()) ?>', this)"
+                            title="Toggle done">
+                        <?= $dt['is_done'] ? '✓' : '' ?>
+                    </button>
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <?= $tagHtml ?>
+                        <span style="font-size:.875rem;font-weight:600;color:#92400e" ondblclick="dashInlineEdit(<?= $dt['id'] ?>, this)"><?= e($dt['title']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <div style="padding:8px 12px;border-top:1px solid var(--color-border)">
+                    <a href="<?= url('/tasks?tab=todos') ?>" style="font-size:.75rem;color:#d97706;font-weight:600;text-decoration:none">See all tasks →</a>
                 </div>
                 <?php endif; ?>
             </div>
@@ -708,6 +748,8 @@ if (!empty($dashTasks) || !empty($dashAchats) || $_hasToday): ?>
 .dash-task-row--imp { border-left:3px solid #16a34a;background:#f0fdf4; }
 .dash-task-row--today { border-left:3px solid #16a34a;background:#f0fdf4; }
 .dash-tasks-tab--today.active { background:#dcfce7;color:#15803d; }
+.dash-tasks-tab--week.active { background:#fffbeb;color:#92400e; }
+.dash-task-row--week { border-left:3px solid #f59e0b;background:#fffbeb; }
 .dash-task-chk { width:20px;height:20px;border-radius:5px;border:2px solid var(--color-border);background:#fff;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:border-color .12s,background .12s; }
 .dash-task-chk.checked { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
 </style>

@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.5.14' => [
+        'status'   => 'released',
+        'released' => '2026-04-26',
+        'title'    => 'This Week Tasks',
+        'features' => [
+            ['title' => '"This Week" section in Tasks', 'detail' => 'New amber-coloured section between Today and Backlog. Tap 📅 on any task to schedule it for this week without making it today-urgent.'],
+            ['title' => 'Dashboard Week tab', 'detail' => 'The task widget on the dashboard now has a "📅 Week" tab showing this week\'s tasks at a glance.'],
+            ['title' => 'PWA CSRF refresh', 'detail' => 'Fixed: quick-add input stopped working when the PWA was re-opened from background. Session token is now refreshed automatically on visibility change.'],
+        ],
+    ],
+
     '2.5.13' => [
         'status'   => 'released',
         'released' => '2026-04-25',

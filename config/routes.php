@@ -199,6 +199,7 @@ $router->post('/tasks',                   'TaskController@store');
 $router->post('/tasks/reorder',           'TaskController@reorder');
 $router->post('/tasks/{id}/toggle',       'TaskController@toggle');
 $router->post('/tasks/{id}/important',    'TaskController@toggleImportant');
+$router->post('/tasks/{id}/week',         'TaskController@toggleWeek');
 $router->post('/tasks/{id}/archive',      'TaskController@archiveTask');
 $router->post('/tasks/{id}/unarchive',    'TaskController@unarchive');
 $router->post('/tasks/{id}/delete',       'TaskController@destroy');
@@ -238,6 +239,7 @@ $router->post('/api/map/land-boundary/delete',    'MapController@deleteLandBound
 $router->post('/api/map/boundary/{id}',           'MapController@saveBoundary');
 $router->post('/api/map/boundary/{id}/delete',    'MapController@deleteBoundary');
 
+$router->get('/api/csrf',                      'TaskController@csrfEndpoint');
 $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');
 $router->post('/api/items',                    'ItemController@apiStore');

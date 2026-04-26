@@ -34,6 +34,7 @@ class TaskController
         // Migrate existing installs
         foreach (['list_type VARCHAR(20) NOT NULL DEFAULT \'todo\'',
                   'is_important TINYINT(1) NOT NULL DEFAULT 0',
+                  'is_this_week TINYINT(1) NOT NULL DEFAULT 0',
                   'sort_order INT NOT NULL DEFAULT 0'] as $col) {
             try { $db->execute("ALTER TABLE tasks ADD COLUMN $col"); } catch (\Throwable $e) {}
         }
@@ -51,11 +52,11 @@ class TaskController
         $tab      = $request->get('tab', 'todos');
         $showDone = (bool)($request->get('done', '0'));
 
-        // To-Do tasks: important first, then by sort_order, then created
+        // To-Do tasks: today first, then this-week, then backlog
         $where = $showDone ? '' : 'AND is_done = 0';
         $tasks = $db->fetchAll(
             "SELECT * FROM tasks WHERE is_archived = 0 AND list_type = 'todo' {$where}
-             ORDER BY is_important DESC, is_done ASC, sort_order ASC, created_at DESC"
+             ORDER BY is_important DESC, COALESCE(is_this_week,0) DESC, is_done ASC, sort_order ASC, created_at DESC"
         );
 
         // Achats: all active, grouped by category in PHP
@@ -202,10 +203,51 @@ class TaskController
         $row = $db->fetchOne('SELECT is_important FROM tasks WHERE id = ?', [$id]);
         if (!$row) { Response::json(['success' => false]); return; }
 
-        $imp = $row['is_important'] ? 0 : 1;
-        $db->execute('UPDATE tasks SET is_important = ?, updated_at = NOW() WHERE id = ?', [$imp, $id]);
+        if ($row['is_important']) {
+            $imp = 0;
+            $db->execute('UPDATE tasks SET is_important = 0, updated_at = NOW() WHERE id = ?', [$id]);
+        } else {
+            $imp = 1;
+            $db->execute('UPDATE tasks SET is_important = 1, is_this_week = 0, updated_at = NOW() WHERE id = ?', [$id]);
+        }
 
         Response::json(['success' => true, 'is_important' => $imp]);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /tasks/{id}/week  — toggle this-week flag
+    // -------------------------------------------------------------------------
+    public function toggleWeek(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id = (int)($params['id'] ?? 0);
+        $db = DB::getInstance();
+
+        $row = $db->fetchOne('SELECT is_this_week FROM tasks WHERE id = ?', [$id]);
+        if (!$row) { Response::json(['success' => false]); return; }
+
+        if ($row['is_this_week']) {
+            $week = 0;
+            $db->execute('UPDATE tasks SET is_this_week = 0, updated_at = NOW() WHERE id = ?', [$id]);
+        } else {
+            $week = 1;
+            $db->execute('UPDATE tasks SET is_this_week = 1, is_important = 0, updated_at = NOW() WHERE id = ?', [$id]);
+        }
+
+        Response::json(['success' => true, 'is_this_week' => $week]);
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/csrf  — return a fresh CSRF token (for PWA session refresh)
+    // -------------------------------------------------------------------------
+    public function csrfEndpoint(Request $request, array $params = []): void
+    {
+        if (empty($_SESSION['user_id'])) {
+            Response::json(['token' => '', 'logged_out' => true]);
+            return;
+        }
+        Response::json(['token' => CSRF::getToken()]);
     }
 
     // -------------------------------------------------------------------------

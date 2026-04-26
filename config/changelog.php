@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.5.14' => [
+        'date'  => '2026-04-26',
+        'title' => 'This Week Tasks',
+        'new' => [
+            'Tasks: new "📅 This Week" section between Today and Backlog — plan tasks for the week without marking them as urgent for today.',
+            'Each task row now has ☀️ (Today) and 📅 (This Week) toggle buttons so you can move tasks between sections with one tap.',
+            'Dashboard widget: added "📅 Week" tab alongside Today, Tasks, and Achats.',
+        ],
+        'fixed' => [
+            'PWA reopen bug: every time the app was brought back from background, the quick-add input stopped working until the page was refreshed. A CSRF token refresh now runs automatically on visibility change, keeping the session alive.',
+        ],
+    ],
+
     '2.5.13' => [
         'date'  => '2026-04-25',
         'title' => 'Achats Bulk Add',
