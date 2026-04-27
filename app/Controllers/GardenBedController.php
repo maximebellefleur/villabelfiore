@@ -452,8 +452,9 @@ class GardenBedController
     {
         $this->requireAuth();
         try {
-            $crop     = trim((string)$request->get('crop', ''));
-            $bedCrops = array_values(array_filter(array_map('trim', explode(',', (string)$request->get('bed_crops', '')))));
+            $crop          = trim((string)$request->get('crop', ''));
+            $bedCrops      = array_values(array_filter(array_map('trim', explode(',', (string)$request->get('bed_crops', '')))));
+            $currentSeedId = (int)$request->get('seed_id', 0);
 
             if ($crop === '') {
                 Response::json(['success' => false, 'error' => 'No crop specified']);
@@ -462,7 +463,7 @@ class GardenBedController
 
             $db    = DB::getInstance();
             $seeds = $db->fetchAll(
-                "SELECT id, name, companions, antagonists FROM seeds ORDER BY name ASC"
+                "SELECT id, name, variety, companions, antagonists FROM seeds ORDER BY name ASC"
             ) ?: [];
 
             $data = self::rankCompanions($crop, $bedCrops, $seeds);
@@ -471,6 +472,63 @@ class GardenBedController
                 Response::json(['success' => false, 'error' => 'No companion data found — add companions & avoid lists to your seeds to use this feature']);
                 return;
             }
+
+            // Build variantsByName map: lowercase name -> [{id,name,variety}]
+            $variantsByName = [];
+            foreach ($seeds as $s) {
+                $key = strtolower($s['name']);
+                $variantsByName[$key][] = [
+                    'id'      => (int)$s['id'],
+                    'name'    => $s['name'],
+                    'variety' => (string)($s['variety'] ?? ''),
+                ];
+            }
+
+            // Attach variants to each companion result
+            foreach ($data['companions'] as &$c) {
+                $cKey = strtolower($c['name']);
+                $c['variants'] = $variantsByName[$cKey] ?? [['id' => $c['id'], 'name' => $c['name'], 'variety' => $c['variety']]];
+            }
+            unset($c);
+
+            // Build antagonist names list (lowercase)
+            $decode = fn($json) => array_map('strtolower', json_decode($json ?? '[]', true) ?: []);
+            $cropLc = strtolower($crop);
+            $byName = [];
+            foreach ($seeds as $s) { $byName[strtolower($s['name'])] = $s; }
+            $target = $byName[$cropLc] ?? null;
+            $tAntagonists = $target ? $decode($target['antagonists']) : [];
+            $antagonistNames = $tAntagonists;
+            // Also add antagonists from each seed's list for the target crop
+            foreach ($seeds as $s) {
+                $sAnts = $decode($s['antagonists']);
+                if (in_array($cropLc, $sAnts, true)) {
+                    $antagonistNames[] = strtolower($s['name']);
+                }
+            }
+            $antagonistNames = array_values(array_unique($antagonistNames));
+            $data['antagonist_names'] = $antagonistNames;
+
+            // Similar seeds: same name as crop but different seed_id
+            $similar = [];
+            if (isset($variantsByName[$cropLc])) {
+                foreach ($variantsByName[$cropLc] as $v) {
+                    if ($currentSeedId > 0 && $v['id'] === $currentSeedId) continue;
+                    $similar[] = $v;
+                }
+            }
+            $data['similar'] = $similar;
+
+            // All seeds as compact list for dropdown
+            $allSeedsCompact = [];
+            foreach ($seeds as $s) {
+                $allSeedsCompact[] = [
+                    'id'      => (int)$s['id'],
+                    'name'    => $s['name'],
+                    'variety' => (string)($s['variety'] ?? ''),
+                ];
+            }
+            $data['all_seeds'] = $allSeedsCompact;
 
             Response::json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
@@ -575,7 +633,7 @@ class GardenBedController
 
             // Deduplicate: one entry per plant name, keep highest score
             if (!isset($seen[$sLc]) || $score > $seen[$sLc]['score']) {
-                $seen[$sLc] = ['id' => (int)($s['id'] ?? 0), 'name' => $s['name'], 'score' => $score, 'reason' => $reason];
+                $seen[$sLc] = ['id' => (int)($s['id'] ?? 0), 'name' => $s['name'], 'variety' => (string)($s['variety'] ?? ''), 'score' => $score, 'reason' => $reason];
             }
         }
 

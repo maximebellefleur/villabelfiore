@@ -171,7 +171,7 @@ class GardenController
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             $rawBeds = $db->fetchAll(
-                "SELECT i.id, i.name, i.parent_id,
+                "SELECT i.id, i.name, i.parent_id, i.gps_lat, i.gps_lng,
                         MAX(CASE WHEN m.meta_key='bed_length_m'    THEN m.meta_value_text END) AS length_m,
                         MAX(CASE WHEN m.meta_key='bed_width_m'     THEN m.meta_value_text END) AS width_m,
                         MAX(CASE WHEN m.meta_key='bed_rows'        THEN m.meta_value_text END) AS bed_rows,

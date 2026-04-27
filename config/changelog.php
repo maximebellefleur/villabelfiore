@@ -8,6 +8,26 @@
  */
 return [
 
+    '2.8.7' => [
+        'date'  => '2026-04-27',
+        'title' => 'Companions: variety-aware quick-add + GPS bed map',
+        'fixed' => [
+            'quickAddCompanion() now posts crop_name and line_number (was posting wrong field names "crop" and "line"), fixing companion quick-add silently failing.',
+            'variety is now passed in FormData when quick-adding a companion from the panel.',
+        ],
+        'improved' => [
+            'rankCompanions() stores the variety of the best-scoring seed so companion suggestions now show specific variety names (e.g. "Carotte — Nantes" instead of just "Carotte").',
+            'Companions panel passes seed_id of the current line to the API so the server can detect other varieties of the same crop.',
+            'Companion variants (other varieties of the same plant) are attached to each companion entry and shown in the "Add any seed" dropdown.',
+            '"Other varieties" chip row appears at the top of the companions panel when the current line has sibling seeds with different varieties.',
+            'Each companion now shows its specific variety in the panel name.',
+            '"Add any seed" full-catalog dropdown added to the companions panel, grouped by name with optgroups for multi-variety plants, antagonist options disabled.',
+        ],
+        'new' => [
+            'GPS-relative bed positioning on the garden index: when ≥2 beds in a group have gps_lat/gps_lng, they are rendered on a 360×260px canvas positioned by their GPS coordinates. Falls back to the existing flex grid when fewer than 2 beds have GPS data.',
+        ],
+    ],
+
     '2.8.6' => [
         'date'  => '2026-04-27',
         'title' => 'Buy list merged into Tasks → Achats',

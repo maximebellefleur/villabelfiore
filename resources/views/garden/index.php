@@ -103,6 +103,7 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
 .schematic-legend { display:flex;gap:10px;flex-wrap:wrap;margin-top:8px; }
 .schematic-legend-item { display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--color-text-muted); }
 .schematic-legend-dot { width:10px;height:10px;border-radius:2px;flex-shrink:0; }
+.bed-map-canvas { background:#f1f5f9;border-radius:8px;border:1px solid var(--color-border); }
 </style>
 
 <div class="schematic-section">
@@ -119,6 +120,102 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
                 🛖 No garden
             <?php endif; ?>
         </div>
+        <?php
+        // Check if ≥2 beds have GPS coords for GPS map layout
+        $gpsCount = 0;
+        foreach ($beds as $bed) {
+            if (!empty($bed['gps_lat']) && !empty($bed['gps_lng'])) $gpsCount++;
+        }
+        $useGpsLayout = ($gpsCount >= 2);
+
+        if ($useGpsLayout):
+            // Gather all lat/lng values
+            $lats = []; $lngs = [];
+            foreach ($beds as $bed) {
+                if (!empty($bed['gps_lat']) && !empty($bed['gps_lng'])) {
+                    $lats[] = (float)$bed['gps_lat'];
+                    $lngs[] = (float)$bed['gps_lng'];
+                }
+            }
+            $minLat = min($lats); $maxLat = max($lats);
+            $minLng = min($lngs); $maxLng = max($lngs);
+            $latRange = $maxLat - $minLat ?: 0.0001;
+            $lngRange = $maxLng - $minLng ?: 0.0001;
+
+            // Compute max bed dimensions for scale
+            $maxLength = 0; $maxWidth = 0;
+            foreach ($beds as $bed) {
+                $lM = (float)($bed['length_m'] ?? 0);
+                $wM = (float)($bed['width_m']  ?? 0);
+                if ($lM > $maxLength) $maxLength = $lM;
+                if ($wM > $maxWidth)  $maxWidth  = $wM;
+            }
+            $maxDim = max($maxLength, $maxWidth, 1);
+            $scale  = 50 / $maxDim; // largest dimension → 50px
+
+            $canvasW = 360; $canvasH = 260;
+            $margin  = 50; // inner margin so beds don't clip on edges
+            $innerW  = $canvasW - $margin * 2;
+            $innerH  = $canvasH - $margin * 2;
+        ?>
+        <?php $noGpsX = 10; ?>
+        <div style="position:relative;width:<?= $canvasW ?>px;height:<?= $canvasH ?>px;background:#f1f5f9;border-radius:8px;border:1px solid var(--color-border);overflow:hidden;margin-bottom:8px" class="bed-map-canvas">
+        <?php foreach ($beds as $bed):
+            $lM = (float)($bed['length_m'] ?? 0);
+            $wM = (float)($bed['width_m']  ?? 0);
+            $numLines = max(1, (int)($bed['bed_rows'] ?? 1));
+            $lineDir  = $bed['line_dir'] ?? 'NS';
+            $plantings = $bed['plantings'] ?? [];
+
+            // Determine bed size on canvas
+            $bedW = max(20, round(($wM > 0 ? $wM : 2) * $scale));
+            $bedH = max(14, round(($lM > 0 ? $lM : 3) * $scale));
+
+            if (!empty($bed['gps_lat']) && !empty($bed['gps_lng'])) {
+                $bLat = (float)$bed['gps_lat'];
+                $bLng = (float)$bed['gps_lng'];
+                $bx = $margin + round(($bLng - $minLng) / $lngRange * $innerW) - (int)($bedW / 2);
+                $by = $margin + round((1 - ($bLat - $minLat) / $latRange) * $innerH) - (int)($bedH / 2);
+            } else {
+                // No GPS — stack at bottom
+                $bx = isset($noGpsX) ? $noGpsX : 10;
+                $by = $canvasH - $bedH - 10;
+                $noGpsX = $bx + $bedW + 10;
+            }
+            // Clamp to canvas
+            $bx = max(2, min($canvasW - $bedW - 2, $bx));
+            $by = max(2, min($canvasH - $bedH - 20, $by));
+        ?>
+        <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" title="<?= e($bed['name']) ?>"
+           style="position:absolute;left:<?= $bx ?>px;top:<?= $by ?>px;display:block;text-decoration:none;color:inherit">
+            <svg width="<?= $bedW ?>" height="<?= $bedH ?>" viewBox="0 0 <?= $bedW ?> <?= $bedH ?>" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.18)">
+                <rect x="0" y="0" width="<?= $bedW ?>" height="<?= $bedH ?>" fill="#f1f5f9" rx="2"/>
+                <?php if ($lineDir === 'EW'):
+                    $sw = $bedW / $numLines;
+                    for ($li = 0; $li < $numLines; $li++):
+                        $p = $plantings[$li+1] ?? null;
+                        $col = $statusColors[$p['status'] ?? 'empty'];
+                        $x = round($li * $sw);
+                ?>
+                <rect x="<?= $x ?>" y="0" width="<?= round($sw) ?>" height="<?= $bedH ?>" fill="<?= $col ?>" fill-opacity="0.85"/>
+                <?php if ($li > 0): ?><line x1="<?= $x ?>" y1="0" x2="<?= $x ?>" y2="<?= $bedH ?>" stroke="#fff" stroke-width="1"/><?php endif; ?>
+                <?php endfor; else:
+                    $sh = $bedH / $numLines;
+                    for ($li = 0; $li < $numLines; $li++):
+                        $p = $plantings[$li+1] ?? null;
+                        $col = $statusColors[$p['status'] ?? 'empty'];
+                        $y = round($li * $sh);
+                ?>
+                <rect x="0" y="<?= $y ?>" width="<?= $bedW ?>" height="<?= round($sh) ?>" fill="<?= $col ?>" fill-opacity="0.85"/>
+                <?php if ($li > 0): ?><line x1="0" y1="<?= $y ?>" x2="<?= $bedW ?>" y2="<?= $y ?>" stroke="#fff" stroke-width="1"/><?php endif; ?>
+                <?php endfor; endif; ?>
+                <rect x="0" y="0" width="<?= $bedW ?>" height="<?= $bedH ?>" fill="none" stroke="#94a3b8" stroke-width="1.5" rx="2"/>
+            </svg>
+            <span style="display:block;font-size:.58rem;font-weight:600;color:#475569;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:<?= $bedW + 16 ?>px;margin-top:2px"><?= e($bed['name']) ?></span>
+        </a>
+        <?php endforeach; ?>
+        </div>
+        <?php else: // Fallback: flex grid layout ?>
         <div class="schematic-beds-row">
         <?php
         // Scale: fixed display height 120px, vary width by aspect ratio; max width 180px
@@ -172,6 +269,7 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
         </a>
         <?php endforeach; ?>
         </div>
+        <?php endif; ?>
     </div>
     <?php endforeach; ?>
 

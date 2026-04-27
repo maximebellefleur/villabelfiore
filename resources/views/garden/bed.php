@@ -244,7 +244,7 @@ foreach ($allSeeds as $_s) { $seedSpacingMap[(int)$_s['id']] = (int)($_s['spacin
     $overCap = ($lineCapacity > 0 && $plantCount > $lineCapacity);
 ?>
 <div class="bed-line-row<?= $overCap ? ' bed-line-row--overcap' : '' ?>" id="lineRow<?= $li ?>"
-     data-capacity="<?= $lineCapacity ?>" data-pid="<?= $pid ?>">
+     data-capacity="<?= $lineCapacity ?>" data-pid="<?= $pid ?>" data-seed-id="<?= (int)($planting['seed_id'] ?? 0) ?>">
     <div class="bed-line-main">
         <div class="bed-line-num"><?= $li ?></div>
         <div class="bed-line-crop">
@@ -632,8 +632,11 @@ function adjustQty(pid, line, delta) {
     .catch(function(){});
 }
 
-function quickAddCompanion(line, idx) {
-    var companion = _companionData[line] && _companionData[line][idx];
+function quickAddCompanion(line, companion) {
+    // companion can be an index (legacy) or an object {id, name, variety}
+    if (typeof companion === 'number') {
+        companion = _companionData[line] && _companionData[line][companion];
+    }
     if (!companion) return;
     // Find first empty line
     var emptyLine = null;
@@ -641,22 +644,21 @@ function quickAddCompanion(line, idx) {
         if (BED_LINE_STATUS[i].status === 'empty') { emptyLine = BED_LINE_STATUS[i].line; break; }
     }
     if (!emptyLine) { alert('No empty lines available in this bed.'); return; }
-    var btn = document.querySelector('[data-companion-idx="' + line + '-' + idx + '"]');
-    if (btn) { btn.disabled = true; btn.textContent = '…'; }
     var fd = new FormData();
-    fd.append('_token',     BED_CSRF);
-    fd.append('_ajax',      '1');
-    fd.append('line',       emptyLine);
-    fd.append('crop',       companion.name);
-    fd.append('seed_id',    companion.id || '');
-    fd.append('plant_count','1');
-    fd.append('status',     'planned');
+    fd.append('_token',      BED_CSRF);
+    fd.append('_ajax',       '1');
+    fd.append('line_number', emptyLine);
+    fd.append('crop_name',   companion.name);
+    fd.append('variety',     companion.variety || '');
+    fd.append('seed_id',     companion.id || '');
+    fd.append('plant_count', '1');
+    fd.append('status',      'planned');
     fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
         if (d.success) { location.reload(); }
-        else { alert(d.error || 'Could not add companion.'); if (btn) { btn.disabled = false; btn.textContent = '+ Add'; } }
-    }).catch(function(){ alert('Network error.'); if (btn) { btn.disabled = false; btn.textContent = '+ Add'; } });
+        else { alert(d.error || 'Could not add companion.'); }
+    }).catch(function(){ alert('Network error.'); });
 }
 
 function toggleEdit(line) {
@@ -735,7 +737,9 @@ function toggleCompanions(line, crop) {
     document.getElementById('companionsLoading'+line).style.display = 'block';
     document.getElementById('companionsResult'+line).style.display = 'none';
     var otherCrops = BED_PLANTED.filter(function(c){ return c.toLowerCase() !== crop.toLowerCase(); });
-    fetch(BED_BASE + 'api/garden/companions?crop=' + encodeURIComponent(crop) + '&bed_crops=' + encodeURIComponent(otherCrops.join(',')))
+    var rowEl = document.getElementById('lineRow' + line);
+    var seedId = rowEl ? (rowEl.getAttribute('data-seed-id') || '0') : '0';
+    fetch(BED_BASE + 'api/garden/companions?crop=' + encodeURIComponent(crop) + '&bed_crops=' + encodeURIComponent(otherCrops.join(',')) + '&seed_id=' + encodeURIComponent(seedId))
     .then(function(r){ return r.json(); })
     .then(function(d){
         document.getElementById('companionsLoading'+line).style.display = 'none';
@@ -756,22 +760,75 @@ function toggleCompanions(line, crop) {
 function renderCompanions(line, data) {
     _companionData[line] = data.companions || [];
     var html = '';
+
+    // Similar varieties section
+    if (data.similar && data.similar.length) {
+        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#7c3aed;margin-bottom:5px">🔄 Other varieties</div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">';
+        data.similar.forEach(function(s){
+            var label = s.name + (s.variety ? ' — ' + s.variety : '');
+            html += '<button class="companion-add-btn" style="background:#7c3aed;border-radius:999px;padding:3px 11px;font-size:.72rem"'
+                  + ' onclick="quickAddCompanion(' + line + ',' + JSON.stringify(s).replace(/"/g,'&quot;') + ')">' + esc(label) + '</button>';
+        });
+        html += '</div>';
+    }
+
     if (data.companions && data.companions.length) {
         html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#15803d;margin-bottom:6px">Good companions</div>';
         html += '<ul class="bed-companion-list">';
         data.companions.forEach(function(c, i){
             var hasWarn = c.reason && c.reason.indexOf('⚠') !== -1;
+            var displayName = esc(c.name) + (c.variety ? ' <span style="font-weight:400;color:var(--color-text-muted)">— ' + esc(c.variety) + '</span>' : '');
+            // Use first variant as the seed to add, or the companion itself
+            var seedObj = (c.variants && c.variants.length) ? c.variants[0] : {id: c.id, name: c.name, variety: c.variety || ''};
             html += '<li class="bed-companion-item' + (hasWarn ? ' bed-antagonist-item' : '') + '">'
-                  + (hasWarn ? '⚠️' : '✅') + ' <strong>' + esc(c.name) + '</strong>'
+                  + (hasWarn ? '⚠️' : '✅') + ' <strong>' + displayName + '</strong>'
                   + ' <span>— ' + esc(c.reason) + '</span>'
-                  + ' <button class="companion-add-btn" data-companion-idx="' + line + '-' + i + '"'
-                  + ' onclick="quickAddCompanion(' + line + ',' + i + ')">+ Add</button>'
+                  + ' <button class="companion-add-btn" onclick="quickAddCompanion(' + line + ',' + JSON.stringify(seedObj).replace(/"/g,'&quot;') + ')">+ Add</button>'
                   + '</li>';
         });
         html += '</ul>';
     } else {
         html += '<p style="font-size:.82rem;color:var(--color-text-muted)">No companion matches found — add companion data to your seeds.</p>';
     }
+
+    // Add any seed dropdown
+    if (data.all_seeds && data.all_seeds.length) {
+        html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--color-border)">';
+        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:5px">Add any seed</div>';
+        html += '<div style="display:flex;gap:6px;align-items:center">';
+        html += '<select id="companionSelect' + line + '" style="flex:1;padding:5px 8px;border:1.5px solid var(--color-border);border-radius:var(--radius);font-size:.82rem;font-family:inherit;background:var(--color-surface)">';
+        html += '<option value="">— choose a seed —</option>';
+        // Group by name
+        var grouped = {};
+        data.all_seeds.forEach(function(s){
+            if (!grouped[s.name]) grouped[s.name] = [];
+            grouped[s.name].push(s);
+        });
+        var antagonistNames = data.antagonist_names || [];
+        Object.keys(grouped).forEach(function(name){
+            var variants = grouped[name];
+            var isAntagonist = antagonistNames.indexOf(name.toLowerCase()) !== -1;
+            if (variants.length > 1) {
+                html += '<optgroup label="' + esc(name) + (isAntagonist ? ' ⚠' : '') + '">';
+                variants.forEach(function(s){
+                    var disabled = isAntagonist ? ' disabled' : '';
+                    var label = s.variety ? s.variety : s.name;
+                    html += '<option value="' + s.id + '" data-name="' + esc(s.name) + '" data-variety="' + esc(s.variety) + '"' + disabled + '>' + esc(label) + '</option>';
+                });
+                html += '</optgroup>';
+            } else {
+                var s = variants[0];
+                var disabled = isAntagonist ? ' disabled' : '';
+                var label = s.name + (s.variety ? ' — ' + s.variety : '');
+                html += '<option value="' + s.id + '" data-name="' + esc(s.name) + '" data-variety="' + esc(s.variety) + '"' + disabled + '>' + esc(label) + '</option>';
+            }
+        });
+        html += '</select>';
+        html += '<button id="companionAddSelBtn' + line + '" class="companion-add-btn" onclick="quickAddFromSelect(' + line + ')" style="white-space:nowrap">＋ Add selected</button>';
+        html += '</div></div>';
+    }
+
     if (data.antagonists && data.antagonists.length) {
         html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#b91c1c;margin-bottom:4px;margin-top:8px">⚠ Conflicts in this bed</div>';
         html += '<ul class="bed-companion-list">';
@@ -783,6 +840,38 @@ function renderCompanions(line, data) {
     var el = document.getElementById('companionsResult'+line);
     el.innerHTML = html;
     el.style.display = 'block';
+}
+
+function quickAddFromSelect(line) {
+    var sel = document.getElementById('companionSelect' + line);
+    if (!sel || !sel.value) return;
+    var opt = sel.options[sel.selectedIndex];
+    var seedId = parseInt(sel.value);
+    var name = opt.dataset.name || opt.text;
+    var variety = opt.dataset.variety || '';
+    // find first empty line
+    var emptyLine = null;
+    for (var i = 0; i < BED_LINE_STATUS.length; i++) {
+        if (BED_LINE_STATUS[i].status === 'empty') { emptyLine = BED_LINE_STATUS[i].line; break; }
+    }
+    if (!emptyLine) { alert('No empty lines available.'); return; }
+    var btn = document.getElementById('companionAddSelBtn' + line);
+    if (btn) btn.disabled = true;
+    var fd = new FormData();
+    fd.append('_token', BED_CSRF);
+    fd.append('_ajax', '1');
+    fd.append('line_number', emptyLine);
+    fd.append('crop_name', name);
+    fd.append('variety', variety);
+    fd.append('seed_id', seedId);
+    fd.append('plant_count', '1');
+    fd.append('status', 'planned');
+    fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) { location.reload(); }
+        else { alert(d.error || 'Could not add.'); if (btn) btn.disabled = false; }
+    }).catch(function(){ if (btn) btn.disabled = false; });
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

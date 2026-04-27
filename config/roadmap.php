@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.8.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Companions: variety-aware quick-add + GPS bed map',
+        'features' => [
+            ['title' => 'Fix quickAddCompanion field names', 'detail' => 'FormData now posts crop_name and line_number instead of the incorrect "crop" and "line" fields, restoring companion quick-add functionality.'],
+            ['title' => 'Variety-aware companion suggestions', 'detail' => 'rankCompanions() now stores variety from the best-scoring seed. The companions panel shows specific variety names and exposes a variants list for each suggestion.'],
+            ['title' => 'Seed-id passed to companion API', 'detail' => 'toggleCompanions() reads data-seed-id from the line row and appends &seed_id=X to the fetch URL, enabling server-side similar-variety detection.'],
+            ['title' => '"Other varieties" chip row', 'detail' => 'When the current line\'s seed has sibling varieties in the catalog, they appear as purple chip buttons at the top of the companion panel for one-click planting.'],
+            ['title' => '"Add any seed" full-catalog dropdown', 'detail' => 'A grouped <select> of all seeds appears at the bottom of the companion panel. Seeds with multiple varieties use <optgroup>; antagonist options are disabled. A green "＋ Add selected" button triggers quickAddFromSelect().'],
+            ['title' => 'GPS-relative bed map on garden index', 'detail' => 'When ≥2 beds in a garden group have GPS coordinates, the schematic renders them on a 360×260px canvas at positions normalized from their lat/lng. Beds are sized proportional to their length×width. Falls back to flex grid otherwise.'],
+        ],
+    ],
+
     '2.8.6' => [
         'status'   => 'released',
         'released' => '2026-04-27',
