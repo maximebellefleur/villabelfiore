@@ -88,6 +88,12 @@ class SeedController
         if (empty($unitCol)) {
             $db->execute("ALTER TABLE family_needs ADD COLUMN yearly_unit VARCHAR(30) NOT NULL DEFAULT 'kg' AFTER yearly_qty");
         }
+
+        // Migrate: add needs_restock column to seeds
+        $restockCol = $db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'needs_restock'");
+        if (empty($restockCol)) {
+            $db->execute("ALTER TABLE seeds ADD COLUMN needs_restock TINYINT(1) NOT NULL DEFAULT 0 AFTER stock_enabled");
+        }
     }
 
     // ── Seed CRUD ─────────────────────────────────────────────────────────────
@@ -458,6 +464,60 @@ class SeedController
         $db->execute('DELETE FROM family_needs WHERE id = ?', [$needId]);
         flash('success', 'Need removed.');
         Response::redirect('/seeds/family-needs');
+    }
+
+    // ── Buy list / out-of-seed ────────────────────────────────────────────────
+
+    public function toggleRestock(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id  = (int)($params['id'] ?? 0);
+        $db  = DB::getInstance();
+        $this->ensureTables($db);
+        $db->execute('UPDATE seeds SET needs_restock = IF(needs_restock = 1, 0, 1) WHERE id = ?', [$id]);
+        Response::redirect('/seeds/' . $id);
+    }
+
+    public function markBought(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id  = (int)($params['id'] ?? 0);
+        $db  = DB::getInstance();
+        $this->ensureTables($db);
+        $db->execute('UPDATE seeds SET needs_restock = 0 WHERE id = ?', [$id]);
+        Response::redirect('/seeds/buy-list');
+    }
+
+    public function buyList(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db    = DB::getInstance();
+        $this->ensureTables($db);
+        $seeds = $db->fetchAll('SELECT * FROM seeds WHERE needs_restock = 1 ORDER BY name ASC');
+        Response::render('seeds/buy-list', [
+            'title' => 'Buy List',
+            'seeds' => $seeds,
+        ]);
+    }
+
+    // ── Name uniqueness check (JSON API) ──────────────────────────────────────
+
+    public function checkName(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db      = DB::getInstance();
+        $this->ensureTables($db);
+        $name    = trim($request->get('name', ''));
+        $exclude = (int)$request->get('exclude', 0);
+        header('Content-Type: application/json');
+        if ($name === '') { echo json_encode(['exists' => false]); return; }
+        $sql  = 'SELECT id, name, variety FROM seeds WHERE LOWER(name) = LOWER(?)';
+        $bind = [$name];
+        if ($exclude > 0) { $sql .= ' AND id != ?'; $bind[] = $exclude; }
+        $row = $db->fetchOne($sql, $bind);
+        echo json_encode($row ? ['exists' => true, 'id' => $row['id'], 'name' => $row['name'], 'variety' => $row['variety']] : ['exists' => false]);
     }
 
     // ── Data extraction helper ────────────────────────────────────────────────

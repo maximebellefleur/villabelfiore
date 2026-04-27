@@ -169,12 +169,14 @@ $router->post('/items/{id}/planting',            'GardenBedController@storeLine'
 $router->post('/items/{id}/bed-config',          'GardenBedController@updateConfig');
 $router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
 $router->get('/api/garden/companions',           'GardenBedController@companions');
+$router->get('/api/garden/seed-suggestions',     'GardenBedController@seedSuggestions');
 
 // -------------------------------------------------------------------------
 // Seeds
 // -------------------------------------------------------------------------
 $router->get('/seeds',                    'SeedController@index');
 $router->get('/seeds/create',             'SeedController@create');
+$router->get('/seeds/buy-list',           'SeedController@buyList');
 $router->get('/seeds/family-needs',       'SeedController@familyNeeds');
 $router->post('/seeds/family-needs',      'SeedController@storeFamilyNeed');
 $router->post('/seeds',                   'SeedController@store');
@@ -183,6 +185,8 @@ $router->get('/seeds/{id}/edit',          'SeedController@edit');
 $router->post('/seeds/{id}/update',       'SeedController@update');
 $router->post('/seeds/{id}/trash',        'SeedController@trash');
 $router->post('/seeds/{id}/stock',        'SeedController@adjustStock');
+$router->post('/seeds/{id}/toggle-restock', 'SeedController@toggleRestock');
+$router->post('/seeds/{id}/mark-bought',    'SeedController@markBought');
 $router->get('/items/{id}/rows',          'SeedController@bedRows');
 $router->post('/items/{id}/rows',         'SeedController@storeBedRow');
 $router->post('/bed-rows/{id}/update',    'SeedController@updateBedRow');
@@ -245,6 +249,8 @@ $router->get('/api/items/{id}',                'ItemController@apiShow');
 $router->post('/api/items',                    'ItemController@apiStore');
 $router->post('/api/items/{id}/actions',       'ItemController@apiAddAction');
 $router->post('/api/ai/identify-seed',         'AiController@identifySeed');
+$router->get('/api/ai/gemini-models',          'AiController@geminiModels');
+$router->get('/api/seeds/check-name',          'SeedController@checkName');
 $router->post('/api/items/{id}/harvests',      'HarvestController@apiStore');
 $router->get('/api/reminders',                 'ReminderController@apiIndex');
 $router->post('/api/sync/push',                'SyncController@apiPush');

@@ -15,6 +15,7 @@ function _navIcon(string $name): string {
         'photos'    => '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
         'logout'    => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
         'plus'      => '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+        'cart'      => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
     ];
     $path = $icons[$name] ?? $icons['items'];
     return '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>';
@@ -29,7 +30,8 @@ $navLinks = [
     ['href' => '/reminders',      'label' => 'Reminders', 'icon' => 'reminders'],
     ['href' => '/finance',        'label' => 'Finance',   'icon' => 'finance'],
     ['href' => '/activity-log',   'label' => 'Activity',  'icon' => 'activity'],
-    ['href' => '/settings',       'label' => 'Settings',  'icon' => 'settings'],
+    ['href' => '/seeds/buy-list',  'label' => 'Buy List',  'icon' => 'cart'],
+    ['href' => '/settings',        'label' => 'Settings',  'icon' => 'settings'],
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 

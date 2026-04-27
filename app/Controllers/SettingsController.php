@@ -59,7 +59,7 @@ class SettingsController
             'integration.weather', 'quote.api_url',
             'ai.endpoint', 'ai.vision_model',
             'ai.mode', 'ai.hf_endpoint', 'ai.hf_model', 'ai.hf_token', 'ai.extra_prompt',
-            'ai.codex_token', 'ai.codex_model',
+            'ai.codex_token', 'ai.codex_model', 'ai.gemini_model_list',
             'garden.climate_zone',
             'companion_api_provider', 'companion_api_key', 'companion_api_model', 'companion_api_url',
         ];

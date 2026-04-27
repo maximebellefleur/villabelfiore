@@ -43,6 +43,45 @@ class AiController
     }
 
     /**
+     * GET /api/ai/gemini-models
+     * Returns the list of Gemini models available for the saved API key.
+     */
+    public function geminiModels(Request $request, array $params = []): void
+    {
+        header('Content-Type: application/json');
+        if (empty($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Unauthenticated']);
+            return;
+        }
+        $db     = DB::getInstance();
+        $apiKey = $this->getSetting($db, 'ai.hf_token', '');
+        if ($apiKey === '') {
+            echo json_encode(['success' => false, 'error' => 'No API key saved. Save your AIza… key first, then click Fetch.']);
+            return;
+        }
+        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15]);
+        $raw  = curl_exec($ch);
+        $info = curl_getinfo($ch);
+        curl_close($ch);
+        if ((int)($info['http_code'] ?? 0) !== 200) {
+            $d   = json_decode($raw ?: '{}', true);
+            $err = $d['error']['message'] ?? ('HTTP ' . ($info['http_code'] ?? '?'));
+            echo json_encode(['success' => false, 'error' => $err]);
+            return;
+        }
+        $data   = json_decode($raw, true);
+        $models = [];
+        foreach ($data['models'] ?? [] as $m) {
+            $name = str_replace('models/', '', $m['name'] ?? '');
+            if (str_contains($name, 'gemini') && in_array('generateContent', $m['supportedGenerationMethods'] ?? [], true)) {
+                $models[] = ['id' => $name, 'display' => $m['displayName'] ?? $name];
+            }
+        }
+        echo json_encode(['success' => true, 'models' => $models]);
+    }
+
+    /**
      * POST /api/ai/identify-seed
      * Streams SSE: { type:'log', step, value } events, then a final { type:'result', ok, fields|error }
      */
@@ -308,14 +347,13 @@ PROMPT;
 
     private function callGeminiNative(DB $db, array $images, string $prompt): void
     {
-        $primaryModel = $this->getSetting($db, 'ai.hf_model', 'gemini-2.5-flash') ?: 'gemini-2.5-flash';
-        $apiKey       = $this->getSetting($db, 'ai.hf_token', '');
+        $apiKey = $this->getSetting($db, 'ai.hf_token', '');
 
         if ($apiKey === '') {
             $this->sseFail('Gemini API key is not set. Go to Settings → AI and paste your AIza… key.', 400);
         }
 
-        // ── Step 1: ask Google which models this key can actually use ─────────
+        // ── Step 1: fetch available models for informational logging ──────────
         $this->sseLog('fetching_models', 'Querying Google for available models on this API key…');
 
         $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
@@ -337,24 +375,51 @@ PROMPT;
             }
         }
 
-        if (empty($availableModels)) {
-            // Could not reach Google or key has no access — only option is to try the configured model
-            $this->sseLog('models_warning', 'Could not retrieve model list (HTTP ' . ($listInfo['http_code'] ?? '?') . ') — falling back to configured model only');
-            $candidates = [$primaryModel];
-        } else {
+        if (!empty($availableModels)) {
             $this->sseLog('models_available', implode(', ', $availableModels));
+        } else {
+            $this->sseLog('models_warning', 'Could not retrieve model list (HTTP ' . ($listInfo['http_code'] ?? '?') . ')');
+        }
 
-            // ── Step 2: build candidate list from CONFIRMED available models only ─
-            // Primary model first if confirmed; otherwise use list as-is
-            if (in_array($primaryModel, $availableModels, true)) {
-                $ordered = array_values(array_unique(array_merge([$primaryModel], $availableModels)));
-            } else {
-                $this->sseLog('primary_not_available', '"' . $primaryModel . '" is not confirmed available — update Settings → AI. Using available models instead.');
-                $ordered = $availableModels;
+        // ── Step 2: use the USER's saved model list (their choice) ───────────
+        $savedListRaw = $this->getSetting($db, 'ai.gemini_model_list', '');
+        $userList     = [];
+        if ($savedListRaw !== '') {
+            $decoded = json_decode($savedListRaw, true);
+            if (is_array($decoded)) {
+                $userList = array_filter(array_map('trim', $decoded));
             }
+        }
 
-            // Cap at 5 to avoid excessive API calls
-            $candidates = array_slice($ordered, 0, 5);
+        if (!empty($userList)) {
+            // User has configured their preferred models — use exactly their list (cap at 5)
+            $candidates = array_slice(array_values($userList), 0, 5);
+            $this->sseLog('using_user_list', 'Using your saved model priority: ' . implode(' → ', $candidates));
+
+            // Warn if any user-selected model isn't in the available list
+            if (!empty($availableModels)) {
+                foreach ($candidates as $cm) {
+                    if (!in_array($cm, $availableModels, true)) {
+                        $this->sseLog('model_not_confirmed', '"' . $cm . '" was not found in available models — will still try it');
+                    }
+                }
+            }
+        } else {
+            // No user list saved — fall back to auto-selection from available
+            $primaryModel = $this->getSetting($db, 'ai.hf_model', 'gemini-2.5-flash') ?: 'gemini-2.5-flash';
+            $this->sseLog('no_user_list', 'No model priority saved. Go to Settings → AI → Cloud API → Configure model order. Using "' . $primaryModel . '" as primary.');
+
+            if (!empty($availableModels)) {
+                if (in_array($primaryModel, $availableModels, true)) {
+                    $ordered = array_values(array_unique(array_merge([$primaryModel], $availableModels)));
+                } else {
+                    $this->sseLog('primary_not_available', '"' . $primaryModel . '" not confirmed — trying available models');
+                    $ordered = $availableModels;
+                }
+                $candidates = array_slice($ordered, 0, 5);
+            } else {
+                $candidates = [$primaryModel];
+            }
         }
 
         $this->sseLog('will_try', count($candidates) . ' model(s): ' . implode(' → ', $candidates));

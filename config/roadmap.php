@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.8.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Smart Garden — Buy List, Duplicate Detection, Gemini Model Picker, Bed Suggestions',
+        'features' => [
+            ['title' => 'Seed Buy List', 'detail' => 'Mark any seed as "Out of seed" from its detail page. A dedicated /seeds/buy-list page shows all seeds to restock, with planting-month urgency indicators and one-tap "Bought" to remove.'],
+            ['title' => 'Duplicate seed detection', 'detail' => 'Live name check on blur in Add/Edit Seed form. Shows a yellow warning with a link to the existing entry if an exact (case-insensitive) match is found.'],
+            ['title' => 'Gemini model priority picker', 'detail' => 'Settings → AI → Cloud API: "Fetch from API" loads all models available on your key. User selects and orders their own top-5 fallback chain. System uses this list; auto-picks only if the list is empty.'],
+            ['title' => 'Bed line smart suggestions', 'detail' => 'Editing a garden bed line shows tap-to-fill chips from family needs, ordered by in-season first. Plant count is auto-calculated from bed length ÷ seed spacing. Seed datalist provides autocomplete for the crop field.'],
+            ['title' => 'Planting backlog calendar', 'detail' => '6-month forward view at the bottom of every garden bed page. Shows what family-needs crops belong to each month, with "in bed" / "BUY FIRST" status badges.'],
+        ],
+    ],
+
     '2.7.9' => [
         'status'   => 'released',
         'released' => '2026-04-27',

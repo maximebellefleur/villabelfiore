@@ -31,6 +31,16 @@ class GardenBedController
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Migrate: seed_id and plant_count
+        $col = $db->fetchAll("SHOW COLUMNS FROM garden_plantings LIKE 'seed_id'");
+        if (empty($col)) {
+            $db->execute("ALTER TABLE garden_plantings ADD COLUMN seed_id INT UNSIGNED DEFAULT NULL AFTER notes");
+        }
+        $col2 = $db->fetchAll("SHOW COLUMNS FROM garden_plantings LIKE 'plant_count'");
+        if (empty($col2)) {
+            $db->execute("ALTER TABLE garden_plantings ADD COLUMN plant_count SMALLINT UNSIGNED DEFAULT NULL AFTER seed_id");
+        }
         $done = true;
     }
 
@@ -94,6 +104,47 @@ class GardenBedController
         $apiKeyRow        = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'companion_api_key'");
         $hasCompanionApi  = !empty($apiKeyRow['setting_value_text']);
 
+        // Family needs + seeds for suggestions and planting backlog
+        $familyNeeds = $db->fetchAll(
+            "SELECT fn.*, s.name AS seed_name, s.variety AS seed_variety,
+                    s.planting_months, s.spacing_cm, s.needs_restock, s.id AS sid
+             FROM family_needs fn
+             LEFT JOIN seeds s ON s.id = fn.seed_id
+             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+        );
+        $allSeeds = $db->fetchAll(
+            "SELECT id, name, variety, planting_months, spacing_cm FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
+        );
+
+        $currentMonth = (int)date('n');
+        $plantedSeedIds   = array_filter(array_column($plantings, 'seed_id'));
+        $plantedCropNames = array_map('strtolower', array_filter(array_column($plantings, 'crop_name')));
+
+        // Planting backlog: next 6 months × family needs
+        $backlog = [];
+        for ($offset = 0; $offset < 6; $offset++) {
+            $m = (($currentMonth - 1 + $offset) % 12) + 1;
+            $items = [];
+            foreach ($familyNeeds as $fn) {
+                $pm = !empty($fn['planting_months']) ? json_decode($fn['planting_months'], true) : [];
+                if (!in_array($m, $pm)) continue;
+                $alreadyInBed = in_array($fn['sid'], $plantedSeedIds)
+                             || in_array(strtolower($fn['vegetable_name']), $plantedCropNames);
+                $items[] = [
+                    'seed_id'       => (int)($fn['sid'] ?? 0),
+                    'name'          => $fn['seed_name'] ?: $fn['vegetable_name'],
+                    'variety'       => $fn['seed_variety'] ?? '',
+                    'priority'      => (int)$fn['priority'],
+                    'already_in_bed'=> $alreadyInBed,
+                    'needs_restock' => !empty($fn['needs_restock']),
+                    'spacing_cm'    => $fn['spacing_cm'] ?? null,
+                ];
+            }
+            if (!empty($items)) {
+                $backlog[] = ['month' => $m, 'items' => $items];
+            }
+        }
+
         Response::render('garden/bed', [
             'title'          => $item['name'] ?? 'Garden Bed',
             'item'           => $item,
@@ -108,7 +159,10 @@ class GardenBedController
             'prepNext'       => $prepNext,
             'climateZone'    => $climateZone,
             'hasCompanionApi'=> $hasCompanionApi,
-            'currentMonth'   => (int)date('n'),
+            'currentMonth'   => $currentMonth,
+            'familyNeeds'    => $familyNeeds,
+            'allSeeds'       => $allSeeds,
+            'backlog'        => $backlog,
         ]);
     }
 
@@ -178,20 +232,24 @@ class GardenBedController
             [$itemId, $lineNumber]
         );
 
+        $seedIdRaw  = (int)$request->post('seed_id', 0);
+        $seedId     = $seedIdRaw > 0 ? $seedIdRaw : null;
+        $plantCount = ($request->post('plant_count', '') !== '') ? max(1, (int)$request->post('plant_count')) : null;
+
         if ($existing) {
             $db->execute(
                 "UPDATE garden_plantings
                     SET crop_name = ?, variety = ?, status = ?, planted_at = ?,
-                        expected_harvest_at = ?, notes = ?
+                        expected_harvest_at = ?, notes = ?, seed_id = ?, plant_count = ?
                   WHERE item_id = ? AND line_number = ?",
-                [$cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes, $itemId, $lineNumber]
+                [$cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes, $seedId, $plantCount, $itemId, $lineNumber]
             );
         } else {
             $db->execute(
                 "INSERT INTO garden_plantings
-                    (item_id, line_number, crop_name, variety, status, planted_at, expected_harvest_at, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [$itemId, $lineNumber, $cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes]
+                    (item_id, line_number, crop_name, variety, status, planted_at, expected_harvest_at, notes, seed_id, plant_count)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$itemId, $lineNumber, $cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes, $seedId, $plantCount]
             );
         }
 
@@ -227,6 +285,97 @@ class GardenBedController
         } else {
             Response::redirect('/items/' . $itemId . '/planting');
         }
+    }
+
+    public function seedSuggestions(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db     = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId     = (int)$request->get('item_id', 0);
+        $month      = (int)($request->get('month', (int)date('n')));
+
+        // Family needs with linked seeds
+        $familyNeeds = $db->fetchAll(
+            "SELECT fn.*, s.name AS seed_name, s.variety AS seed_variety,
+                    s.planting_months, s.spacing_cm, s.needs_restock, s.stock_qty, s.id AS sid
+             FROM family_needs fn
+             LEFT JOIN seeds s ON s.id = fn.seed_id
+             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+        );
+
+        // Current plantings for this bed — what seed_ids and crop names are already used
+        $current = $db->fetchAll("SELECT crop_name, seed_id, status FROM garden_plantings WHERE item_id = ?", [$itemId]);
+        $plantedSeedIds  = array_filter(array_column($current, 'seed_id'));
+        $plantedCropNames = array_map('strtolower', array_filter(array_column($current, 'crop_name')));
+
+        $suggestions = [];
+        foreach ($familyNeeds as $fn) {
+            $plantingMonths = !empty($fn['planting_months']) ? json_decode($fn['planting_months'], true) : [];
+            $inSeason       = in_array($month, $plantingMonths);
+            $alreadyInBed   = in_array($fn['sid'], $plantedSeedIds)
+                           || in_array(strtolower($fn['vegetable_name']), $plantedCropNames);
+
+            $suggestions[] = [
+                'seed_id'        => (int)($fn['sid'] ?? 0),
+                'name'           => $fn['seed_name'] ?: $fn['vegetable_name'],
+                'vegetable_name' => $fn['vegetable_name'],
+                'variety'        => $fn['seed_variety'] ?? '',
+                'reason'         => 'family_need',
+                'priority'       => (int)$fn['priority'],
+                'in_season'      => $inSeason,
+                'planting_months'=> $plantingMonths,
+                'spacing_cm'     => $fn['spacing_cm'] ?? null,
+                'needs_restock'  => !empty($fn['needs_restock']),
+                'already_in_bed' => $alreadyInBed,
+            ];
+        }
+
+        // Sort: in-season non-planted first, then out-of-season, then already-in-bed
+        usort($suggestions, function ($a, $b) {
+            if ($a['already_in_bed'] !== $b['already_in_bed']) return $a['already_in_bed'] ? 1 : -1;
+            if ($a['in_season']      !== $b['in_season'])      return $a['in_season']      ? -1 : 1;
+            return $a['priority'] - $b['priority'];
+        });
+
+        // All seeds for datalist
+        $allSeeds = $db->fetchAll(
+            "SELECT id, name, variety, planting_months, spacing_cm
+             FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
+        );
+
+        // Planting backlog: next 6 months × family needs
+        $backlog = [];
+        for ($offset = 0; $offset < 6; $offset++) {
+            $m = (($month - 1 + $offset) % 12) + 1;
+            $items = [];
+            foreach ($familyNeeds as $fn) {
+                $pm = !empty($fn['planting_months']) ? json_decode($fn['planting_months'], true) : [];
+                if (!in_array($m, $pm)) continue;
+                $alreadyInBed = in_array($fn['sid'], $plantedSeedIds)
+                             || in_array(strtolower($fn['vegetable_name']), $plantedCropNames);
+                $items[] = [
+                    'seed_id'       => (int)($fn['sid'] ?? 0),
+                    'name'          => $fn['seed_name'] ?: $fn['vegetable_name'],
+                    'variety'       => $fn['seed_variety'] ?? '',
+                    'priority'      => (int)$fn['priority'],
+                    'already_in_bed'=> $alreadyInBed,
+                    'needs_restock' => !empty($fn['needs_restock']),
+                ];
+            }
+            if (!empty($items)) {
+                $backlog[] = ['month' => $m, 'items' => $items];
+            }
+        }
+
+        Response::json([
+            'success'     => true,
+            'suggestions' => array_slice($suggestions, 0, 8),
+            'all_seeds'   => $allSeeds,
+            'backlog'     => $backlog,
+            'month'       => $month,
+        ]);
     }
 
     public function companions(Request $request, array $params = []): void

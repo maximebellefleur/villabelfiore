@@ -8,6 +8,25 @@
  */
 return [
 
+    '2.8.0' => [
+        'date'  => '2026-04-27',
+        'title' => 'Smart Garden — Buy List, Duplicate Detection, Gemini Model Picker, Bed Suggestions',
+        'new' => [
+            'Seeds → Buy List: mark any seed as "Out of seed" from its detail page — it immediately appears on the /seeds/buy-list page with planting-month urgency indicators and a "Bought" button to remove it.',
+            'Duplicate seed name detection: typing a name in the Add/Edit Seed form triggers a live check; a yellow warning with a direct link appears if the exact name already exists.',
+            'Gemini model priority picker: Settings → AI → Cloud API now shows a "Fetch from API" button that retrieves all models available to your key. You select and order your own top-5 fallback list — the system no longer auto-picks models.',
+            'Bed line smart suggestions: clicking Edit on a garden bed line shows tap-to-fill suggestion chips from your family needs, ordered by in-season first. Plant count is auto-calculated from bed length ÷ seed spacing.',
+            'Planting backlog calendar: a 6-month forward view at the bottom of every garden bed page shows what family-needs crops should be planted each month, with "in bed" / "BUY FIRST" indicators.',
+        ],
+        'improved' => [
+            'Garden bed edit form now includes a Plants count field and a seed datalist for autocomplete.',
+            'Buy List nav link added to the main navigation.',
+            'garden_plantings table now tracks seed_id and plant_count per line.',
+            'AiController uses the user-saved Gemini model list; falls back to auto-selection only when no list is configured.',
+            'Seeds show page: fixed a duplicate grid rendering bug.',
+        ],
+    ],
+
     '2.7.9' => [
         'date'  => '2026-04-27',
         'title' => 'AI — Codex Tab (session token, no API billing)',

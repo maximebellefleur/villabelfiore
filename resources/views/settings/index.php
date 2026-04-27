@@ -515,14 +515,47 @@
                                placeholder="https://generativelanguage.googleapis.com/v1beta/openai/">
                     </div>
                     <div class="settings-field">
-                        <label class="settings-label">Model ID</label>
+                        <label class="settings-label">Model Priority (Gemini)</label>
                         <p class="settings-hint">
-                            Google Gemini models: <code>gemini-1.5-flash</code> (recommended) · <code>gemini-1.5-pro</code> · <code>gemini-2.0-flash-exp</code><br>
-                            For HuggingFace dedicated endpoints, leave blank or enter <code>tgi</code>.
+                            For HuggingFace endpoints, type the model ID below. For Google Gemini, click
+                            <strong>Fetch from API</strong> to see what your key can access, then build your own
+                            priority order — up to 5 models. The system tries them in order; if one fails it moves to the next.
                         </p>
+
+                        <!-- Non-Gemini fallback: plain model ID input -->
                         <input type="text" name="ai_hf_model" class="settings-input"
+                               id="aiHfModelInput"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="gemini-1.5-flash">
+                               placeholder="tgi  (for HuggingFace endpoints) — leave blank if using Gemini priority below">
+                        <p class="settings-hint" style="margin-top:4px">Used as fallback label and for non-Gemini endpoints. For Gemini, configure the priority list below.</p>
+
+                        <!-- Gemini priority list UI -->
+                        <div style="margin-top:var(--spacing-3);padding:var(--spacing-3);background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius)">
+                            <div style="font-weight:700;font-size:.82rem;margin-bottom:var(--spacing-2)">Gemini Model Priority List</div>
+
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:var(--spacing-2)">
+                                <button type="button" id="geminiFetchBtn" onclick="fetchGeminiModels()" class="btn btn-secondary btn-sm">
+                                    🔍 Fetch available models from Google
+                                </button>
+                                <span id="geminiFetchStatus" style="font-size:.78rem;color:var(--color-text-muted)"></span>
+                            </div>
+
+                            <!-- Available models chips (shown after fetch) -->
+                            <div id="geminiAvailableWrap" style="display:none;margin-bottom:var(--spacing-2)">
+                                <p style="font-size:.72rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Available on your key — click to add:</p>
+                                <div id="geminiChips" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+                            </div>
+
+                            <!-- Priority list -->
+                            <div id="geminiPriorityList" style="display:flex;flex-direction:column;gap:4px;margin-bottom:var(--spacing-2)"></div>
+
+                            <p id="geminiListEmpty" style="font-size:.78rem;color:var(--color-text-muted);<?= empty($settings['ai.gemini_model_list']) ? '' : 'display:none' ?>">
+                                No models saved yet. Click <strong>Fetch</strong> to discover available models.
+                            </p>
+
+                            <input type="hidden" name="ai_gemini_model_list" id="aiGeminiModelList"
+                                   value="<?= e($settings['ai.gemini_model_list'] ?? '') ?>">
+                        </div>
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>
@@ -634,6 +667,133 @@
         document.getElementById('aiModeOpenaiBtn').className = 'btn ' + (mode === 'openai'      ? 'btn-primary' : 'btn-secondary');
     }
     window.switchAiMode = switchAiMode;
+}());
+</script>
+
+<script>
+/* ── Gemini model priority picker ─────────────────────────────────────── */
+(function () {
+    var _selectedModels = [];
+
+    // Initialise from saved value
+    var savedEl = document.getElementById('aiGeminiModelList');
+    if (savedEl && savedEl.value) {
+        try { _selectedModels = JSON.parse(savedEl.value) || []; } catch(e) {}
+    }
+    renderPriorityList();
+
+    function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function save() {
+        document.getElementById('aiGeminiModelList').value = JSON.stringify(_selectedModels);
+        document.getElementById('geminiListEmpty').style.display = _selectedModels.length ? 'none' : '';
+    }
+
+    function renderPriorityList() {
+        var list = document.getElementById('geminiPriorityList');
+        if (!list) return;
+        list.innerHTML = '';
+        _selectedModels.forEach(function (model, idx) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:6px;font-size:.82rem';
+            row.innerHTML =
+                '<span style="width:18px;text-align:center;font-weight:700;color:var(--color-text-muted);flex-shrink:0">' + (idx + 1) + '</span>'
+              + '<span style="flex:1;font-family:monospace">' + escH(model) + '</span>'
+              + '<div style="display:flex;gap:2px">'
+              + (idx > 0 ? '<button type="button" onclick="geminiMoveUp(' + idx + ')" style="background:none;border:1px solid var(--color-border);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:.7rem" title="Move up">↑</button>' : '')
+              + (idx < _selectedModels.length - 1 ? '<button type="button" onclick="geminiMoveDown(' + idx + ')" style="background:none;border:1px solid var(--color-border);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:.7rem" title="Move down">↓</button>' : '')
+              + '<button type="button" onclick="geminiRemove(' + idx + ')" style="background:none;border:1px solid #dc3545;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:.7rem;color:#dc3545" title="Remove">✕</button>'
+              + '</div>';
+            list.appendChild(row);
+        });
+        if (_selectedModels.length > 0) {
+            var hint = document.createElement('p');
+            hint.style.cssText = 'font-size:.72rem;color:var(--color-text-muted);margin:4px 0 0';
+            hint.textContent = _selectedModels.length + ' model' + (_selectedModels.length !== 1 ? 's' : '') + ' in your priority list. Max 5.';
+            list.appendChild(hint);
+        }
+        save();
+    }
+
+    window.geminiMoveUp = function (idx) {
+        if (idx <= 0) return;
+        var tmp = _selectedModels[idx - 1];
+        _selectedModels[idx - 1] = _selectedModels[idx];
+        _selectedModels[idx] = tmp;
+        renderPriorityList();
+        updateChips();
+    };
+    window.geminiMoveDown = function (idx) {
+        if (idx >= _selectedModels.length - 1) return;
+        var tmp = _selectedModels[idx + 1];
+        _selectedModels[idx + 1] = _selectedModels[idx];
+        _selectedModels[idx] = tmp;
+        renderPriorityList();
+        updateChips();
+    };
+    window.geminiRemove = function (idx) {
+        _selectedModels.splice(idx, 1);
+        renderPriorityList();
+        updateChips();
+    };
+
+    function addModel(id) {
+        if (_selectedModels.indexOf(id) >= 0) return; // already added
+        if (_selectedModels.length >= 5) { alert('Maximum 5 models in the priority list. Remove one first.'); return; }
+        _selectedModels.push(id);
+        renderPriorityList();
+        updateChips();
+    }
+
+    function updateChips() {
+        document.querySelectorAll('.gemini-chip').forEach(function (chip) {
+            var id = chip.getAttribute('data-id');
+            var inList = _selectedModels.indexOf(id) >= 0;
+            chip.style.opacity = inList ? '.4' : '1';
+            chip.style.cursor  = inList ? 'default' : 'pointer';
+            chip.disabled      = inList;
+        });
+    }
+
+    window.fetchGeminiModels = function () {
+        var btn    = document.getElementById('geminiFetchBtn');
+        var status = document.getElementById('geminiFetchStatus');
+        btn.disabled = true;
+        status.textContent = 'Fetching…';
+        fetch('<?= url('/api/ai/gemini-models') ?>')
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+            btn.disabled = false;
+            if (!d.success) {
+                status.textContent = '✗ ' + (d.error || 'Error');
+                status.style.color = '#dc3545';
+                return;
+            }
+            status.textContent = d.models.length + ' models found';
+            status.style.color = '#15803d';
+
+            var wrap  = document.getElementById('geminiAvailableWrap');
+            var chips = document.getElementById('geminiChips');
+            chips.innerHTML = '';
+            d.models.forEach(function (m) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'gemini-chip';
+                btn.setAttribute('data-id', m.id);
+                btn.textContent = m.id;
+                btn.style.cssText = 'padding:4px 10px;border:1.5px solid var(--color-primary);border-radius:999px;background:var(--color-primary-soft);color:var(--color-primary);font-size:.75rem;font-family:monospace;cursor:pointer;font-weight:600';
+                btn.onclick = function () { addModel(m.id); };
+                chips.appendChild(btn);
+            });
+            wrap.style.display = '';
+            updateChips();
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            status.textContent = '✗ Network error';
+            status.style.color = '#dc3545';
+        });
+    };
 }());
 </script>
 

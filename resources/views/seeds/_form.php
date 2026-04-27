@@ -82,6 +82,7 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         <div class="form-group">
             <label class="form-label">Name <span class="required">*</span></label>
             <input type="text" name="name" id="fName" class="form-input" required value="<?= e($seed['name'] ?? '') ?>" placeholder="e.g. Tomato">
+            <div id="fNameDupe" style="display:none;margin-top:5px;padding:6px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:5px;font-size:0.8rem;color:#856404"></div>
         </div>
         <div class="form-group">
             <label class="form-label">Variety</label>
@@ -508,5 +509,31 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         var nameEl = document.getElementById('fName');
         if (nameEl) nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+}());
+</script>
+
+<!-- ── Duplicate name check ─────────────────────────────────────────────── -->
+<script>
+(function () {
+    var nameInput = document.getElementById('fName');
+    var dupeBox   = document.getElementById('fNameDupe');
+    if (!nameInput || !dupeBox) return;
+
+    var excludeId = <?= isset($seed['id']) ? (int)$seed['id'] : 0 ?>;
+
+    nameInput.addEventListener('blur', function () {
+        var val = nameInput.value.trim();
+        dupeBox.style.display = 'none';
+        if (!val) return;
+        var url = '<?= url('/api/seeds/check-name') ?>?name=' + encodeURIComponent(val) + (excludeId ? '&exclude=' + excludeId : '');
+        fetch(url).then(function(r){ return r.json(); }).then(function(data) {
+            if (!data.exists) return;
+            var label = data.name + (data.variety ? ' (' + data.variety + ')' : '');
+            dupeBox.innerHTML = '⚠ <strong>' + escH(label) + '</strong> already exists in your catalog — <a href="<?= url('/seeds/') ?>' + data.id + '" style="color:#856404;font-weight:600">View it</a>';
+            dupeBox.style.display = 'block';
+        }).catch(function(){});
+    });
+
+    function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 }());
 </script>
