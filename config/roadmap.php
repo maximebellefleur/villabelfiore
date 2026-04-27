@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.8.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Fix: bed planting page crash on first visit',
+        'features' => [
+            ['title' => 'Bed planting page crash fix', 'detail' => 'The page crashed if seeds.needs_restock did not exist yet (column only created on first Seeds visit). Now runs the migration inline and falls back gracefully.'],
+        ],
+    ],
+
     '2.8.0' => [
         'status'   => 'released',
         'released' => '2026-04-27',

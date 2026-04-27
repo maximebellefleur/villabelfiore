@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.8.1' => [
+        'date'  => '2026-04-27',
+        'title' => 'Fix: bed planting page crash on first visit',
+        'fixed' => [
+            'Opening /items/{id}/planting now works even if the Seeds section has never been visited. The seeds.needs_restock column is created on demand; if anything fails the suggestions panel gracefully shows empty rather than crashing the page.',
+        ],
+    ],
+
     '2.8.0' => [
         'date'  => '2026-04-27',
         'title' => 'Smart Garden — Buy List, Duplicate Detection, Gemini Model Picker, Bed Suggestions',
