@@ -324,8 +324,8 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         dbg('start', new Date().toISOString());
         dbg('images_loaded', (images.front ? 'front ✓' : '') + (images.back ? ' + back ✓' : ''));
 
-        setProgress(10);
-        setStatus('📤 Sending image(s) to AI… (may take 10–60 s)', 'var(--color-text-muted)');
+        setProgress(5);
+        setStatus('📤 Sending images to AI…', 'var(--color-text-muted)');
         progBar.style.display = 'block';
         runBtn.disabled = true; btn.disabled = true; btn2.disabled = true;
 
@@ -343,7 +343,53 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
 
         dbg('extra_prompt', promptOverride ? promptOverride.slice(0, 80) + '…' : '(none)');
         dbg('posting_to', '<?= url('/api/ai/identify-seed') ?>');
-        setProgress(20);
+
+        var resultReceived = false;
+        var modelCount     = 0;
+
+        function enableButtons() { runBtn.disabled = false; btn.disabled = false; btn2.disabled = false; }
+
+        function handleEvent(evt) {
+            if (evt.type === 'log') {
+                dbg(evt.step || '?', evt.value !== undefined ? String(evt.value) : '');
+
+                // Update status bar for meaningful milestones
+                if (evt.step === 'fetching_models') {
+                    setStatus('🔍 Checking which Gemini models are available…', 'var(--color-text-muted)');
+                    setProgress(15);
+                } else if (evt.step === 'models_available') {
+                    setStatus('📋 Model list received — starting identification…', 'var(--color-text-muted)');
+                    setProgress(25);
+                } else if (evt.step === 'try_order') {
+                    modelCount = String(evt.value).split('→').length;
+                } else if (evt.step === 'trying_model') {
+                    setStatus('🤖 Trying ' + evt.value + '…', 'var(--color-text-muted)');
+                    setProgress(Math.min(30 + modelCount * 15, 75));
+                } else if (evt.step === 'model_skipped') {
+                    setStatus('⚠ ' + evt.value + ' — trying next model…', '#f59e0b');
+                } else if (evt.step === 'model_used') {
+                    setStatus('⚙️ Parsing response from ' + evt.value + '…', 'var(--color-text-muted)');
+                    setProgress(90);
+                } else if (evt.step === 'done') {
+                    setProgress(98);
+                }
+            } else if (evt.type === 'result') {
+                resultReceived = true;
+                setProgress(100);
+                enableButtons();
+                progBar.style.display = 'none';
+
+                if (!evt.ok) {
+                    dbg('error', evt.error || 'unknown');
+                    setStatus('❌ ' + (evt.error || 'AI error'), '#dc3545');
+                    return;
+                }
+
+                dbg('fields_received', Object.keys(evt.fields || {}).join(', '));
+                fillForm(evt.fields);
+                setStatus('✅ Form pre-filled — review and adjust as needed.', 'var(--color-primary)');
+            }
+        }
 
         fetch('<?= url('/api/ai/identify-seed') ?>', {
             method:  'POST',
@@ -351,32 +397,35 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
             body:    body.toString(),
         })
         .then(function (res) {
-            dbg('http_status', res.status);
-            setProgress(75);
-            setStatus('⚙️ Parsing AI response…', 'var(--color-text-muted)');
-            return res.json();
-        })
-        .then(function (data) {
-            setProgress(100);
-            runBtn.disabled = false; btn.disabled = false; btn2.disabled = false;
+            var reader  = res.body.getReader();
+            var decoder = new TextDecoder();
+            var buffer  = '';
 
-            // Render server-side debug steps
-            if (data.debug && Array.isArray(data.debug)) { renderDebugArray(data.debug); }
-
-            if (!data.ok) {
-                dbg('error', data.error || 'unknown');
-                setStatus('❌ ' + (data.error || 'AI error'), '#dc3545');
-                progBar.style.display = 'none';
-                return;
+            function pump() {
+                return reader.read().then(function (chunk) {
+                    if (chunk.done) {
+                        if (!resultReceived) {
+                            enableButtons();
+                            progBar.style.display = 'none';
+                            setStatus('❌ Connection closed before a result was received.', '#dc3545');
+                        }
+                        return;
+                    }
+                    buffer += decoder.decode(chunk.value, { stream: true });
+                    var lines = buffer.split('\n');
+                    buffer = lines.pop(); // keep incomplete trailing line
+                    lines.forEach(function (line) {
+                        line = line.trim();
+                        if (!line.startsWith('data: ')) return;
+                        try { handleEvent(JSON.parse(line.slice(6))); } catch (e) { /* malformed line */ }
+                    });
+                    return pump();
+                });
             }
-
-            dbg('fields_received', Object.keys(data.fields || {}).join(', '));
-            fillForm(data.fields);
-            setStatus('✅ Form pre-filled — review and adjust as needed.', 'var(--color-primary)');
-            progBar.style.display = 'none';
+            return pump();
         })
         .catch(function (err) {
-            runBtn.disabled = false; btn.disabled = false; btn2.disabled = false;
+            enableButtons();
             progBar.style.display = 'none';
             dbg('fetch_error', err.message);
             setStatus('❌ Network error: ' + err.message, '#dc3545');

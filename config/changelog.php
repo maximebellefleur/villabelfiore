@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.7.6' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI — Real-Time Gemini Model Fallback via SSE',
+        'improved' => [
+            'The AI identify endpoint now streams Server-Sent Events so every step (fetching model list, trying each model, parsing response) appears in the debug panel in real time instead of all at once at the end.',
+            'Available Gemini models are fetched live from Google\'s API before any scan — the app only ever calls models confirmed to be accessible with your API key.',
+            'If the primary model is not in the confirmed list, a warning is shown in the log and only available models are tried.',
+            'On 503/429 (overloaded/rate-limited), the app silently skips to the next confirmed model and shows the skip reason live in the log.',
+        ],
+    ],
+
     '2.7.5' => [
         'date'  => '2026-04-27',
         'title' => 'AI — Gemini Model Fallback on 503/429',

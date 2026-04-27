@@ -8,21 +8,28 @@ use App\Support\CSRF;
 
 class AiController
 {
-    private function requireAuth(): void
+    // ── SSE helpers ───────────────────────────────────────────────────────────
+
+    private function sseLog(string $step, mixed $value): void
     {
-        if (empty($_SESSION['user_id'])) {
-            http_response_code(401);
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'error' => 'Unauthenticated']);
-            exit;
-        }
+        echo 'data: ' . json_encode(['type' => 'log', 'step' => $step, 'value' => $value]) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
     }
 
-    private function jsonError(string $msg, int $code = 400, array $debug = []): void
+    private function sseFail(string $msg, int $code = 400): void
     {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['ok' => false, 'error' => $msg, 'debug' => $debug]);
+        echo 'data: ' . json_encode(['type' => 'result', 'ok' => false, 'error' => $msg, 'code' => $code]) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
+        exit;
+    }
+
+    private function sseSuccess(array $fields): void
+    {
+        echo 'data: ' . json_encode(['type' => 'result', 'ok' => true, 'fields' => $fields]) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
         exit;
     }
 
@@ -37,38 +44,37 @@ class AiController
 
     /**
      * POST /api/ai/identify-seed
-     * Body: _token, image_data (base64), image_mime, [image_data_2, image_mime_2]
-     * Returns JSON: { ok, fields: {...}, debug: [...] }
+     * Streams SSE: { type:'log', step, value } events, then a final { type:'result', ok, fields|error }
      */
     public function identifySeed(Request $request, array $params = []): void
     {
-        $debug = [];
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('X-Accel-Buffering: no');
+
         try {
-            $this->identifySeedInner($request, $debug);
+            $this->identifySeedInner($request);
         } catch (\Throwable $e) {
-            http_response_code(500);
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'error' => $e->getMessage(), 'debug' => $debug]);
-            exit;
+            $this->sseFail($e->getMessage(), 500);
         }
     }
 
-    private function identifySeedInner(Request $request, array &$debug): void
+    private function identifySeedInner(Request $request): void
     {
-        $this->requireAuth();
+        if (empty($_SESSION['user_id'])) {
+            $this->sseFail('Unauthenticated', 401);
+        }
 
         $token = $request->post('_token', '');
         if (!CSRF::validateToken($token)) {
-            $this->jsonError('Invalid CSRF token', 403);
+            $this->sseFail('Invalid CSRF token', 403);
         }
 
-        // Collect up to 2 images (front + back of packet)
         $images = [];
         foreach (['', '_2'] as $suffix) {
             $raw  = trim($request->post('image_data' . $suffix, ''));
             $mime = trim($request->post('image_mime' . $suffix, 'image/jpeg'));
             if ($raw === '') continue;
-            // Strip data URL prefix if accidentally included
             if (str_contains($raw, ',')) {
                 $raw = substr($raw, strpos($raw, ',') + 1);
             }
@@ -76,13 +82,12 @@ class AiController
         }
 
         if (empty($images)) {
-            $this->jsonError('No image data received');
+            $this->sseFail('No image data received');
         }
 
         $db   = DB::getInstance();
         $mode = $this->getSetting($db, 'ai.mode', 'local');
 
-        // extra_prompt_override from POST takes precedence over saved setting (per-upload edit)
         $extraPromptRaw = $request->post('extra_prompt_override', null);
         $extraPrompt    = $extraPromptRaw !== null
             ? trim($extraPromptRaw)
@@ -133,33 +138,32 @@ PROMPT;
             $basePrompt .= "\n\nAdditional instructions from the user:\n" . $extraPrompt;
         }
 
-        $debug[] = ['step' => 'mode',         'value' => $mode];
-        $debug[] = ['step' => 'images_count',  'value' => count($images)];
-        $debug[] = ['step' => 'extra_prompt',  'value' => $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none'];
-        $debug[] = ['step' => 'prompt_source', 'value' => $extraPromptRaw !== null ? 'per-upload override' : 'saved setting'];
+        $this->sseLog('mode',          $mode);
+        $this->sseLog('images_count',  count($images));
+        $this->sseLog('extra_prompt',  $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none');
+        $this->sseLog('prompt_source', $extraPromptRaw !== null ? 'per-upload override' : 'saved setting');
 
         if ($mode === 'huggingface') {
             $endpoint = $this->getSetting($db, 'ai.hf_endpoint', '');
             if (str_contains($endpoint, 'generativelanguage.googleapis.com')) {
-                $this->callGeminiNative($db, $images, $basePrompt, $debug);
+                $this->callGeminiNative($db, $images, $basePrompt);
             } else {
-                $this->callHuggingFace($db, $images, $basePrompt, $debug);
+                $this->callHuggingFace($db, $images, $basePrompt);
             }
         } else {
-            $this->callOllama($db, $images, $basePrompt, $debug);
+            $this->callOllama($db, $images, $basePrompt);
         }
     }
 
     // ── Ollama (local) ────────────────────────────────────────────────────────
 
-
-    private function callOllama(DB $db, array $images, string $prompt, array &$debug): void
+    private function callOllama(DB $db, array $images, string $prompt): void
     {
         $endpoint = rtrim($this->getSetting($db, 'ai.endpoint', 'http://localhost:11434'), '/');
         $model    = $this->getSetting($db, 'ai.vision_model', 'llava');
 
-        $debug[] = ['step' => 'ollama_endpoint', 'value' => $endpoint];
-        $debug[] = ['step' => 'ollama_model',    'value' => $model];
+        $this->sseLog('ollama_endpoint', $endpoint);
+        $this->sseLog('ollama_model',    $model);
 
         $payload = json_encode([
             'model'  => $model,
@@ -168,7 +172,7 @@ PROMPT;
             'stream' => false,
         ]);
 
-        $debug[] = ['step' => 'sending_to_ollama', 'value' => $endpoint . '/api/generate'];
+        $this->sseLog('sending_to_ollama', $endpoint . '/api/generate');
 
         $ch = curl_init($endpoint . '/api/generate');
         curl_setopt_array($ch, [
@@ -180,64 +184,87 @@ PROMPT;
             CURLOPT_CONNECTTIMEOUT => 5,
         ]);
 
-        $raw   = curl_exec($ch);
-        $errno = curl_errno($ch);
-        $info  = curl_getinfo($ch);
+        $raw       = curl_exec($ch);
+        $errno     = curl_errno($ch);
+        $info      = curl_getinfo($ch);
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
-        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+        $this->sseLog('curl_errno', $errno);
+        $this->sseLog('http_code',  $info['http_code'] ?? 'n/a');
 
         if ($errno !== 0 || $raw === false) {
-            $this->jsonError('Could not reach Ollama at ' . $endpoint . '. Error: ' . $curlError . '. Make sure Ollama is running (ollama serve) and the vision model is installed (ollama pull ' . $model . ').', 502, $debug);
+            $this->sseFail('Could not reach Ollama at ' . $endpoint . '. Error: ' . $curlError, 502);
         }
 
         if (($info['http_code'] ?? 0) !== 200) {
-            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 500)];
-            $this->jsonError('Ollama returned HTTP ' . ($info['http_code'] ?? '?') . '. Is the model "' . $model . '" installed? Run: ollama pull ' . $model, 502, $debug);
+            $this->sseLog('raw_response', substr($raw, 0, 500));
+            $this->sseFail('Ollama returned HTTP ' . ($info['http_code'] ?? '?') . '. Is the model "' . $model . '" installed? Run: ollama pull ' . $model, 502);
         }
 
         $ollamaResp = json_decode($raw, true);
         $text       = trim($ollamaResp['response'] ?? '');
 
-        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
-
-        $this->parseAndRespond($text, $debug);
+        $this->sseLog('raw_ai_text', substr($text, 0, 600));
+        $this->parseAndRespond($text);
     }
 
     // ── Gemini native API (generateContent) ──────────────────────────────────
 
-    // Transient codes that justify trying the next model instead of failing
+    // HTTP codes that mean "overloaded/rate-limited — try next model"
     private const GEMINI_RETRY_CODES = [429, 500, 503];
 
-    // Fallback order — primary model from settings is prepended at runtime
-    private const GEMINI_FALLBACK_MODELS = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-8b',
-    ];
-
-    private function callGeminiNative(DB $db, array $images, string $prompt, array &$debug): void
+    private function callGeminiNative(DB $db, array $images, string $prompt): void
     {
         $primaryModel = $this->getSetting($db, 'ai.hf_model', 'gemini-2.5-flash') ?: 'gemini-2.5-flash';
         $apiKey       = $this->getSetting($db, 'ai.hf_token', '');
 
         if ($apiKey === '') {
-            $this->jsonError('Gemini API key is not set. Go to Settings → AI and paste your AIza… key.', 400, $debug);
+            $this->sseFail('Gemini API key is not set. Go to Settings → AI and paste your AIza… key.', 400);
         }
 
-        // Build candidate list: primary model first, then fallbacks (deduped)
-        $candidates = array_values(array_unique(array_merge(
-            [$primaryModel],
-            self::GEMINI_FALLBACK_MODELS
-        )));
+        // ── Step 1: ask Google which models this key can actually use ─────────
+        $this->sseLog('fetching_models', 'Querying Google for available models on this API key…');
 
-        $debug[] = ['step' => 'gemini_model',      'value' => $primaryModel];
-        $debug[] = ['step' => 'gemini_fallbacks',   'value' => implode(' → ', $candidates)];
+        $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
+        curl_setopt_array($lh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15]);
+        $listRaw  = curl_exec($lh);
+        $listInfo = curl_getinfo($lh);
+        curl_close($lh);
 
-        // Build parts once — same for every model attempt
+        $listData        = json_decode($listRaw ?: '{}', true);
+        $availableModels = [];
+
+        if (($listInfo['http_code'] ?? 0) === 200 && !empty($listData['models'])) {
+            foreach ($listData['models'] as $m) {
+                $name    = str_replace('models/', '', $m['name'] ?? '');
+                $methods = $m['supportedGenerationMethods'] ?? [];
+                if (str_contains($name, 'gemini') && in_array('generateContent', $methods, true)) {
+                    $availableModels[] = $name;
+                }
+            }
+        }
+
+        if (empty($availableModels)) {
+            // Could not reach Google or key has no access — only option is to try the configured model
+            $this->sseLog('models_warning', 'Could not retrieve model list (HTTP ' . ($listInfo['http_code'] ?? '?') . ') — falling back to configured model only');
+            $candidates = [$primaryModel];
+        } else {
+            $this->sseLog('models_available', implode(', ', $availableModels));
+
+            // ── Step 2: build candidate list from CONFIRMED available models only ─
+            // Put primary model first if it is in the list; otherwise use list as-is
+            if (in_array($primaryModel, $availableModels, true)) {
+                $candidates = array_values(array_unique(array_merge([$primaryModel], $availableModels)));
+            } else {
+                $this->sseLog('primary_not_available', '"' . $primaryModel . '" is not in your available models — update Settings → AI. Using available models instead.');
+                $candidates = $availableModels;
+            }
+        }
+
+        $this->sseLog('try_order', implode(' → ', $candidates));
+
+        // ── Step 3: build payload once (identical for every model) ────────────
         $parts = [['text' => $prompt]];
         foreach ($images as $img) {
             $parts[] = ['inline_data' => ['mime_type' => $img['mime'], 'data' => $img['b64']]];
@@ -247,14 +274,15 @@ PROMPT;
             'generationConfig' => ['maxOutputTokens' => 4096, 'temperature' => 0.1],
         ]);
 
-        $lastErrMsg  = '';
+        $lastErrMsg   = '';
         $lastHttpCode = 0;
 
-        foreach ($candidates as $model) {
+        // ── Step 4: loop ──────────────────────────────────────────────────────
+        foreach ($candidates as $idx => $model) {
+            $this->sseLog('trying_model', '(' . ($idx + 1) . '/' . count($candidates) . ') ' . $model);
+
             $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
                     . $model . ':generateContent?key=' . $apiKey;
-
-            $debug[] = ['step' => 'sending_to_gemini', 'value' => 'generativelanguage.googleapis.com … ' . $model];
 
             $ch = curl_init($apiUrl);
             curl_setopt_array($ch, [
@@ -266,23 +294,20 @@ PROMPT;
                 CURLOPT_CONNECTTIMEOUT => 10,
             ]);
 
-            $raw      = curl_exec($ch);
-            $errno    = curl_errno($ch);
-            $info     = curl_getinfo($ch);
-            $curlErr  = curl_error($ch);
+            $raw     = curl_exec($ch);
+            $errno   = curl_errno($ch);
+            $info    = curl_getinfo($ch);
+            $curlErr = curl_error($ch);
             curl_close($ch);
 
-            $debug[] = ['step' => 'curl_errno', 'value' => $errno];
-            $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
-
             if ($errno !== 0 || $raw === false) {
-                $this->jsonError('Could not reach Gemini API: ' . $curlErr, 502, $debug);
+                $this->sseFail('Could not reach Gemini API: ' . $curlErr, 502);
             }
 
             $httpCode = (int)($info['http_code'] ?? 0);
+            $this->sseLog('http_code', $httpCode);
 
             if ($httpCode >= 400) {
-                $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
                 $decoded = json_decode($raw, true);
                 if (is_array($decoded) && isset($decoded[0])) { $decoded = $decoded[0]; }
                 $rawErr  = $decoded['error'] ?? null;
@@ -290,79 +315,60 @@ PROMPT;
                     ? ($rawErr['message'] ?? json_encode($rawErr))
                     : (is_string($rawErr) ? $rawErr : 'HTTP ' . $httpCode);
 
-                // On 404, fetch available models once (only for the primary attempt)
-                if ($httpCode === 404 && $model === $primaryModel) {
-                    $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
-                    curl_setopt_array($lh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
-                    $listRaw  = curl_exec($lh);
-                    curl_close($lh);
-                    $listData = json_decode($listRaw ?: '{}', true);
-                    $names = array_map(
-                        fn($m) => str_replace('models/', '', $m['name'] ?? ''),
-                        array_filter($listData['models'] ?? [], fn($m) => str_contains($m['name'] ?? '', 'gemini'))
-                    );
-                    $debug[] = ['step' => 'available_gemini_models', 'value' => $names
-                        ? implode(', ', array_values($names))
-                        : 'none returned — key may lack Generative Language API access'];
-                }
-
-                // Transient error — try next model
                 if (in_array($httpCode, self::GEMINI_RETRY_CODES, true)) {
-                    $debug[]      = ['step' => 'gemini_fallback', 'value' => $model . ' returned ' . $httpCode . ' — trying next model'];
+                    $this->sseLog('model_skipped', $model . ' → ' . $httpCode . ' (' . $errMsg . ')');
                     $lastErrMsg   = $errMsg;
                     $lastHttpCode = $httpCode;
-                    continue;
+                    continue; // try next model
                 }
 
-                // Non-retriable error (auth, bad request, etc.) — fail immediately
-                $this->jsonError($errMsg, $httpCode, $debug);
+                // Non-retriable (401, 400, 404 …) — fail immediately
+                $this->sseLog('model_error', $model . ' → ' . $httpCode . ': ' . $errMsg);
+                $this->sseFail($errMsg, $httpCode);
             }
 
-            // Success
+            // ── Success ───────────────────────────────────────────────────────
             $resp = json_decode($raw, true);
             $text = trim($resp['candidates'][0]['content']['parts'][0]['text'] ?? '');
 
-            $debug[] = ['step' => 'gemini_model_used', 'value' => $model];
-            $debug[] = ['step' => 'raw_ai_text',        'value' => substr($text, 0, 600)];
+            $this->sseLog('model_used',  $model);
+            $this->sseLog('raw_ai_text', substr($text, 0, 600));
 
             if ($text === '') {
-                $this->jsonError('Gemini returned an empty response.', 502, $debug);
+                $this->sseFail('Gemini returned an empty response from ' . $model, 502);
             }
 
-            $this->parseAndRespond($text, $debug);
+            $this->parseAndRespond($text);
         }
 
         // All models exhausted
-        $this->jsonError(
-            'All Gemini models are currently unavailable. Last error: ' . $lastErrMsg
-            . ' — tried: ' . implode(', ', $candidates),
-            $lastHttpCode ?: 503,
-            $debug
+        $this->sseFail(
+            'All Gemini models tried and none responded. Last error: ' . $lastErrMsg
+            . '. Models tried: ' . implode(', ', $candidates),
+            $lastHttpCode ?: 503
         );
     }
 
-    // ── HuggingFace Inference API (OpenAI-compatible chat completions) ────────
+    // ── HuggingFace / OpenRouter ──────────────────────────────────────────────
 
-    private function callHuggingFace(DB $db, array $images, string $prompt, array &$debug): void
+    private function callHuggingFace(DB $db, array $images, string $prompt): void
     {
         $hfEndpoint = rtrim($this->getSetting($db, 'ai.hf_endpoint', ''), '/');
         $hfModel    = $this->getSetting($db, 'ai.hf_model', '');
         $hfToken    = $this->getSetting($db, 'ai.hf_token', '');
 
         if ($hfEndpoint === '') {
-            $this->jsonError('HuggingFace endpoint URL is not configured. Go to Settings → AI to set it.', 400, $debug);
+            $this->sseFail('HuggingFace endpoint URL is not configured. Go to Settings → AI to set it.', 400);
         }
 
-        // Normalise: append /v1/chat/completions if the URL doesn't already end with it
         if (!str_ends_with($hfEndpoint, '/chat/completions')) {
             $hfEndpoint = rtrim($hfEndpoint, '/') . '/v1/chat/completions';
         }
 
-        $debug[] = ['step' => 'hf_endpoint', 'value' => $hfEndpoint];
-        $debug[] = ['step' => 'hf_model',    'value' => $hfModel ?: '(not set, using tgi)'];
-        $debug[] = ['step' => 'hf_token',    'value' => $hfToken !== '' ? 'set (' . strlen($hfToken) . ' chars)' : 'not set'];
+        $this->sseLog('hf_endpoint', $hfEndpoint);
+        $this->sseLog('hf_model',    $hfModel ?: '(not set, using tgi)');
+        $this->sseLog('hf_token',    $hfToken !== '' ? 'set (' . strlen($hfToken) . ' chars)' : 'not set');
 
-        // Build multimodal content — text prompt + all images
         $content = [['type' => 'text', 'text' => $prompt]];
         foreach ($images as $img) {
             $content[] = [
@@ -381,13 +387,12 @@ PROMPT;
         if ($hfToken !== '') {
             $headers[] = 'Authorization: Bearer ' . $hfToken;
         }
-        // OpenRouter requires HTTP-Referer to identify the app (recommended even on free tier)
         if (str_contains($hfEndpoint, 'openrouter.ai')) {
             $headers[] = 'HTTP-Referer: https://github.com/maximebellefleur/villabelfiore';
             $headers[] = 'X-Title: Rooted';
         }
 
-        $debug[] = ['step' => 'sending_to_hf', 'value' => $hfEndpoint];
+        $this->sseLog('sending_to_hf', $hfEndpoint);
 
         $ch = curl_init($hfEndpoint);
         curl_setopt_array($ch, [
@@ -399,43 +404,40 @@ PROMPT;
             CURLOPT_CONNECTTIMEOUT => 10,
         ]);
 
-        $raw      = curl_exec($ch);
-        $errno    = curl_errno($ch);
-        $info     = curl_getinfo($ch);
-        $curlErr  = curl_error($ch);
+        $raw     = curl_exec($ch);
+        $errno   = curl_errno($ch);
+        $info    = curl_getinfo($ch);
+        $curlErr = curl_error($ch);
         curl_close($ch);
 
-        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
-        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+        $this->sseLog('curl_errno', $errno);
+        $this->sseLog('http_code',  $info['http_code'] ?? 'n/a');
 
         if ($errno !== 0 || $raw === false) {
-            $this->jsonError('Could not reach HuggingFace endpoint. Error: ' . $curlErr, 502, $debug);
+            $this->sseFail('Could not reach HuggingFace endpoint. Error: ' . $curlErr, 502);
         }
 
         if (($info['http_code'] ?? 0) >= 400) {
-            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
+            $this->sseLog('raw_response', substr($raw, 0, 800));
             $decoded = json_decode($raw, true);
-            // Gemini wraps errors in an array: [{"error":{...}}]
-            if (is_array($decoded) && isset($decoded[0])) {
-                $decoded = $decoded[0];
-            }
+            if (is_array($decoded) && isset($decoded[0])) { $decoded = $decoded[0]; }
             $rawErr  = $decoded['error'] ?? null;
             $errMsg  = is_array($rawErr)
                 ? ($rawErr['message'] ?? json_encode($rawErr))
                 : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
-            $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
+            $this->sseFail($errMsg, (int)($info['http_code'] ?? 502));
         }
 
         $hfResp = json_decode($raw, true);
         $text   = trim($hfResp['choices'][0]['message']['content'] ?? '');
 
-        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
+        $this->sseLog('raw_ai_text', substr($text, 0, 600));
 
         if ($text === '') {
-            $this->jsonError('HuggingFace returned an empty response. Check the model supports vision/image input.', 502, $debug);
+            $this->sseFail('HuggingFace returned an empty response. Check the model supports vision/image input.', 502);
         }
 
-        $this->parseAndRespond($text, $debug);
+        $this->parseAndRespond($text);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -449,34 +451,27 @@ PROMPT;
         ));
     }
 
-    // ── Parse AI text → JSON → sanitised fields ───────────────────────────────
-
-    private function parseAndRespond(string $text, array $debug): void
+    private function parseAndRespond(string $text): void
     {
-        // Strip markdown code fences
         $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
         $text = preg_replace('/\s*```$/i', '', trim($text));
         $text = trim($text);
 
-        // Extract first JSON object
         $jsonStart = strpos($text, '{');
         $jsonEnd   = strrpos($text, '}');
         if ($jsonStart !== false && $jsonEnd !== false) {
             $text = substr($text, $jsonStart, $jsonEnd - $jsonStart + 1);
         }
 
-        $debug[] = ['step' => 'parsed_json_attempt', 'value' => substr($text, 0, 400)];
+        $this->sseLog('parsed_json_attempt', substr($text, 0, 400));
 
         $fields = json_decode($text, true);
         if (!is_array($fields)) {
-            $debug[] = ['step' => 'json_decode_error', 'value' => json_last_error_msg()];
-            http_response_code(422);
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'error' => 'AI response could not be parsed as JSON. Raw: ' . substr($text, 0, 200), 'debug' => $debug]);
-            exit;
+            $this->sseLog('json_decode_error', json_last_error_msg());
+            $this->sseFail('AI response could not be parsed as JSON. Raw: ' . substr($text, 0, 200), 422);
         }
 
-        $debug[] = ['step' => 'json_decoded_keys', 'value' => implode(', ', array_keys($fields))];
+        $this->sseLog('json_decoded_keys', implode(', ', array_keys($fields)));
 
         $safeFields = [
             'name'               => (string)($fields['name'] ?? ''),
@@ -499,10 +494,7 @@ PROMPT;
             'notes'              => (string)($fields['notes'] ?? ''),
         ];
 
-        $debug[] = ['step' => 'done', 'value' => 'Fields sanitised OK'];
-
-        header('Content-Type: application/json');
-        echo json_encode(['ok' => true, 'fields' => $safeFields, 'debug' => $debug]);
-        exit;
+        $this->sseLog('done', 'Fields sanitised OK');
+        $this->sseSuccess($safeFields);
     }
 }

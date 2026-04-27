@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.7.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI — Real-Time Gemini Model Fallback via SSE',
+        'features' => [
+            ['title' => 'Live streaming debug log', 'detail' => 'AI identification now uses Server-Sent Events — each step appears in the debug panel as it happens, not after the fact.'],
+            ['title' => 'Confirmed-model-only loop', 'detail' => 'Available Gemini models are fetched from Google\'s API before scanning. Only models confirmed accessible with your key are tried — no wasted calls to unavailable models.'],
+        ],
+    ],
+
     '2.7.5' => [
         'status'   => 'released',
         'released' => '2026-04-27',
