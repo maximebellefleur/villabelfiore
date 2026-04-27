@@ -333,8 +333,8 @@
             <div class="settings-group-title">🤖 AI — Seed Photo Identification</div>
             <p class="settings-hint" style="margin-bottom:var(--spacing-4)">
                 Powers the <strong>photo seed identification</strong> feature (Add Seed → Take/Choose Photo).
-                Choose between a <strong>local AI</strong> running on your own hardware (Ollama, Raspberry Pi, home server)
-                or a <strong>HuggingFace</strong> cloud inference endpoint.
+                Choose between a <strong>local AI</strong> on your own hardware, a <strong>cloud API</strong> (Google Gemini, HuggingFace),
+                or <strong>OpenAI</strong> (GPT-4o).
             </p>
 
             <?php
@@ -346,14 +346,20 @@
                 <button type="button" id="aiModeLocalBtn"
                         onclick="switchAiMode('local')"
                         class="btn <?= $aiMode === 'local' ? 'btn-primary' : 'btn-secondary' ?>"
-                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
-                    🖥 Local (Ollama)
+                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem">
+                    🖥 Local
                 </button>
                 <button type="button" id="aiModeHfBtn"
                         onclick="switchAiMode('huggingface')"
                         class="btn <?= $aiMode === 'huggingface' ? 'btn-primary' : 'btn-secondary' ?>"
-                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
-                    🤗 HuggingFace
+                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem">
+                    ☁ Cloud API
+                </button>
+                <button type="button" id="aiModeOpenaiBtn"
+                        onclick="switchAiMode('openai')"
+                        class="btn <?= $aiMode === 'openai' ? 'btn-primary' : 'btn-secondary' ?>"
+                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem">
+                    ✦ OpenAI
                 </button>
             </div>
 
@@ -528,6 +534,61 @@
                     </div>
                 </div>
 
+                <!-- ══ OPENAI PANEL ═════════════════════════════════════════════════ -->
+                <div id="aiOpenaiPanel" style="<?= $aiMode !== 'openai' ? 'display:none' : '' ?>">
+
+                    <!-- Setup guide -->
+                    <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
+                        <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 OpenAI Setup — 4 steps</div>
+                        <ol style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:12px;font-size:.83rem;line-height:1.7;color:var(--color-text)">
+                            <li>
+                                Go to <strong>platform.openai.com</strong> and sign in (or create a free account).
+                            </li>
+                            <li>
+                                In the left sidebar click <strong>API keys</strong> → <strong>Create new secret key</strong>.<br>
+                                Give it a name (e.g. <em>Rooted</em>) and click <strong>Create secret key</strong>.
+                            </li>
+                            <li>
+                                <strong>Copy the key now</strong> — it starts with <code>sk-</code> and is shown only once.<br>
+                                <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem">
+                                    Key: <span style="color:#ffd700">sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span><br>
+                                    Model: <span style="color:#ffd700">gpt-4o-mini</span> &nbsp;← paste in fields below
+                                </div>
+                            </li>
+                            <li>
+                                Paste the key below, confirm the model, then click <strong>Save AI Settings</strong>.<br>
+                                Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify.
+                            </li>
+                        </ol>
+                        <p class="settings-hint" style="margin-top:10px">
+                            <strong>Pricing:</strong> gpt-4o-mini costs ~$0.00015 per image — essentially free for personal use.
+                            gpt-4o costs ~$0.001 per image and gives the best accuracy.<br>
+                            No subscription needed — pay-as-you-go, billed to your OpenAI account.
+                        </p>
+                    </div>
+
+                    <!-- Config fields -->
+                    <div class="settings-field">
+                        <label class="settings-label">OpenAI API Key</label>
+                        <p class="settings-hint">Starts with <code>sk-</code>. Generated at <strong>platform.openai.com → API keys</strong>. Stored only in your local database, never sent anywhere except OpenAI.</p>
+                        <input type="password" name="ai_openai_key" class="settings-input"
+                               value="<?= e($settings['ai.openai_key'] ?? '') ?>"
+                               placeholder="sk-proj-…"
+                               autocomplete="new-password">
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-label">Model</label>
+                        <p class="settings-hint">
+                            <code>gpt-4o-mini</code> — cheapest, excellent quality, recommended ✓<br>
+                            <code>gpt-4o</code> — best accuracy, higher cost<br>
+                            <code>o4-mini</code> — fast reasoning model with vision
+                        </p>
+                        <input type="text" name="ai_openai_model" class="settings-input"
+                               value="<?= e($settings['ai.openai_model'] ?? 'gpt-4o-mini') ?>"
+                               placeholder="gpt-4o-mini">
+                    </div>
+                </div>
+
                 <!-- ══ SHARED — Extra prompt ══════════════════════════════════════ -->
                 <div class="settings-field" style="margin-top:var(--spacing-4);padding-top:var(--spacing-4);border-top:1px solid var(--color-border)">
                     <label class="settings-label">Extra Prompt Instructions (optional)</label>
@@ -551,10 +612,12 @@
 (function () {
     function switchAiMode(mode) {
         document.getElementById('aiModeInput').value = mode;
-        document.getElementById('aiLocalPanel').style.display = mode === 'local'        ? '' : 'none';
-        document.getElementById('aiHfPanel').style.display    = mode === 'huggingface' ? '' : 'none';
-        document.getElementById('aiModeLocalBtn').className   = 'btn ' + (mode === 'local'        ? 'btn-primary' : 'btn-secondary');
-        document.getElementById('aiModeHfBtn').className      = 'btn ' + (mode === 'huggingface' ? 'btn-primary' : 'btn-secondary');
+        document.getElementById('aiLocalPanel').style.display   = mode === 'local'        ? '' : 'none';
+        document.getElementById('aiHfPanel').style.display      = mode === 'huggingface' ? '' : 'none';
+        document.getElementById('aiOpenaiPanel').style.display  = mode === 'openai'      ? '' : 'none';
+        document.getElementById('aiModeLocalBtn').className  = 'btn ' + (mode === 'local'        ? 'btn-primary' : 'btn-secondary');
+        document.getElementById('aiModeHfBtn').className     = 'btn ' + (mode === 'huggingface' ? 'btn-primary' : 'btn-secondary');
+        document.getElementById('aiModeOpenaiBtn').className = 'btn ' + (mode === 'openai'      ? 'btn-primary' : 'btn-secondary');
     }
     window.switchAiMode = switchAiMode;
 }());

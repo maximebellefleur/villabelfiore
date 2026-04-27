@@ -153,7 +153,9 @@ PROMPT;
         $this->sseLog('extra_prompt',  $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none');
         $this->sseLog('prompt_source', $extraPromptRaw !== null ? 'per-upload override' : 'saved setting');
 
-        if ($mode === 'huggingface') {
+        if ($mode === 'openai') {
+            $this->callOpenAI($db, $images, $basePrompt);
+        } elseif ($mode === 'huggingface') {
             $endpoint = $this->getSetting($db, 'ai.hf_endpoint', '');
             if (str_contains($endpoint, 'generativelanguage.googleapis.com')) {
                 $this->callGeminiNative($db, $images, $basePrompt);
@@ -216,6 +218,86 @@ PROMPT;
         $text       = trim($ollamaResp['response'] ?? '');
 
         $this->sseLog('raw_ai_text', substr($text, 0, 600));
+        $this->parseAndRespond($text);
+    }
+
+    // ── OpenAI (GPT-4o / GPT-4o-mini) ────────────────────────────────────────
+
+    private function callOpenAI(DB $db, array $images, string $prompt): void
+    {
+        $apiKey = $this->getSetting($db, 'ai.openai_key', '');
+        $model  = $this->getSetting($db, 'ai.openai_model', 'gpt-4o-mini') ?: 'gpt-4o-mini';
+
+        if ($apiKey === '') {
+            $this->sseFail('OpenAI API key is not set. Go to Settings → AI → OpenAI tab and paste your sk-… key.', 400);
+        }
+
+        $this->sseLog('openai_model',       $model);
+        $this->sseLog('sending_to_openai',  'api.openai.com … ' . $model);
+
+        // Build multimodal content — text + images
+        $content = [['type' => 'text', 'text' => $prompt]];
+        foreach ($images as $img) {
+            $content[] = [
+                'type'      => 'image_url',
+                'image_url' => [
+                    'url'    => 'data:' . $img['mime'] . ';base64,' . $img['b64'],
+                    'detail' => 'high',
+                ],
+            ];
+        }
+
+        $payload = json_encode([
+            'model'      => $model,
+            'messages'   => [['role' => 'user', 'content' => $content]],
+            'max_tokens' => 4096,
+        ]);
+
+        $ch = curl_init('https://api.openai.com/v1/chat/completions');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiKey,
+            ],
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+
+        $raw     = curl_exec($ch);
+        $errno   = curl_errno($ch);
+        $info    = curl_getinfo($ch);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        $this->sseLog('curl_errno', $errno);
+        $this->sseLog('http_code',  $info['http_code'] ?? 'n/a');
+
+        if ($errno !== 0 || $raw === false) {
+            $this->sseFail('Could not reach OpenAI API: ' . $curlErr, 502);
+        }
+
+        if (($info['http_code'] ?? 0) >= 400) {
+            $this->sseLog('raw_response', substr($raw, 0, 800));
+            $decoded = json_decode($raw, true);
+            $rawErr  = $decoded['error'] ?? null;
+            $errMsg  = is_array($rawErr)
+                ? ($rawErr['message'] ?? json_encode($rawErr))
+                : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
+            $this->sseFail($errMsg, (int)($info['http_code'] ?? 502));
+        }
+
+        $resp = json_decode($raw, true);
+        $text = trim($resp['choices'][0]['message']['content'] ?? '');
+
+        $this->sseLog('raw_ai_text', substr($text, 0, 600));
+
+        if ($text === '') {
+            $this->sseFail('OpenAI returned an empty response.', 502);
+        }
+
         $this->parseAndRespond($text);
     }
 

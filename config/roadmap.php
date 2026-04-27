@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI — OpenAI Tab (GPT-4o / GPT-4o-mini)',
+        'features' => [
+            ['title' => 'OpenAI as a third AI provider', 'detail' => 'Settings → AI now has three tabs: Local (Ollama), Cloud API (Gemini), and OpenAI. Each is fully independent — user picks one. OpenAI uses gpt-4o-mini by default with a guided 4-step setup.'],
+        ],
+    ],
+
     '2.7.7' => [
         'status'   => 'released',
         'released' => '2026-04-27',

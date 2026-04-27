@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.7.8' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI — OpenAI Tab (GPT-4o / GPT-4o-mini)',
+        'new' => [
+            'Settings → AI now has three independent tabs: Local (Ollama), Cloud API (Gemini / HuggingFace), and OpenAI (GPT-4o).',
+            'OpenAI tab includes a 4-step setup guide: create an API key on platform.openai.com, paste it in, done.',
+            'Default OpenAI model is gpt-4o-mini (cheapest, excellent quality); gpt-4o and o4-mini are also supported.',
+        ],
+    ],
+
     '2.7.7' => [
         'date'  => '2026-04-27',
         'title' => 'AI — Bulletproof Gemini Fallback (5-model cap, watchdog, full recap)',
