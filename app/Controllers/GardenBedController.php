@@ -123,12 +123,12 @@ class GardenBedController
                  ORDER BY fn.priority ASC, fn.vegetable_name ASC"
             );
             $allSeeds = $db->fetchAll(
-                "SELECT id, name, variety, planting_months, spacing_cm FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
+                "SELECT id, name, variety, planting_months, spacing_cm, row_spacing_cm, sowing_depth_mm, days_to_maturity, notes FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
             );
         } catch (\Throwable $e) {
             // family_needs table doesn't exist yet or seeds schema mismatch — suggestions will be empty
             $familyNeeds = [];
-            $allSeeds    = $db->fetchAll("SELECT id, name, variety, planting_months, spacing_cm FROM seeds ORDER BY name ASC") ?: [];
+            $allSeeds    = $db->fetchAll("SELECT id, name, variety, planting_months, spacing_cm, row_spacing_cm, sowing_depth_mm, days_to_maturity, notes FROM seeds ORDER BY name ASC") ?: [];
         }
 
         $currentMonth = (int)date('n');
@@ -268,7 +268,7 @@ class GardenBedController
             );
         }
 
-        if ($request->isAjax()) {
+        if ($request->post('_ajax') === '1') {
             Response::json(['success' => true]);
         } else {
             Response::redirect('/items/' . $itemId . '/planting');
@@ -284,7 +284,7 @@ class GardenBedController
 
         $planting = $db->fetchOne("SELECT * FROM garden_plantings WHERE id = ?", [$id]);
         if (!$planting) {
-            if ($request->isAjax()) {
+            if ($request->post('_ajax') === '1') {
                 Response::json(['success' => false, 'error' => 'Planting not found']);
             } else {
                 Response::redirect('/');
@@ -295,7 +295,7 @@ class GardenBedController
         $itemId = (int)$planting['item_id'];
         $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$id]);
 
-        if ($request->isAjax()) {
+        if ($request->post('_ajax') === '1') {
             Response::json(['success' => true]);
         } else {
             Response::redirect('/items/' . $itemId . '/planting');
@@ -391,6 +391,61 @@ class GardenBedController
             'backlog'     => $backlog,
             'month'       => $month,
         ]);
+    }
+
+    public function harvestLine(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db  = DB::getInstance();
+        $id  = (int)($params['id'] ?? 0);
+
+        $planting = $db->fetchOne("SELECT * FROM garden_plantings WHERE id = ?", [$id]);
+        if (!$planting) {
+            Response::json(['success' => false, 'error' => 'Not found']);
+            return;
+        }
+
+        $cropName = $planting['crop_name'] ?? 'Unknown crop';
+        $itemId   = (int)$planting['item_id'];
+
+        // Mark line as harvested and free it
+        $db->execute(
+            "UPDATE garden_plantings SET status='harvested', crop_name=NULL, variety=NULL, seed_id=NULL, plant_count=NULL WHERE id=?",
+            [$id]
+        );
+
+        // Log harvest record (best-effort — silent on schema mismatch)
+        $qty  = (float)$request->post('qty', 0);
+        $unit = trim($request->post('unit', 'items')) ?: 'items';
+        $notes = trim($request->post('notes', ''));
+        if ($qty > 0) {
+            try {
+                $db->execute(
+                    "INSERT INTO harvest_entries (item_id, harvest_type, quantity, unit, notes, recorded_at, created_at)
+                     VALUES (?, ?, ?, ?, ?, CURDATE(), NOW())",
+                    [$itemId, $cropName, $qty, $unit, $notes]
+                );
+            } catch (\Throwable $e) {
+                // silent — harvest_entries schema may differ
+            }
+        }
+
+        Response::json(['success' => true]);
+    }
+
+    public function adjustQty(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db    = DB::getInstance();
+        $id    = (int)($params['id'] ?? 0);
+        $delta = (int)$request->post('delta', 0);
+        $db->execute(
+            "UPDATE garden_plantings SET plant_count = GREATEST(1, COALESCE(plant_count,1) + ?) WHERE id = ?",
+            [$delta, $id]
+        );
+        Response::json(['success' => true]);
     }
 
     public function companions(Request $request, array $params = []): void

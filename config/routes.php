@@ -168,6 +168,8 @@ $router->get('/items/{id}/planting',             'GardenBedController@show');
 $router->post('/items/{id}/planting',            'GardenBedController@storeLine');
 $router->post('/items/{id}/bed-config',          'GardenBedController@updateConfig');
 $router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
+$router->post('/garden/plantings/{id}/harvest-line', 'GardenBedController@harvestLine');
+$router->post('/garden/plantings/{id}/adjust-qty',   'GardenBedController@adjustQty');
 $router->get('/api/garden/companions',           'GardenBedController@companions');
 $router->get('/api/garden/seed-suggestions',     'GardenBedController@seedSuggestions');
 

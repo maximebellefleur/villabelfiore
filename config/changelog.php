@@ -8,6 +8,25 @@
  */
 return [
 
+    '2.8.2' => [
+        'date'  => '2026-04-27',
+        'title' => 'Fix save network error + harvest modal + qty +/- + auto-fill from seed',
+        'fixed' => [
+            'storeLine() and trashLine() now detect AJAX via _ajax POST field instead of X-Requested-With header — resolves the "Network error" alert when saving or clearing a bed line.',
+        ],
+        'new' => [
+            'Harvest modal: Planned/Growing lines now show a Harvest button that opens a modal for recording quantity, unit, and notes before marking the line harvested.',
+            'Plant count +/− buttons on each line for quick quantity adjustments without opening the edit form.',
+            'Route and controller method for POST /garden/plantings/{id}/harvest-line and /garden/plantings/{id}/adjust-qty.',
+        ],
+        'improved' => [
+            'Seed chip auto-fills Notes with sowing depth, spacing, row spacing, and seed notes when the field is empty.',
+            'Selecting a seed chip auto-calculates harvest date from planted date + days_to_maturity.',
+            'Capacity warning shown when plant count exceeds what fits in the line at the given spacing.',
+            '$allSeeds query now fetches row_spacing_cm, sowing_depth_mm, days_to_maturity, and notes for richer auto-fill.',
+        ],
+    ],
+
     '2.8.1' => [
         'date'  => '2026-04-27',
         'title' => 'Fix: bed planting page crash on first visit',

@@ -220,11 +220,11 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
     $plantedAt = $planting['planted_at'] ?? '';
     $harvestAt = $planting['expected_harvest_at'] ?? '';
     $notes     = $planting['notes'] ?? '';
+    $plantCount = (int)($planting['plant_count'] ?? 0);
     $subParts  = [];
-    if ($plantedAt)                    $subParts[] = 'Planted ' . date('d M Y', strtotime($plantedAt));
-    if ($harvestAt)                    $subParts[] = 'Harvest by ' . date('d M Y', strtotime($harvestAt));
-    if ($variety)                      $subParts[] = $variety;
-    if (!empty($planting['plant_count'])) $subParts[] = $planting['plant_count'] . ' plants';
+    if ($plantedAt) $subParts[] = 'Planted ' . date('d M Y', strtotime($plantedAt));
+    if ($harvestAt) $subParts[] = 'Harvest by ' . date('d M Y', strtotime($harvestAt));
+    if ($variety)   $subParts[] = $variety;
 ?>
 <div class="bed-line-row" id="lineRow<?= $li ?>">
     <div class="bed-line-main">
@@ -233,8 +233,18 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             <div class="bed-line-name"><?= $cropName ? e($cropName) : '<span style="color:var(--color-text-muted);font-weight:400">Empty</span>' ?></div>
             <?php if ($subParts): ?><div class="bed-line-sub"><?= e(implode(' · ', $subParts)) ?></div><?php endif; ?>
         </div>
+        <?php if ($pid && $plantCount > 0): ?>
+        <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+            <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,-1)" style="padding:3px 7px">−</button>
+            <span style="font-size:.78rem;font-weight:700;min-width:28px;text-align:center"><?= $plantCount ?></span>
+            <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,1)" style="padding:3px 7px">+</button>
+        </div>
+        <?php endif; ?>
         <span class="bed-status-badge bed-status-badge--<?= $status ?>"><?= $statusLabels[$status] ?></span>
         <div class="bed-line-btns">
+            <?php if ($pid && in_array($status, ['planned','growing'], true)): ?>
+            <button class="bed-line-btn" onclick="openHarvestModal(<?= $pid ?>, '<?= e(addslashes($cropName)) ?>')" style="color:#15803d;border-color:#86efac">🌾 Harvest</button>
+            <?php endif; ?>
             <?php if ($hasCompanionApi && $cropName): ?>
             <button class="bed-line-btn" onclick="toggleCompanions(<?= $li ?>, '<?= e(addslashes($cropName)) ?>')" id="companionBtn<?= $li ?>">☘ Companions</button>
             <?php endif; ?>
@@ -274,7 +284,9 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Plants</label>
-                <input type="number" class="bed-edit-input" id="editPlantCount<?= $li ?>" value="<?= e($planting['plant_count'] ?? '') ?>" min="1" placeholder="qty">
+                <input type="number" class="bed-edit-input" id="editPlantCount<?= $li ?>" value="<?= e($planting['plant_count'] ?? '') ?>" min="1" placeholder="qty"
+                       oninput="updateCapacityWarning(<?= $li ?>, document.getElementById('editSeedId<?= $li ?>').getAttribute('data-spacing')||0, this.value)">
+                <div id="capWarn<?= $li ?>" style="display:none;font-size:.7rem;color:#dc2626;margin-top:3px"></div>
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Status</label>
@@ -286,7 +298,8 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Planted</label>
-                <input type="date" class="bed-edit-input" id="editPlanted<?= $li ?>" value="<?= e($plantedAt) ?>">
+                <input type="date" class="bed-edit-input" id="editPlanted<?= $li ?>" value="<?= e($plantedAt) ?>"
+                       oninput="autoHarvestDate(<?= $li ?>)">
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Expected harvest</label>
@@ -373,6 +386,37 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
 
 </div>
 
+<!-- Harvest modal -->
+<div id="harvestModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--spacing-4);width:min(90vw,380px);box-shadow:0 8px 32px rgba(0,0,0,.25)">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:var(--spacing-3)">🌾 Harvest — <span id="harvestCropName"></span></div>
+        <div class="bed-edit-grid" style="margin-bottom:var(--spacing-3)">
+            <div>
+                <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Quantity</label>
+                <input type="number" id="harvestQty" class="bed-edit-input" min="0" step="0.01" placeholder="0">
+            </div>
+            <div>
+                <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Unit</label>
+                <select id="harvestUnit" class="bed-edit-input">
+                    <option value="items">Items (count)</option>
+                    <option value="kg">kg</option>
+                    <option value="g">grams</option>
+                    <option value="packets">Packets</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-bottom:var(--spacing-3)">
+            <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Notes (optional)</label>
+            <input type="text" id="harvestNotes" class="bed-edit-input" placeholder="Quality, observations…">
+        </div>
+        <p style="font-size:.75rem;color:var(--color-text-muted);margin-bottom:var(--spacing-3)">This will mark the line as harvested and free it for the next crop.</p>
+        <div class="bed-edit-actions">
+            <button class="btn btn-ghost btn-sm" onclick="closeHarvestModal()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="submitHarvest()">🌾 Confirm Harvest</button>
+        </div>
+    </div>
+</div>
+
 <!-- Seed datalist for crop input autocomplete -->
 <datalist id="seedDatalist">
     <?php foreach ($allSeeds as $s): ?>
@@ -397,9 +441,19 @@ var BED_SUGG      = <?= json_encode(array_map(function($fn) {
         'spacing_cm'=> $fn['spacing_cm'] ?? null,
     ];
 }, $familyNeeds)) ?>;
-var BED_SEEDS     = <?= json_encode(array_map(fn($s) => ['id' => (int)$s['id'], 'name' => $s['name'], 'variety' => $s['variety'] ?? '', 'spacing_cm' => $s['spacing_cm'] ?? null], $allSeeds)) ?>;
+var BED_SEEDS     = <?= json_encode(array_map(fn($s) => [
+    'id'              => (int)$s['id'],
+    'name'            => $s['name'],
+    'variety'         => $s['variety'] ?? '',
+    'spacing_cm'      => $s['spacing_cm'] ?? null,
+    'row_spacing_cm'  => $s['row_spacing_cm'] ?? null,
+    'sowing_depth_mm' => $s['sowing_depth_mm'] ?? null,
+    'days_to_maturity'=> $s['days_to_maturity'] ?? null,
+    'notes'           => $s['notes'] ?? '',
+], $allSeeds)) ?>;
 var BED_LINE_M    = <?= ($widthM > 0 && $numLines > 0) ? round($widthM / $numLines * 100) / 100 : 0 ?>;
 var BED_LENGTH_M  = <?= $lengthM > 0 ? $lengthM : 0 ?>;
+var BED_LINE_CAP  = BED_LENGTH_M > 0 ? BED_LENGTH_M * 100 : 0; // cm available per line
 var _companionCache = {};
 
 function calcPlantCount(spacingCm) {
@@ -435,13 +489,97 @@ function renderSuggestions(line) {
             document.getElementById('editCrop' + line).value    = s.name;
             document.getElementById('editVariety' + line).value = s.variety || '';
             document.getElementById('editSeedId' + line).value  = s.seed_id || 0;
+            // Auto-fill plant count from spacing
             if (s.spacing_cm) {
                 var cnt = calcPlantCount(s.spacing_cm);
                 if (cnt) document.getElementById('editPlantCount' + line).value = cnt;
+                updateCapacityWarning(line, s.spacing_cm, cnt || 0);
+            }
+            // Auto-fill notes from seed data
+            var notesEl = document.getElementById('editNotes' + line);
+            if (notesEl && !notesEl.value.trim()) {
+                var parts = [];
+                // Find seed in BED_SEEDS for extra fields
+                for (var i = 0; i < BED_SEEDS.length; i++) {
+                    if (BED_SEEDS[i].id === s.seed_id) {
+                        var sd = BED_SEEDS[i];
+                        if (sd.sowing_depth_mm) parts.push(sd.sowing_depth_mm + 'mm deep');
+                        if (sd.spacing_cm)      parts.push(sd.spacing_cm + 'cm spacing');
+                        if (sd.row_spacing_cm)  parts.push(sd.row_spacing_cm + 'cm rows');
+                        if (sd.notes)           parts.push(sd.notes);
+                        // Store days_to_maturity for harvest date calc
+                        document.getElementById('editSeedId' + line).setAttribute('data-dtm', sd.days_to_maturity || '');
+                        break;
+                    }
+                }
+                if (parts.length) notesEl.value = parts.join(' // ');
             }
         };
         container.appendChild(chip);
     });
+}
+
+function updateCapacityWarning(line, spacingCm, currentCount) {
+    var warnEl = document.getElementById('capWarn' + line);
+    if (!warnEl || !spacingCm || BED_LINE_CAP <= 0) return;
+    var cap = Math.floor(BED_LINE_CAP / spacingCm);
+    if (currentCount > cap) {
+        warnEl.textContent = '⚠ Line fits ~' + cap + ' plants at ' + spacingCm + 'cm spacing — reduce count or spacing.';
+        warnEl.style.display = '';
+    } else {
+        warnEl.style.display = 'none';
+    }
+}
+
+function autoHarvestDate(line) {
+    var dtm     = parseInt(document.getElementById('editSeedId' + line).getAttribute('data-dtm') || '0');
+    var planted = document.getElementById('editPlanted' + line).value;
+    var harvestEl = document.getElementById('editHarvest' + line);
+    if (!dtm || !planted || !harvestEl || harvestEl.value) return;
+    var d = new Date(planted);
+    d.setDate(d.getDate() + dtm);
+    harvestEl.value = d.toISOString().slice(0, 10);
+}
+
+var _harvestPid = 0;
+function openHarvestModal(pid, crop) {
+    _harvestPid = pid;
+    document.getElementById('harvestCropName').textContent = crop;
+    document.getElementById('harvestQty').value   = '';
+    document.getElementById('harvestNotes').value = '';
+    var modal = document.getElementById('harvestModal');
+    modal.style.display = 'flex';
+}
+function closeHarvestModal() {
+    document.getElementById('harvestModal').style.display = 'none';
+}
+function submitHarvest() {
+    var qty   = document.getElementById('harvestQty').value;
+    var unit  = document.getElementById('harvestUnit').value;
+    var notes = document.getElementById('harvestNotes').value.trim();
+    var fd = new FormData();
+    fd.append('_token', BED_CSRF);
+    fd.append('_ajax', '1');
+    fd.append('qty',   qty);
+    fd.append('unit',  unit);
+    fd.append('notes', notes);
+    fetch(BED_BASE + 'garden/plantings/' + _harvestPid + '/harvest-line', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) { closeHarvestModal(); location.reload(); }
+        else { alert('Could not save harvest. Please try again.'); }
+    }).catch(function(){ alert('Network error.'); });
+}
+
+function adjustQty(pid, line, delta) {
+    var fd = new FormData();
+    fd.append('_token', BED_CSRF);
+    fd.append('_ajax', '1');
+    fd.append('delta', delta);
+    fetch(BED_BASE + 'garden/plantings/' + pid + '/adjust-qty', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.success) location.reload(); })
+    .catch(function(){});
 }
 
 function toggleEdit(line) {

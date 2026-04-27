@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.8.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Fix save network error + harvest modal + qty +/- + auto-fill from seed',
+        'features' => [
+            ['title' => 'Fix AJAX detection in bed controller', 'detail' => 'storeLine() and trashLine() used isAjax() (X-Requested-With header) which fetch() never sends. Switched to checking the _ajax POST field so JSON is returned correctly.'],
+            ['title' => 'Harvest modal', 'detail' => 'Planned and Growing bed lines now show a Harvest button. The modal collects quantity, unit, and notes, posts to /garden/plantings/{id}/harvest-line, marks the line harvested, and logs to harvest_entries.'],
+            ['title' => 'Plant count +/− buttons', 'detail' => 'Lines with a plant count show inline − / count / + buttons that post to /garden/plantings/{id}/adjust-qty for quick quantity changes without opening the full edit form.'],
+            ['title' => 'Seed auto-fill enhancements', 'detail' => 'Selecting a suggestion chip now auto-fills the Notes field with sowing depth, spacing, row spacing, and seed notes. Planted date + days_to_maturity auto-calculates the expected harvest date. A capacity warning alerts when count exceeds line capacity.'],
+        ],
+    ],
+
     '2.8.1' => [
         'status'   => 'released',
         'released' => '2026-04-27',
