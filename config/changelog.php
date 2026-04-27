@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.4' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — HuggingFace URL Fix',
+        'fixed' => [
+            'HuggingFace serverless API returned 404 "Cannot POST /v1/chat/completions". The api-inference.huggingface.co endpoint requires the model ID in the URL path (/models/{model}/v1/chat/completions). AiController now detects this host and auto-inserts the model into the URL, so the old generic endpoint URL no longer causes a 404.',
+            'Settings → AI: corrected all displayed example URLs and the endpoint input placeholder to show the model-specific path.',
+        ],
+    ],
+
     '2.6.3' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — HuggingFace Payload Fix',

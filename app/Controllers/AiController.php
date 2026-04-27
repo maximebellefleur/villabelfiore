@@ -201,9 +201,29 @@ PROMPT;
             $this->jsonError('HuggingFace endpoint URL is not configured. Go to Settings → AI to set it.', 400, $debug);
         }
 
-        // Normalise: if URL doesn't end in /v1/chat/completions, append it
+        // Normalise HuggingFace endpoint.
+        // api-inference.huggingface.co requires the model in the URL path:
+        //   .../models/{model}/v1/chat/completions
+        // If the user pasted the generic base URL we insert the model automatically.
         if (!str_ends_with($hfEndpoint, '/chat/completions')) {
-            $hfEndpoint = rtrim($hfEndpoint, '/') . '/v1/chat/completions';
+            // No /chat/completions at all — build the full path
+            $parsedHost = parse_url($hfEndpoint, PHP_URL_HOST) ?? '';
+            if ($parsedHost === 'api-inference.huggingface.co' && $hfModel !== ''
+                && !str_contains($hfEndpoint, '/models/')) {
+                $hfEndpoint = 'https://api-inference.huggingface.co/models/'
+                            . ltrim($hfModel, '/') . '/v1/chat/completions';
+            } else {
+                $hfEndpoint = rtrim($hfEndpoint, '/') . '/v1/chat/completions';
+            }
+        } elseif (
+            // URL ends in /chat/completions but is missing /models/{model}/ — e.g. the user
+            // pasted https://api-inference.huggingface.co/v1/chat/completions
+            parse_url($hfEndpoint, PHP_URL_HOST) === 'api-inference.huggingface.co'
+            && !str_contains($hfEndpoint, '/models/')
+            && $hfModel !== ''
+        ) {
+            $hfEndpoint = 'https://api-inference.huggingface.co/models/'
+                        . ltrim($hfModel, '/') . '/v1/chat/completions';
         }
 
         $debug[] = ['step' => 'hf_endpoint', 'value' => $hfEndpoint];

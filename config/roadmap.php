@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — HuggingFace URL Fix',
+        'features' => [
+            ['title' => 'Auto-correct HuggingFace endpoint URL', 'detail' => 'The api-inference.huggingface.co serverless API needs the model name in the URL path. If you enter the base URL without a model, the controller now inserts it automatically from the Model ID field.'],
+        ],
+    ],
+
     '2.6.3' => [
         'status'   => 'released',
         'released' => '2026-04-27',

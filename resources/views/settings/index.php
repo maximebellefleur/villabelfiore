@@ -439,7 +439,7 @@
                                     <li>Create a free account at <strong>huggingface.co</strong></li>
                                     <li>Go to <strong>Settings → Access Tokens</strong> and create a token with <em>Read</em> permission</li>
                                     <li>Choose a multimodal vision model (see list below)</li>
-                                    <li>Set Endpoint URL to <code>https://api-inference.huggingface.co/v1/chat/completions</code> and enter the model name</li>
+                                    <li>Set Endpoint URL to <code>https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions</code> (model must be in the URL path) and enter the Model ID</li>
                                 </ol>
                                 <p class="settings-hint"><strong>Recommended free-tier models for seed identification:</strong></p>
                                 <table style="width:100%;font-size:.8rem;border-collapse:collapse">
@@ -485,7 +485,7 @@
                             <li>
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
-                                    Endpoint URL: <span style="color:#ffd700">https://api-inference.huggingface.co/v1/chat/completions</span><br>
+                                    Endpoint URL: <span style="color:#ffd700">https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions</span><br>
                                     Model ID: <span style="color:#ffd700">Qwen/Qwen2.5-VL-7B-Instruct</span><br>
                                     Token: <span style="color:#ffd700">hf_xxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
@@ -501,12 +501,13 @@
                     <div class="settings-field">
                         <label class="settings-label">Inference Endpoint URL</label>
                         <p class="settings-hint">
-                            <strong>Serverless API (recommended):</strong> <code>https://api-inference.huggingface.co/v1/chat/completions</code><br>
+                            <strong>Serverless API (recommended):</strong> <code>https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions</code><br>
+                            The model must be in the URL path. If you enter only the base URL, the model ID field is appended automatically.<br>
                             <strong>Dedicated endpoint:</strong> paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
                         </p>
                         <input type="url" name="ai_hf_endpoint" class="settings-input"
                                value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
-                               placeholder="https://api-inference.huggingface.co/v1/chat/completions">
+                               placeholder="https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
