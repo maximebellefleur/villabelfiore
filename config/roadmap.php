@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.6.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Month Icons & Editable Prompt',
+        'features' => [
+            ['title' => 'Calendar icon reading', 'detail' => 'AI prompt now explicitly instructs the model to read sowing/harvest calendar rows (colored circles, highlighted month initials) and return planting_months + harvest_months as number arrays. The seed form auto-ticks the correct checkboxes.'],
+            ['title' => 'Per-upload prompt editor', 'detail' => 'Collapsible textarea in the seed form AI panel. Pre-filled from the saved setting, editable before each identification. Override is sent with the images and discarded after — global setting unchanged.'],
+            ['title' => 'Qwen quickstart (no SSH)', 'detail' => '3-step guide in Settings → AI → HuggingFace: create HF account, copy token, paste URL + model. Works entirely from a browser. Recommended model: Qwen/Qwen2.5-VL-7B-Instruct.'],
+        ],
+    ],
+
     '2.6.0' => [
         'status'   => 'released',
         'released' => '2026-04-27',

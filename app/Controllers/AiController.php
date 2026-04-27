@@ -68,9 +68,14 @@ class AiController
             $this->jsonError('No image data received');
         }
 
-        $db          = DB::getInstance();
-        $mode        = $this->getSetting($db, 'ai.mode', 'local');
-        $extraPrompt = trim($this->getSetting($db, 'ai.extra_prompt', ''));
+        $db   = DB::getInstance();
+        $mode = $this->getSetting($db, 'ai.mode', 'local');
+
+        // extra_prompt_override from POST takes precedence over saved setting (per-upload edit)
+        $extraPromptRaw = $request->post('extra_prompt_override', null);
+        $extraPrompt    = $extraPromptRaw !== null
+            ? trim($extraPromptRaw)
+            : trim($this->getSetting($db, 'ai.extra_prompt', ''));
 
         $basePrompt = <<<PROMPT
 You are a botanical expert and seed catalog assistant. Analyze this image — it may show a plant, seed packet, seed bag, or loose seeds. If multiple images are provided, they show the front and back of the same seed packet.
@@ -92,19 +97,35 @@ Respond ONLY with a single JSON object (no markdown fences, no explanation text,
   "companions": ["plant1","plant2"],
   "antagonists": ["plant1","plant2"],
   "yield_per_plant_kg": number or null,
+  "planting_months": [array of integers 1–12 for active sowing months, or empty array],
+  "harvest_months": [array of integers 1–12 for active harvest months, or empty array],
   "notes": "Any extra growing tips visible on the packet or known for this variety, or empty string"
 }
+
+CALENDAR READING — Many seed packets print a row of month initials (e.g. J F M A M J J A S O N D) where some months are highlighted, circled, colored, filled, or printed in bold/dark. Read each row carefully:
+- A row labelled "Semis", "Sowing", "Plantation", "À semer", "Sembrar" → fill planting_months with the numbers of the highlighted/active months (1=Jan, 2=Feb, …, 12=Dec).
+- A row labelled "Récolte", "Harvest", "Cosecha", "Erntezeit", "À récolter" → fill harvest_months the same way.
+If no calendar is visible, return empty arrays.
+
+ICON READING — Interpret pictograms on the packet:
+- Sun icon only → "Full sun". Half-sun/partial cloud → "Partial shade". Full cloud/shade icon → "Full shade".
+- Thermometer or snow icon → affects frost_hardy.
+- Depth arrows/measurements → sowing_depth_mm (convert cm to mm if needed).
+- Spacing arrows → spacing_cm (within row) and row_spacing_cm (between rows).
+- Germination/clock icon with days → days_to_germinate.
+- Harvest/calendar with days → days_to_maturity. If a range is given (e.g. 85–130 days), use the midpoint.
 
 If you cannot identify the plant or seed, set name to "Unknown" and all other fields to null or empty. Never output anything except the JSON object.
 PROMPT;
 
         if ($extraPrompt !== '') {
-            $basePrompt .= "\n\nAdditional instructions:\n" . $extraPrompt;
+            $basePrompt .= "\n\nAdditional instructions from the user:\n" . $extraPrompt;
         }
 
-        $debug[] = ['step' => 'mode', 'value' => $mode];
-        $debug[] = ['step' => 'images_count', 'value' => count($images)];
-        $debug[] = ['step' => 'extra_prompt', 'value' => $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none'];
+        $debug[] = ['step' => 'mode',         'value' => $mode];
+        $debug[] = ['step' => 'images_count',  'value' => count($images)];
+        $debug[] = ['step' => 'extra_prompt',  'value' => $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none'];
+        $debug[] = ['step' => 'prompt_source', 'value' => $extraPromptRaw !== null ? 'per-upload override' : 'saved setting'];
 
         if ($mode === 'huggingface') {
             $this->callHuggingFace($db, $images, $basePrompt, $debug);
@@ -253,6 +274,17 @@ PROMPT;
         $this->parseAndRespond($text, $debug);
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static function sanitiseMonths(mixed $raw): array
+    {
+        if (!is_array($raw)) return [];
+        return array_values(array_filter(
+            array_map('intval', $raw),
+            fn(int $m) => $m >= 1 && $m <= 12
+        ));
+    }
+
     // ── Parse AI text → JSON → sanitised fields ───────────────────────────────
 
     private function parseAndRespond(string $text, array $debug): void
@@ -298,6 +330,8 @@ PROMPT;
             'companions'         => is_array($fields['companions'] ?? null)   ? implode(', ', $fields['companions'])  : (string)($fields['companions'] ?? ''),
             'antagonists'        => is_array($fields['antagonists'] ?? null)  ? implode(', ', $fields['antagonists']) : (string)($fields['antagonists'] ?? ''),
             'yield_per_plant_kg' => is_numeric($fields['yield_per_plant_kg'] ?? null) ? (float)$fields['yield_per_plant_kg'] : null,
+            'planting_months'    => self::sanitiseMonths($fields['planting_months'] ?? null),
+            'harvest_months'     => self::sanitiseMonths($fields['harvest_months']  ?? null),
             'notes'              => (string)($fields['notes'] ?? ''),
         ];
 

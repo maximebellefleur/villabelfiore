@@ -470,13 +470,39 @@
                         </div>
                     </div>
 
+                    <!-- Quick-start: Qwen (recommended) -->
+                    <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fde68a;border-radius:var(--radius);padding:var(--spacing-3) var(--spacing-4);margin-bottom:var(--spacing-4)">
+                        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px">⭐ Quickstart — Qwen2.5-VL (recommended, no server needed)</div>
+                        <p class="settings-hint" style="margin-bottom:10px">100% cloud, no SSH, no installation. Takes about 3 minutes to set up.</p>
+                        <ol style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:10px;font-size:.82rem;line-height:1.7;color:var(--color-text)">
+                            <li>
+                                Go to <strong>huggingface.co</strong> and create a free account (or log in).
+                            </li>
+                            <li>
+                                Click your avatar → <strong>Settings → Access Tokens → New token</strong>.<br>
+                                Name it anything, set type to <strong>Read</strong>, click Create. Copy the token (starts with <code>hf_</code>).
+                            </li>
+                            <li>
+                                Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
+                                <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
+                                    Endpoint URL: <span style="color:#ffd700">https://api-inference.huggingface.co/v1/chat/completions</span><br>
+                                    Model ID: <span style="color:#ffd700">Qwen/Qwen2.5-VL-7B-Instruct</span><br>
+                                    Token: <span style="color:#ffd700">hf_xxxxxxxxxxxxxxxxxxxx</span>
+                                </div>
+                            </li>
+                            <li>
+                                Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify. Done.
+                            </li>
+                        </ol>
+                        <p class="settings-hint" style="margin-top:10px">Free tier: ~100 requests/day. The model is excellent at reading text from seed packet labels and calendar icons.</p>
+                    </div>
+
                     <!-- Config fields -->
                     <div class="settings-field">
                         <label class="settings-label">Inference Endpoint URL</label>
                         <p class="settings-hint">
-                            <strong>Serverless API:</strong> <code>https://api-inference.huggingface.co/v1/chat/completions</code><br>
-                            <strong>Dedicated endpoint:</strong> paste the base URL from your endpoint dashboard (e.g. <code>https://xyz.endpoints.huggingface.cloud</code>).
-                            The path <code>/v1/chat/completions</code> is appended automatically if missing.
+                            <strong>Serverless API (recommended):</strong> <code>https://api-inference.huggingface.co/v1/chat/completions</code><br>
+                            <strong>Dedicated endpoint:</strong> paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
                         </p>
                         <input type="url" name="ai_hf_endpoint" class="settings-input"
                                value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
@@ -484,14 +510,17 @@
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
-                        <p class="settings-hint">Required for the serverless API. For dedicated endpoints, leave blank or enter <code>tgi</code>.</p>
+                        <p class="settings-hint">
+                            Recommended: <code>Qwen/Qwen2.5-VL-7B-Instruct</code> — excellent at reading printed text and icons from seed packets.<br>
+                            For dedicated endpoints, leave blank or enter <code>tgi</code>.
+                        </p>
                         <input type="text" name="ai_hf_model" class="settings-input"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="meta-llama/Llama-3.2-11B-Vision-Instruct">
+                               placeholder="Qwen/Qwen2.5-VL-7B-Instruct">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>
-                        <p class="settings-hint">Your HuggingFace access token (starts with <code>hf_</code>). Required even on the free tier for authenticated requests. Stored securely in your local database.</p>
+                        <p class="settings-hint">Your HuggingFace access token (starts with <code>hf_</code>). Required even on the free tier. Stored only in your local database.</p>
                         <input type="password" name="ai_hf_token" class="settings-input"
                                value="<?= e($settings['ai.hf_token'] ?? '') ?>"
                                placeholder="hf_…"

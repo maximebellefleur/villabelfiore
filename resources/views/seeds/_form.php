@@ -32,6 +32,20 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         </button>
     </div>
 
+    <!-- Editable prompt (per-upload override — does NOT change the saved setting) -->
+    <details id="aiPromptDetails" style="border:1px solid rgba(45,90,39,.2);border-radius:6px;padding:6px 10px;background:rgba(45,90,39,.03)">
+        <summary style="font-size:.75rem;font-weight:600;cursor:pointer;color:var(--color-text-muted);user-select:none">
+            ✏️ Extra instructions for this identification <span style="font-weight:400">(optional — overrides saved setting for this upload only)</span>
+        </summary>
+        <textarea id="aiPromptOverride" rows="3"
+                  style="margin-top:6px;width:100%;border:1px solid var(--color-border);border-radius:4px;padding:6px 10px;font-size:.8rem;font-family:inherit;resize:vertical;background:var(--color-bg);color:var(--color-text);box-sizing:border-box"
+                  placeholder="e.g. Answer in French. Prefer Italian variety names. Note soil pH in the notes field."><?= e($aiExtraPrompt ?? '') ?></textarea>
+        <p style="font-size:.7rem;color:var(--color-text-muted);margin:4px 0 0">
+            The base botanical prompt runs automatically. This text is appended on top.
+            Change the saved default in <a href="<?= url('/settings') ?>#ai" style="color:var(--color-primary)">Settings → AI</a>.
+        </p>
+    </details>
+
     <!-- Previews -->
     <div style="display:flex;gap:var(--spacing-3);flex-wrap:wrap">
         <div id="aiPreviewWrap"  style="display:none;flex-direction:column;align-items:center;gap:4px">
@@ -300,15 +314,19 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         progBar.style.display = 'block';
         runBtn.disabled = true; btn.disabled = true; btn2.disabled = true;
 
+        var promptOverride = (document.getElementById('aiPromptOverride') || {}).value || '';
+
         var body = new URLSearchParams();
-        body.append('_token',     '<?= e(\App\Support\CSRF::getToken()) ?>');
-        body.append('image_data',  images.front.b64);
-        body.append('image_mime',  images.front.mime);
+        body.append('_token',               '<?= e(\App\Support\CSRF::getToken()) ?>');
+        body.append('image_data',            images.front.b64);
+        body.append('image_mime',            images.front.mime);
+        body.append('extra_prompt_override', promptOverride);
         if (images.back) {
             body.append('image_data_2', images.back.b64);
             body.append('image_mime_2', images.back.mime);
         }
 
+        dbg('extra_prompt', promptOverride ? promptOverride.slice(0, 80) + '…' : '(none)');
         dbg('posting_to', '<?= url('/api/ai/identify-seed') ?>');
         setProgress(20);
 
@@ -373,6 +391,19 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         }
     }
 
+    function fillMonths(fieldName, months) {
+        if (!Array.isArray(months) || !months.length) return;
+        var activeSet = {};
+        months.forEach(function(m) { activeSet[parseInt(m)] = true; });
+        document.querySelectorAll('input[name="' + fieldName + '[]"]').forEach(function(cb) {
+            var m = parseInt(cb.value);
+            cb.checked = !!activeSet[m];
+            // Trigger the inline style handler each label has via onchange
+            cb.dispatchEvent(new Event('change'));
+        });
+        dbg('filled_' + fieldName, months.join(', '));
+    }
+
     function fillForm(f) {
         setVal('fName',        f.name);
         setVal('fVariety',     f.variety);
@@ -389,6 +420,8 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         setVal('fCompanions',  f.companions);
         setVal('fAntagonists', f.antagonists);
         setVal('fYield',       f.yield_per_plant_kg);
+        fillMonths('planting_months', f.planting_months);
+        fillMonths('harvest_months',  f.harvest_months);
         if (f.notes) {
             var notesEl = document.getElementById('fNotes');
             if (notesEl && !notesEl.value.trim()) notesEl.value = f.notes;

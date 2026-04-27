@@ -131,7 +131,11 @@ class SeedController
         $this->requireAuth();
         $db = DB::getInstance();
         $this->ensureTables($db);
-        Response::render('seeds/create', ['title' => 'Add Seed']);
+        $epRow = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'ai.extra_prompt' LIMIT 1");
+        Response::render('seeds/create', [
+            'title'         => 'Add Seed',
+            'aiExtraPrompt' => (string)($epRow['setting_value_text'] ?? ''),
+        ]);
     }
 
     public function store(Request $request, array $params = []): void
@@ -201,7 +205,12 @@ class SeedController
         $seed = $db->fetchOne('SELECT * FROM seeds WHERE id = ?', [$id]);
         if (!$seed) { Response::redirect('/seeds'); }
 
-        Response::render('seeds/edit', ['title' => 'Edit ' . $seed['name'], 'seed' => $seed]);
+        $epRow = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'ai.extra_prompt' LIMIT 1");
+        Response::render('seeds/edit', [
+            'title'         => 'Edit ' . $seed['name'],
+            'seed'          => $seed,
+            'aiExtraPrompt' => (string)($epRow['setting_value_text'] ?? ''),
+        ]);
     }
 
     public function update(Request $request, array $params = []): void

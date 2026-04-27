@@ -8,6 +8,21 @@
  */
 return [
 
+    '2.6.1' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Month Icons & Editable Prompt',
+        'new' => [
+            'AI prompt now reads calendar icon rows (Semis/Récolte, Sowing/Harvest, etc.) and auto-ticks the planting and harvest month checkboxes on the seed form.',
+            'Seed form: "✏️ Extra instructions" collapsible textarea in the AI panel lets you tweak the prompt per-upload without changing the saved setting.',
+            'Settings → AI → HuggingFace: step-by-step 3-minute Qwen quickstart guide (no SSH, no server installation, free tier).',
+        ],
+        'improved' => [
+            'AI prompt enriched with detailed icon-reading instructions: sun/shade, spacing arrows, depth markers, germination clocks, and harvest day ranges (midpoint calculated automatically).',
+            'Recommended model updated to Qwen/Qwen2.5-VL-7B-Instruct — better at OCR and structured label reading than Llama-Vision on the free tier.',
+            'extra_prompt_override POST field: the per-upload textarea value is sent alongside images and overrides the saved extra_prompt for that request only.',
+        ],
+    ],
+
     '2.6.0' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — HuggingFace & Dual-Photo',
