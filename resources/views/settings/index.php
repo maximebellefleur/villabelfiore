@@ -484,7 +484,7 @@
                             <li>
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
-                                    Endpoint URL: <span style="color:#ffd700">https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</span><br>
+                                    Endpoint URL: <span style="color:#ffd700">https://generativelanguage.googleapis.com/v1beta/openai/</span><br>
                                     Model ID: <span style="color:#ffd700">gemini-1.5-flash</span><br>
                                     Token: <span style="color:#ffd700">AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
@@ -501,12 +501,12 @@
                         <label class="settings-label">Inference Endpoint URL</label>
                         <p class="settings-hint">
                             Any OpenAI-compatible <code>/chat/completions</code> endpoint.<br>
-                            <strong>Google Gemini (recommended free):</strong> <code>https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</code><br>
+                            <strong>Google Gemini (recommended free):</strong> <code>https://generativelanguage.googleapis.com/v1beta/openai/</code> — Rooted uses the native Gemini API automatically when it detects this domain.<br>
                             <strong>HuggingFace dedicated:</strong> paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
                         </p>
                         <input type="url" name="ai_hf_endpoint" class="settings-input"
                                value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
-                               placeholder="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions">
+                               placeholder="https://generativelanguage.googleapis.com/v1beta/openai/">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>

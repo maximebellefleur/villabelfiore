@@ -139,7 +139,12 @@ PROMPT;
         $debug[] = ['step' => 'prompt_source', 'value' => $extraPromptRaw !== null ? 'per-upload override' : 'saved setting'];
 
         if ($mode === 'huggingface') {
-            $this->callHuggingFace($db, $images, $basePrompt, $debug);
+            $endpoint = $this->getSetting($db, 'ai.hf_endpoint', '');
+            if (str_contains($endpoint, 'generativelanguage.googleapis.com')) {
+                $this->callGeminiNative($db, $images, $basePrompt, $debug);
+            } else {
+                $this->callHuggingFace($db, $images, $basePrompt, $debug);
+            }
         } else {
             $this->callOllama($db, $images, $basePrompt, $debug);
         }
@@ -197,6 +202,80 @@ PROMPT;
         $text       = trim($ollamaResp['response'] ?? '');
 
         $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
+
+        $this->parseAndRespond($text, $debug);
+    }
+
+    // ── Gemini native API (generateContent) ──────────────────────────────────
+
+    private function callGeminiNative(DB $db, array $images, string $prompt, array &$debug): void
+    {
+        $hfModel = $this->getSetting($db, 'ai.hf_model', 'gemini-1.5-flash') ?: 'gemini-1.5-flash';
+        $apiKey  = $this->getSetting($db, 'ai.hf_token', '');
+
+        if ($apiKey === '') {
+            $this->jsonError('Gemini API key is not set. Go to Settings → AI and paste your AIza… key.', 400, $debug);
+        }
+
+        $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                . $hfModel . ':generateContent?key=' . $apiKey;
+
+        $debug[] = ['step' => 'gemini_model', 'value' => $hfModel];
+        $debug[] = ['step' => 'sending_to_gemini', 'value' => 'generativelanguage.googleapis.com … ' . $hfModel];
+
+        // Build parts: text first, then images as inline_data
+        $parts = [['text' => $prompt]];
+        foreach ($images as $img) {
+            $parts[] = ['inline_data' => ['mime_type' => $img['mime'], 'data' => $img['b64']]];
+        }
+
+        $payload = json_encode([
+            'contents'        => [['parts' => $parts]],
+            'generationConfig' => ['maxOutputTokens' => 1024, 'temperature' => 0.1],
+        ]);
+
+        $ch = curl_init($apiUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+
+        $raw   = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $info  = curl_getinfo($ch);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
+        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+
+        if ($errno !== 0 || $raw === false) {
+            $this->jsonError('Could not reach Gemini API: ' . $curlErr, 502, $debug);
+        }
+
+        if (($info['http_code'] ?? 0) >= 400) {
+            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) && isset($decoded[0])) { $decoded = $decoded[0]; }
+            $rawErr = $decoded['error'] ?? null;
+            $errMsg = is_array($rawErr)
+                ? ($rawErr['message'] ?? json_encode($rawErr))
+                : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
+            $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
+        }
+
+        $resp = json_decode($raw, true);
+        $text = trim($resp['candidates'][0]['content']['parts'][0]['text'] ?? '');
+
+        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
+
+        if ($text === '') {
+            $this->jsonError('Gemini returned an empty response.', 502, $debug);
+        }
 
         $this->parseAndRespond($text, $debug);
     }

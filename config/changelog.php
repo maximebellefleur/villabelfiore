@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.7.0' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Native Gemini API',
+        'fixed' => [
+            'Google Gemini OpenAI-compatible endpoint returned 404 for all model names — the translation layer does not accept standard model IDs. AiController now detects generativelanguage.googleapis.com and calls the native generateContent API directly, bypassing the broken OpenAI compat layer.',
+        ],
+        'improved' => [
+            'Native Gemini API uses inline_data format for images (faster and more reliable than base64 data URLs). Model and API key are combined into the direct API URL. Response parsed from candidates[0].content.parts[0].text.',
+        ],
+    ],
+
     '2.6.9' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Gemini 1.5 Flash + Error Parsing Fix',

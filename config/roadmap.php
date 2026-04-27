@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Native Gemini API',
+        'features' => [
+            ['title' => 'Native Gemini generateContent API', 'detail' => 'When the endpoint URL contains generativelanguage.googleapis.com, Rooted now calls the native Gemini generateContent API directly instead of the broken OpenAI-compatible wrapper. Model ID goes directly in the URL, images as inline_data.'],
+        ],
+    ],
+
     '2.6.9' => [
         'status'   => 'released',
         'released' => '2026-04-27',
