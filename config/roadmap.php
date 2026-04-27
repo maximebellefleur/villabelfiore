@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.8.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Companions: dedupe + quick-add + over-capacity warning',
+        'features' => [
+            ['title' => 'Companion deduplication', 'detail' => 'rankCompanions() now keyed by lowercase plant name — multiple varieties of the same plant collapse into a single suggestion with the best score.'],
+            ['title' => 'Quick-add companion to bed', 'detail' => 'Each companion suggestion shows a "+ Add" button. Clicking it finds the first empty line and posts a planned planting with qty=1, then reloads. Includes seed_id for correct wiring.'],
+            ['title' => 'Over-capacity line warning', 'detail' => 'Bed line cards turn red and show "⚠ over capacity" when plant_count exceeds floor(bed_length_cm / spacing_cm). Warning updates live on +/− clicks without a page reload.'],
+        ],
+    ],
+
     '2.8.4' => [
         'status'   => 'released',
         'released' => '2026-04-27',

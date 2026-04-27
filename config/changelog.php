@@ -8,6 +8,20 @@
  */
 return [
 
+    '2.8.5' => [
+        'date'  => '2026-04-27',
+        'title' => 'Companions: dedupe + quick-add + over-capacity warning',
+        'improved' => [
+            'Companion suggestions now deduplicate by plant name — one entry per vegetable regardless of how many varieties exist in the seed bank, keeping the highest-scoring match.',
+            'Each companion suggestion has a "+ Add" button that immediately plants it on the first empty bed line (status: planned, qty: 1) and reloads.',
+            'seed_id is now included in companion response so the quick-add wires up to the correct seed.',
+            'Companions button is now always shown for planted lines (no longer requires an API key setting).',
+        ],
+        'new' => [
+            'Over-capacity warning on bed line cards: red border + "⚠ over capacity" label appears when plant count exceeds the calculated capacity (bed length ÷ seed spacing). Updates live when using +/− buttons without a full page reload.',
+        ],
+    ],
+
     '2.8.4' => [
         'date'  => '2026-04-27',
         'title' => 'Seed form: manual AI prompt copy/paste pre-fill',

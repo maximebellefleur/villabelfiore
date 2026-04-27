@@ -462,7 +462,7 @@ class GardenBedController
 
             $db    = DB::getInstance();
             $seeds = $db->fetchAll(
-                "SELECT name, companions, antagonists FROM seeds ORDER BY name ASC"
+                "SELECT id, name, companions, antagonists FROM seeds ORDER BY name ASC"
             ) ?: [];
 
             $data = self::rankCompanions($crop, $bedCrops, $seeds);
@@ -531,7 +531,8 @@ class GardenBedController
         }
 
         // Score every seed as a candidate companion
-        $candidates = [];
+        // Keyed by lowercase name to deduplicate varieties — keep highest score per plant
+        $seen = [];
         foreach ($seeds as $s) {
             $sLc = strtolower($s['name']);
             if ($sLc === $cropLc) continue;
@@ -540,7 +541,7 @@ class GardenBedController
             $sAntagonists = $decode($s['antagonists']);
 
             // Disqualify if mutual antagonist
-            if (in_array($sLc, $tAntagonists, true))  continue;
+            if (in_array($sLc, $tAntagonists, true))   continue;
             if (in_array($cropLc, $sAntagonists, true)) continue;
 
             $score   = 0;
@@ -572,9 +573,13 @@ class GardenBedController
             $reason = ucfirst(implode('; ', $reasons));
             if ($warnings) $reason .= ' ⚠ ' . implode(', ', $warnings);
 
-            $candidates[] = ['name' => $s['name'], 'score' => $score, 'reason' => $reason];
+            // Deduplicate: one entry per plant name, keep highest score
+            if (!isset($seen[$sLc]) || $score > $seen[$sLc]['score']) {
+                $seen[$sLc] = ['id' => (int)($s['id'] ?? 0), 'name' => $s['name'], 'score' => $score, 'reason' => $reason];
+            }
         }
 
+        $candidates = array_values($seen);
         usort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
 
         // Antagonists = bed crops that conflict with the target
