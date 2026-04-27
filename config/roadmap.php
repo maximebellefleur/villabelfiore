@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI — Gemini Model Fallback on 503/429',
+        'features' => [
+            ['title' => 'Automatic Gemini model fallback', 'detail' => 'If the selected Gemini model is overloaded (503) or rate-limited (429), Rooted silently tries the next model in the chain (gemini-2.5-flash → gemini-2.0-flash → gemini-1.5-flash → gemini-1.5-flash-8b) so scanning keeps working even during demand spikes.'],
+        ],
+    ],
+
     '2.7.4' => [
         'status'   => 'released',
         'released' => '2026-04-27',

@@ -208,93 +208,137 @@ PROMPT;
 
     // ── Gemini native API (generateContent) ──────────────────────────────────
 
+    // Transient codes that justify trying the next model instead of failing
+    private const GEMINI_RETRY_CODES = [429, 500, 503];
+
+    // Fallback order — primary model from settings is prepended at runtime
+    private const GEMINI_FALLBACK_MODELS = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
+    ];
+
     private function callGeminiNative(DB $db, array $images, string $prompt, array &$debug): void
     {
-        $hfModel = $this->getSetting($db, 'ai.hf_model', 'gemini-1.5-flash') ?: 'gemini-1.5-flash';
-        $apiKey  = $this->getSetting($db, 'ai.hf_token', '');
+        $primaryModel = $this->getSetting($db, 'ai.hf_model', 'gemini-2.5-flash') ?: 'gemini-2.5-flash';
+        $apiKey       = $this->getSetting($db, 'ai.hf_token', '');
 
         if ($apiKey === '') {
             $this->jsonError('Gemini API key is not set. Go to Settings → AI and paste your AIza… key.', 400, $debug);
         }
 
-        $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
-                . $hfModel . ':generateContent?key=' . $apiKey;
+        // Build candidate list: primary model first, then fallbacks (deduped)
+        $candidates = array_values(array_unique(array_merge(
+            [$primaryModel],
+            self::GEMINI_FALLBACK_MODELS
+        )));
 
-        $debug[] = ['step' => 'gemini_model', 'value' => $hfModel];
-        $debug[] = ['step' => 'sending_to_gemini', 'value' => 'generativelanguage.googleapis.com … ' . $hfModel];
+        $debug[] = ['step' => 'gemini_model',      'value' => $primaryModel];
+        $debug[] = ['step' => 'gemini_fallbacks',   'value' => implode(' → ', $candidates)];
 
-        // Build parts: text first, then images as inline_data
+        // Build parts once — same for every model attempt
         $parts = [['text' => $prompt]];
         foreach ($images as $img) {
             $parts[] = ['inline_data' => ['mime_type' => $img['mime'], 'data' => $img['b64']]];
         }
-
         $payload = json_encode([
-            'contents'        => [['parts' => $parts]],
+            'contents'         => [['parts' => $parts]],
             'generationConfig' => ['maxOutputTokens' => 4096, 'temperature' => 0.1],
         ]);
 
-        $ch = curl_init($apiUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_TIMEOUT        => 120,
-            CURLOPT_CONNECTTIMEOUT => 10,
-        ]);
+        $lastErrMsg  = '';
+        $lastHttpCode = 0;
 
-        $raw   = curl_exec($ch);
-        $errno = curl_errno($ch);
-        $info  = curl_getinfo($ch);
-        $curlErr = curl_error($ch);
-        curl_close($ch);
+        foreach ($candidates as $model) {
+            $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                    . $model . ':generateContent?key=' . $apiKey;
 
-        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
-        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+            $debug[] = ['step' => 'sending_to_gemini', 'value' => 'generativelanguage.googleapis.com … ' . $model];
 
-        if ($errno !== 0 || $raw === false) {
-            $this->jsonError('Could not reach Gemini API: ' . $curlErr, 502, $debug);
-        }
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT        => 120,
+                CURLOPT_CONNECTTIMEOUT => 10,
+            ]);
 
-        if (($info['http_code'] ?? 0) >= 400) {
-            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
-            $decoded = json_decode($raw, true);
-            if (is_array($decoded) && isset($decoded[0])) { $decoded = $decoded[0]; }
-            $rawErr = $decoded['error'] ?? null;
-            $errMsg = is_array($rawErr)
-                ? ($rawErr['message'] ?? json_encode($rawErr))
-                : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
+            $raw      = curl_exec($ch);
+            $errno    = curl_errno($ch);
+            $info     = curl_getinfo($ch);
+            $curlErr  = curl_error($ch);
+            curl_close($ch);
 
-            // On 404 (model not found), ask Google which models this key CAN use
-            if (($info['http_code'] ?? 0) === 404) {
-                $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
-                curl_setopt_array($lh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
-                $listRaw  = curl_exec($lh);
-                curl_close($lh);
-                $listData = json_decode($listRaw ?: '{}', true);
-                $names = array_map(
-                    fn($m) => str_replace('models/', '', $m['name'] ?? ''),
-                    array_filter($listData['models'] ?? [], fn($m) => str_contains($m['name'] ?? '', 'gemini'))
-                );
-                $debug[] = ['step' => 'available_gemini_models', 'value' => $names
-                    ? implode(', ', array_values($names))
-                    : 'none returned — key may lack Generative Language API access'];
+            $debug[] = ['step' => 'curl_errno', 'value' => $errno];
+            $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+
+            if ($errno !== 0 || $raw === false) {
+                $this->jsonError('Could not reach Gemini API: ' . $curlErr, 502, $debug);
             }
 
-            $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
+            $httpCode = (int)($info['http_code'] ?? 0);
+
+            if ($httpCode >= 400) {
+                $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) && isset($decoded[0])) { $decoded = $decoded[0]; }
+                $rawErr  = $decoded['error'] ?? null;
+                $errMsg  = is_array($rawErr)
+                    ? ($rawErr['message'] ?? json_encode($rawErr))
+                    : (is_string($rawErr) ? $rawErr : 'HTTP ' . $httpCode);
+
+                // On 404, fetch available models once (only for the primary attempt)
+                if ($httpCode === 404 && $model === $primaryModel) {
+                    $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
+                    curl_setopt_array($lh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+                    $listRaw  = curl_exec($lh);
+                    curl_close($lh);
+                    $listData = json_decode($listRaw ?: '{}', true);
+                    $names = array_map(
+                        fn($m) => str_replace('models/', '', $m['name'] ?? ''),
+                        array_filter($listData['models'] ?? [], fn($m) => str_contains($m['name'] ?? '', 'gemini'))
+                    );
+                    $debug[] = ['step' => 'available_gemini_models', 'value' => $names
+                        ? implode(', ', array_values($names))
+                        : 'none returned — key may lack Generative Language API access'];
+                }
+
+                // Transient error — try next model
+                if (in_array($httpCode, self::GEMINI_RETRY_CODES, true)) {
+                    $debug[]      = ['step' => 'gemini_fallback', 'value' => $model . ' returned ' . $httpCode . ' — trying next model'];
+                    $lastErrMsg   = $errMsg;
+                    $lastHttpCode = $httpCode;
+                    continue;
+                }
+
+                // Non-retriable error (auth, bad request, etc.) — fail immediately
+                $this->jsonError($errMsg, $httpCode, $debug);
+            }
+
+            // Success
+            $resp = json_decode($raw, true);
+            $text = trim($resp['candidates'][0]['content']['parts'][0]['text'] ?? '');
+
+            $debug[] = ['step' => 'gemini_model_used', 'value' => $model];
+            $debug[] = ['step' => 'raw_ai_text',        'value' => substr($text, 0, 600)];
+
+            if ($text === '') {
+                $this->jsonError('Gemini returned an empty response.', 502, $debug);
+            }
+
+            $this->parseAndRespond($text, $debug);
         }
 
-        $resp = json_decode($raw, true);
-        $text = trim($resp['candidates'][0]['content']['parts'][0]['text'] ?? '');
-
-        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
-
-        if ($text === '') {
-            $this->jsonError('Gemini returned an empty response.', 502, $debug);
-        }
-
-        $this->parseAndRespond($text, $debug);
+        // All models exhausted
+        $this->jsonError(
+            'All Gemini models are currently unavailable. Last error: ' . $lastErrMsg
+            . ' — tried: ' . implode(', ', $candidates),
+            $lastHttpCode ?: 503,
+            $debug
+        );
     }
 
     // ── HuggingFace Inference API (OpenAI-compatible chat completions) ────────

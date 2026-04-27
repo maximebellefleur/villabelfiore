@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.5' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI — Gemini Model Fallback on 503/429',
+        'improved' => [
+            'When the configured Gemini model returns 503 (overloaded) or 429 (rate-limited), the AI scanner now automatically retries with the next model in a prioritized fallback chain (gemini-2.5-flash → gemini-2.0-flash → gemini-1.5-flash → gemini-1.5-flash-8b) instead of returning an error.',
+            'Debug output now shows which model was ultimately used and which ones were skipped.',
+        ],
+    ],
+
     '2.7.4' => [
         'date'  => '2026-04-27',
         'title' => 'Seeds — Stay on Add Form After Save',
