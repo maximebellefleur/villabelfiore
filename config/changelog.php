@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.7.9' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI — Codex Tab (session token, no API billing)',
+        'improved' => [
+            'Third AI tab renamed from "OpenAI" to "Codex" — uses a session token from Codex CLI or a compatible tool (OpenClaw etc.) instead of a paid API key.',
+            'Setup guide covers two paths: Codex CLI (codex auth login → copy access_token from ~/.codex/auth.json) and browser tools like OpenClaw (copy the JWT from their settings page).',
+            'No per-token billing — works through your existing ChatGPT Plus/Pro subscription.',
+        ],
+    ],
+
     '2.7.8' => [
         'date'  => '2026-04-27',
         'title' => 'AI — OpenAI Tab (GPT-4o / GPT-4o-mini)',

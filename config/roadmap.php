@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI — Codex Tab (session token, no API billing)',
+        'features' => [
+            ['title' => 'Codex session token mode', 'detail' => 'Third AI tab uses a session token from Codex CLI or OpenClaw. Authenticated through your ChatGPT Plus/Pro account — no per-token billing. Token is stored locally and used as a Bearer header to api.openai.com.'],
+        ],
+    ],
+
     '2.7.8' => [
         'status'   => 'released',
         'released' => '2026-04-27',

@@ -154,7 +154,7 @@ PROMPT;
         $this->sseLog('prompt_source', $extraPromptRaw !== null ? 'per-upload override' : 'saved setting');
 
         if ($mode === 'openai') {
-            $this->callOpenAI($db, $images, $basePrompt);
+            $this->callOpenAI($db, $images, $basePrompt); // codex session token path
         } elseif ($mode === 'huggingface') {
             $endpoint = $this->getSetting($db, 'ai.hf_endpoint', '');
             if (str_contains($endpoint, 'generativelanguage.googleapis.com')) {
@@ -221,19 +221,19 @@ PROMPT;
         $this->parseAndRespond($text);
     }
 
-    // ── OpenAI (GPT-4o / GPT-4o-mini) ────────────────────────────────────────
+    // ── Codex / OpenAI session token ─────────────────────────────────────────
 
     private function callOpenAI(DB $db, array $images, string $prompt): void
     {
-        $apiKey = $this->getSetting($db, 'ai.openai_key', '');
-        $model  = $this->getSetting($db, 'ai.openai_model', 'gpt-4o-mini') ?: 'gpt-4o-mini';
+        $apiKey = $this->getSetting($db, 'ai.codex_token', '');
+        $model  = $this->getSetting($db, 'ai.codex_model', 'gpt-4o-mini') ?: 'gpt-4o-mini';
 
         if ($apiKey === '') {
-            $this->sseFail('OpenAI API key is not set. Go to Settings → AI → OpenAI tab and paste your sk-… key.', 400);
+            $this->sseFail('Codex session token is not set. Go to Settings → AI → Codex tab and paste your token.', 400);
         }
 
-        $this->sseLog('openai_model',       $model);
-        $this->sseLog('sending_to_openai',  'api.openai.com … ' . $model);
+        $this->sseLog('codex_model',       $model);
+        $this->sseLog('sending_to_openai', 'api.openai.com … ' . $model);
 
         // Build multimodal content — text + images
         $content = [['type' => 'text', 'text' => $prompt]];

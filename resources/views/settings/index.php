@@ -359,7 +359,7 @@
                         onclick="switchAiMode('openai')"
                         class="btn <?= $aiMode === 'openai' ? 'btn-primary' : 'btn-secondary' ?>"
                         style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.85rem">
-                    ✦ OpenAI
+                    ✦ Codex
                 </button>
             </div>
 
@@ -539,52 +539,66 @@
 
                     <!-- Setup guide -->
                     <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
-                        <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 OpenAI Setup — 4 steps</div>
-                        <ol style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:12px;font-size:.83rem;line-height:1.7;color:var(--color-text)">
-                            <li>
-                                Go to <strong>platform.openai.com</strong> and sign in (or create a free account).
-                            </li>
-                            <li>
-                                In the left sidebar click <strong>API keys</strong> → <strong>Create new secret key</strong>.<br>
-                                Give it a name (e.g. <em>Rooted</em>) and click <strong>Create secret key</strong>.
-                            </li>
-                            <li>
-                                <strong>Copy the key now</strong> — it starts with <code>sk-</code> and is shown only once.<br>
-                                <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem">
-                                    Key: <span style="color:#ffd700">sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span><br>
-                                    Model: <span style="color:#ffd700">gpt-4o-mini</span> &nbsp;← paste in fields below
-                                </div>
-                            </li>
-                            <li>
-                                Paste the key below, confirm the model, then click <strong>Save AI Settings</strong>.<br>
-                                Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify.
-                            </li>
-                        </ol>
+                        <div style="font-weight:700;margin-bottom:4px">✦ Codex — Use your ChatGPT Plus/Pro subscription</div>
+                        <p class="settings-hint" style="margin-bottom:var(--spacing-3)">
+                            No API billing. You log in once with your OpenAI account and get a long-lived session token.
+                            Paste it below — Rooted uses it as your identity when calling the model.
+                        </p>
+
+                        <div style="display:flex;flex-direction:column;gap:var(--spacing-3)">
+
+                            <div>
+                                <div style="font-weight:600;font-size:.85rem;margin-bottom:6px">Option A — Codex CLI (terminal)</div>
+                                <ol style="margin:0 0 6px 16px;font-size:.82rem;line-height:1.8;color:var(--color-text-muted)">
+                                    <li>Install: <code>npm install -g @openai/codex</code></li>
+                                    <li>Run: <code>codex auth login</code> — a browser window opens, log in with your OpenAI account</li>
+                                    <li>After login, run: <code>cat ~/.codex/auth.json</code></li>
+                                    <li>Copy the value of <code>"access_token"</code> from that file</li>
+                                    <li>Paste it in the <strong>Session Token</strong> field below</li>
+                                </ol>
+                            </div>
+
+                            <div>
+                                <div style="font-weight:600;font-size:.85rem;margin-bottom:6px">Option B — OpenClaw or similar tool</div>
+                                <ol style="margin:0 0 6px 16px;font-size:.82rem;line-height:1.8;color:var(--color-text-muted)">
+                                    <li>Sign in to the tool using your OpenAI / ChatGPT account</li>
+                                    <li>Go to its <strong>Settings → Token</strong> or <strong>Account → Session</strong> page</li>
+                                    <li>Copy the long token it shows (usually a JWT starting with <code>eyJ…</code>)</li>
+                                    <li>Paste it in the <strong>Session Token</strong> field below</li>
+                                </ol>
+                            </div>
+
+                            <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;font-size:.8rem;line-height:1.9">
+                                Token: <span style="color:#ffd700">eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9…</span><br>
+                                Model: <span style="color:#ffd700">gpt-4o-mini</span> &nbsp;← paste in fields below, then Save
+                            </div>
+
+                        </div>
+
                         <p class="settings-hint" style="margin-top:10px">
-                            <strong>Pricing:</strong> gpt-4o-mini costs ~$0.00015 per image — essentially free for personal use.
-                            gpt-4o costs ~$0.001 per image and gives the best accuracy.<br>
-                            No subscription needed — pay-as-you-go, billed to your OpenAI account.
+                            The token is stored only in your local Rooted database and sent only to <code>api.openai.com</code>.
+                            Tokens expire periodically — if identification stops working, re-run <code>codex auth login</code> and update the token here.
                         </p>
                     </div>
 
                     <!-- Config fields -->
                     <div class="settings-field">
-                        <label class="settings-label">OpenAI API Key</label>
-                        <p class="settings-hint">Starts with <code>sk-</code>. Generated at <strong>platform.openai.com → API keys</strong>. Stored only in your local database, never sent anywhere except OpenAI.</p>
-                        <input type="password" name="ai_openai_key" class="settings-input"
-                               value="<?= e($settings['ai.openai_key'] ?? '') ?>"
-                               placeholder="sk-proj-…"
+                        <label class="settings-label">Session Token</label>
+                        <p class="settings-hint">The long token from Codex CLI (<code>~/.codex/auth.json</code>) or from OpenClaw / a compatible tool. Usually a JWT starting with <code>eyJ…</code>.</p>
+                        <input type="password" name="ai_codex_token" class="settings-input"
+                               value="<?= e($settings['ai.codex_token'] ?? '') ?>"
+                               placeholder="eyJhbGciOiJSUzI1NiIs…"
                                autocomplete="new-password">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model</label>
                         <p class="settings-hint">
-                            <code>gpt-4o-mini</code> — cheapest, excellent quality, recommended ✓<br>
-                            <code>gpt-4o</code> — best accuracy, higher cost<br>
-                            <code>o4-mini</code> — fast reasoning model with vision
+                            <code>gpt-4o-mini</code> — fast, excellent quality, recommended ✓<br>
+                            <code>gpt-4o</code> — highest accuracy<br>
+                            <code>o4-mini</code> — reasoning model with vision support
                         </p>
-                        <input type="text" name="ai_openai_model" class="settings-input"
-                               value="<?= e($settings['ai.openai_model'] ?? 'gpt-4o-mini') ?>"
+                        <input type="text" name="ai_codex_model" class="settings-input"
+                               value="<?= e($settings['ai.codex_model'] ?? 'gpt-4o-mini') ?>"
                                placeholder="gpt-4o-mini">
                     </div>
                 </div>
