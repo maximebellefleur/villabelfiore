@@ -167,8 +167,9 @@ class SeedController
         );
 
         $id = (int) $db->lastInsertId();
-        flash('success', 'Seed added to catalog.');
-        Response::redirect('/seeds/' . $id);
+        $addedName = trim($request->post('name', 'Seed'));
+        flash('success', '✅ "' . $addedName . '" added to catalog — add another one below.');
+        Response::redirect('/seeds/create');
     }
 
     public function show(Request $request, array $params = []): void

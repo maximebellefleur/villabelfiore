@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.7.4' => [
+        'date'  => '2026-04-27',
+        'title' => 'Seeds — Stay on Add Form After Save',
+        'improved' => [
+            'After saving a new seed, the app now redirects back to the Add Seed form (instead of the seed detail page) with a success notice showing the seed name — makes it fast to add several seeds in a row.',
+        ],
+    ],
+
     '2.7.3' => [
         'date'  => '2026-04-27',
         'title' => 'Seed Detail — Mobile Layout Fix',

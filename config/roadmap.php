@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Seeds — Stay on Add Form After Save',
+        'features' => [
+            ['title' => 'Quick batch seed entry', 'detail' => 'Saving a new seed redirects back to the blank Add Seed form with a confirmation banner, so you can add the next seed immediately without navigating back.'],
+        ],
+    ],
+
     '2.7.3' => [
         'status'   => 'released',
         'released' => '2026-04-27',
