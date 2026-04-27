@@ -42,14 +42,25 @@ class AiController
      */
     public function identifySeed(Request $request, array $params = []): void
     {
+        $debug = [];
+        try {
+            $this->identifySeedInner($request, $debug);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => $e->getMessage(), 'debug' => $debug]);
+            exit;
+        }
+    }
+
+    private function identifySeedInner(Request $request, array &$debug): void
+    {
         $this->requireAuth();
 
         $token = $request->post('_token', '');
         if (!CSRF::validateToken($token)) {
             $this->jsonError('Invalid CSRF token', 403);
         }
-
-        $debug = [];
 
         // Collect up to 2 images (front + back of packet)
         $images = [];
@@ -135,6 +146,7 @@ PROMPT;
     }
 
     // ── Ollama (local) ────────────────────────────────────────────────────────
+
 
     private function callOllama(DB $db, array $images, string $prompt, array &$debug): void
     {

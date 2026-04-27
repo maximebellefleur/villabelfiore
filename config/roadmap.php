@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.6.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — 500 Fix',
+        'features' => [
+            ['title' => 'LimitRequestBody removed from .htaccess', 'detail' => 'cPanel Apache does not grant AllowOverride Limit in .htaccess — the directive caused a 500 for every request. Removed; images at 800px/72% are well under post_max_size 30M.'],
+            ['title' => 'AI controller exception safety', 'detail' => 'Any unhandled PHP exception in the AI pipeline now returns a JSON error with the message, instead of the HTML "Something went wrong" page that broke the client-side JSON parser.'],
+        ],
+    ],
+
     '2.6.5' => [
         'status'   => 'released',
         'released' => '2026-04-27',

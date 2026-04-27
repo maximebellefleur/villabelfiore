@@ -1,7 +1,6 @@
 Options -Indexes
 
 # Increase upload and post size limits for photo uploads
-LimitRequestBody 52428800
 <IfModule mod_php.c>
   php_value upload_max_filesize 25M
   php_value post_max_size 30M

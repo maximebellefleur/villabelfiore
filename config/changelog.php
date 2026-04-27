@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.6' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — 500 Fix',
+        'fixed' => [
+            'HTTP 500 on all requests after v2.6.2 introduced LimitRequestBody in .htaccess. Apache on cPanel requires AllowOverride Limit to honour this directive in .htaccess — without it, Apache returns 500 for the entire directory. Directive removed; images are now small enough (800px/72%) that the existing post_max_size 30M is sufficient.',
+            'AI controller now wraps the entire request in try/catch and returns JSON on any unhandled exception, instead of falling through to the HTML error page.',
+        ],
+    ],
+
     '2.6.5' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Switch to OpenRouter',
