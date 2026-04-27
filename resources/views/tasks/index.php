@@ -287,19 +287,38 @@ $_hasWeekTasks  = !empty($_weekTasks);
 <?php else: ?>
 <div id="achatList">
 <?php foreach ($achats as $catKey => $catItems):
-    $label = $catKey !== '__none__' ? strtoupper($catKey) : null;
+    $isSeedGroup = ($catKey === '__seeds__');
+    $label = !$isSeedGroup && $catKey !== '__none__' ? strtoupper($catKey) : null;
     $color = $label ? taskTagColor($catKey) : null;
 ?>
 <div class="achat-group" data-cat="<?= e($catKey) ?>">
     <div class="achat-group-head">
-        <?php if ($label): ?>
+        <?php if ($isSeedGroup): ?>
+        <span class="task-tag" style="background:#15803d">🌱 GRAINES</span>
+        <a href="<?= url('/seeds') ?>" style="font-size:.7rem;color:var(--color-text-muted);text-decoration:none;margin-left:auto">Manage seeds →</a>
+        <?php elseif ($label): ?>
         <span class="task-tag" style="background:<?= $color ?>"><?= e($label) ?></span>
         <?php else: ?>
         <span style="color:var(--color-text-muted)">No category</span>
         <?php endif; ?>
     </div>
     <div class="task-list achat-group-items">
-    <?php foreach ($catItems as $a): ?>
+    <?php foreach ($catItems as $a):
+        $isSeedRow = ($isSeedGroup || ($a['_source'] ?? '') === 'seed');
+    ?>
+    <?php if ($isSeedRow): ?>
+    <div class="task-row" id="seedBuyRow<?= $a['id'] ?>">
+        <button class="task-checkbox" onclick="markSeedBought(<?= $a['id'] ?>, this)"></button>
+        <div class="task-body">
+            <div class="task-title-row">
+                <span class="task-title"><?= e($a['title']) ?></span>
+            </div>
+        </div>
+        <div class="task-actions">
+            <a href="<?= url('/seeds/' . $a['id']) ?>" class="task-act-btn" title="View seed">→</a>
+        </div>
+    </div>
+    <?php else: ?>
     <div class="task-row <?= $a['is_done'] ? 'done' : '' ?>" id="taskRow<?= $a['id'] ?>" data-id="<?= $a['id'] ?>">
         <button class="task-checkbox <?= $a['is_done'] ? 'checked' : '' ?>"
                 onclick="toggleTask(<?= $a['id'] ?>, this)"><?= $a['is_done'] ? '✓' : '' ?></button>
@@ -312,6 +331,7 @@ $_hasWeekTasks  = !empty($_weekTasks);
             <button class="task-act-btn" title="Delete" style="color:#dc3545" onclick="deleteTask(<?= $a['id'] ?>, this)">✕</button>
         </div>
     </div>
+    <?php endif; ?>
     <?php endforeach; ?>
     </div>
 </div>
@@ -868,6 +888,25 @@ function startInlineEdit(id, titleEl) {
         if (e.key === 'Enter') { e.preventDefault(); inp.removeEventListener('blur', save); save(); }
         if (e.key === 'Escape') { inp.removeEventListener('blur', save); cancel(); }
     });
+}
+
+/* ---- Mark seed as bought (from GRAINES group in achats) ---- */
+function markSeedBought(id, btn) {
+    btn.disabled = true;
+    fetch(BASE + 'seeds/' + id + '/mark-bought', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: '_token=' + encodeURIComponent(CSRF) + '&_ajax=1'
+    }).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.success) { btn.disabled = false; return; }
+        var row = document.getElementById('seedBuyRow' + id);
+        if (row) {
+            btn.classList.add('checked'); btn.textContent = '✓';
+            row.style.transition = 'opacity .3s';
+            row.style.opacity = '0';
+            setTimeout(function(){ row.remove(); }, 320);
+        }
+    }).catch(function(){ btn.disabled = false; });
 }
 
 /* ---- CSRF refresh on PWA reopen (fixes stale-session input bug) ---- */

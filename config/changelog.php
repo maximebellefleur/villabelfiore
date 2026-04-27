@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.8.6' => [
+        'date'  => '2026-04-27',
+        'title' => 'Buy list merged into Tasks → Achats',
+        'improved' => [
+            'Seeds marked as "Out of seed" now appear directly in Tasks → Achats under a 🌱 GRAINES group — no separate Buy List page or nav entry.',
+            'Checking a seed row in Achats marks it as back in stock instantly (AJAX, no reload). Row fades out on success.',
+            'The "Buy List" nav link is removed. /seeds/buy-list redirects to /tasks?tab=achats.',
+            'SeedController::markBought() now returns JSON when called with _ajax=1, matching the tasks pattern.',
+        ],
+    ],
+
     '2.8.5' => [
         'date'  => '2026-04-27',
         'title' => 'Companions: dedupe + quick-add + over-capacity warning',

@@ -30,7 +30,6 @@ $navLinks = [
     ['href' => '/reminders',      'label' => 'Reminders', 'icon' => 'reminders'],
     ['href' => '/finance',        'label' => 'Finance',   'icon' => 'finance'],
     ['href' => '/activity-log',   'label' => 'Activity',  'icon' => 'activity'],
-    ['href' => '/seeds/buy-list',  'label' => 'Buy List',  'icon' => 'cart'],
     ['href' => '/settings',        'label' => 'Settings',  'icon' => 'settings'],
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

@@ -483,23 +483,21 @@ class SeedController
     {
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
-        $id  = (int)($params['id'] ?? 0);
-        $db  = DB::getInstance();
+        $id = (int)($params['id'] ?? 0);
+        $db = DB::getInstance();
         $this->ensureTables($db);
         $db->execute('UPDATE seeds SET needs_restock = 0 WHERE id = ?', [$id]);
-        Response::redirect('/seeds/buy-list');
+        if ($request->post('_ajax') === '1') {
+            Response::json(['success' => true]);
+            return;
+        }
+        Response::redirect('/tasks?tab=achats');
     }
 
     public function buyList(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $db    = DB::getInstance();
-        $this->ensureTables($db);
-        $seeds = $db->fetchAll('SELECT * FROM seeds WHERE needs_restock = 1 ORDER BY name ASC');
-        Response::render('seeds/buy-list', [
-            'title' => 'Buy List',
-            'seeds' => $seeds,
-        ]);
+        Response::redirect('/tasks?tab=achats');
     }
 
     // ── Name uniqueness check (JSON API) ──────────────────────────────────────

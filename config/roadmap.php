@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.8.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Buy list merged into Tasks → Achats',
+        'features' => [
+            ['title' => 'Seed restock in Achats tab', 'detail' => 'TaskController::index() fetches needs_restock seeds and injects them as a virtual __seeds__ group at the top of $achats. No separate page, no separate table — single source of truth.'],
+            ['title' => 'Instant mark-bought', 'detail' => 'Checking a GRAINES row calls POST /seeds/{id}/mark-bought with _ajax=1. Row fades out; seed is back in stock.'],
+        ],
+    ],
+
     '2.8.5' => [
         'status'   => 'released',
         'released' => '2026-04-27',

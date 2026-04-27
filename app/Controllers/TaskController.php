@@ -71,7 +71,25 @@ class TaskController
             $achats[$key][] = $a;
         }
 
+        // Inject seeds needing restock as a virtual group at the top of achats
+        $seedRestocks = [];
+        try {
+            $seedRestocks = $db->fetchAll(
+                "SELECT id, name, variety FROM seeds WHERE needs_restock = 1 ORDER BY name ASC"
+            ) ?: [];
+        } catch (\Throwable $e) {}
+        if (!empty($seedRestocks)) {
+            $seedRows = array_map(fn($s) => [
+                'id'      => $s['id'],
+                'title'   => $s['name'] . ($s['variety'] ? ' — ' . $s['variety'] : ''),
+                'is_done' => 0,
+                '_source' => 'seed',
+            ], $seedRestocks);
+            $achats = array_merge(['__seeds__' => $seedRows], $achats);
+        }
+
         $archiveCount = (int)($db->fetchOne('SELECT COUNT(*) AS c FROM tasks WHERE is_archived = 1')['c'] ?? 0);
+        $achatsTotal  = array_sum(array_map('count', $achats));
 
         $reminders = $db->fetchAll(
             "SELECT r.*, i.name AS item_name FROM reminders r LEFT JOIN items i ON i.id=r.item_id WHERE r.status = 'pending' ORDER BY r.due_at ASC LIMIT 30"
@@ -92,7 +110,7 @@ class TaskController
             'title'          => 'Tasks',
             'tasks'          => $tasks,
             'achats'         => $achats,
-            'achatsTotal'    => count($achatRows),
+            'achatsTotal'    => $achatsTotal,
             'archiveCount'   => $archiveCount,
             'tab'            => $tab,
             'showDone'       => $showDone,
