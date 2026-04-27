@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.6.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Gemini 1.5 Flash + Error Parsing Fix',
+        'features' => [
+            ['title' => 'gemini-1.5-flash as default model', 'detail' => 'gemini-2.0-flash-exp is not available via the OpenAI-compatible endpoint. gemini-1.5-flash is stable, free-tier supported, and excellent at reading seed packet labels.'],
+            ['title' => 'Gemini error response parsing', 'detail' => 'Gemini wraps API errors in a JSON array — the parser now unwraps it so the real error message is shown in the debug panel.'],
+        ],
+    ],
+
     '2.6.8' => [
         'status'   => 'released',
         'released' => '2026-04-27',

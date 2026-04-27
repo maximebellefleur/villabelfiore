@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.9' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Gemini 1.5 Flash + Error Parsing Fix',
+        'fixed' => [
+            'gemini-2.0-flash-exp does not support the OpenAI-compatible endpoint. Switched recommended model to gemini-1.5-flash which is stable and fully supported.',
+            'Gemini API wraps error responses in a JSON array ([{"error":...}]) instead of an object — error parser now unwraps the array before extracting the message, so proper error text is shown in the debug panel instead of "HTTP 404".',
+        ],
+    ],
+
     '2.6.8' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Google Gemini Free Tier',

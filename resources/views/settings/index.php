@@ -485,7 +485,7 @@
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
                                     Endpoint URL: <span style="color:#ffd700">https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</span><br>
-                                    Model ID: <span style="color:#ffd700">gemini-2.0-flash-exp</span><br>
+                                    Model ID: <span style="color:#ffd700">gemini-1.5-flash</span><br>
                                     Token: <span style="color:#ffd700">AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
                             </li>
@@ -511,12 +511,12 @@
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
                         <p class="settings-hint">
-                            Google Gemini models: <code>gemini-2.0-flash-exp</code> · <code>gemini-1.5-flash</code> · <code>gemini-1.5-pro</code><br>
+                            Google Gemini models: <code>gemini-1.5-flash</code> (recommended) · <code>gemini-1.5-pro</code> · <code>gemini-2.0-flash-exp</code><br>
                             For HuggingFace dedicated endpoints, leave blank or enter <code>tgi</code>.
                         </p>
                         <input type="text" name="ai_hf_model" class="settings-input"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="gemini-2.0-flash-exp">
+                               placeholder="gemini-1.5-flash">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>

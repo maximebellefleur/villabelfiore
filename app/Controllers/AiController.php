@@ -275,6 +275,10 @@ PROMPT;
         if (($info['http_code'] ?? 0) >= 400) {
             $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
             $decoded = json_decode($raw, true);
+            // Gemini wraps errors in an array: [{"error":{...}}]
+            if (is_array($decoded) && isset($decoded[0])) {
+                $decoded = $decoded[0];
+            }
             $rawErr  = $decoded['error'] ?? null;
             $errMsg  = is_array($rawErr)
                 ? ($rawErr['message'] ?? json_encode($rawErr))
