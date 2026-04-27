@@ -470,61 +470,60 @@
                         </div>
                     </div>
 
-                    <!-- Quick-start: Qwen (recommended) -->
+                    <!-- Quick-start: OpenRouter (recommended) -->
                     <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fde68a;border-radius:var(--radius);padding:var(--spacing-3) var(--spacing-4);margin-bottom:var(--spacing-4)">
-                        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px">⭐ Quickstart — Qwen2.5-VL (recommended, no server needed)</div>
-                        <p class="settings-hint" style="margin-bottom:10px">100% cloud, no SSH, no installation. Takes about 3 minutes to set up.</p>
+                        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px">⭐ Quickstart — OpenRouter (recommended, free, no server needed)</div>
+                        <p class="settings-hint" style="margin-bottom:10px">OpenRouter is a free API gateway that hosts Qwen2.5-VL, Gemini Flash, and many other vision models. 100% cloud, no SSH, no installation. Takes about 3 minutes.</p>
                         <ol style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:10px;font-size:.82rem;line-height:1.7;color:var(--color-text)">
                             <li>
-                                Go to <strong>huggingface.co</strong> and create a free account (or log in).
+                                Go to <strong>openrouter.ai</strong> and create a free account.
                             </li>
                             <li>
-                                Click your avatar → <strong>Settings → Access Tokens → New token</strong>.<br>
-                                Name it anything, set type to <strong>Read</strong>, click Create. Copy the token (starts with <code>hf_</code>).
+                                Go to <strong>openrouter.ai/keys</strong> → <strong>Create Key</strong>. Copy the key (starts with <code>sk-or-</code>).
                             </li>
                             <li>
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
-                                    Endpoint URL: <span style="color:#ffd700">https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions</span><br>
-                                    Model ID: <span style="color:#ffd700">Qwen/Qwen2.5-VL-7B-Instruct</span><br>
-                                    Token: <span style="color:#ffd700">hf_xxxxxxxxxxxxxxxxxxxx</span>
+                                    Endpoint URL: <span style="color:#ffd700">https://openrouter.ai/api/v1/chat/completions</span><br>
+                                    Model ID: <span style="color:#ffd700">qwen/qwen2.5-vl-7b-instruct:free</span><br>
+                                    Token: <span style="color:#ffd700">sk-or-xxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
                             </li>
                             <li>
                                 Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify. Done.
                             </li>
                         </ol>
-                        <p class="settings-hint" style="margin-top:10px">Free tier: ~100 requests/day. The model is excellent at reading text from seed packet labels and calendar icons.</p>
+                        <p class="settings-hint" style="margin-top:10px">Free tier models (marked <code>:free</code>): <code>qwen/qwen2.5-vl-7b-instruct:free</code> · <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code>. No credit card required.</p>
                     </div>
 
                     <!-- Config fields -->
                     <div class="settings-field">
                         <label class="settings-label">Inference Endpoint URL</label>
                         <p class="settings-hint">
-                            <strong>Serverless API (recommended):</strong> <code>https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions</code><br>
-                            The model must be in the URL path. If you enter only the base URL, the model ID field is appended automatically.<br>
-                            <strong>Dedicated endpoint:</strong> paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
+                            Any OpenAI-compatible <code>/chat/completions</code> endpoint. Examples:<br>
+                            OpenRouter (recommended free): <code>https://openrouter.ai/api/v1/chat/completions</code><br>
+                            HuggingFace dedicated endpoint: paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
                         </p>
                         <input type="url" name="ai_hf_endpoint" class="settings-input"
                                value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
-                               placeholder="https://api-inference.huggingface.co/models/Qwen/Qwen2.5-VL-7B-Instruct/v1/chat/completions">
+                               placeholder="https://openrouter.ai/api/v1/chat/completions">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
                         <p class="settings-hint">
-                            Recommended: <code>Qwen/Qwen2.5-VL-7B-Instruct</code> — excellent at reading printed text and icons from seed packets.<br>
-                            For dedicated endpoints, leave blank or enter <code>tgi</code>.
+                            OpenRouter free vision models: <code>qwen/qwen2.5-vl-7b-instruct:free</code> · <code>google/gemini-2.0-flash-exp:free</code><br>
+                            For HuggingFace dedicated endpoints, leave blank or enter <code>tgi</code>.
                         </p>
                         <input type="text" name="ai_hf_model" class="settings-input"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="Qwen/Qwen2.5-VL-7B-Instruct">
+                               placeholder="qwen/qwen2.5-vl-7b-instruct:free">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>
-                        <p class="settings-hint">Your HuggingFace access token (starts with <code>hf_</code>). Required even on the free tier. Stored only in your local database.</p>
+                        <p class="settings-hint">OpenRouter: starts with <code>sk-or-</code>. HuggingFace: starts with <code>hf_</code>. Stored only in your local database.</p>
                         <input type="password" name="ai_hf_token" class="settings-input"
                                value="<?= e($settings['ai.hf_token'] ?? '') ?>"
-                               placeholder="hf_…"
+                               placeholder="sk-or-… or hf_…"
                                autocomplete="new-password">
                     </div>
                 </div>

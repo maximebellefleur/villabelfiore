@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.6.5' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Switch to OpenRouter',
+        'fixed' => [
+            'HuggingFace free serverless API does not host Qwen2.5-VL-7B-Instruct — all API attempts returned 404. Switched the recommended free cloud AI provider to OpenRouter (openrouter.ai), which hosts the same model (and Gemini Flash, Llama 3.2 Vision) with a simple OpenAI-compatible API and no server setup.',
+            'Simplified endpoint URL normalisation in AiController — removed incorrect HuggingFace-specific URL path building that was causing confusion.',
+        ],
+        'improved' => [
+            'Settings → AI → Cloud: quickstart now shows OpenRouter steps (3 minutes, no credit card, free tier). Free models listed: qwen/qwen2.5-vl-7b-instruct:free, google/gemini-2.0-flash-exp:free, meta-llama/llama-3.2-11b-vision-instruct:free.',
+            'AiController now sends HTTP-Referer and X-Title headers when the endpoint is openrouter.ai — required for free-tier access on some models.',
+        ],
+    ],
+
     '2.6.4' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — HuggingFace URL Fix',

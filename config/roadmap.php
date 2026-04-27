@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.6.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Switch to OpenRouter',
+        'features' => [
+            ['title' => 'OpenRouter as recommended free AI provider', 'detail' => 'HuggingFace free serverless does not host large vision models like Qwen2.5-VL. OpenRouter (openrouter.ai) provides the same models via a simple OpenAI-compatible API — free tier, no server, no card.'],
+            ['title' => 'Any OpenAI-compatible endpoint supported', 'detail' => 'The endpoint field now works with OpenRouter, Groq, Together AI, HuggingFace Dedicated Endpoints, or any other OpenAI-compatible API. Just paste the /chat/completions URL and your API key.'],
+        ],
+    ],
+
     '2.6.4' => [
         'status'   => 'released',
         'released' => '2026-04-27',
