@@ -346,32 +346,46 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
 
         var resultReceived = false;
         var modelCount     = 0;
+        var watchdog       = null;
 
-        function enableButtons() { runBtn.disabled = false; btn.disabled = false; btn2.disabled = false; }
+        function enableButtons() {
+            runBtn.disabled = false; btn.disabled = false; btn2.disabled = false;
+            if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+        }
+
+        // Safety net: if the server goes silent for 90 s, recover gracefully
+        watchdog = setTimeout(function () {
+            if (!resultReceived) {
+                enableButtons();
+                progBar.style.display = 'none';
+                dbg('timeout', 'No response after 90 s');
+                setStatus('⏱ Request timed out. Click Identify to try again.', '#dc3545');
+            }
+        }, 90000);
 
         function handleEvent(evt) {
             if (evt.type === 'log') {
                 dbg(evt.step || '?', evt.value !== undefined ? String(evt.value) : '');
 
-                // Update status bar for meaningful milestones
                 if (evt.step === 'fetching_models') {
-                    setStatus('🔍 Checking which Gemini models are available…', 'var(--color-text-muted)');
-                    setProgress(15);
+                    setStatus('🔍 Checking available Gemini models for your key…', 'var(--color-text-muted)');
+                    setProgress(10);
                 } else if (evt.step === 'models_available') {
-                    setStatus('📋 Model list received — starting identification…', 'var(--color-text-muted)');
-                    setProgress(25);
-                } else if (evt.step === 'try_order') {
+                    setStatus('📋 Model list ready.', 'var(--color-text-muted)');
+                    setProgress(20);
+                } else if (evt.step === 'will_try') {
                     modelCount = String(evt.value).split('→').length;
+                    setProgress(25);
                 } else if (evt.step === 'trying_model') {
-                    setStatus('🤖 Trying ' + evt.value + '…', 'var(--color-text-muted)');
-                    setProgress(Math.min(30 + modelCount * 15, 75));
+                    setStatus('🤖 ' + evt.value + '…', 'var(--color-text-muted)');
+                    setProgress(Math.min(30 + modelCount * 12, 72));
                 } else if (evt.step === 'model_skipped') {
-                    setStatus('⚠ ' + evt.value + ' — trying next model…', '#f59e0b');
+                    setStatus('⚠ Skipped: ' + evt.value, '#f59e0b');
                 } else if (evt.step === 'model_used') {
                     setStatus('⚙️ Parsing response from ' + evt.value + '…', 'var(--color-text-muted)');
-                    setProgress(90);
-                } else if (evt.step === 'done') {
-                    setProgress(98);
+                    setProgress(88);
+                } else if (evt.step === 'all_failed') {
+                    setStatus('⚠ All models tried — see log below.', '#dc3545');
                 }
             } else if (evt.type === 'result') {
                 resultReceived = true;
@@ -381,7 +395,7 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
 
                 if (!evt.ok) {
                     dbg('error', evt.error || 'unknown');
-                    setStatus('❌ ' + (evt.error || 'AI error'), '#dc3545');
+                    setStatus('❌ ' + (evt.error || 'AI error') + ' — click Identify to try again.', '#dc3545');
                     return;
                 }
 
@@ -407,13 +421,14 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
                         if (!resultReceived) {
                             enableButtons();
                             progBar.style.display = 'none';
-                            setStatus('❌ Connection closed before a result was received.', '#dc3545');
+                            dbg('stream_closed', 'Connection closed without a result');
+                            setStatus('❌ Connection dropped. Click Identify to try again.', '#dc3545');
                         }
                         return;
                     }
                     buffer += decoder.decode(chunk.value, { stream: true });
                     var lines = buffer.split('\n');
-                    buffer = lines.pop(); // keep incomplete trailing line
+                    buffer = lines.pop();
                     lines.forEach(function (line) {
                         line = line.trim();
                         if (!line.startsWith('data: ')) return;
@@ -428,7 +443,7 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
             enableButtons();
             progBar.style.display = 'none';
             dbg('fetch_error', err.message);
-            setStatus('❌ Network error: ' + err.message, '#dc3545');
+            setStatus('❌ Network error: ' + err.message + ' — click Identify to try again.', '#dc3545');
         });
     });
 

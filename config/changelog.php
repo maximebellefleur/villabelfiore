@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.7.7' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI — Bulletproof Gemini Fallback (5-model cap, watchdog, full recap)',
+        'improved' => [
+            'Model loop is now capped at 5 to avoid excessive API calls; only confirmed-available models are tried.',
+            'When all models fail, the debug log shows the full available-model list again so you know exactly what\'s on your key and can update Settings → AI.',
+            'SSE output buffering is fully disabled at the PHP level so events flush to the browser immediately, even on cPanel with proxy buffering.',
+            'A 90-second client-side watchdog re-enables the Identify button and shows "try again" if the server goes silent — the UI can never get stuck.',
+            'All error messages now end with "click Identify to try again" so the recovery action is always obvious.',
+        ],
+    ],
+
     '2.7.6' => [
         'date'  => '2026-04-27',
         'title' => 'AI — Real-Time Gemini Model Fallback via SSE',

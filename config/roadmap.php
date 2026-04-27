@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.7.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI — Bulletproof Gemini Fallback',
+        'features' => [
+            ['title' => '5-model cap', 'detail' => 'Only up to 5 confirmed-available models are tried per request, preventing excessive API calls.'],
+            ['title' => 'Full model recap on failure', 'detail' => 'When all models fail, the debug log shows your full available model list again so you can immediately identify what to set as preferred.'],
+            ['title' => 'Client watchdog timer', 'detail' => '90-second watchdog re-enables the Identify button if the server goes silent — the UI can never get stuck waiting forever.'],
+            ['title' => 'Immediate SSE flushing', 'detail' => 'PHP output buffering fully disabled at request time so events stream to the browser immediately on all server configs.'],
+        ],
+    ],
+
     '2.7.6' => [
         'status'   => 'released',
         'released' => '2026-04-27',

@@ -48,9 +48,19 @@ class AiController
      */
     public function identifySeed(Request $request, array $params = []): void
     {
+        // Disable all output buffering so SSE events flush immediately to the browser
+        @ini_set('output_buffering', 'off');
+        @ini_set('zlib.output_compression', false);
+        while (ob_get_level() > 0) ob_end_clean();
+        ob_implicit_flush(true);
+
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache');
-        header('X-Accel-Buffering: no');
+        header('X-Accel-Buffering: no'); // nginx: disable proxy buffering
+
+        // Padding comment ensures proxy buffers flush immediately (many buffer until ~4 KB)
+        echo ': ' . str_repeat('.', 2048) . "\n\n";
+        flush();
 
         try {
             $this->identifySeedInner($request);
@@ -253,16 +263,19 @@ PROMPT;
             $this->sseLog('models_available', implode(', ', $availableModels));
 
             // ── Step 2: build candidate list from CONFIRMED available models only ─
-            // Put primary model first if it is in the list; otherwise use list as-is
+            // Primary model first if confirmed; otherwise use list as-is
             if (in_array($primaryModel, $availableModels, true)) {
-                $candidates = array_values(array_unique(array_merge([$primaryModel], $availableModels)));
+                $ordered = array_values(array_unique(array_merge([$primaryModel], $availableModels)));
             } else {
-                $this->sseLog('primary_not_available', '"' . $primaryModel . '" is not in your available models — update Settings → AI. Using available models instead.');
-                $candidates = $availableModels;
+                $this->sseLog('primary_not_available', '"' . $primaryModel . '" is not confirmed available — update Settings → AI. Using available models instead.');
+                $ordered = $availableModels;
             }
+
+            // Cap at 5 to avoid excessive API calls
+            $candidates = array_slice($ordered, 0, 5);
         }
 
-        $this->sseLog('try_order', implode(' → ', $candidates));
+        $this->sseLog('will_try', count($candidates) . ' model(s): ' . implode(' → ', $candidates));
 
         // ── Step 3: build payload once (identical for every model) ────────────
         $parts = [['text' => $prompt]];
@@ -341,10 +354,14 @@ PROMPT;
             $this->parseAndRespond($text);
         }
 
-        // All models exhausted
+        // All models exhausted — show full available list so the user knows what's on their key
+        $this->sseLog('all_failed', 'Tried ' . count($candidates) . ' model(s), none responded.');
+        $this->sseLog('models_available_recap', implode(', ', $availableModels ?: $candidates));
         $this->sseFail(
-            'All Gemini models tried and none responded. Last error: ' . $lastErrMsg
-            . '. Models tried: ' . implode(', ', $candidates),
+            'All ' . count($candidates) . ' Gemini model(s) are currently unavailable. '
+            . 'Last error: ' . $lastErrMsg . '. '
+            . 'Available on your key: ' . implode(', ', $availableModels ?: $candidates)
+            . '. Try again in a moment or change your preferred model in Settings → AI.',
             $lastHttpCode ?: 503
         );
     }
