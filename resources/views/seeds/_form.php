@@ -76,6 +76,138 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
     <!-- ══ END DEBUG PANEL ══════════════════════════════════════════════════ -->
 </div>
 
+<!-- ── Manual AI Prompt ──────────────────────────────────────────────────── -->
+<div id="manualAiWrap" style="margin-bottom:var(--spacing-4)">
+    <button type="button" id="manualAiToggle"
+            style="background:none;border:1px dashed var(--color-border);border-radius:var(--radius);padding:7px 14px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--color-text-muted);display:flex;align-items:center;gap:6px;width:100%;justify-content:flex-start"
+            onclick="toggleManualAi()">
+        <span id="manualAiArrow" style="transition:transform .2s">▶</span>
+        ✨ Generate with external AI — copy prompt &amp; paste result
+    </button>
+
+    <div id="manualAiPanel" style="display:none;margin-top:8px;border:1px solid rgba(99,102,241,.25);border-radius:var(--radius);padding:16px;background:rgba(99,102,241,.04)">
+
+        <!-- Step 1: copy prompt -->
+        <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4f46e5;margin-bottom:8px">① Copy this prompt into ChatGPT, Gemini, or any AI</div>
+        <textarea id="manualAiPrompt" rows="10" readonly
+                  style="width:100%;border:1px solid var(--color-border);border-radius:6px;padding:10px;font-size:.78rem;font-family:monospace;background:var(--color-bg);color:var(--color-text);resize:vertical;box-sizing:border-box;line-height:1.5"></textarea>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button type="button" id="manualAiCopyBtn"
+                    onclick="copyManualPrompt()"
+                    style="background:#4f46e5;color:#fff;border:none;border-radius:var(--radius);padding:7px 16px;font-size:.82rem;font-weight:600;cursor:pointer">
+                📋 Copy prompt
+            </button>
+            <span id="manualAiCopied" style="display:none;font-size:.8rem;color:#15803d;font-weight:600">✅ Copied to clipboard!</span>
+        </div>
+
+        <!-- Step 2: paste response -->
+        <div id="manualAiStep2" style="margin-top:16px;border-top:1px solid rgba(99,102,241,.2);padding-top:16px">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4f46e5;margin-bottom:8px">② Paste the AI's JSON response here</div>
+            <textarea id="manualAiPaste" rows="6" placeholder='Paste the JSON from your AI here, e.g. { "name": "Tomato", "variety": "Roma", ... }'
+                      style="width:100%;border:1px solid var(--color-border);border-radius:6px;padding:10px;font-size:.78rem;font-family:monospace;background:var(--color-bg);color:var(--color-text);resize:vertical;box-sizing:border-box;line-height:1.5"></textarea>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <button type="button"
+                        onclick="applyManualAiJson()"
+                        style="background:#15803d;color:#fff;border:none;border-radius:var(--radius);padding:7px 16px;font-size:.82rem;font-weight:600;cursor:pointer">
+                    ✅ Pre-fill form from JSON
+                </button>
+                <span id="manualAiError" style="display:none;font-size:.8rem;color:#dc2626;font-weight:600"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var PROMPT_TEMPLATE = [
+        'You are a botanical and gardening expert. I want to add a seed to my seed bank.',
+        'Return ONLY a valid JSON object — no explanation, no markdown, no code fences.',
+        '',
+        'Use this exact structure (all fields optional except "name"):',
+        '',
+        JSON.stringify({
+            name: "Common plant name",
+            variety: "Specific cultivar, or empty string",
+            botanical_family: "e.g. Solanaceae",
+            type: "vegetable",
+            sowing_type: "direct",
+            sun_exposure: "Full sun",
+            days_to_germinate: 7,
+            days_to_maturity: 75,
+            spacing_cm: 40,
+            row_spacing_cm: 60,
+            sowing_depth_mm: 5,
+            soil_notes: "Well-drained, rich soil",
+            frost_hardy: false,
+            planting_months: [3, 4, 5],
+            harvest_months: [7, 8, 9],
+            companions: "Basil, Marigold, Carrot",
+            antagonists: "Fennel, Potato",
+            yield_per_plant_kg: 2.0,
+            notes: "Extra growing tips, history, provenance..."
+        }, null, 2),
+        '',
+        'Field constraints:',
+        '  type          → one of: vegetable | herb | fruit | flower | other',
+        '  sowing_type   → one of: direct | nursery | both',
+        '  planting_months & harvest_months → array of month numbers (1=Jan … 12=Dec)',
+        '  companions & antagonists → comma-separated plant names as a single string',
+        '  frost_hardy   → true or false',
+        '',
+        'The seed I want to add:',
+        '[DESCRIBE YOUR SEED HERE — name, variety, any details you know]'
+    ].join('\n');
+
+    document.getElementById('manualAiPrompt').value = PROMPT_TEMPLATE;
+
+    window.toggleManualAi = function () {
+        var panel = document.getElementById('manualAiPanel');
+        var arrow = document.getElementById('manualAiArrow');
+        var open  = panel.style.display === 'none';
+        panel.style.display = open ? 'block' : 'none';
+        arrow.style.transform = open ? 'rotate(90deg)' : '';
+    };
+
+    window.copyManualPrompt = function () {
+        var ta  = document.getElementById('manualAiPrompt');
+        var msg = document.getElementById('manualAiCopied');
+        ta.select();
+        try { document.execCommand('copy'); } catch(e) { navigator.clipboard && navigator.clipboard.writeText(ta.value); }
+        msg.style.display = 'inline';
+        setTimeout(function () { msg.style.display = 'none'; }, 3000);
+    };
+
+    window.applyManualAiJson = function () {
+        var raw = document.getElementById('manualAiPaste').value.trim();
+        var err = document.getElementById('manualAiError');
+        err.style.display = 'none';
+        if (!raw) { err.textContent = 'Paste the JSON first.'; err.style.display = 'inline'; return; }
+
+        // Strip markdown code fences if the AI wrapped the JSON
+        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+        // Extract first JSON object if there's surrounding text
+        var match = raw.match(/\{[\s\S]*\}/);
+        if (!match) { err.textContent = 'No JSON object found — make sure you copy the full response.'; err.style.display = 'inline'; return; }
+
+        var data;
+        try { data = JSON.parse(match[0]); }
+        catch (e) { err.textContent = 'Invalid JSON: ' + e.message; err.style.display = 'inline'; return; }
+
+        if (!window.seedFillForm) { err.textContent = 'Form not ready — refresh and try again.'; err.style.display = 'inline'; return; }
+
+        window.seedFillForm(data);
+
+        // Close panel
+        document.getElementById('manualAiPanel').style.display = 'none';
+        document.getElementById('manualAiArrow').style.transform = '';
+
+        // Clear paste box for next time
+        document.getElementById('manualAiPaste').value = '';
+    };
+}());
+</script>
+
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Identity</legend>
     <div class="form-row">
@@ -509,6 +641,9 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         var nameEl = document.getElementById('fName');
         if (nameEl) nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    window.seedFillForm   = fillForm;
+    window.seedFillMonths = fillMonths;
 }());
 </script>
 

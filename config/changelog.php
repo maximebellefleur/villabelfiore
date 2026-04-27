@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.8.4' => [
+        'date'  => '2026-04-27',
+        'title' => 'Seed form: manual AI prompt copy/paste pre-fill',
+        'new' => [
+            'Manual AI prompt panel on Add/Edit Seed: click "Generate with external AI" to expand a collapsible panel with a ready-to-copy prompt including the full JSON schema.',
+            'Paste the AI JSON response into the second box and click "Pre-fill form" — the form fills automatically and the panel closes.',
+            'Handles markdown code fences and surrounding text automatically; shows a clear error if the JSON is invalid.',
+        ],
+    ],
+
     '2.8.3' => [
         'date'  => '2026-04-27',
         'title' => 'Companion planting: data-driven suggestions from seed bank',

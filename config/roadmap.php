@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.8.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Seed form: manual AI prompt copy/paste pre-fill',
+        'features' => [
+            ['title' => 'External AI prompt helper', 'detail' => 'A collapsible "Generate with external AI" panel on the Add/Edit Seed form generates a ready-to-copy prompt including the full JSON field structure. Paste the AI response into the second box to auto-fill all form fields without needing an API key in the app.'],
+        ],
+    ],
+
     '2.8.3' => [
         'status'   => 'released',
         'released' => '2026-04-27',
