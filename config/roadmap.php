@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Google Gemini Free Tier',
+        'features' => [
+            ['title' => 'Google Gemini as recommended free AI', 'detail' => 'Stable model names, permanent free tier, no credit card. Use aistudio.google.com to get a free API key, then set endpoint to generativelanguage.googleapis.com/v1beta/openai/chat/completions and model to gemini-2.0-flash-exp.'],
+        ],
+    ],
+
     '2.6.7' => [
         'status'   => 'released',
         'released' => '2026-04-27',

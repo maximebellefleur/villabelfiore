@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.6.8' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Google Gemini Free Tier',
+        'improved' => [
+            'Switched recommended cloud AI provider to Google Gemini API (aistudio.google.com) — permanent free tier (15 req/min, 1500/day), stable model names, and Gemini 2.0 Flash excels at OCR and seed packet reading.',
+            'Endpoint URL: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions — uses Google\'s official OpenAI-compatible interface, no API changes needed.',
+            'Settings → AI quickstart updated with 3-step Google AI Studio setup (sign in, create key, paste values).',
+        ],
+    ],
+
     '2.6.7' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — OpenRouter Model Fix',

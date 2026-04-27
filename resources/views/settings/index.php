@@ -470,60 +470,60 @@
                         </div>
                     </div>
 
-                    <!-- Quick-start: OpenRouter (recommended) -->
+                    <!-- Quick-start: Google Gemini (recommended) -->
                     <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fde68a;border-radius:var(--radius);padding:var(--spacing-3) var(--spacing-4);margin-bottom:var(--spacing-4)">
-                        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px">⭐ Quickstart — OpenRouter (recommended, free, no server needed)</div>
-                        <p class="settings-hint" style="margin-bottom:10px">OpenRouter is a free API gateway that hosts Qwen2.5-VL, Gemini Flash, and many other vision models. 100% cloud, no SSH, no installation. Takes about 3 minutes.</p>
+                        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px">⭐ Quickstart — Google Gemini Flash (recommended, free, no server needed)</div>
+                        <p class="settings-hint" style="margin-bottom:10px">Google's Gemini API has a permanent free tier (15 req/min), an OpenAI-compatible endpoint, and Gemini 2.0 Flash is excellent at reading seed packet text and icons. No credit card required.</p>
                         <ol style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:10px;font-size:.82rem;line-height:1.7;color:var(--color-text)">
                             <li>
-                                Go to <strong>openrouter.ai</strong> and create a free account.
+                                Go to <strong>aistudio.google.com</strong> and sign in with a Google account.
                             </li>
                             <li>
-                                Go to <strong>openrouter.ai/keys</strong> → <strong>Create Key</strong>. Copy the key (starts with <code>sk-or-</code>).
+                                Click <strong>Get API key</strong> → <strong>Create API key</strong>. Copy the key (starts with <code>AIza</code>).
                             </li>
                             <li>
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
-                                    Endpoint URL: <span style="color:#ffd700">https://openrouter.ai/api/v1/chat/completions</span><br>
-                                    Model ID: <span style="color:#ffd700">google/gemini-2.0-flash-exp:free</span><br>
-                                    Token: <span style="color:#ffd700">sk-or-xxxxxxxxxxxxxxxxxxxx</span>
+                                    Endpoint URL: <span style="color:#ffd700">https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</span><br>
+                                    Model ID: <span style="color:#ffd700">gemini-2.0-flash-exp</span><br>
+                                    Token: <span style="color:#ffd700">AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
                             </li>
                             <li>
                                 Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify. Done.
                             </li>
                         </ol>
-                        <p class="settings-hint" style="margin-top:10px">Free tier models (marked <code>:free</code>): <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code> · <code>microsoft/phi-4-vision-instruct:free</code>. No credit card required.</p>
+                        <p class="settings-hint" style="margin-top:10px">Free tier: 15 requests/minute, 1,500/day. Other models: <code>gemini-1.5-flash</code> · <code>gemini-1.5-pro</code>. The endpoint also works with any other OpenAI-compatible API (OpenRouter, Groq, etc.).</p>
                     </div>
 
                     <!-- Config fields -->
                     <div class="settings-field">
                         <label class="settings-label">Inference Endpoint URL</label>
                         <p class="settings-hint">
-                            Any OpenAI-compatible <code>/chat/completions</code> endpoint. Examples:<br>
-                            OpenRouter (recommended free): <code>https://openrouter.ai/api/v1/chat/completions</code><br>
-                            HuggingFace dedicated endpoint: paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
+                            Any OpenAI-compatible <code>/chat/completions</code> endpoint.<br>
+                            <strong>Google Gemini (recommended free):</strong> <code>https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</code><br>
+                            <strong>HuggingFace dedicated:</strong> paste your endpoint base URL — <code>/v1/chat/completions</code> is appended automatically.
                         </p>
                         <input type="url" name="ai_hf_endpoint" class="settings-input"
                                value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
-                               placeholder="https://openrouter.ai/api/v1/chat/completions">
+                               placeholder="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
                         <p class="settings-hint">
-                            OpenRouter free vision models: <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code><br>
+                            Google Gemini models: <code>gemini-2.0-flash-exp</code> · <code>gemini-1.5-flash</code> · <code>gemini-1.5-pro</code><br>
                             For HuggingFace dedicated endpoints, leave blank or enter <code>tgi</code>.
                         </p>
                         <input type="text" name="ai_hf_model" class="settings-input"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="google/gemini-2.0-flash-exp:free">
+                               placeholder="gemini-2.0-flash-exp">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>
-                        <p class="settings-hint">OpenRouter: starts with <code>sk-or-</code>. HuggingFace: starts with <code>hf_</code>. Stored only in your local database.</p>
+                        <p class="settings-hint">Google Gemini: starts with <code>AIza</code> (get from aistudio.google.com). HuggingFace: starts with <code>hf_</code>. Stored only in your local database.</p>
                         <input type="password" name="ai_hf_token" class="settings-input"
                                value="<?= e($settings['ai.hf_token'] ?? '') ?>"
-                               placeholder="sk-or-… or hf_…"
+                               placeholder="AIza… or hf_… or sk-or-…"
                                autocomplete="new-password">
                     </div>
                 </div>
