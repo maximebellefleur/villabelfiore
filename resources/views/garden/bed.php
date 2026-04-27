@@ -454,6 +454,7 @@ var BED_SEEDS     = <?= json_encode(array_map(fn($s) => [
 var BED_LINE_M    = <?= ($widthM > 0 && $numLines > 0) ? round($widthM / $numLines * 100) / 100 : 0 ?>;
 var BED_LENGTH_M  = <?= $lengthM > 0 ? $lengthM : 0 ?>;
 var BED_LINE_CAP  = BED_LENGTH_M > 0 ? BED_LENGTH_M * 100 : 0; // cm available per line
+var BED_PLANTED   = <?= json_encode(array_values(array_filter(array_map(fn($p) => $p['crop_name'] ?? '', $plantings)))) ?>;
 var _companionCache = {};
 
 function calcPlantCount(spacingCm) {
@@ -657,7 +658,8 @@ function toggleCompanions(line, crop) {
     }
     document.getElementById('companionsLoading'+line).style.display = 'block';
     document.getElementById('companionsResult'+line).style.display = 'none';
-    fetch(BED_BASE + 'api/garden/companions?crop=' + encodeURIComponent(crop) + '&month=' + BED_MONTH)
+    var otherCrops = BED_PLANTED.filter(function(c){ return c.toLowerCase() !== crop.toLowerCase(); });
+    fetch(BED_BASE + 'api/garden/companions?crop=' + encodeURIComponent(crop) + '&bed_crops=' + encodeURIComponent(otherCrops.join(',')))
     .then(function(r){ return r.json(); })
     .then(function(d){
         document.getElementById('companionsLoading'+line).style.display = 'none';
@@ -681,20 +683,21 @@ function renderCompanions(line, data) {
         html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#15803d;margin-bottom:4px">Good companions</div>';
         html += '<ul class="bed-companion-list">';
         data.companions.forEach(function(c){
-            html += '<li class="bed-companion-item">✅ <strong>' + esc(c.name) + '</strong> <span>— ' + esc(c.reason) + '</span></li>';
+            var hasWarn = c.reason && c.reason.indexOf('⚠') !== -1;
+            html += '<li class="bed-companion-item' + (hasWarn ? ' bed-antagonist-item' : '') + '">'
+                  + (hasWarn ? '⚠️' : '✅') + ' <strong>' + esc(c.name) + '</strong> <span>— ' + esc(c.reason) + '</span></li>';
         });
         html += '</ul>';
+    } else {
+        html += '<p style="font-size:.82rem;color:var(--color-text-muted)">No companion matches found — add companion data to your seeds.</p>';
     }
     if (data.antagonists && data.antagonists.length) {
-        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#b91c1c;margin-bottom:4px;margin-top:8px">Avoid nearby</div>';
+        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#b91c1c;margin-bottom:4px;margin-top:8px">⚠ Conflicts in this bed</div>';
         html += '<ul class="bed-companion-list">';
         data.antagonists.forEach(function(c){
             html += '<li class="bed-companion-item bed-antagonist-item">🚫 <strong>' + esc(c.name) + '</strong> <span>— ' + esc(c.reason) + '</span></li>';
         });
         html += '</ul>';
-    }
-    if (data.tip) {
-        html += '<div class="bed-companions-tip">💡 ' + esc(data.tip) + '</div>';
     }
     var el = document.getElementById('companionsResult'+line);
     el.innerHTML = html;

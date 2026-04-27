@@ -8,6 +8,19 @@
  */
 return [
 
+    '2.8.3' => [
+        'date'  => '2026-04-27',
+        'title' => 'Companion planting: data-driven suggestions from seed bank',
+        'improved' => [
+            'Companions panel no longer calls an external AI API — suggestions are now derived purely from the companions & avoid lists stored in your own seed bank.',
+            'Returns up to 6 ranked companions scored by mutual companion mentions across seeds.',
+            'Other crops already in the same bed are passed automatically; any that conflict with the suggested companion are flagged with a warning in the reason text.',
+            'Bed conflicts with the target crop itself appear in a separate "Conflicts in this bed" section.',
+            'Added reusable GardenBedController::rankCompanions() static helper usable from any other controller.',
+            'Helpful message shown when no companion data exists yet instead of an opaque API error.',
+        ],
+    ],
+
     '2.8.2' => [
         'date'  => '2026-04-27',
         'title' => 'Fix save network error + harvest modal + qty +/- + auto-fill from seed',

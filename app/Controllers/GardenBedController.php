@@ -451,102 +451,146 @@ class GardenBedController
     public function companions(Request $request, array $params = []): void
     {
         $this->requireAuth();
-
         try {
-            $crop  = trim((string)$request->get('crop', ''));
-            $month = (int)($request->get('month', date('n')));
+            $crop     = trim((string)$request->get('crop', ''));
+            $bedCrops = array_values(array_filter(array_map('trim', explode(',', (string)$request->get('bed_crops', '')))));
 
-            $db = DB::getInstance();
-
-            $getSetting = function (string $key, string $default = '') use ($db): string {
-                $row = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = ? LIMIT 1", [$key]);
-                return $row ? (string)($row['setting_value_text'] ?? $default) : $default;
-            };
-
-            $apiKey      = $getSetting('companion_api_key');
-            $provider    = $getSetting('companion_api_provider', 'openai');
-            $model       = $getSetting('companion_api_model', 'gpt-4o-mini');
-            $customUrl   = $getSetting('companion_api_url');
-            $climateZone = $getSetting('garden.climate_zone', 'mediterranean_sicily');
-
-            if ($apiKey === '' || $crop === '') {
-                Response::json(['success' => false, 'error' => 'API not configured']);
+            if ($crop === '') {
+                Response::json(['success' => false, 'error' => 'No crop specified']);
                 return;
             }
 
-            $monthNames = [
-                1 => 'January', 2 => 'February', 3 => 'March',    4 => 'April',
-                5 => 'May',     6 => 'June',      7 => 'July',     8 => 'August',
-                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
-            ];
-            $monthName = $monthNames[$month] ?? 'the current month';
+            $db    = DB::getInstance();
+            $seeds = $db->fetchAll(
+                "SELECT name, companions, antagonists FROM seeds WHERE trashed_at IS NULL ORDER BY name ASC"
+            ) ?: [];
 
-            $prompt = "You are a companion planting expert. The crop \"{$crop}\" is being grown in {$monthName} in a {$climateZone} climate zone. Provide:\n1. Best companion plants (3-5)\n2. Plants to avoid/antagonists (2-3)\n3. A brief succession planting tip for this line after this crop\n\nRespond ONLY with valid JSON in this exact format:\n{\"companions\":[{\"name\":\"Plant\",\"reason\":\"why\"}],\"antagonists\":[{\"name\":\"Plant\",\"reason\":\"why\"}],\"tip\":\"succession tip\"}";
+            $data = self::rankCompanions($crop, $bedCrops, $seeds);
 
-            if (strtolower($provider) === 'anthropic') {
-                $url     = 'https://api.anthropic.com/v1/messages';
-                $payload = json_encode([
-                    'model'      => $model,
-                    'max_tokens' => 512,
-                    'messages'   => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                ]);
-                $headers = [
-                    'Content-Type: application/json',
-                    'x-api-key: ' . $apiKey,
-                    'anthropic-version: 2023-06-01',
-                ];
-            } else {
-                $url     = ($customUrl !== '') ? $customUrl : 'https://api.openai.com/v1/chat/completions';
-                $payload = json_encode([
-                    'model'      => $model,
-                    'messages'   => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 512,
-                ]);
-                $headers = [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $apiKey,
-                ];
-            }
-
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_POST           => true,
-                CURLOPT_POSTFIELDS     => $payload,
-                CURLOPT_HTTPHEADER     => $headers,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => 15,
-            ]);
-            $raw      = curl_exec($ch);
-            $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode >= 400) {
-                Response::json(['success' => false, 'error' => 'API error ' . $httpCode]);
+            if (empty($data['companions']) && empty($data['antagonists'])) {
+                Response::json(['success' => false, 'error' => 'No companion data found — add companions & avoid lists to your seeds to use this feature']);
                 return;
-            }
-
-            $responseData = json_decode($raw, true);
-
-            if (strtolower($provider) === 'anthropic') {
-                $text = $responseData['content'][0]['text'] ?? '';
-            } else {
-                $text = $responseData['choices'][0]['message']['content'] ?? '';
-            }
-
-            $text = trim((string)$text);
-            $data = null;
-            if (preg_match('/\{.*\}/s', $text, $m)) {
-                $data = json_decode($m[0], true);
             }
 
             Response::json(['success' => true, 'data' => $data]);
-
         } catch (\Throwable $e) {
             Response::json(['success' => false, 'error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Pure data-driven companion ranking — no AI, fully reusable.
+     *
+     * Scores all seeds against $crop using the companions/antagonists JSON arrays stored
+     * in the seed bank. A seed earns points if:
+     *   +3  — target lists it as a companion
+     *   +3  — it lists the target as a companion
+     *   disqualified — either side lists the other as an antagonist
+     *
+     * Additionally, if $bedCrops are supplied, any candidate that conflicts with an
+     * existing bed plant loses 2 points and gets a warning in its reason text.
+     * Bed plants that conflict with the target crop are returned as antagonists.
+     *
+     * @param  string   $crop      Crop name to find companions for
+     * @param  string[] $bedCrops  Other crops already growing in the same bed
+     * @param  array[]  $seeds     Seed rows with keys: name, companions, antagonists
+     * @return array{companions: array, antagonists: array, tip: null}
+     */
+    public static function rankCompanions(string $crop, array $bedCrops, array $seeds): array
+    {
+        $cropLc = strtolower(trim($crop));
+
+        $decode = fn($json) => array_map('strtolower', json_decode($json ?? '[]', true) ?: []);
+
+        // Index seeds by lowercase name for quick lookup
+        $byName = [];
+        foreach ($seeds as $s) {
+            $byName[strtolower($s['name'])] = $s;
+        }
+
+        // Find target — exact match first, then substring
+        $target = $byName[$cropLc] ?? null;
+        if (!$target) {
+            foreach ($byName as $key => $s) {
+                if (str_contains($key, $cropLc) || str_contains($cropLc, $key)) {
+                    $target = $s;
+                    break;
+                }
+            }
+        }
+
+        $tCompanions  = $target ? $decode($target['companions'])  : [];
+        $tAntagonists = $target ? $decode($target['antagonists']) : [];
+
+        // Build bed-crop antagonist sets for conflict checking
+        $bedAntagonistSets = [];
+        foreach ($bedCrops as $bc) {
+            $bcLc = strtolower($bc);
+            $bcSeed = $byName[$bcLc] ?? null;
+            $bedAntagonistSets[$bcLc] = $bcSeed ? $decode($bcSeed['antagonists']) : [];
+        }
+
+        // Score every seed as a candidate companion
+        $candidates = [];
+        foreach ($seeds as $s) {
+            $sLc = strtolower($s['name']);
+            if ($sLc === $cropLc) continue;
+
+            $sCompanions  = $decode($s['companions']);
+            $sAntagonists = $decode($s['antagonists']);
+
+            // Disqualify if mutual antagonist
+            if (in_array($sLc, $tAntagonists, true))  continue;
+            if (in_array($cropLc, $sAntagonists, true)) continue;
+
+            $score   = 0;
+            $reasons = [];
+
+            if (in_array($sLc, $tCompanions, true)) {
+                $score += 3;
+                $reasons[] = "companion for {$crop}";
+            }
+            if (in_array($cropLc, $sCompanions, true)) {
+                $score += 3;
+                $reasons[] = "benefits from growing near {$crop}";
+            }
+
+            if ($score === 0) continue;
+
+            // Check conflicts with existing bed crops
+            $warnings = [];
+            foreach ($bedCrops as $bc) {
+                $bcLc = strtolower($bc);
+                if ($bcLc === $sLc) continue;
+                $bcAnts = $bedAntagonistSets[$bcLc] ?? [];
+                if (in_array($sLc, $bcAnts, true) || in_array($bcLc, $sAntagonists, true)) {
+                    $warnings[] = "conflicts with {$bc} in bed";
+                    $score -= 2;
+                }
+            }
+
+            $reason = ucfirst(implode('; ', $reasons));
+            if ($warnings) $reason .= ' ⚠ ' . implode(', ', $warnings);
+
+            $candidates[] = ['name' => $s['name'], 'score' => $score, 'reason' => $reason];
+        }
+
+        usort($candidates, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        // Antagonists = bed crops that conflict with the target
+        $antagonists = [];
+        foreach ($bedCrops as $bc) {
+            $bcLc   = strtolower($bc);
+            $bcAnts = $bedAntagonistSets[$bcLc] ?? [];
+            if (in_array($bcLc, $tAntagonists, true) || in_array($cropLc, $bcAnts, true)) {
+                $antagonists[] = ['name' => $bc, 'reason' => "already in bed — avoid planting near {$crop}"];
+            }
+        }
+
+        return [
+            'companions'  => array_slice($candidates, 0, 6),
+            'antagonists' => $antagonists,
+            'tip'         => null,
+        ];
     }
 }

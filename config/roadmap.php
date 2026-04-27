@@ -8,6 +8,17 @@
  */
 return [
 
+    '2.8.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Companion planting: data-driven suggestions from seed bank',
+        'features' => [
+            ['title' => 'No-AI companion suggestions', 'detail' => 'The Companions panel now ranks up to 6 candidate plants by correlating companions/antagonists data stored in your seed bank — no external API key required.'],
+            ['title' => 'Bed-aware conflict detection', 'detail' => 'Crops already planted in the same bed are sent with the request; conflicts with suggested companions are flagged inline, and crops that clash with the target appear in a dedicated "Conflicts in this bed" section.'],
+            ['title' => 'Reusable rankCompanions() helper', 'detail' => 'GardenBedController::rankCompanions(crop, bedCrops, seeds) is a pure static method that can be called from any controller or script.'],
+        ],
+    ],
+
     '2.8.2' => [
         'status'   => 'released',
         'released' => '2026-04-27',
