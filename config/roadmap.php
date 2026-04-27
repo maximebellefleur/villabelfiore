@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — OpenRouter Model Fix',
+        'features' => [
+            ['title' => 'Correct free OpenRouter model', 'detail' => 'Switched recommendation to google/gemini-2.0-flash-exp:free — a verified free vision model on OpenRouter. Also fixed the PHP crash when OpenRouter returns a structured error object.'],
+        ],
+    ],
+
     '2.6.6' => [
         'status'   => 'released',
         'released' => '2026-04-27',

@@ -275,7 +275,10 @@ PROMPT;
         if (($info['http_code'] ?? 0) >= 400) {
             $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
             $decoded = json_decode($raw, true);
-            $errMsg  = $decoded['error'] ?? ('HuggingFace returned HTTP ' . ($info['http_code'] ?? '?'));
+            $rawErr  = $decoded['error'] ?? null;
+            $errMsg  = is_array($rawErr)
+                ? ($rawErr['message'] ?? json_encode($rawErr))
+                : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
             $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
         }
 

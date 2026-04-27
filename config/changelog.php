@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.6.7' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — OpenRouter Model Fix',
+        'fixed' => [
+            'OpenRouter model ID qwen/qwen2.5-vl-7b-instruct:free does not exist on OpenRouter. Default recommendation switched to google/gemini-2.0-flash-exp:free which is a verified free vision model on OpenRouter.',
+            'PHP fatal error when OpenRouter returns error as a JSON object instead of a plain string — jsonError() now extracts message from nested error objects.',
+        ],
+        'improved' => [
+            'Settings → AI: quickstart now shows google/gemini-2.0-flash-exp:free as the recommended model with meta-llama/llama-3.2-11b-vision-instruct:free and microsoft/phi-4-vision-instruct:free as alternatives.',
+        ],
+    ],
+
     '2.6.6' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — 500 Fix',

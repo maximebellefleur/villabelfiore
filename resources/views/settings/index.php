@@ -485,7 +485,7 @@
                                 Paste these values in the fields below, then click <strong>Save AI Settings</strong>:<br>
                                 <div style="background:#1e1e1e;color:#a8ff78;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:.8rem;line-height:2">
                                     Endpoint URL: <span style="color:#ffd700">https://openrouter.ai/api/v1/chat/completions</span><br>
-                                    Model ID: <span style="color:#ffd700">qwen/qwen2.5-vl-7b-instruct:free</span><br>
+                                    Model ID: <span style="color:#ffd700">google/gemini-2.0-flash-exp:free</span><br>
                                     Token: <span style="color:#ffd700">sk-or-xxxxxxxxxxxxxxxxxxxx</span>
                                 </div>
                             </li>
@@ -493,7 +493,7 @@
                                 Go to <strong>Seeds → Add Seed</strong>, upload a packet photo and click Identify. Done.
                             </li>
                         </ol>
-                        <p class="settings-hint" style="margin-top:10px">Free tier models (marked <code>:free</code>): <code>qwen/qwen2.5-vl-7b-instruct:free</code> · <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code>. No credit card required.</p>
+                        <p class="settings-hint" style="margin-top:10px">Free tier models (marked <code>:free</code>): <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code> · <code>microsoft/phi-4-vision-instruct:free</code>. No credit card required.</p>
                     </div>
 
                     <!-- Config fields -->
@@ -511,12 +511,12 @@
                     <div class="settings-field">
                         <label class="settings-label">Model ID</label>
                         <p class="settings-hint">
-                            OpenRouter free vision models: <code>qwen/qwen2.5-vl-7b-instruct:free</code> · <code>google/gemini-2.0-flash-exp:free</code><br>
+                            OpenRouter free vision models: <code>google/gemini-2.0-flash-exp:free</code> · <code>meta-llama/llama-3.2-11b-vision-instruct:free</code><br>
                             For HuggingFace dedicated endpoints, leave blank or enter <code>tgi</code>.
                         </p>
                         <input type="text" name="ai_hf_model" class="settings-input"
                                value="<?= e($settings['ai.hf_model'] ?? '') ?>"
-                               placeholder="qwen/qwen2.5-vl-7b-instruct:free">
+                               placeholder="google/gemini-2.0-flash-exp:free">
                     </div>
                     <div class="settings-field">
                         <label class="settings-label">API Token</label>
