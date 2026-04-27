@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Working',
+        'features' => [
+            ['title' => 'Full JSON response', 'detail' => 'maxOutputTokens raised from 1024 to 4096 — the seed JSON was being cut off mid-response causing a parse error.'],
+        ],
+    ],
+
     '2.7.1' => [
         'status'   => 'released',
         'released' => '2026-04-27',

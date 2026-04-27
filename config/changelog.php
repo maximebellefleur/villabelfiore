@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.7.2' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Working',
+        'fixed' => [
+            'JSON truncated mid-response: maxOutputTokens was 1024 — too small for the full seed packet JSON. Raised to 4096 for both Gemini native and OpenAI-compatible paths.',
+        ],
+    ],
+
     '2.7.1' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Gemini Model Discovery',

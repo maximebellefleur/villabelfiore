@@ -231,7 +231,7 @@ PROMPT;
 
         $payload = json_encode([
             'contents'        => [['parts' => $parts]],
-            'generationConfig' => ['maxOutputTokens' => 1024, 'temperature' => 0.1],
+            'generationConfig' => ['maxOutputTokens' => 4096, 'temperature' => 0.1],
         ]);
 
         $ch = curl_init($apiUrl);
@@ -330,7 +330,7 @@ PROMPT;
         $payload = json_encode([
             'model'      => $hfModel ?: 'tgi',
             'messages'   => [['role' => 'user', 'content' => $content]],
-            'max_tokens' => 1024,
+            'max_tokens' => 4096,
         ]);
 
         $headers = ['Content-Type: application/json'];
