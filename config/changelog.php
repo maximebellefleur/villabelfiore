@@ -8,6 +8,23 @@
  */
 return [
 
+    '2.6.0' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — HuggingFace & Dual-Photo',
+        'new' => [
+            'Settings → AI: two-mode selector — "🖥 Local (Ollama / Raspberry Pi)" or "🤗 HuggingFace". Selecting one mode hides the other\'s config. Each mode has a full setup guide.',
+            'HuggingFace mode: paste any HF Inference API endpoint URL (serverless or dedicated) + API token + model ID. Supports OpenAI-compatible chat/completions format used by Llama-3.2-Vision, Qwen-VL, etc.',
+            'Seed form: new "Back of packet" photo slot alongside the existing front photo — both images are sent to the AI together for richer identification.',
+            'Settings → AI: "Extra Prompt Instructions" textarea — append custom text to every AI prompt (e.g. "Answer in French", "Focus on Mediterranean varieties").',
+            'Seed form: temporary debug status panel (yellow, collapsible) shows every step of the AI pipeline: mode selected, images sent, HTTP status, raw AI text, JSON parse result, fields filled.',
+        ],
+        'improved' => [
+            'AI endpoint now normalises the response from both Ollama (/api/generate) and HuggingFace (OpenAI chat completions) through a single parseAndRespond() function.',
+            'Identify button only appears after at least one photo is loaded, replacing the old auto-send-on-file-select behaviour.',
+            'Progress bar shows accurate step-by-step progress (10 → 20 → 75 → 100%) instead of guessed percentages.',
+        ],
+    ],
+
     '2.5.14' => [
         'date'  => '2026-04-26',
         'title' => 'This Week Tasks',

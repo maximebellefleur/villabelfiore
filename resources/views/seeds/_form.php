@@ -10,27 +10,56 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
 <div id="aiIdentifyPanel" style="margin-bottom:var(--spacing-4);padding:var(--spacing-3) var(--spacing-4);background:rgba(45,90,39,.06);border:1px solid rgba(45,90,39,.2);border-radius:var(--radius);display:flex;flex-direction:column;gap:var(--spacing-2)">
     <div style="display:flex;align-items:center;gap:var(--spacing-2);flex-wrap:wrap">
         <span style="font-weight:600;font-size:0.9rem">🤖 Identify from Photo</span>
-        <span class="text-muted text-sm">Take or choose a photo of your seeds / packet — AI will pre-fill the form.</span>
+        <span class="text-muted text-sm">Take or choose a photo of your seed packet — AI will pre-fill the form. Upload both sides for best results.</span>
     </div>
 
-    <!-- Hidden file input: accept=image/* lets mobile show camera+gallery picker -->
-    <input type="file" id="aiPhotoInput" accept="image/*" capture="environment" style="display:none">
+    <!-- Hidden file inputs -->
+    <input type="file" id="aiPhotoInput"  accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="aiPhotoInput2" accept="image/*" capture="environment" style="display:none">
 
+    <!-- Photo buttons row -->
     <div style="display:flex;align-items:center;gap:var(--spacing-2);flex-wrap:wrap">
         <button type="button" id="aiPhotoBtn" class="btn btn-secondary"
                 style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:1.1rem">📷</span> Take / Choose Photo
+            <span style="font-size:1.1rem">📷</span> Front of packet
         </button>
-        <span id="aiStatus" style="font-size:0.85rem;color:var(--color-text-muted)"></span>
+        <button type="button" id="aiPhotoBtn2" class="btn btn-secondary"
+                style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:1.1rem">📷</span> Back of packet
+        </button>
+        <button type="button" id="aiRunBtn" class="btn btn-primary" style="display:none;align-items:center;gap:6px">
+            <span>🔍</span> Identify
+        </button>
     </div>
 
-    <!-- Preview + progress -->
-    <div id="aiPreviewWrap" style="display:none;align-items:center;gap:var(--spacing-3)">
-        <img id="aiPreviewImg" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--color-border)" src="" alt="Preview">
-        <div id="aiProgressBar" style="display:none;flex:1;height:6px;background:var(--color-bg);border-radius:3px;overflow:hidden">
-            <div style="width:0%;height:100%;background:var(--color-primary);border-radius:3px;transition:width .3s" id="aiProgressFill"></div>
+    <!-- Previews -->
+    <div style="display:flex;gap:var(--spacing-3);flex-wrap:wrap">
+        <div id="aiPreviewWrap"  style="display:none;flex-direction:column;align-items:center;gap:4px">
+            <img id="aiPreviewImg"  style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--color-primary)" src="" alt="Front">
+            <span style="font-size:.68rem;color:var(--color-text-muted)">Front</span>
+        </div>
+        <div id="aiPreviewWrap2" style="display:none;flex-direction:column;align-items:center;gap:4px">
+            <img id="aiPreviewImg2" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--color-primary)" src="" alt="Back">
+            <span style="font-size:.68rem;color:var(--color-text-muted)">Back</span>
         </div>
     </div>
+
+    <!-- Progress bar -->
+    <div id="aiProgressBar" style="display:none;height:6px;background:var(--color-bg);border-radius:3px;overflow:hidden">
+        <div style="width:0%;height:100%;background:var(--color-primary);border-radius:3px;transition:width .4s" id="aiProgressFill"></div>
+    </div>
+
+    <!-- Status line -->
+    <div id="aiStatus" style="font-size:.85rem;color:var(--color-text-muted)"></div>
+
+    <!-- ══ DEBUG PANEL — TEMPORARY (can be removed once AI is stable) ══════ -->
+    <details id="aiDebugDetails" style="display:none;border:1px dashed #f59e0b;border-radius:6px;padding:8px 12px;background:#fffbeb">
+        <summary style="font-size:.72rem;font-weight:700;color:#92400e;cursor:pointer;user-select:none">
+            🐛 Debug — AI Status Log <span style="font-weight:400;color:var(--color-text-muted)">(temporary · can be removed later)</span>
+        </summary>
+        <div id="aiDebugLog" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:.72rem;font-family:monospace"></div>
+    </details>
+    <!-- ══ END DEBUG PANEL ══════════════════════════════════════════════════ -->
 </div>
 
 <fieldset class="fieldset">
@@ -195,81 +224,141 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
 <!-- ── AI identify script ────────────────────────────────────────────────── -->
 <script>
 (function () {
-    var btn       = document.getElementById('aiPhotoBtn');
-    var fileInput = document.getElementById('aiPhotoInput');
-    var status    = document.getElementById('aiStatus');
-    var preview   = document.getElementById('aiPreviewWrap');
-    var previewImg= document.getElementById('aiPreviewImg');
-    var progBar   = document.getElementById('aiProgressBar');
-    var progFill  = document.getElementById('aiProgressFill');
+    var btn        = document.getElementById('aiPhotoBtn');
+    var btn2       = document.getElementById('aiPhotoBtn2');
+    var runBtn     = document.getElementById('aiRunBtn');
+    var fileInput  = document.getElementById('aiPhotoInput');
+    var fileInput2 = document.getElementById('aiPhotoInput2');
+    var status     = document.getElementById('aiStatus');
+    var preview    = document.getElementById('aiPreviewWrap');
+    var preview2   = document.getElementById('aiPreviewWrap2');
+    var previewImg = document.getElementById('aiPreviewImg');
+    var previewImg2= document.getElementById('aiPreviewImg2');
+    var progBar    = document.getElementById('aiProgressBar');
+    var progFill   = document.getElementById('aiProgressFill');
+    var debugBox   = document.getElementById('aiDebugDetails');
+    var debugLog   = document.getElementById('aiDebugLog');
 
     if (!btn || !fileInput) return;
 
-    btn.addEventListener('click', function () { fileInput.click(); });
+    var images = { front: null, back: null }; // { b64, mime }
+
+    // ── Debug helpers ──────────────────────────────────────────────────────
+    function dbg(step, value) {
+        debugBox.style.display = '';
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;border-bottom:1px solid #fde68a;padding:3px 0';
+        row.innerHTML = '<span style="color:#92400e;min-width:170px;flex-shrink:0">› ' + escH(step) + '</span>'
+                      + '<span style="color:#374151;word-break:break-all">' + escH(String(value)) + '</span>';
+        debugLog.appendChild(row);
+    }
+    function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function dbgClear() { debugLog.innerHTML = ''; }
+    function renderDebugArray(arr) {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(function(e){ dbg(e.step || '?', e.value !== undefined ? e.value : ''); });
+    }
+
+    // ── File pickers ───────────────────────────────────────────────────────
+    btn.addEventListener('click',  function () { fileInput.click(); });
+    btn2.addEventListener('click', function () { fileInput2.click(); });
+
+    function loadImage(file, slot, previewEl, previewWrapEl, btnEl) {
+        var objUrl = URL.createObjectURL(file);
+        previewEl.src = objUrl;
+        previewWrapEl.style.display = 'flex';
+        setStatus('📷 Image ' + slot + ' loaded. ' + (slot === 'front' ? 'Add a back photo or click Identify.' : 'Click Identify.'), 'var(--color-text-muted)');
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var dataUrl   = e.target.result;
+            var mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
+            images[slot] = { b64: dataUrl.split(',')[1], mime: mimeMatch ? mimeMatch[1] : 'image/jpeg' };
+            runBtn.style.display = 'inline-flex';
+        };
+        reader.readAsDataURL(file);
+    }
 
     fileInput.addEventListener('change', function () {
         var file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-
-        // Show preview
-        var objUrl = URL.createObjectURL(file);
-        previewImg.src = objUrl;
-        preview.style.display = 'flex';
-        progBar.style.display  = 'block';
-        progFill.style.width   = '15%';
-        status.textContent     = 'Reading image…';
-        btn.disabled = true;
-
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            var dataUrl   = e.target.result;                       // data:image/jpeg;base64,....
-            var mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
-            var mime      = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-            var b64       = dataUrl.split(',')[1];
-
-            progFill.style.width = '35%';
-            status.textContent   = 'Sending to AI… (this may take 10–30 s)';
-
-            var body = new URLSearchParams();
-            body.append('_token', '<?= e(\App\Support\CSRF::getToken()) ?>');
-            body.append('image_data', b64);
-            body.append('image_mime', mime);
-
-            fetch('<?= url('/api/ai/identify-seed') ?>', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: body.toString(),
-            })
-            .then(function (res) {
-                progFill.style.width = '80%';
-                return res.json();
-            })
-            .then(function (data) {
-                progFill.style.width = '100%';
-                btn.disabled = false;
-
-                if (!data.ok) {
-                    status.textContent = '❌ ' + (data.error || 'AI error');
-                    status.style.color = '#dc3545';
-                    progBar.style.display = 'none';
-                    return;
-                }
-
-                fillForm(data.fields);
-                status.textContent = '✅ Form pre-filled from photo — review and adjust as needed.';
-                status.style.color = 'var(--color-primary)';
-                progBar.style.display = 'none';
-            })
-            .catch(function (err) {
-                btn.disabled = false;
-                progBar.style.display = 'none';
-                status.textContent = '❌ Network error: ' + err.message;
-                status.style.color = '#dc3545';
-            });
-        };
-        reader.readAsDataURL(file);
+        if (file) loadImage(file, 'front', previewImg, preview, btn);
+    });
+    fileInput2.addEventListener('change', function () {
+        var file = fileInput2.files && fileInput2.files[0];
+        if (file) loadImage(file, 'back', previewImg2, preview2, btn2);
     });
 
+    // ── Run identification ─────────────────────────────────────────────────
+    runBtn.addEventListener('click', function () {
+        if (!images.front) { setStatus('⚠ Please load at least the front photo first.', '#dc3545'); return; }
+
+        dbgClear();
+        dbg('start', new Date().toISOString());
+        dbg('images_loaded', (images.front ? 'front ✓' : '') + (images.back ? ' + back ✓' : ''));
+
+        setProgress(10);
+        setStatus('📤 Sending image(s) to AI… (may take 10–60 s)', 'var(--color-text-muted)');
+        progBar.style.display = 'block';
+        runBtn.disabled = true; btn.disabled = true; btn2.disabled = true;
+
+        var body = new URLSearchParams();
+        body.append('_token',     '<?= e(\App\Support\CSRF::getToken()) ?>');
+        body.append('image_data',  images.front.b64);
+        body.append('image_mime',  images.front.mime);
+        if (images.back) {
+            body.append('image_data_2', images.back.b64);
+            body.append('image_mime_2', images.back.mime);
+        }
+
+        dbg('posting_to', '<?= url('/api/ai/identify-seed') ?>');
+        setProgress(20);
+
+        fetch('<?= url('/api/ai/identify-seed') ?>', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    body.toString(),
+        })
+        .then(function (res) {
+            dbg('http_status', res.status);
+            setProgress(75);
+            setStatus('⚙️ Parsing AI response…', 'var(--color-text-muted)');
+            return res.json();
+        })
+        .then(function (data) {
+            setProgress(100);
+            runBtn.disabled = false; btn.disabled = false; btn2.disabled = false;
+
+            // Render server-side debug steps
+            if (data.debug && Array.isArray(data.debug)) { renderDebugArray(data.debug); }
+
+            if (!data.ok) {
+                dbg('error', data.error || 'unknown');
+                setStatus('❌ ' + (data.error || 'AI error'), '#dc3545');
+                progBar.style.display = 'none';
+                return;
+            }
+
+            dbg('fields_received', Object.keys(data.fields || {}).join(', '));
+            fillForm(data.fields);
+            setStatus('✅ Form pre-filled — review and adjust as needed.', 'var(--color-primary)');
+            progBar.style.display = 'none';
+        })
+        .catch(function (err) {
+            runBtn.disabled = false; btn.disabled = false; btn2.disabled = false;
+            progBar.style.display = 'none';
+            dbg('fetch_error', err.message);
+            setStatus('❌ Network error: ' + err.message, '#dc3545');
+        });
+    });
+
+    function setStatus(msg, color) {
+        status.textContent = msg;
+        status.style.color = color || 'var(--color-text-muted)';
+    }
+    function setProgress(pct) {
+        progFill.style.width = pct + '%';
+    }
+
+    // ── Fill form fields ───────────────────────────────────────────────────
     function setVal(id, val) {
         var el = document.getElementById(id);
         if (!el || val === null || val === undefined) return;
@@ -279,9 +368,6 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
             }
         } else if (el.type === 'checkbox') {
             el.checked = !!val;
-        } else if (el.value === '' || el.value === '0') {
-            // Only fill if currently empty (don't overwrite user edits)
-            el.value = val !== null ? val : '';
         } else {
             el.value = val !== null ? val : '';
         }
@@ -307,7 +393,6 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
             var notesEl = document.getElementById('fNotes');
             if (notesEl && !notesEl.value.trim()) notesEl.value = f.notes;
         }
-        // Scroll to name field so user can review
         var nameEl = document.getElementById('fName');
         if (nameEl) nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }

@@ -12,16 +12,17 @@ class AiController
     {
         if (empty($_SESSION['user_id'])) {
             http_response_code(401);
+            header('Content-Type: application/json');
             echo json_encode(['ok' => false, 'error' => 'Unauthenticated']);
             exit;
         }
     }
 
-    private function jsonError(string $msg, int $code = 400): void
+    private function jsonError(string $msg, int $code = 400, array $debug = []): void
     {
         http_response_code($code);
         header('Content-Type: application/json');
-        echo json_encode(['ok' => false, 'error' => $msg]);
+        echo json_encode(['ok' => false, 'error' => $msg, 'debug' => $debug]);
         exit;
     }
 
@@ -36,8 +37,8 @@ class AiController
 
     /**
      * POST /api/ai/identify-seed
-     * Body: _token, image_data (base64, no prefix), image_mime
-     * Returns JSON: { ok, fields: {...} }
+     * Body: _token, image_data (base64), image_mime, [image_data_2, image_mime_2]
+     * Returns JSON: { ok, fields: {...}, debug: [...] }
      */
     public function identifySeed(Request $request, array $params = []): void
     {
@@ -48,24 +49,31 @@ class AiController
             $this->jsonError('Invalid CSRF token', 403);
         }
 
-        $imageData = trim($request->post('image_data', ''));
-        $imageMime = trim($request->post('image_mime', 'image/jpeg'));
+        $debug = [];
 
-        if ($imageData === '') {
+        // Collect up to 2 images (front + back of packet)
+        $images = [];
+        foreach (['', '_2'] as $suffix) {
+            $raw  = trim($request->post('image_data' . $suffix, ''));
+            $mime = trim($request->post('image_mime' . $suffix, 'image/jpeg'));
+            if ($raw === '') continue;
+            // Strip data URL prefix if accidentally included
+            if (str_contains($raw, ',')) {
+                $raw = substr($raw, strpos($raw, ',') + 1);
+            }
+            $images[] = ['b64' => $raw, 'mime' => $mime];
+        }
+
+        if (empty($images)) {
             $this->jsonError('No image data received');
         }
 
-        // Strip data URL prefix if accidentally included
-        if (str_contains($imageData, ',')) {
-            $imageData = substr($imageData, strpos($imageData, ',') + 1);
-        }
+        $db          = DB::getInstance();
+        $mode        = $this->getSetting($db, 'ai.mode', 'local');
+        $extraPrompt = trim($this->getSetting($db, 'ai.extra_prompt', ''));
 
-        $db       = DB::getInstance();
-        $endpoint = rtrim($this->getSetting($db, 'ai.endpoint', 'http://localhost:11434'), '/');
-        $model    = $this->getSetting($db, 'ai.vision_model', 'llava');
-
-        $prompt = <<<PROMPT
-You are a botanical expert and seed catalog assistant. Analyze this image — it may show a plant, seed packet, seed bag, or loose seeds.
+        $basePrompt = <<<PROMPT
+You are a botanical expert and seed catalog assistant. Analyze this image — it may show a plant, seed packet, seed bag, or loose seeds. If multiple images are provided, they show the front and back of the same seed packet.
 
 Respond ONLY with a single JSON object (no markdown fences, no explanation text, just the raw JSON). Use these exact keys:
 {
@@ -90,12 +98,39 @@ Respond ONLY with a single JSON object (no markdown fences, no explanation text,
 If you cannot identify the plant or seed, set name to "Unknown" and all other fields to null or empty. Never output anything except the JSON object.
 PROMPT;
 
+        if ($extraPrompt !== '') {
+            $basePrompt .= "\n\nAdditional instructions:\n" . $extraPrompt;
+        }
+
+        $debug[] = ['step' => 'mode', 'value' => $mode];
+        $debug[] = ['step' => 'images_count', 'value' => count($images)];
+        $debug[] = ['step' => 'extra_prompt', 'value' => $extraPrompt !== '' ? 'yes (' . strlen($extraPrompt) . ' chars)' : 'none'];
+
+        if ($mode === 'huggingface') {
+            $this->callHuggingFace($db, $images, $basePrompt, $debug);
+        } else {
+            $this->callOllama($db, $images, $basePrompt, $debug);
+        }
+    }
+
+    // ── Ollama (local) ────────────────────────────────────────────────────────
+
+    private function callOllama(DB $db, array $images, string $prompt, array &$debug): void
+    {
+        $endpoint = rtrim($this->getSetting($db, 'ai.endpoint', 'http://localhost:11434'), '/');
+        $model    = $this->getSetting($db, 'ai.vision_model', 'llava');
+
+        $debug[] = ['step' => 'ollama_endpoint', 'value' => $endpoint];
+        $debug[] = ['step' => 'ollama_model',    'value' => $model];
+
         $payload = json_encode([
             'model'  => $model,
             'prompt' => $prompt,
-            'images' => [$imageData],
+            'images' => array_column($images, 'b64'),
             'stream' => false,
         ]);
+
+        $debug[] = ['step' => 'sending_to_ollama', 'value' => $endpoint . '/api/generate'];
 
         $ch = curl_init($endpoint . '/api/generate');
         curl_setopt_array($ch, [
@@ -103,31 +138,126 @@ PROMPT;
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_TIMEOUT        => 90,
             CURLOPT_CONNECTTIMEOUT => 5,
         ]);
 
         $raw   = curl_exec($ch);
         $errno = curl_errno($ch);
         $info  = curl_getinfo($ch);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
+        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
+        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+
         if ($errno !== 0 || $raw === false) {
-            $this->jsonError('Could not reach AI service at ' . $endpoint . '. Make sure Ollama is running (ollama serve) and the vision model is installed (ollama pull ' . $model . ').');
+            $this->jsonError('Could not reach Ollama at ' . $endpoint . '. Error: ' . $curlError . '. Make sure Ollama is running (ollama serve) and the vision model is installed (ollama pull ' . $model . ').', 502, $debug);
         }
 
         if (($info['http_code'] ?? 0) !== 200) {
-            $this->jsonError('AI service returned HTTP ' . ($info['http_code'] ?? '?') . '. Is the model "' . $model . '" installed? Run: ollama pull ' . $model);
+            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 500)];
+            $this->jsonError('Ollama returned HTTP ' . ($info['http_code'] ?? '?') . '. Is the model "' . $model . '" installed? Run: ollama pull ' . $model, 502, $debug);
         }
 
         $ollamaResp = json_decode($raw, true);
         $text       = trim($ollamaResp['response'] ?? '');
 
-        if ($text === '') {
-            $this->jsonError('AI returned an empty response. Try again or use a different vision model.');
+        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
+
+        $this->parseAndRespond($text, $debug);
+    }
+
+    // ── HuggingFace Inference API (OpenAI-compatible chat completions) ────────
+
+    private function callHuggingFace(DB $db, array $images, string $prompt, array &$debug): void
+    {
+        $hfEndpoint = rtrim($this->getSetting($db, 'ai.hf_endpoint', ''), '/');
+        $hfModel    = $this->getSetting($db, 'ai.hf_model', '');
+        $hfToken    = $this->getSetting($db, 'ai.hf_token', '');
+
+        if ($hfEndpoint === '') {
+            $this->jsonError('HuggingFace endpoint URL is not configured. Go to Settings → AI to set it.', 400, $debug);
         }
 
-        // Strip markdown code fences if the model added them
+        // Normalise: if URL doesn't end in /v1/chat/completions, append it
+        if (!str_ends_with($hfEndpoint, '/chat/completions')) {
+            $hfEndpoint = rtrim($hfEndpoint, '/') . '/v1/chat/completions';
+        }
+
+        $debug[] = ['step' => 'hf_endpoint', 'value' => $hfEndpoint];
+        $debug[] = ['step' => 'hf_model',    'value' => $hfModel ?: '(not set, using tgi)'];
+        $debug[] = ['step' => 'hf_token',    'value' => $hfToken !== '' ? 'set (' . strlen($hfToken) . ' chars)' : 'not set'];
+
+        // Build multimodal content — text prompt + all images
+        $content = [['type' => 'text', 'text' => $prompt]];
+        foreach ($images as $img) {
+            $content[] = [
+                'type'      => 'image_url',
+                'image_url' => ['url' => 'data:' . $img['mime'] . ';base64,' . $img['b64']],
+            ];
+        }
+
+        $payload = json_encode([
+            'model'      => $hfModel ?: 'tgi',
+            'messages'   => [['role' => 'user', 'content' => $content]],
+            'max_tokens' => 1024,
+        ]);
+
+        $headers = ['Content-Type: application/json'];
+        if ($hfToken !== '') {
+            $headers[] = 'Authorization: Bearer ' . $hfToken;
+        }
+
+        $debug[] = ['step' => 'sending_to_hf', 'value' => $hfEndpoint];
+
+        $ch = curl_init($hfEndpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+
+        $raw      = curl_exec($ch);
+        $errno    = curl_errno($ch);
+        $info     = curl_getinfo($ch);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        $debug[] = ['step' => 'curl_errno', 'value' => $errno];
+        $debug[] = ['step' => 'http_code',  'value' => $info['http_code'] ?? 'n/a'];
+
+        if ($errno !== 0 || $raw === false) {
+            $this->jsonError('Could not reach HuggingFace endpoint. Error: ' . $curlErr, 502, $debug);
+        }
+
+        if (($info['http_code'] ?? 0) >= 400) {
+            $debug[] = ['step' => 'raw_response', 'value' => substr($raw, 0, 800)];
+            $decoded = json_decode($raw, true);
+            $errMsg  = $decoded['error'] ?? ('HuggingFace returned HTTP ' . ($info['http_code'] ?? '?'));
+            $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
+        }
+
+        $hfResp = json_decode($raw, true);
+        $text   = trim($hfResp['choices'][0]['message']['content'] ?? '');
+
+        $debug[] = ['step' => 'raw_ai_text', 'value' => substr($text, 0, 600)];
+
+        if ($text === '') {
+            $this->jsonError('HuggingFace returned an empty response. Check the model supports vision/image input.', 502, $debug);
+        }
+
+        $this->parseAndRespond($text, $debug);
+    }
+
+    // ── Parse AI text → JSON → sanitised fields ───────────────────────────────
+
+    private function parseAndRespond(string $text, array $debug): void
+    {
+        // Strip markdown code fences
         $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
         $text = preg_replace('/\s*```$/i', '', trim($text));
         $text = trim($text);
@@ -139,12 +269,19 @@ PROMPT;
             $text = substr($text, $jsonStart, $jsonEnd - $jsonStart + 1);
         }
 
+        $debug[] = ['step' => 'parsed_json_attempt', 'value' => substr($text, 0, 400)];
+
         $fields = json_decode($text, true);
         if (!is_array($fields)) {
-            $this->jsonError('AI response could not be parsed as JSON. Raw: ' . substr($text, 0, 200));
+            $debug[] = ['step' => 'json_decode_error', 'value' => json_last_error_msg()];
+            http_response_code(422);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'AI response could not be parsed as JSON. Raw: ' . substr($text, 0, 200), 'debug' => $debug]);
+            exit;
         }
 
-        // Sanitize / normalise fields before returning
+        $debug[] = ['step' => 'json_decoded_keys', 'value' => implode(', ', array_keys($fields))];
+
         $safeFields = [
             'name'               => (string)($fields['name'] ?? ''),
             'variety'            => (string)($fields['variety'] ?? ''),
@@ -164,8 +301,10 @@ PROMPT;
             'notes'              => (string)($fields['notes'] ?? ''),
         ];
 
+        $debug[] = ['step' => 'done', 'value' => 'Fields sanitised OK'];
+
         header('Content-Type: application/json');
-        echo json_encode(['ok' => true, 'fields' => $safeFields]);
+        echo json_encode(['ok' => true, 'fields' => $safeFields, 'debug' => $debug]);
         exit;
     }
 }

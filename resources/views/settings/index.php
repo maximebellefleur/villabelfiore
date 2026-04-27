@@ -328,97 +328,208 @@
             </div>
         </div>
 
-        <!-- AI / Ollama settings -->
+        <!-- AI / Vision settings -->
         <div class="settings-group" style="margin-top:var(--spacing-6)">
-            <div class="settings-group-title">🤖 Local AI (Ollama)</div>
+            <div class="settings-group-title">🤖 AI — Seed Photo Identification</div>
             <p class="settings-hint" style="margin-bottom:var(--spacing-4)">
-                Powers the <strong>photo seed identification</strong> feature on the Add Seed form.
-                Runs entirely on your own server — no data is sent to any cloud service.
+                Powers the <strong>photo seed identification</strong> feature (Add Seed → Take/Choose Photo).
+                Choose between a <strong>local AI</strong> running on your own hardware (Ollama, Raspberry Pi, home server)
+                or a <strong>HuggingFace</strong> cloud inference endpoint.
             </p>
 
-            <!-- Install steps -->
-            <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
-                <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 Setup Guide</div>
+            <?php
+            $aiMode = $settings['ai.mode'] ?? 'local';
+            ?>
 
-                <div style="display:flex;flex-direction:column;gap:var(--spacing-4)">
-
-                    <!-- Step 1 -->
-                    <div>
-                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 1 — Install Ollama on your server</div>
-                        <p class="settings-hint" style="margin-bottom:6px">Run this in your server terminal (Linux / macOS). Requires root or sudo.</p>
-                        <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;overflow-x:auto">curl -fsSL https://ollama.com/install.sh | sh</code>
-                        <p class="settings-hint" style="margin-top:6px">On Windows or if you prefer a GUI installer, download from <strong>ollama.com/download</strong>. Ollama will start automatically as a system service.</p>
-                    </div>
-
-                    <!-- Step 2 -->
-                    <div>
-                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 2 — Pull a vision model</div>
-                        <p class="settings-hint" style="margin-bottom:6px">Vision models can understand images. Choose one based on your server RAM:</p>
-                        <table style="width:100%;font-size:0.8rem;border-collapse:collapse;margin-bottom:8px">
-                            <thead><tr style="border-bottom:1px solid var(--color-border)">
-                                <th style="text-align:left;padding:4px 8px;font-weight:600">Model</th>
-                                <th style="text-align:left;padding:4px 8px;font-weight:600">RAM needed</th>
-                                <th style="text-align:left;padding:4px 8px;font-weight:600">Quality</th>
-                                <th style="text-align:left;padding:4px 8px;font-weight:600">Pull command</th>
-                            </tr></thead>
-                            <tbody>
-                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">moondream</td><td style="padding:5px 8px">~2 GB</td><td style="padding:5px 8px">Fast, basic</td><td style="padding:5px 8px"><code>ollama pull moondream</code></td></tr>
-                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:7b</td><td style="padding:5px 8px">~4 GB</td><td style="padding:5px 8px">Good ✓ recommended</td><td style="padding:5px 8px"><code>ollama pull llava:7b</code></td></tr>
-                                <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:13b</td><td style="padding:5px 8px">~8 GB</td><td style="padding:5px 8px">Better</td><td style="padding:5px 8px"><code>ollama pull llava:13b</code></td></tr>
-                                <tr><td style="padding:5px 8px">llava:34b</td><td style="padding:5px 8px">~20 GB</td><td style="padding:5px 8px">Best</td><td style="padding:5px 8px"><code>ollama pull llava:34b</code></td></tr>
-                            </tbody>
-                        </table>
-                        <p class="settings-hint">Models are downloaded from Ollama's library automatically — no Hugging Face account needed for these.</p>
-                    </div>
-
-                    <!-- Step 3 -->
-                    <div>
-                        <div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">Step 3 — Start Ollama (if not already running)</div>
-                        <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem">ollama serve</code>
-                        <p class="settings-hint" style="margin-top:6px">If installed via the install script it runs as a service automatically. Test it: <code>curl http://localhost:11434</code> should return "Ollama is running".</p>
-                    </div>
-
-                    <!-- Step 4 — HuggingFace custom models -->
-                    <details style="border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-3)">
-                        <summary style="font-weight:600;font-size:0.875rem;cursor:pointer">Optional: use a custom model from Hugging Face</summary>
-                        <div style="margin-top:var(--spacing-3);display:flex;flex-direction:column;gap:var(--spacing-2)">
-                            <p class="settings-hint">Hugging Face (huggingface.co) hosts thousands of open-source models including plant/agriculture fine-tunes. You can import any <strong>.gguf</strong> model file into Ollama.</p>
-                            <div style="font-weight:600;font-size:0.8rem">a) Download the model</div>
-                            <p class="settings-hint">On huggingface.co, find a model with a <code>.gguf</code> file (look in the "Files and versions" tab). Download it to your server:</p>
-                            <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;overflow-x:auto">wget https://huggingface.co/&lt;owner&gt;/&lt;model&gt;/resolve/main/model.gguf -O ~/mymodel.gguf</code>
-                            <div style="font-weight:600;font-size:0.8rem;margin-top:4px">b) Create an Ollama Modelfile</div>
-                            <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:0.82rem;white-space:pre">echo 'FROM ~/mymodel.gguf' > Modelfile
-ollama create my-plant-model -f Modelfile</code>
-                            <div style="font-weight:600;font-size:0.8rem;margin-top:4px">c) Set the model name here</div>
-                            <p class="settings-hint">Enter <code>my-plant-model</code> in the Vision Model field below and save.</p>
-                        </div>
-                    </details>
-
-                </div>
+            <!-- Mode selector -->
+            <div style="display:flex;gap:8px;margin-bottom:var(--spacing-4)">
+                <button type="button" id="aiModeLocalBtn"
+                        onclick="switchAiMode('local')"
+                        class="btn <?= $aiMode === 'local' ? 'btn-primary' : 'btn-secondary' ?>"
+                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
+                    🖥 Local (Ollama)
+                </button>
+                <button type="button" id="aiModeHfBtn"
+                        onclick="switchAiMode('huggingface')"
+                        class="btn <?= $aiMode === 'huggingface' ? 'btn-primary' : 'btn-secondary' ?>"
+                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
+                    🤗 HuggingFace
+                </button>
             </div>
 
-            <!-- Config form -->
             <form method="POST" action="<?= url('/settings/update') ?>" class="settings-form">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <div class="settings-field">
-                    <label class="settings-label">Ollama Endpoint</label>
-                    <p class="settings-hint">Base URL of your Ollama instance. Default: <code>http://localhost:11434</code> — use this if Ollama runs on the same machine as this app.</p>
-                    <input type="url" name="ai_endpoint" class="settings-input"
-                           value="<?= e($settings['ai.endpoint'] ?? 'http://localhost:11434') ?>"
-                           placeholder="http://localhost:11434">
+                <input type="hidden" name="ai_mode" id="aiModeInput" value="<?= e($aiMode) ?>">
+
+                <!-- ══ LOCAL / OLLAMA PANEL ══════════════════════════════════════ -->
+                <div id="aiLocalPanel" style="<?= $aiMode !== 'local' ? 'display:none' : '' ?>">
+
+                    <!-- Setup guide -->
+                    <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
+                        <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 Ollama / Raspberry Pi Setup Guide</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--spacing-4)">
+
+                            <div>
+                                <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Step 1 — Install Ollama on your server or Raspberry Pi</div>
+                                <p class="settings-hint" style="margin-bottom:6px">Run this in your server terminal (Linux / macOS). Requires root or sudo. Works on Raspberry Pi 4/5 (64-bit OS).</p>
+                                <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:.82rem;overflow-x:auto">curl -fsSL https://ollama.com/install.sh | sh</code>
+                                <p class="settings-hint" style="margin-top:6px">On Windows, download the installer from <strong>ollama.com/download</strong>. Ollama starts automatically as a system service.</p>
+                                <p class="settings-hint" style="margin-top:4px"><strong>Raspberry Pi tip:</strong> Ollama v0.1.29+ supports Pi 5 (ARM64). Pi 4 with 8 GB RAM runs <code>moondream</code> well.</p>
+                            </div>
+
+                            <div>
+                                <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Step 2 — Pull a vision model</div>
+                                <p class="settings-hint" style="margin-bottom:6px">Vision models understand images. Choose based on your hardware RAM:</p>
+                                <table style="width:100%;font-size:.8rem;border-collapse:collapse;margin-bottom:8px">
+                                    <thead><tr style="border-bottom:1px solid var(--color-border)">
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">Model</th>
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">RAM needed</th>
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">Quality</th>
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">Pull command</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">moondream</td><td style="padding:5px 8px">~2 GB</td><td style="padding:5px 8px">Fast · Pi-friendly</td><td style="padding:5px 8px"><code>ollama pull moondream</code></td></tr>
+                                        <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:7b</td><td style="padding:5px 8px">~4 GB</td><td style="padding:5px 8px">Good ✓ recommended</td><td style="padding:5px 8px"><code>ollama pull llava:7b</code></td></tr>
+                                        <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px">llava:13b</td><td style="padding:5px 8px">~8 GB</td><td style="padding:5px 8px">Better</td><td style="padding:5px 8px"><code>ollama pull llava:13b</code></td></tr>
+                                        <tr><td style="padding:5px 8px">llava:34b</td><td style="padding:5px 8px">~20 GB</td><td style="padding:5px 8px">Best</td><td style="padding:5px 8px"><code>ollama pull llava:34b</code></td></tr>
+                                    </tbody>
+                                </table>
+                                <p class="settings-hint">Models download automatically from Ollama's library — no account needed.</p>
+                            </div>
+
+                            <div>
+                                <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Step 3 — Start Ollama (if not running)</div>
+                                <code style="display:block;background:#1e1e1e;color:#a8ff78;padding:10px 14px;border-radius:6px;font-size:.82rem">ollama serve</code>
+                                <p class="settings-hint" style="margin-top:6px">If installed via the script it runs as a service automatically. Test: <code>curl http://localhost:11434</code> → "Ollama is running".</p>
+                                <p class="settings-hint" style="margin-top:4px"><strong>Remote server / Pi:</strong> If Ollama runs on a different machine, set its IP as the endpoint below (e.g. <code>http://192.168.1.50:11434</code>) and make sure Ollama is set to <code>OLLAMA_HOST=0.0.0.0</code>.</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Config fields -->
+                    <div class="settings-field">
+                        <label class="settings-label">Ollama Endpoint</label>
+                        <p class="settings-hint">Base URL of your Ollama instance. Use <code>http://localhost:11434</code> if on the same machine, or <code>http://&lt;raspberry-pi-ip&gt;:11434</code> for a remote Pi.</p>
+                        <input type="url" name="ai_endpoint" class="settings-input"
+                               value="<?= e($settings['ai.endpoint'] ?? 'http://localhost:11434') ?>"
+                               placeholder="http://localhost:11434">
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-label">Vision Model</label>
+                        <p class="settings-hint">Must support image input. Use the exact name shown in <code>ollama list</code>.</p>
+                        <input type="text" name="ai_vision_model" class="settings-input"
+                               value="<?= e($settings['ai.vision_model'] ?? 'llava') ?>"
+                               placeholder="llava">
+                    </div>
                 </div>
-                <div class="settings-field">
-                    <label class="settings-label">Vision Model</label>
-                    <p class="settings-hint">Must support image input. Use the exact name from <code>ollama list</code>.</p>
-                    <input type="text" name="ai_vision_model" class="settings-input"
-                           value="<?= e($settings['ai.vision_model'] ?? 'llava') ?>"
-                           placeholder="llava">
+
+                <!-- ══ HUGGINGFACE PANEL ══════════════════════════════════════════ -->
+                <div id="aiHfPanel" style="<?= $aiMode !== 'huggingface' ? 'display:none' : '' ?>">
+
+                    <!-- Setup guide -->
+                    <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--spacing-4);margin-bottom:var(--spacing-4)">
+                        <div style="font-weight:700;margin-bottom:var(--spacing-3)">📋 HuggingFace Setup Guide</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--spacing-4)">
+
+                            <div>
+                                <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Option A — Serverless Inference API (free tier available)</div>
+                                <p class="settings-hint" style="margin-bottom:6px">HuggingFace's hosted API runs models without you needing any server. Rate-limited on free tier; faster on PRO (~$9/month).</p>
+                                <ol style="margin:0 0 6px 18px;font-size:.82rem;line-height:1.8;color:var(--color-text-muted)">
+                                    <li>Create a free account at <strong>huggingface.co</strong></li>
+                                    <li>Go to <strong>Settings → Access Tokens</strong> and create a token with <em>Read</em> permission</li>
+                                    <li>Choose a multimodal vision model (see list below)</li>
+                                    <li>Set Endpoint URL to <code>https://api-inference.huggingface.co/v1/chat/completions</code> and enter the model name</li>
+                                </ol>
+                                <p class="settings-hint"><strong>Recommended free-tier models for seed identification:</strong></p>
+                                <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+                                    <thead><tr style="border-bottom:1px solid var(--color-border)">
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">Model ID</th>
+                                        <th style="text-align:left;padding:4px 8px;font-weight:600">Notes</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px"><code>meta-llama/Llama-3.2-11B-Vision-Instruct</code></td><td style="padding:5px 8px">Excellent · free tier ✓</td></tr>
+                                        <tr style="border-bottom:1px solid var(--color-border)"><td style="padding:5px 8px"><code>Qwen/Qwen2.5-VL-7B-Instruct</code></td><td style="padding:5px 8px">Very good for text on packets</td></tr>
+                                        <tr><td style="padding:5px 8px"><code>microsoft/Florence-2-large</code></td><td style="padding:5px 8px">Good at label OCR</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div>
+                                <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Option B — Dedicated Inference Endpoint (pay-per-hour)</div>
+                                <p class="settings-hint" style="margin-bottom:6px">Deploy your own endpoint with a specific model for guaranteed performance. Good for production use.</p>
+                                <ol style="margin:0 0 6px 18px;font-size:.82rem;line-height:1.8;color:var(--color-text-muted)">
+                                    <li>Go to <strong>huggingface.co/inference-endpoints</strong></li>
+                                    <li>Create an endpoint with a vision-language model</li>
+                                    <li>Wait for it to be <em>Running</em></li>
+                                    <li>Copy the endpoint URL (looks like <code>https://xxxx.endpoints.huggingface.cloud</code>)</li>
+                                    <li>Paste it below — Rooted will automatically append <code>/v1/chat/completions</code></li>
+                                </ol>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Config fields -->
+                    <div class="settings-field">
+                        <label class="settings-label">Inference Endpoint URL</label>
+                        <p class="settings-hint">
+                            <strong>Serverless API:</strong> <code>https://api-inference.huggingface.co/v1/chat/completions</code><br>
+                            <strong>Dedicated endpoint:</strong> paste the base URL from your endpoint dashboard (e.g. <code>https://xyz.endpoints.huggingface.cloud</code>).
+                            The path <code>/v1/chat/completions</code> is appended automatically if missing.
+                        </p>
+                        <input type="url" name="ai_hf_endpoint" class="settings-input"
+                               value="<?= e($settings['ai.hf_endpoint'] ?? '') ?>"
+                               placeholder="https://api-inference.huggingface.co/v1/chat/completions">
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-label">Model ID</label>
+                        <p class="settings-hint">Required for the serverless API. For dedicated endpoints, leave blank or enter <code>tgi</code>.</p>
+                        <input type="text" name="ai_hf_model" class="settings-input"
+                               value="<?= e($settings['ai.hf_model'] ?? '') ?>"
+                               placeholder="meta-llama/Llama-3.2-11B-Vision-Instruct">
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-label">API Token</label>
+                        <p class="settings-hint">Your HuggingFace access token (starts with <code>hf_</code>). Required even on the free tier for authenticated requests. Stored securely in your local database.</p>
+                        <input type="password" name="ai_hf_token" class="settings-input"
+                               value="<?= e($settings['ai.hf_token'] ?? '') ?>"
+                               placeholder="hf_…"
+                               autocomplete="new-password">
+                    </div>
                 </div>
+
+                <!-- ══ SHARED — Extra prompt ══════════════════════════════════════ -->
+                <div class="settings-field" style="margin-top:var(--spacing-4);padding-top:var(--spacing-4);border-top:1px solid var(--color-border)">
+                    <label class="settings-label">Extra Prompt Instructions (optional)</label>
+                    <p class="settings-hint">
+                        These instructions are appended to the AI's botanical expert prompt for every identification request.
+                        Use this to customise output for your region, language, or specific needs.<br>
+                        Examples: <em>"Answer in French."</em> · <em>"Focus on Mediterranean varieties."</em> · <em>"Include pest resistance info in the notes field."</em>
+                    </p>
+                    <textarea name="ai_extra_prompt" class="settings-input" rows="3"
+                              style="resize:vertical"
+                              placeholder="e.g. Prefer Italian variety names. Include soil pH range in the notes field."><?= e($settings['ai.extra_prompt'] ?? '') ?></textarea>
+                </div>
+
                 <div class="settings-save-row">
                     <button type="submit" class="btn btn-primary">Save AI Settings</button>
                 </div>
             </form>
         </div>
+
+<script>
+(function () {
+    function switchAiMode(mode) {
+        document.getElementById('aiModeInput').value = mode;
+        document.getElementById('aiLocalPanel').style.display = mode === 'local'        ? '' : 'none';
+        document.getElementById('aiHfPanel').style.display    = mode === 'huggingface' ? '' : 'none';
+        document.getElementById('aiModeLocalBtn').className   = 'btn ' + (mode === 'local'        ? 'btn-primary' : 'btn-secondary');
+        document.getElementById('aiModeHfBtn').className      = 'btn ' + (mode === 'huggingface' ? 'btn-primary' : 'btn-secondary');
+    }
+    window.switchAiMode = switchAiMode;
+}());
+</script>
 
         <!-- Map settings — boundary types -->
         <div class="settings-group" style="margin-top:var(--spacing-6)">

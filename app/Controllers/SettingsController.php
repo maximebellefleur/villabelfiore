@@ -58,6 +58,7 @@ class SettingsController
             'reminder.default_lead_days', 'integration.google_calendar',
             'integration.weather', 'quote.api_url',
             'ai.endpoint', 'ai.vision_model',
+            'ai.mode', 'ai.hf_endpoint', 'ai.hf_model', 'ai.hf_token', 'ai.extra_prompt',
             'garden.climate_zone',
             'companion_api_provider', 'companion_api_key', 'companion_api_model', 'companion_api_url',
         ];

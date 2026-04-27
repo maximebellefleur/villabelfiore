@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.6.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — HuggingFace & Dual-Photo',
+        'features' => [
+            ['title' => 'HuggingFace AI mode', 'detail' => 'Choose between Local (Ollama/Raspberry Pi) and HuggingFace cloud inference. Configure endpoint URL, model ID, and API token. Full setup guide for both serverless and dedicated endpoints.'],
+            ['title' => 'Dual-photo seed scanning', 'detail' => 'Upload the front AND back of a seed packet. Both images are sent to the AI at once so it can read sowing instructions from one side and product name from the other.'],
+            ['title' => 'Extra prompt instructions', 'detail' => 'A free-text field in Settings → AI lets you append custom instructions to every identification prompt — useful for preferred language, regional variety names, or extra fields.'],
+            ['title' => 'AI debug status panel', 'detail' => 'Collapsible yellow log panel in the seed form shows every step of the AI call in real time. Useful for troubleshooting. Easily removed when no longer needed.'],
+        ],
+    ],
+
     '2.5.14' => [
         'status'   => 'released',
         'released' => '2026-04-26',
