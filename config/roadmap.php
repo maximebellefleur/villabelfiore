@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Seed Detail — Mobile Layout Fix',
+        'features' => [
+            ['title' => 'Mobile-responsive seed detail', 'detail' => 'Single-column layout on mobile with calendar at top. Two-column layout preserved on desktop.'],
+        ],
+    ],
+
     '2.7.2' => [
         'status'   => 'released',
         'released' => '2026-04-27',

@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.7.3' => [
+        'date'  => '2026-04-27',
+        'title' => 'Seed Detail — Mobile Layout Fix',
+        'fixed' => [
+            'Seed detail page: two-column layout was squeezing the calendar into 50% width on mobile — 12 month labels became unreadable. Now stacks to a single column on screens ≤640 px, with the calendar card promoted to the top so it is the first thing visible.',
+        ],
+    ],
+
     '2.7.2' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Working',
