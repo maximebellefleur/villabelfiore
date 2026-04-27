@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.6.2' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Image Compression Fix',
+        'fixed' => [
+            'HTTP 413 "Request Entity Too Large" when uploading seed packet photos — phone camera images (4–8 MB) were sent as raw base64, exceeding the server\'s request body limit before PHP could run. Images are now resized to a max of 1280 px and recompressed to JPEG at 82% quality client-side before upload (typically 150–400 KB each). The status line shows the compressed size after loading each photo.',
+            'Added LimitRequestBody 50 MB to .htaccess and a mod_php8.c block so PHP upload limits are honoured on both PHP 7 and PHP 8 cPanel installs.',
+        ],
+        'improved' => [
+            'AI pipeline: smaller images reach HuggingFace faster and consume fewer tokens — identification is noticeably quicker on slow connections.',
+        ],
+    ],
+
     '2.6.1' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Month Icons & Editable Prompt',

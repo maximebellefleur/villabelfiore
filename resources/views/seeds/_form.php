@@ -281,15 +281,30 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         var objUrl = URL.createObjectURL(file);
         previewEl.src = objUrl;
         previewWrapEl.style.display = 'flex';
-        setStatus('📷 Image ' + slot + ' loaded. ' + (slot === 'front' ? 'Add a back photo or click Identify.' : 'Click Identify.'), 'var(--color-text-muted)');
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            var dataUrl   = e.target.result;
-            var mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
-            images[slot] = { b64: dataUrl.split(',')[1], mime: mimeMatch ? mimeMatch[1] : 'image/jpeg' };
-            runBtn.style.display = 'inline-flex';
+        setStatus('📷 Image ' + slot + ' loaded — compressing…', 'var(--color-text-muted)');
+        var img = new Image();
+        img.onload = function () {
+            var MAX = 1280, w = img.naturalWidth, h = img.naturalHeight;
+            if (w > MAX || h > MAX) {
+                if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+                else        { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            URL.revokeObjectURL(objUrl);
+            canvas.toBlob(function (blob) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    images[slot] = { b64: e.target.result.split(',')[1], mime: 'image/jpeg' };
+                    var kb = Math.round(blob.size / 1024);
+                    setStatus('📷 Image ' + slot + ' ready (' + kb + ' KB). ' + (slot === 'front' ? 'Add a back photo or click Identify.' : 'Click Identify.'), 'var(--color-text-muted)');
+                    runBtn.style.display = 'inline-flex';
+                };
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg', 0.82);
         };
-        reader.readAsDataURL(file);
+        img.src = objUrl;
     }
 
     fileInput.addEventListener('change', function () {

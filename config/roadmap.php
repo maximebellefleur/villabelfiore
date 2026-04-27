@@ -8,6 +8,16 @@
  */
 return [
 
+    '2.6.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Image Compression Fix',
+        'features' => [
+            ['title' => 'Client-side image compression', 'detail' => 'Seed packet photos are resized to max 1280 px and compressed to JPEG 82% quality in the browser before upload — fixes 413 errors from large phone photos and speeds up the AI call.'],
+            ['title' => 'Server upload limit raised', 'detail' => 'LimitRequestBody 50 MB added to .htaccess plus a mod_php8.c block so PHP upload limits work correctly on both PHP 7 and PHP 8 cPanel stacks.'],
+        ],
+    ],
+
     '2.6.1' => [
         'status'   => 'released',
         'released' => '2026-04-27',
