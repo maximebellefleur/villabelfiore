@@ -105,16 +105,31 @@ class GardenBedController
         $hasCompanionApi  = !empty($apiKeyRow['setting_value_text']);
 
         // Family needs + seeds for suggestions and planting backlog
-        $familyNeeds = $db->fetchAll(
-            "SELECT fn.*, s.name AS seed_name, s.variety AS seed_variety,
-                    s.planting_months, s.spacing_cm, s.needs_restock, s.id AS sid
-             FROM family_needs fn
-             LEFT JOIN seeds s ON s.id = fn.seed_id
-             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-        );
-        $allSeeds = $db->fetchAll(
-            "SELECT id, name, variety, planting_months, spacing_cm FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
-        );
+        // These queries are optional — wrap in try/catch so missing columns/tables never break the page
+        $familyNeeds = [];
+        $allSeeds    = [];
+        try {
+            // Check if needs_restock column exists; if not, run the migration
+            $hasRestockCol = !empty($db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'needs_restock'"));
+            if (!$hasRestockCol) {
+                $db->execute("ALTER TABLE seeds ADD COLUMN needs_restock TINYINT(1) NOT NULL DEFAULT 0 AFTER stock_enabled");
+            }
+
+            $familyNeeds = $db->fetchAll(
+                "SELECT fn.*, s.name AS seed_name, s.variety AS seed_variety,
+                        s.planting_months, s.spacing_cm, s.needs_restock, s.id AS sid
+                 FROM family_needs fn
+                 LEFT JOIN seeds s ON s.id = fn.seed_id
+                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+            );
+            $allSeeds = $db->fetchAll(
+                "SELECT id, name, variety, planting_months, spacing_cm FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
+            );
+        } catch (\Throwable $e) {
+            // family_needs table doesn't exist yet or seeds schema mismatch — suggestions will be empty
+            $familyNeeds = [];
+            $allSeeds    = $db->fetchAll("SELECT id, name, variety, planting_months, spacing_cm FROM seeds ORDER BY name ASC") ?: [];
+        }
 
         $currentMonth = (int)date('n');
         $plantedSeedIds   = array_filter(array_column($plantings, 'seed_id'));
