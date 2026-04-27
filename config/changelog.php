@@ -8,6 +8,25 @@
  */
 return [
 
+    '2.8.8' => [
+        'date'  => '2026-04-27',
+        'title' => 'Multi-crop lines, proportional fill, GPS masonry map',
+        'new' => [
+            'A bed line can now hold multiple crops simultaneously — each planting is a separate row under the line header. Use ＋ Add on any line to add another crop without replacing what is already there.',
+            'Companion quick-add and the full seed dropdown now plant on the SAME line as the open companion panel, not a new empty line.',
+            'Bed SVG shows proportional fill: the coloured stripe = (plant count × spacing) ÷ bed length. Overflow shows a ⚠ marker.',
+            'Line header has a green/red fill bar (used cm / total cm) that updates live with +/− buttons.',
+        ],
+        'improved' => [
+            'GPS masonry map: beds sorted north→south (rows) and west→east (within row), rendered as tight flex shelves — no isolated beds in empty corners.',
+            'Bed thumbnail: width_m = E-W screen width, length_m = N-S screen height. EW-row beds show horizontal bands; NS-row beds show vertical stripes.',
+            'Edit forms are per-planting (keyed by planting ID): editing one crop never overwrites other crops on the same line.',
+        ],
+        'fixed' => [
+            'storeLine() now UPDATEs by planting_id when editing, and INSERTs when adding — previously always UPSERTed by line_number, overwriting any other planting on that line.',
+        ],
+    ],
+
     '2.8.7' => [
         'date'  => '2026-04-27',
         'title' => 'Companions: variety-aware quick-add + GPS bed map',

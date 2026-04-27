@@ -8,6 +8,18 @@
  */
 return [
 
+    '2.8.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Multi-crop lines, proportional fill, GPS masonry map',
+        'features' => [
+            ['title' => 'Multiple crops per line', 'detail' => 'storeLine() now inserts when no planting_id (allows multiple per line_number) and updates by ID when planting_id is provided. plantingMap changed from single to array-of-arrays. Each planting has its own card, edit form, and delete button within the line row.'],
+            ['title' => 'Add companion to same line', 'detail' => 'quickAddCompanion() and quickAddFromSelect() now post line_number = current line rather than finding the first empty line. The companions panel is keyed by pid not line number.'],
+            ['title' => 'Proportional fill SVG', 'detail' => 'Each line stripe in the bed SVG shows colored fill = (plant_count × spacing_cm) / (bed_length × 100). The line header shows a live-updating green/red fill bar.'],
+            ['title' => 'GPS masonry bed map', 'detail' => 'Replaced absolute-position canvas with flex shelf rows. Beds sorted by lat DESC (north first) then lng ASC (west first), grouped into rows by lat tolerance. Width_m → screen width (E-W), length_m → screen height (N-S). Stripe direction matches line_dir.'],
+        ],
+    ],
+
     '2.8.7' => [
         'status'   => 'released',
         'released' => '2026-04-27',

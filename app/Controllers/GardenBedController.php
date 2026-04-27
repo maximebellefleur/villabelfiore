@@ -82,7 +82,7 @@ class GardenBedController
 
         $plantingMap = [];
         foreach ($plantings as $planting) {
-            $plantingMap[(int)$planting['line_number']] = $planting;
+            $plantingMap[(int)$planting['line_number']][] = $planting;
         }
 
         $now45 = (new \DateTime())->modify('+45 days');
@@ -242,24 +242,22 @@ class GardenBedController
         $notesRaw = trim((string)$request->post('notes', ''));
         $notes    = $notesRaw !== '' ? mb_substr($notesRaw, 0, 1000) : null;
 
-        $existing = $db->fetchOne(
-            "SELECT id FROM garden_plantings WHERE item_id = ? AND line_number = ?",
-            [$itemId, $lineNumber]
-        );
-
+        $plantingId = (int)$request->post('planting_id', 0);
         $seedIdRaw  = (int)$request->post('seed_id', 0);
         $seedId     = $seedIdRaw > 0 ? $seedIdRaw : null;
         $plantCount = ($request->post('plant_count', '') !== '') ? max(1, (int)$request->post('plant_count')) : null;
 
-        if ($existing) {
+        if ($plantingId > 0) {
+            // Update a specific existing planting row
             $db->execute(
                 "UPDATE garden_plantings
                     SET crop_name = ?, variety = ?, status = ?, planted_at = ?,
                         expected_harvest_at = ?, notes = ?, seed_id = ?, plant_count = ?
-                  WHERE item_id = ? AND line_number = ?",
-                [$cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes, $seedId, $plantCount, $itemId, $lineNumber]
+                  WHERE id = ? AND item_id = ?",
+                [$cropName, $variety, $status, $plantedAt, $expectedHarvestAt, $notes, $seedId, $plantCount, $plantingId, $itemId]
             );
         } else {
+            // Insert new planting — multiple per line_number are allowed
             $db->execute(
                 "INSERT INTO garden_plantings
                     (item_id, line_number, crop_name, variety, status, planted_at, expected_harvest_at, notes, seed_id, plant_count)

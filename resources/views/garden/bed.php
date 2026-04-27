@@ -159,6 +159,13 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
     </div>
 </div>
 
+<?php
+// Seed spacing lookup (needed for SVG fill proportions too)
+$seedSpacingMap = [];
+foreach ($allSeeds as $_s) { $seedSpacingMap[(int)$_s['id']] = (int)($_s['spacing_cm'] ?? 0); }
+// Total available cm per line
+$capCm = $lengthM > 0 ? (int)round($lengthM * 100) : 0;
+?>
 <!-- Schematic -->
 <div class="bed-schematic">
     <svg width="<?= $svgW ?>" height="<?= $svgH ?>" viewBox="0 0 <?= $svgW ?> <?= $svgH ?>" xmlns="http://www.w3.org/2000/svg">
@@ -167,15 +174,26 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             <?php $stripeW = $svgW / $numLines; ?>
             <?php for ($li = 0; $li < $numLines; $li++):
                 $lNum = $li + 1;
-                $planting = $plantingMap[$lNum] ?? null;
-                $status = $planting['status'] ?? 'empty';
-                $color = $statusColors[$status];
+                $linePls  = $plantingMap[$lNum] ?? [];
+                $usedCm   = 0;
+                foreach ($linePls as $_p) {
+                    $sp = $seedSpacingMap[(int)($_p['seed_id'] ?? 0)] ?? 0;
+                    $cnt = (int)($_p['plant_count'] ?? 0);
+                    if ($sp > 0 && $cnt > 0) $usedCm += $sp * $cnt;
+                }
+                $status   = !empty($linePls) ? ($linePls[0]['status'] ?? 'empty') : 'empty';
+                $color    = $statusColors[$status];
+                $fillR    = ($capCm > 0 && $usedCm > 0) ? min(1.0, $usedCm / $capCm) : (!empty($linePls) ? 0.85 : 0.0);
                 $x = round($li * $stripeW);
                 $w = round($stripeW);
-                $cropLabel = $planting['crop_name'] ?? '';
+                $cropLabel = !empty($linePls) ? ($linePls[0]['crop_name'] ?? '') : '';
             ?>
-            <rect x="<?= $x ?>" y="0" width="<?= $w ?>" height="<?= $svgH ?>" fill="<?= $color ?>" fill-opacity="0.75"/>
+            <rect x="<?= $x ?>" y="0" width="<?= $w ?>" height="<?= $svgH ?>" fill="#e2e8f0" fill-opacity="0.5"/>
+            <rect x="<?= $x ?>" y="0" width="<?= round($w * $fillR) ?>" height="<?= $svgH ?>" fill="<?= $color ?>" fill-opacity="0.85"/>
             <?php if ($li > 0): ?><line x1="<?= $x ?>" y1="0" x2="<?= $x ?>" y2="<?= $svgH ?>" stroke="#fff" stroke-width="1.5"/><?php endif; ?>
+            <?php if ($usedCm > $capCm && $capCm > 0): ?>
+            <text x="<?= $x + $w - 3 ?>" y="10" text-anchor="end" font-size="9" fill="#dc2626">⚠</text>
+            <?php endif; ?>
             <?php if ($cropLabel):
                 $cx = round($x + $w/2);
                 $cy = round($svgH/2);
@@ -189,15 +207,26 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             <?php $stripeH = $svgH / $numLines; ?>
             <?php for ($li = 0; $li < $numLines; $li++):
                 $lNum = $li + 1;
-                $planting = $plantingMap[$lNum] ?? null;
-                $status = $planting['status'] ?? 'empty';
-                $color = $statusColors[$status];
+                $linePls  = $plantingMap[$lNum] ?? [];
+                $usedCm   = 0;
+                foreach ($linePls as $_p) {
+                    $sp = $seedSpacingMap[(int)($_p['seed_id'] ?? 0)] ?? 0;
+                    $cnt = (int)($_p['plant_count'] ?? 0);
+                    if ($sp > 0 && $cnt > 0) $usedCm += $sp * $cnt;
+                }
+                $status   = !empty($linePls) ? ($linePls[0]['status'] ?? 'empty') : 'empty';
+                $color    = $statusColors[$status];
+                $fillR    = ($capCm > 0 && $usedCm > 0) ? min(1.0, $usedCm / $capCm) : (!empty($linePls) ? 0.85 : 0.0);
                 $y = round($li * $stripeH);
                 $h = round($stripeH);
-                $cropLabel = $planting['crop_name'] ?? '';
+                $cropLabel = !empty($linePls) ? ($linePls[0]['crop_name'] ?? '') : '';
             ?>
-            <rect x="0" y="<?= $y ?>" width="<?= $svgW ?>" height="<?= $h ?>" fill="<?= $color ?>" fill-opacity="0.75"/>
+            <rect x="0" y="<?= $y ?>" width="<?= $svgW ?>" height="<?= $h ?>" fill="#e2e8f0" fill-opacity="0.5"/>
+            <rect x="0" y="<?= $y ?>" width="<?= round($svgW * $fillR) ?>" height="<?= $h ?>" fill="<?= $color ?>" fill-opacity="0.85"/>
             <?php if ($li > 0): ?><line x1="0" y1="<?= $y ?>" x2="<?= $svgW ?>" y2="<?= $y ?>" stroke="#fff" stroke-width="1.5"/><?php endif; ?>
+            <?php if ($usedCm > $capCm && $capCm > 0): ?>
+            <text x="<?= $svgW - 3 ?>" y="<?= $y + 10 ?>" text-anchor="end" font-size="9" fill="#dc2626">⚠</text>
+            <?php endif; ?>
             <?php if ($cropLabel): ?>
             <text x="<?= $svgW/2 ?>" y="<?= $y + $h/2 + 4 ?>" text-anchor="middle" font-size="<?= min(12, max(8, $h * 0.5)) ?>" fill="#1e293b" font-family="sans-serif" font-weight="600"><?= e(mb_substr($cropLabel, 0, 20)) ?></text>
             <?php endif; ?>
@@ -219,125 +248,183 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
     <?php endif; ?>
 </div>
 
-<?php
-// Build seed spacing lookup for capacity warnings
-$seedSpacingMap = [];
-foreach ($allSeeds as $_s) { $seedSpacingMap[(int)$_s['id']] = (int)($_s['spacing_cm'] ?? 0); }
-?>
 <?php for ($li = 1; $li <= $numLines; $li++):
-    $planting = $plantingMap[$li] ?? null;
-    $status   = $planting['status'] ?? 'empty';
-    $cropName = $planting['crop_name'] ?? '';
-    $variety  = $planting['variety']   ?? '';
-    $pid      = $planting['id']        ?? 0;
-    $plantedAt = $planting['planted_at'] ?? '';
-    $harvestAt = $planting['expected_harvest_at'] ?? '';
-    $notes     = $planting['notes'] ?? '';
-    $plantCount = (int)($planting['plant_count'] ?? 0);
-    $subParts  = [];
-    if ($plantedAt) $subParts[] = 'Planted ' . date('d M Y', strtotime($plantedAt));
-    if ($harvestAt) $subParts[] = 'Harvest by ' . date('d M Y', strtotime($harvestAt));
-    if ($variety)   $subParts[] = $variety;
-    // Capacity
-    $lineSpacing = $seedSpacingMap[(int)($planting['seed_id'] ?? 0)] ?? 0;
-    $lineCapacity = ($lineSpacing > 0 && $lengthM > 0) ? (int)floor($lengthM * 100 / $lineSpacing) : 0;
-    $overCap = ($lineCapacity > 0 && $plantCount > $lineCapacity);
+    $linePlantings = $plantingMap[$li] ?? [];
+    // Line-level capacity: sum of all plantings' used cm
+    $totalUsedCm = 0;
+    foreach ($linePlantings as $_p) {
+        $sp = $seedSpacingMap[(int)($_p['seed_id'] ?? 0)] ?? 0;
+        $cnt = (int)($_p['plant_count'] ?? 0);
+        if ($sp > 0 && $cnt > 0) $totalUsedCm += $sp * $cnt;
+    }
+    $overCap = $capCm > 0 && $totalUsedCm > $capCm;
+    $fillPct = $capCm > 0 ? min(100, round($totalUsedCm / $capCm * 100)) : 0;
 ?>
-<div class="bed-line-row<?= $overCap ? ' bed-line-row--overcap' : '' ?>" id="lineRow<?= $li ?>"
-     data-capacity="<?= $lineCapacity ?>" data-pid="<?= $pid ?>" data-seed-id="<?= (int)($planting['seed_id'] ?? 0) ?>">
-    <div class="bed-line-main">
+<div class="bed-line-row<?= $overCap ? ' bed-line-row--overcap' : '' ?>" id="lineRow<?= $li ?>">
+    <!-- Line header: number + capacity bar + Add button -->
+    <div class="bed-line-main" style="gap:8px">
         <div class="bed-line-num"><?= $li ?></div>
-        <div class="bed-line-crop">
-            <div class="bed-line-name"><?= $cropName ? e($cropName) : '<span style="color:var(--color-text-muted);font-weight:400">Empty</span>' ?></div>
-            <?php if ($subParts): ?><div class="bed-line-sub"><?= e(implode(' · ', $subParts)) ?></div><?php endif; ?>
+        <?php if ($capCm > 0 && !empty($linePlantings)): ?>
+        <div style="flex:1;min-width:60px">
+            <div style="height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+                <div id="lineFill<?= $li ?>" style="height:5px;width:<?= $fillPct ?>%;background:<?= $overCap ? '#ef4444' : '#22c55e' ?>;border-radius:3px;transition:width .2s"></div>
+            </div>
+            <span id="lineFillLabel<?= $li ?>" style="font-size:.6rem;color:<?= $overCap ? '#dc2626' : 'var(--color-text-muted)' ?>">
+                <?= $totalUsedCm ?>cm / <?= $capCm ?>cm<?= $overCap ? ' ⚠' : '' ?>
+            </span>
         </div>
-        <?php if ($pid && $plantCount > 0): ?>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0">
-            <div style="display:flex;align-items:center;gap:2px">
+        <?php else: ?>
+        <div style="flex:1"></div>
+        <?php endif; ?>
+        <button class="bed-line-btn" onclick="toggleAddForm(<?= $li ?>)" style="font-size:.68rem;padding:3px 9px">＋ Add</button>
+    </div>
+
+    <!-- Plantings on this line -->
+    <?php if (empty($linePlantings)): ?>
+    <div style="padding:4px 14px 10px 52px;font-size:.82rem;color:var(--color-text-muted)">Empty — use ＋ Add to plant something</div>
+    <?php else: foreach ($linePlantings as $_pidx => $planting):
+        $pid      = (int)$planting['id'];
+        $pStatus  = $planting['status'] ?? 'empty';
+        $pCrop    = $planting['crop_name'] ?? '';
+        $pVariety = $planting['variety'] ?? '';
+        $pAt      = $planting['planted_at'] ?? '';
+        $pHarAt   = $planting['expected_harvest_at'] ?? '';
+        $pNotes   = $planting['notes'] ?? '';
+        $pCount   = (int)($planting['plant_count'] ?? 0);
+        $pSpacing = $seedSpacingMap[(int)($planting['seed_id'] ?? 0)] ?? 0;
+        $pSub = [];
+        if ($pAt) $pSub[] = 'Planted ' . date('d M Y', strtotime($pAt));
+        if ($pHarAt) $pSub[] = 'Harvest ' . date('d M Y', strtotime($pHarAt));
+        if ($pVariety) $pSub[] = $pVariety;
+    ?>
+    <div id="plantingRow<?= $pid ?>" data-line="<?= $li ?>" data-spacing="<?= $pSpacing ?>"
+         style="border-top:1px solid #f0f4f8">
+        <div class="bed-line-main" style="padding:8px 14px 8px 14px">
+            <div style="width:8px;height:8px;border-radius:50%;background:<?= $statusColors[$pStatus] ?? '#e2e8f0' ?>;flex-shrink:0;margin-left:18px"></div>
+            <div class="bed-line-crop">
+                <div class="bed-line-name"><?= $pCrop ? e($pCrop) : '<span style="color:var(--color-text-muted);font-weight:400">Empty</span>' ?></div>
+                <?php if ($pSub): ?><div class="bed-line-sub"><?= e(implode(' · ', $pSub)) ?></div><?php endif; ?>
+            </div>
+            <?php if ($pid && $pCount > 0): ?>
+            <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
                 <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,-1)" style="padding:3px 7px">−</button>
-                <span id="lineQty<?= $li ?>" style="font-size:.78rem;font-weight:700;min-width:28px;text-align:center"><?= $plantCount ?></span>
+                <span id="lineQty<?= $pid ?>" data-spacing="<?= $pSpacing ?>" style="font-size:.78rem;font-weight:700;min-width:28px;text-align:center"><?= $pCount ?></span>
                 <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,1)" style="padding:3px 7px">+</button>
             </div>
-            <?php if ($overCap): ?>
-            <span id="lineCapWarn<?= $li ?>" style="font-size:.62rem;color:#dc2626;font-weight:700;white-space:nowrap">⚠ over capacity</span>
-            <?php else: ?>
-            <span id="lineCapWarn<?= $li ?>" style="font-size:.62rem;color:#dc2626;font-weight:700;white-space:nowrap;display:none">⚠ over capacity</span>
             <?php endif; ?>
-        </div>
-        <?php endif; ?>
-        <span class="bed-status-badge bed-status-badge--<?= $status ?>"><?= $statusLabels[$status] ?></span>
-        <div class="bed-line-btns">
-            <?php if ($pid && in_array($status, ['planned','growing'], true)): ?>
-            <button class="bed-line-btn" onclick="openHarvestModal(<?= $pid ?>, '<?= e(addslashes($cropName)) ?>')" style="color:#15803d;border-color:#86efac">🌾 Harvest</button>
-            <?php endif; ?>
-            <?php if ($cropName): ?>
-            <button class="bed-line-btn" onclick="toggleCompanions(<?= $li ?>, '<?= e(addslashes($cropName)) ?>')" id="companionBtn<?= $li ?>">☘ Companions</button>
-            <?php endif; ?>
-            <button class="bed-line-btn" onclick="toggleEdit(<?= $li ?>)">✏ Edit</button>
-            <?php if ($pid): ?>
-            <button class="bed-line-btn bed-line-btn--danger" onclick="clearLine(<?= $pid ?>, <?= $li ?>)">✕</button>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Companions panel -->
-    <div class="bed-companions-panel" id="companionsPanel<?= $li ?>">
-        <div class="bed-companions-loading" id="companionsLoading<?= $li ?>">Loading suggestions…</div>
-        <div id="companionsResult<?= $li ?>" style="display:none"></div>
-    </div>
-
-    <!-- Edit form -->
-    <div class="bed-edit-form" id="editForm<?= $li ?>">
-
-        <!-- Suggestions panel -->
-        <div id="suggPanel<?= $li ?>" style="margin-bottom:10px">
-            <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:5px">
-                Suggestions — tap to fill
+            <span class="bed-status-badge bed-status-badge--<?= $pStatus ?>"><?= $statusLabels[$pStatus] ?></span>
+            <div class="bed-line-btns">
+                <?php if ($pid && in_array($pStatus, ['planned','growing'], true)): ?>
+                <button class="bed-line-btn" onclick="openHarvestModal(<?= $pid ?>, '<?= e(addslashes($pCrop)) ?>')" style="color:#15803d;border-color:#86efac">🌾 Harvest</button>
+                <?php endif; ?>
+                <?php if ($pCrop): ?>
+                <button class="bed-line-btn" onclick="toggleCompanions(<?= $pid ?>,<?= $li ?>,'<?= e(addslashes($pCrop)) ?>')" id="companionBtn<?= $pid ?>">☘ Companions</button>
+                <?php endif; ?>
+                <button class="bed-line-btn" onclick="toggleEditP(<?= $pid ?>)">✏ Edit</button>
+                <?php if ($pid): ?>
+                <button class="bed-line-btn bed-line-btn--danger" onclick="clearLine(<?= $pid ?>)">✕</button>
+                <?php endif; ?>
             </div>
-            <div id="suggChips<?= $li ?>" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
+        <!-- Companions panel per planting -->
+        <div class="bed-companions-panel" id="companionsPanel<?= $pid ?>">
+            <div class="bed-companions-loading" id="companionsLoading<?= $pid ?>">Loading…</div>
+            <div id="companionsResult<?= $pid ?>" style="display:none"></div>
+        </div>
+        <!-- Edit form per planting (uses planting_id → UPDATE) -->
+        <div class="bed-edit-form" id="editFormP<?= $pid ?>">
+            <div id="suggPanelP<?= $pid ?>" style="margin-bottom:10px">
+                <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:5px">Suggestions — tap to fill</div>
+                <div id="suggChipsP<?= $pid ?>" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+            </div>
+            <div class="bed-edit-grid">
+                <div class="bed-edit-grid--full">
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Crop</label>
+                    <input type="text" class="bed-edit-input" id="editCropP<?= $pid ?>" value="<?= e($pCrop) ?>" list="seedDatalist" autocomplete="off" placeholder="Crop name">
+                    <input type="hidden" id="editSeedIdP<?= $pid ?>" value="<?= (int)($planting['seed_id'] ?? 0) ?>">
+                </div>
+                <div>
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Variety</label>
+                    <input type="text" class="bed-edit-input" id="editVarietyP<?= $pid ?>" value="<?= e($pVariety) ?>" placeholder="optional">
+                </div>
+                <div>
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Plants</label>
+                    <input type="number" class="bed-edit-input" id="editPlantCountP<?= $pid ?>" value="<?= $pCount ?: '' ?>" min="1" placeholder="qty">
+                </div>
+                <div>
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Status</label>
+                    <select class="bed-edit-input" id="editStatusP<?= $pid ?>">
+                        <?php foreach ($statusLabels as $sv => $sl): ?>
+                        <option value="<?= $sv ?>" <?= $pStatus === $sv ? 'selected' : '' ?>><?= $sl ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Planted</label>
+                    <input type="date" class="bed-edit-input" id="editPlantedP<?= $pid ?>" value="<?= e($pAt) ?>">
+                </div>
+                <div>
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Expected harvest</label>
+                    <input type="date" class="bed-edit-input" id="editHarvestP<?= $pid ?>" value="<?= e($pHarAt) ?>">
+                </div>
+                <div class="bed-edit-grid--full">
+                    <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Notes</label>
+                    <input type="text" class="bed-edit-input" id="editNotesP<?= $pid ?>" value="<?= e($pNotes) ?>" placeholder="optional">
+                </div>
+            </div>
+            <div class="bed-edit-actions">
+                <button class="btn btn-ghost btn-sm" onclick="toggleEditP(<?= $pid ?>)">Cancel</button>
+                <button class="btn btn-primary btn-sm" onclick="savePlanting(<?= $pid ?>,<?= $li ?>)">Save</button>
+            </div>
+        </div>
+    </div>
+    <?php endforeach; endif; ?>
 
+    <!-- Add new planting to this line (no planting_id → INSERT) -->
+    <div class="bed-edit-form" id="addForm<?= $li ?>" style="border-top:2px solid var(--color-primary)">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-primary);margin-bottom:8px">Add to line <?= $li ?></div>
+        <div id="suggPanelN<?= $li ?>" style="margin-bottom:10px">
+            <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:5px">Suggestions — tap to fill</div>
+            <div id="suggChipsN<?= $li ?>" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+        </div>
         <div class="bed-edit-grid">
             <div class="bed-edit-grid--full">
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Crop</label>
-                <input type="text" class="bed-edit-input" id="editCrop<?= $li ?>" value="<?= e($cropName) ?>" placeholder="Type or choose from suggestions above" list="seedDatalist" autocomplete="off">
-                <input type="hidden" id="editSeedId<?= $li ?>" value="<?= (int)($planting['seed_id'] ?? 0) ?>">
+                <input type="text" class="bed-edit-input" id="editCropN<?= $li ?>" value="" list="seedDatalist" autocomplete="off" placeholder="Type or choose from suggestions">
+                <input type="hidden" id="editSeedIdN<?= $li ?>" value="0">
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Variety</label>
-                <input type="text" class="bed-edit-input" id="editVariety<?= $li ?>" value="<?= e($variety) ?>" placeholder="optional">
+                <input type="text" class="bed-edit-input" id="editVarietyN<?= $li ?>" value="" placeholder="optional">
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Plants</label>
-                <input type="number" class="bed-edit-input" id="editPlantCount<?= $li ?>" value="<?= e($planting['plant_count'] ?? '') ?>" min="1" placeholder="qty"
-                       oninput="updateCapacityWarning(<?= $li ?>, document.getElementById('editSeedId<?= $li ?>').getAttribute('data-spacing')||0, this.value)">
-                <div id="capWarn<?= $li ?>" style="display:none;font-size:.7rem;color:#dc2626;margin-top:3px"></div>
+                <input type="number" class="bed-edit-input" id="editPlantCountN<?= $li ?>" value="" min="1" placeholder="qty">
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Status</label>
-                <select class="bed-edit-input" id="editStatus<?= $li ?>">
+                <select class="bed-edit-input" id="editStatusN<?= $li ?>">
                     <?php foreach ($statusLabels as $sv => $sl): ?>
-                    <option value="<?= $sv ?>" <?= $status === $sv ? 'selected' : '' ?>><?= $sl ?></option>
+                    <option value="<?= $sv ?>"><?= $sl ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Planted</label>
-                <input type="date" class="bed-edit-input" id="editPlanted<?= $li ?>" value="<?= e($plantedAt) ?>"
-                       oninput="autoHarvestDate(<?= $li ?>)">
+                <input type="date" class="bed-edit-input" id="editPlantedN<?= $li ?>" value="">
             </div>
             <div>
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Expected harvest</label>
-                <input type="date" class="bed-edit-input" id="editHarvest<?= $li ?>" value="<?= e($harvestAt) ?>">
+                <input type="date" class="bed-edit-input" id="editHarvestN<?= $li ?>" value="">
             </div>
-            <div>
+            <div class="bed-edit-grid--full">
                 <label style="font-size:.72rem;font-weight:600;display:block;margin-bottom:3px">Notes</label>
-                <input type="text" class="bed-edit-input" id="editNotes<?= $li ?>" value="<?= e($notes) ?>" placeholder="optional">
+                <input type="text" class="bed-edit-input" id="editNotesN<?= $li ?>" value="" placeholder="optional">
             </div>
         </div>
         <div class="bed-edit-actions">
-            <button class="btn btn-ghost btn-sm" onclick="toggleEdit(<?= $li ?>)">Cancel</button>
-            <button class="btn btn-primary btn-sm" onclick="saveLine(<?= $li ?>)">Save</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleAddForm(<?= $li ?>)">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveNewPlanting(<?= $li ?>)">Save</button>
         </div>
     </div>
 </div>
@@ -482,96 +569,85 @@ var BED_LINE_CAP  = BED_LENGTH_M > 0 ? BED_LENGTH_M * 100 : 0; // cm available p
 var BED_PLANTED   = <?= json_encode(array_values(array_filter(array_map(fn($p) => $p['crop_name'] ?? '', $plantings)))) ?>;
 var BED_LINE_STATUS = <?= json_encode(array_map(fn($i) => [
     'line'   => $i,
-    'status' => $plantingMap[$i]['status'] ?? 'empty',
-    'crop'   => $plantingMap[$i]['crop_name'] ?? '',
-    'pid'    => (int)($plantingMap[$i]['id'] ?? 0),
+    'status' => !empty($plantingMap[$i]) ? ($plantingMap[$i][0]['status'] ?? 'empty') : 'empty',
+    'crop'   => !empty($plantingMap[$i]) ? ($plantingMap[$i][0]['crop_name'] ?? '') : '',
+    'pid'    => !empty($plantingMap[$i]) ? (int)($plantingMap[$i][0]['id'] ?? 0) : 0,
 ], range(1, $numLines))) ?>;
+var BED_CAP_CM      = <?= $capCm ?>;
 var _companionCache = {};
-var _companionData  = {}; // keyed by line, stores companion array for quick-add
+var _companionData  = {}; // keyed by pid, stores companion array for quick-add
 
 function calcPlantCount(spacingCm) {
     if (!spacingCm || spacingCm <= 0 || BED_LENGTH_M <= 0) return null;
     return Math.max(1, Math.floor(BED_LENGTH_M * 100 / spacingCm));
 }
 
-function renderSuggestions(line) {
-    var container = document.getElementById('suggChips' + line);
+// Generic suggestion renderer: fills inputs identified by cropId, varId, seedId, cntId using suggestion chips
+function renderSugsFor(cropId, varId, seedId, cntId, notesId, chipsId) {
+    var container = document.getElementById(chipsId);
     if (!container) return;
     container.innerHTML = '';
-
-    // Sort: in-season non-out-of-stock first
     var sorted = BED_SUGG.slice().filter(function(s){ return !s.needs_restock; });
     sorted.sort(function(a, b) {
         if (a.in_season !== b.in_season) return a.in_season ? -1 : 1;
         return a.priority - b.priority;
     });
     sorted = sorted.slice(0, 6);
-
     if (sorted.length === 0) {
         container.innerHTML = '<span style="font-size:.75rem;color:var(--color-text-muted)">No family needs configured — <a href="<?= url('/seeds/family-needs') ?>">add them here</a>.</span>';
         return;
     }
-
-    sorted.forEach(function (s) {
+    sorted.forEach(function(s) {
         var chip = document.createElement('button');
         chip.type = 'button';
-        var label = s.name + (s.variety ? ' (' + s.variety + ')' : '');
-        chip.textContent = (s.in_season ? '🌱 ' : '') + label;
+        chip.textContent = (s.in_season ? '🌱 ' : '') + s.name + (s.variety ? ' (' + s.variety + ')' : '');
         chip.style.cssText = 'padding:5px 12px;border:1.5px solid ' + (s.in_season ? 'var(--color-primary)' : 'var(--color-border)') + ';border-radius:999px;background:' + (s.in_season ? 'var(--color-primary-soft)' : 'var(--color-bg)') + ';color:' + (s.in_season ? 'var(--color-primary)' : 'var(--color-text)') + ';font-size:.78rem;font-weight:600;cursor:pointer';
-        chip.onclick = function () {
-            document.getElementById('editCrop' + line).value    = s.name;
-            document.getElementById('editVariety' + line).value = s.variety || '';
-            document.getElementById('editSeedId' + line).value  = s.seed_id || 0;
-            // Auto-fill plant count from spacing
-            if (s.spacing_cm) {
+        chip.onclick = function() {
+            if (document.getElementById(cropId)) document.getElementById(cropId).value = s.name;
+            if (document.getElementById(varId))  document.getElementById(varId).value  = s.variety || '';
+            if (document.getElementById(seedId)) document.getElementById(seedId).value = s.seed_id || 0;
+            if (s.spacing_cm && document.getElementById(cntId)) {
                 var cnt = calcPlantCount(s.spacing_cm);
-                if (cnt) document.getElementById('editPlantCount' + line).value = cnt;
-                updateCapacityWarning(line, s.spacing_cm, cnt || 0);
+                if (cnt) document.getElementById(cntId).value = cnt;
             }
-            // Auto-fill notes from seed data
-            var notesEl = document.getElementById('editNotes' + line);
+            var notesEl = document.getElementById(notesId);
             if (notesEl && !notesEl.value.trim()) {
-                var parts = [];
-                // Find seed in BED_SEEDS for extra fields
                 for (var i = 0; i < BED_SEEDS.length; i++) {
                     if (BED_SEEDS[i].id === s.seed_id) {
-                        var sd = BED_SEEDS[i];
+                        var sd = BED_SEEDS[i], parts = [];
                         if (sd.sowing_depth_mm) parts.push(sd.sowing_depth_mm + 'mm deep');
                         if (sd.spacing_cm)      parts.push(sd.spacing_cm + 'cm spacing');
                         if (sd.row_spacing_cm)  parts.push(sd.row_spacing_cm + 'cm rows');
                         if (sd.notes)           parts.push(sd.notes);
-                        // Store days_to_maturity for harvest date calc
-                        document.getElementById('editSeedId' + line).setAttribute('data-dtm', sd.days_to_maturity || '');
+                        if (parts.length) notesEl.value = parts.join(' // ');
+                        if (document.getElementById(seedId)) document.getElementById(seedId).setAttribute('data-dtm', sd.days_to_maturity || '');
                         break;
                     }
                 }
-                if (parts.length) notesEl.value = parts.join(' // ');
             }
         };
         container.appendChild(chip);
     });
 }
 
-function updateCapacityWarning(line, spacingCm, currentCount) {
-    var warnEl = document.getElementById('capWarn' + line);
-    if (!warnEl || !spacingCm || BED_LINE_CAP <= 0) return;
-    var cap = Math.floor(BED_LINE_CAP / spacingCm);
-    if (currentCount > cap) {
-        warnEl.textContent = '⚠ Line fits ~' + cap + ' plants at ' + spacingCm + 'cm spacing — reduce count or spacing.';
-        warnEl.style.display = '';
-    } else {
-        warnEl.style.display = 'none';
-    }
-}
-
-function autoHarvestDate(line) {
-    var dtm     = parseInt(document.getElementById('editSeedId' + line).getAttribute('data-dtm') || '0');
-    var planted = document.getElementById('editPlanted' + line).value;
-    var harvestEl = document.getElementById('editHarvest' + line);
-    if (!dtm || !planted || !harvestEl || harvestEl.value) return;
-    var d = new Date(planted);
-    d.setDate(d.getDate() + dtm);
-    harvestEl.value = d.toISOString().slice(0, 10);
+// Refresh the line fill bar after qty changes
+function updateLineFill(li) {
+    var rows = document.querySelectorAll('[data-line="' + li + '"]');
+    var used = 0;
+    rows.forEach(function(row) {
+        var sp  = parseInt(row.getAttribute('data-spacing') || '0');
+        var qEl = row.querySelector('[data-qty]');
+        var qty = qEl ? parseInt(qEl.textContent || '0') : 0;
+        if (sp > 0 && qty > 0) used += sp * qty;
+    });
+    var fillEl  = document.getElementById('lineFill' + li);
+    var labelEl = document.getElementById('lineFillLabel' + li);
+    var rowEl   = document.getElementById('lineRow' + li);
+    var over    = BED_CAP_CM > 0 && used > BED_CAP_CM;
+    var pct     = BED_CAP_CM > 0 ? Math.min(100, Math.round(used / BED_CAP_CM * 100)) : 0;
+    if (fillEl)  { fillEl.style.width = pct + '%'; fillEl.style.background = over ? '#ef4444' : '#22c55e'; }
+    if (labelEl) { labelEl.textContent = used + 'cm / ' + BED_CAP_CM + 'cm' + (over ? ' ⚠' : ''); labelEl.style.color = over ? '#dc2626' : ''; }
+    if (rowEl)   rowEl.classList.toggle('bed-line-row--overcap', over);
 }
 
 var _harvestPid = 0;
@@ -613,41 +689,24 @@ function adjustQty(pid, line, delta) {
     .then(function(r){ return r.json(); })
     .then(function(d){
         if (!d.success) return;
-        // Update qty display and capacity warning without full reload
-        var qtyEl   = document.getElementById('lineQty' + line);
-        var warnEl  = document.getElementById('lineCapWarn' + line);
-        var rowEl   = document.getElementById('lineRow' + line);
+        var qtyEl = document.getElementById('lineQty' + pid);
         if (qtyEl) {
-            var newQty  = parseInt(qtyEl.textContent || '0') + delta;
-            if (newQty < 1) newQty = 1;
+            var newQty = Math.max(1, parseInt(qtyEl.textContent || '0') + delta);
             qtyEl.textContent = newQty;
-            var cap = rowEl ? parseInt(rowEl.getAttribute('data-capacity') || '0') : 0;
-            var over = cap > 0 && newQty > cap;
-            if (rowEl) rowEl.classList.toggle('bed-line-row--overcap', over);
-            if (warnEl) warnEl.style.display = over ? '' : 'none';
-        } else {
-            location.reload();
+            updateLineFill(line);
         }
     })
     .catch(function(){});
 }
 
+// Add companion/seed to the SAME line (no empty-line search)
 function quickAddCompanion(line, companion) {
-    // companion can be an index (legacy) or an object {id, name, variety}
-    if (typeof companion === 'number') {
-        companion = _companionData[line] && _companionData[line][companion];
-    }
+    if (typeof companion === 'number') companion = _companionData[line] && _companionData[line][companion];
     if (!companion) return;
-    // Find first empty line
-    var emptyLine = null;
-    for (var i = 0; i < BED_LINE_STATUS.length; i++) {
-        if (BED_LINE_STATUS[i].status === 'empty') { emptyLine = BED_LINE_STATUS[i].line; break; }
-    }
-    if (!emptyLine) { alert('No empty lines available in this bed.'); return; }
     var fd = new FormData();
     fd.append('_token',      BED_CSRF);
     fd.append('_ajax',       '1');
-    fd.append('line_number', emptyLine);
+    fd.append('line_number', line);
     fd.append('crop_name',   companion.name);
     fd.append('variety',     companion.variety || '');
     fd.append('seed_id',     companion.id || '');
@@ -656,109 +715,132 @@ function quickAddCompanion(line, companion) {
     fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (d.success) { location.reload(); }
-        else { alert(d.error || 'Could not add companion.'); }
+        if (d.success) location.reload();
+        else alert(d.error || 'Could not add companion.');
     }).catch(function(){ alert('Network error.'); });
 }
 
-function toggleEdit(line) {
-    var f = document.getElementById('editForm' + line);
+// Toggle edit form for an existing planting (keyed by pid)
+function toggleEditP(pid) {
+    var f = document.getElementById('editFormP' + pid);
+    if (!f) return;
     var isOpen = f.classList.contains('open');
-    // Close all other edit forms
     document.querySelectorAll('.bed-edit-form.open').forEach(function(el){ el.classList.remove('open'); });
     if (!isOpen) {
         f.classList.add('open');
-        renderSuggestions(line);
+        renderSugsFor('editCropP'+pid,'editVarietyP'+pid,'editSeedIdP'+pid,'editPlantCountP'+pid,'editNotesP'+pid,'suggChipsP'+pid);
     }
 }
 
-function saveLine(line) {
-    var crop       = document.getElementById('editCrop'+line).value.trim();
-    var variety    = document.getElementById('editVariety'+line).value.trim();
-    var status     = document.getElementById('editStatus'+line).value;
-    var planted    = document.getElementById('editPlanted'+line).value;
-    var harvest    = document.getElementById('editHarvest'+line).value;
-    var notes      = document.getElementById('editNotes'+line).value.trim();
-    var seedId     = (document.getElementById('editSeedId'+line) || {}).value || '';
-    var plantCount = (document.getElementById('editPlantCount'+line) || {}).value || '';
+// Toggle add-new-planting form for a line
+function toggleAddForm(li) {
+    var f = document.getElementById('addForm' + li);
+    if (!f) return;
+    var isOpen = f.classList.contains('open');
+    document.querySelectorAll('.bed-edit-form.open').forEach(function(el){ el.classList.remove('open'); });
+    if (!isOpen) {
+        f.classList.add('open');
+        renderSugsFor('editCropN'+li,'editVarietyN'+li,'editSeedIdN'+li,'editPlantCountN'+li,'editNotesN'+li,'suggChipsN'+li);
+    }
+}
 
-    // If crop was typed manually (not from chip), try to resolve seed_id from catalog
+// Save existing planting (sends planting_id → UPDATE)
+function savePlanting(pid, li) {
+    var g = function(id){ return (document.getElementById(id) || {}).value || ''; };
+    var crop = g('editCropP'+pid).trim(), seedId = g('editSeedIdP'+pid);
     if (!seedId || seedId === '0') {
         var lc = crop.toLowerCase();
-        for (var i = 0; i < BED_SEEDS.length; i++) {
-            if (BED_SEEDS[i].name.toLowerCase() === lc) { seedId = BED_SEEDS[i].id; break; }
-        }
+        for (var i = 0; i < BED_SEEDS.length; i++) { if (BED_SEEDS[i].name.toLowerCase() === lc) { seedId = BED_SEEDS[i].id; break; } }
     }
-
     var fd = new FormData();
-    fd.append('_token', BED_CSRF);
-    fd.append('_ajax', '1');
-    fd.append('line_number', line);
-    fd.append('crop_name', crop);
-    fd.append('variety', variety);
-    fd.append('status', status);
-    fd.append('planted_at', planted);
-    fd.append('expected_harvest_at', harvest);
-    fd.append('notes', notes);
+    fd.append('_token',''); fd.append('_token', BED_CSRF);
+    fd.append('_ajax','1');
+    fd.append('planting_id', pid);
+    fd.append('line_number', li);
+    fd.append('crop_name',   crop);
+    fd.append('variety',     g('editVarietyP'+pid).trim());
+    fd.append('status',      g('editStatusP'+pid));
+    fd.append('planted_at',  g('editPlantedP'+pid));
+    fd.append('expected_harvest_at', g('editHarvestP'+pid));
+    fd.append('notes',       g('editNotesP'+pid).trim());
     if (seedId) fd.append('seed_id', seedId);
-    if (plantCount) fd.append('plant_count', plantCount);
-
+    var cnt = g('editPlantCountP'+pid); if (cnt) fd.append('plant_count', cnt);
     fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
     .then(function(r){ return r.json(); })
-    .then(function(d){
-        if (d.success) { location.reload(); }
-        else { alert('Save failed. Please try again.'); }
-    }).catch(function(){ alert('Network error. Please try again.'); });
+    .then(function(d){ if (d.success) location.reload(); else alert('Save failed.'); })
+    .catch(function(){ alert('Network error.'); });
 }
 
-function clearLine(pid, line) {
-    if (!confirm('Clear this line?')) return;
+// Save new planting on a line (no planting_id → INSERT)
+function saveNewPlanting(li) {
+    var g = function(id){ return (document.getElementById(id) || {}).value || ''; };
+    var crop = g('editCropN'+li).trim(), seedId = g('editSeedIdN'+li);
+    if (!seedId || seedId === '0') {
+        var lc = crop.toLowerCase();
+        for (var i = 0; i < BED_SEEDS.length; i++) { if (BED_SEEDS[i].name.toLowerCase() === lc) { seedId = BED_SEEDS[i].id; break; } }
+    }
+    var fd = new FormData();
+    fd.append('_token', BED_CSRF);
+    fd.append('_ajax','1');
+    fd.append('line_number', li);
+    fd.append('crop_name',   crop);
+    fd.append('variety',     g('editVarietyN'+li).trim());
+    fd.append('status',      g('editStatusN'+li));
+    fd.append('planted_at',  g('editPlantedN'+li));
+    fd.append('expected_harvest_at', g('editHarvestN'+li));
+    fd.append('notes',       g('editNotesN'+li).trim());
+    if (seedId) fd.append('seed_id', seedId);
+    var cnt = g('editPlantCountN'+li); if (cnt) fd.append('plant_count', cnt);
+    fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.success) location.reload(); else alert('Save failed.'); })
+    .catch(function(){ alert('Network error.'); });
+}
+
+function clearLine(pid) {
+    if (!confirm('Remove this planting?')) return;
     var fd = new FormData();
     fd.append('_token', BED_CSRF);
     fd.append('_ajax', '1');
     fetch(BED_BASE + 'garden/plantings/' + pid + '/trash', { method:'POST', body:fd })
     .then(function(r){ return r.json(); })
-    .then(function(d){
-        if (d.success) { location.reload(); }
-    }).catch(function(){ alert('Network error. Please try again.'); });
+    .then(function(d){ if (d.success) location.reload(); })
+    .catch(function(){ alert('Network error.'); });
 }
 
-function toggleCompanions(line, crop) {
-    var panel = document.getElementById('companionsPanel' + line);
+// Toggle companions panel — keyed by planting pid, but uses line for bed_crops context
+function toggleCompanions(pid, line, crop) {
+    var panel = document.getElementById('companionsPanel' + pid);
     var isOpen = panel.classList.contains('open');
-    // Close all other panels
     document.querySelectorAll('.bed-companions-panel.open').forEach(function(el){ el.classList.remove('open'); });
     if (isOpen) return;
     panel.classList.add('open');
-    if (_companionCache[line]) {
-        renderCompanions(line, _companionCache[line]);
-        return;
-    }
-    document.getElementById('companionsLoading'+line).style.display = 'block';
-    document.getElementById('companionsResult'+line).style.display = 'none';
+    if (_companionCache[pid]) { renderCompanions(pid, line, _companionCache[pid]); return; }
+    document.getElementById('companionsLoading'+pid).style.display = 'block';
+    document.getElementById('companionsResult'+pid).style.display = 'none';
     var otherCrops = BED_PLANTED.filter(function(c){ return c.toLowerCase() !== crop.toLowerCase(); });
-    var rowEl = document.getElementById('lineRow' + line);
-    var seedId = rowEl ? (rowEl.getAttribute('data-seed-id') || '0') : '0';
+    var plantingRow = document.getElementById('plantingRow' + pid);
+    var seedId = plantingRow ? (plantingRow.getAttribute('data-seed-id') || '0') : '0';
     fetch(BED_BASE + 'api/garden/companions?crop=' + encodeURIComponent(crop) + '&bed_crops=' + encodeURIComponent(otherCrops.join(',')) + '&seed_id=' + encodeURIComponent(seedId))
     .then(function(r){ return r.json(); })
     .then(function(d){
-        document.getElementById('companionsLoading'+line).style.display = 'none';
+        document.getElementById('companionsLoading'+pid).style.display = 'none';
         if (!d.success) {
-            document.getElementById('companionsResult'+line).innerHTML = '<span style="color:#dc2626;font-size:.82rem">' + (d.error||'Could not load suggestions') + '</span>';
-            document.getElementById('companionsResult'+line).style.display = 'block';
+            document.getElementById('companionsResult'+pid).innerHTML = '<span style="color:#dc2626;font-size:.82rem">' + (d.error||'Could not load suggestions') + '</span>';
+            document.getElementById('companionsResult'+pid).style.display = 'block';
             return;
         }
-        _companionCache[line] = d.data;
-        renderCompanions(line, d.data);
+        _companionCache[pid] = d.data;
+        renderCompanions(pid, line, d.data);
     }).catch(function(){
-        document.getElementById('companionsLoading'+line).style.display = 'none';
-        document.getElementById('companionsResult'+line).innerHTML = '<span style="color:#dc2626;font-size:.82rem">Network error</span>';
-        document.getElementById('companionsResult'+line).style.display = 'block';
+        document.getElementById('companionsLoading'+pid).style.display = 'none';
+        document.getElementById('companionsResult'+pid).innerHTML = '<span style="color:#dc2626;font-size:.82rem">Network error</span>';
+        document.getElementById('companionsResult'+pid).style.display = 'block';
     });
 }
 
-function renderCompanions(line, data) {
-    _companionData[line] = data.companions || [];
+function renderCompanions(pid, line, data) {
+    _companionData[pid] = data.companions || [];
     var html = '';
 
     // Similar varieties section
@@ -776,10 +858,9 @@ function renderCompanions(line, data) {
     if (data.companions && data.companions.length) {
         html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#15803d;margin-bottom:6px">Good companions</div>';
         html += '<ul class="bed-companion-list">';
-        data.companions.forEach(function(c, i){
+        data.companions.forEach(function(c){
             var hasWarn = c.reason && c.reason.indexOf('⚠') !== -1;
             var displayName = esc(c.name) + (c.variety ? ' <span style="font-weight:400;color:var(--color-text-muted)">— ' + esc(c.variety) + '</span>' : '');
-            // Use first variant as the seed to add, or the companion itself
             var seedObj = (c.variants && c.variants.length) ? c.variants[0] : {id: c.id, name: c.name, variety: c.variety || ''};
             html += '<li class="bed-companion-item' + (hasWarn ? ' bed-antagonist-item' : '') + '">'
                   + (hasWarn ? '⚠️' : '✅') + ' <strong>' + displayName + '</strong>'
@@ -792,14 +873,13 @@ function renderCompanions(line, data) {
         html += '<p style="font-size:.82rem;color:var(--color-text-muted)">No companion matches found — add companion data to your seeds.</p>';
     }
 
-    // Add any seed dropdown
+    // Full seed dropdown
     if (data.all_seeds && data.all_seeds.length) {
         html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--color-border)">';
-        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:5px">Add any seed</div>';
+        html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:5px">Add any seed to this line</div>';
         html += '<div style="display:flex;gap:6px;align-items:center">';
-        html += '<select id="companionSelect' + line + '" style="flex:1;padding:5px 8px;border:1.5px solid var(--color-border);border-radius:var(--radius);font-size:.82rem;font-family:inherit;background:var(--color-surface)">';
+        html += '<select id="companionSelect' + pid + '" style="flex:1;padding:5px 8px;border:1.5px solid var(--color-border);border-radius:var(--radius);font-size:.82rem;font-family:inherit;background:var(--color-surface)">';
         html += '<option value="">— choose a seed —</option>';
-        // Group by name
         var grouped = {};
         data.all_seeds.forEach(function(s){
             if (!grouped[s.name]) grouped[s.name] = [];
@@ -825,7 +905,7 @@ function renderCompanions(line, data) {
             }
         });
         html += '</select>';
-        html += '<button id="companionAddSelBtn' + line + '" class="companion-add-btn" onclick="quickAddFromSelect(' + line + ')" style="white-space:nowrap">＋ Add selected</button>';
+        html += '<button id="companionAddSelBtn' + pid + '" class="companion-add-btn" onclick="quickAddFromSelect(' + pid + ',' + line + ')" style="white-space:nowrap">＋ Add to this line</button>';
         html += '</div></div>';
     }
 
@@ -837,30 +917,25 @@ function renderCompanions(line, data) {
         });
         html += '</ul>';
     }
-    var el = document.getElementById('companionsResult'+line);
+    var el = document.getElementById('companionsResult'+pid);
     el.innerHTML = html;
     el.style.display = 'block';
 }
 
-function quickAddFromSelect(line) {
-    var sel = document.getElementById('companionSelect' + line);
+// Add selected seed from dropdown to the SAME line
+function quickAddFromSelect(pid, line) {
+    var sel = document.getElementById('companionSelect' + pid);
     if (!sel || !sel.value) return;
     var opt = sel.options[sel.selectedIndex];
     var seedId = parseInt(sel.value);
-    var name = opt.dataset.name || opt.text;
-    var variety = opt.dataset.variety || '';
-    // find first empty line
-    var emptyLine = null;
-    for (var i = 0; i < BED_LINE_STATUS.length; i++) {
-        if (BED_LINE_STATUS[i].status === 'empty') { emptyLine = BED_LINE_STATUS[i].line; break; }
-    }
-    if (!emptyLine) { alert('No empty lines available.'); return; }
-    var btn = document.getElementById('companionAddSelBtn' + line);
+    var name = opt.getAttribute('data-name') || opt.text;
+    var variety = opt.getAttribute('data-variety') || '';
+    var btn = document.getElementById('companionAddSelBtn' + pid);
     if (btn) btn.disabled = true;
     var fd = new FormData();
     fd.append('_token', BED_CSRF);
     fd.append('_ajax', '1');
-    fd.append('line_number', emptyLine);
+    fd.append('line_number', line);
     fd.append('crop_name', name);
     fd.append('variety', variety);
     fd.append('seed_id', seedId);
@@ -869,7 +944,7 @@ function quickAddFromSelect(line) {
     fetch(BED_BASE + 'items/' + BED_ITEM + '/planting', { method:'POST', body:fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (d.success) { location.reload(); }
+        if (d.success) location.reload();
         else { alert(d.error || 'Could not add.'); if (btn) btn.disabled = false; }
     }).catch(function(){ if (btn) btn.disabled = false; });
 }
