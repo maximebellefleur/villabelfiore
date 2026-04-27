@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.6.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — HuggingFace Payload Fix',
+        'features' => [
+            ['title' => 'Tighter image compression for HuggingFace', 'detail' => 'Images are now compressed to 800 px / JPEG 72% before upload (was 1280 px / 82%). Each photo becomes 80–150 KB, keeping the total JSON payload well under HuggingFace\'s 1 MB free-tier limit even when sending front + back of a packet.'],
+        ],
+    ],
+
     '2.6.2' => [
         'status'   => 'released',
         'released' => '2026-04-27',

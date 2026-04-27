@@ -284,7 +284,7 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
         setStatus('📷 Image ' + slot + ' loaded — compressing…', 'var(--color-text-muted)');
         var img = new Image();
         img.onload = function () {
-            var MAX = 1280, w = img.naturalWidth, h = img.naturalHeight;
+            var MAX = 800, w = img.naturalWidth, h = img.naturalHeight;
             if (w > MAX || h > MAX) {
                 if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
                 else        { w = Math.round(w * MAX / h); h = MAX; }
@@ -302,7 +302,7 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
                     runBtn.style.display = 'inline-flex';
                 };
                 reader.readAsDataURL(blob);
-            }, 'image/jpeg', 0.82);
+            }, 'image/jpeg', 0.72);
         };
         img.src = objUrl;
     }

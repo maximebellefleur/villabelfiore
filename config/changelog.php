@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.6.3' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — HuggingFace Payload Fix',
+        'fixed' => [
+            'HuggingFace free-tier API returns 413 "request entity too large" when two seed packet photos are sent together. The client-side compression target is now 800 px max dimension at JPEG 72% quality (down from 1280 px / 82%) — each image lands at 80–150 KB, well within HuggingFace\'s ~1 MB JSON body limit.',
+        ],
+    ],
+
     '2.6.2' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Image Compression Fix',
