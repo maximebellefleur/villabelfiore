@@ -308,7 +308,7 @@ $capCm = $lengthM > 0 ? (int)round($lengthM * 100) : 0;
             <?php if ($pid && $pCount > 0): ?>
             <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
                 <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,-1)" style="padding:3px 7px">−</button>
-                <span id="lineQty<?= $pid ?>" data-spacing="<?= $pSpacing ?>" style="font-size:.78rem;font-weight:700;min-width:28px;text-align:center"><?= $pCount ?></span>
+                <span id="lineQty<?= $pid ?>" data-qty data-spacing="<?= $pSpacing ?>" style="font-size:.78rem;font-weight:700;min-width:28px;text-align:center"><?= $pCount ?></span>
                 <button class="bed-line-btn" onclick="adjustQty(<?= $pid ?>,<?= $li ?>,1)" style="padding:3px 7px">+</button>
             </div>
             <?php endif; ?>

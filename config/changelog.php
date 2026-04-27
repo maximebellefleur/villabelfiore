@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.8.9' => [
+        'date'  => '2026-04-27',
+        'title' => 'Fix fill bar reset to 0 after +/- click',
+        'fixed' => [
+            'The qty span was missing the data-qty attribute that updateLineFill() uses to read the current plant count — caused the fill bar to always recalculate as 0cm after any +/- click.',
+            'Fill calculation confirmed correct: used_cm = plant_count × spacing_cm (inline within-row spacing, not row_spacing_cm).',
+        ],
+    ],
+
     '2.8.8' => [
         'date'  => '2026-04-27',
         'title' => 'Multi-crop lines, proportional fill, GPS masonry map',

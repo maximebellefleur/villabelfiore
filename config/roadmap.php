@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.8.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'Fix fill bar reset to 0 after +/- click',
+        'features' => [
+            ['title' => 'data-qty attribute fix', 'detail' => 'The qty span lacked the data-qty attribute that updateLineFill() queries via [data-qty] selector. After any +/- click the fill bar recalculated as 0cm. Adding data-qty to the span restores correct live fill tracking.'],
+        ],
+    ],
+
     '2.8.8' => [
         'status'   => 'released',
         'released' => '2026-04-27',
