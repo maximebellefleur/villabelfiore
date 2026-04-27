@@ -8,6 +8,14 @@
  */
 return [
 
+    '2.7.1' => [
+        'date'  => '2026-04-27',
+        'title' => 'AI Seed Scan — Gemini Model Discovery',
+        'improved' => [
+            'When Gemini returns 404 model-not-found, the controller now calls the ListModels API and shows every available Gemini model name for your key in the debug panel — no more guessing model names.',
+        ],
+    ],
+
     '2.7.0' => [
         'date'  => '2026-04-27',
         'title' => 'AI Seed Scan — Native Gemini API',

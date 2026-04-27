@@ -265,6 +265,23 @@ PROMPT;
             $errMsg = is_array($rawErr)
                 ? ($rawErr['message'] ?? json_encode($rawErr))
                 : (is_string($rawErr) ? $rawErr : 'HTTP ' . ($info['http_code'] ?? '?'));
+
+            // On 404 (model not found), ask Google which models this key CAN use
+            if (($info['http_code'] ?? 0) === 404) {
+                $lh = curl_init('https://generativelanguage.googleapis.com/v1beta/models?key=' . urlencode($apiKey));
+                curl_setopt_array($lh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+                $listRaw  = curl_exec($lh);
+                curl_close($lh);
+                $listData = json_decode($listRaw ?: '{}', true);
+                $names = array_map(
+                    fn($m) => str_replace('models/', '', $m['name'] ?? ''),
+                    array_filter($listData['models'] ?? [], fn($m) => str_contains($m['name'] ?? '', 'gemini'))
+                );
+                $debug[] = ['step' => 'available_gemini_models', 'value' => $names
+                    ? implode(', ', array_values($names))
+                    : 'none returned — key may lack Generative Language API access'];
+            }
+
             $this->jsonError($errMsg, (int)($info['http_code'] ?? 502), $debug);
         }
 

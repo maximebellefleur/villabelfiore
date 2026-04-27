@@ -8,6 +8,15 @@
  */
 return [
 
+    '2.7.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-27',
+        'title'    => 'AI Seed Scan — Gemini Model Discovery',
+        'features' => [
+            ['title' => 'Auto-discover available Gemini models', 'detail' => 'On 404 model-not-found, the debug panel now lists all Gemini models available for your API key so you can pick the right one without guessing.'],
+        ],
+    ],
+
     '2.7.0' => [
         'status'   => 'released',
         'released' => '2026-04-27',
