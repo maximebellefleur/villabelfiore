@@ -172,8 +172,12 @@ $_spacing = ($numLines > 0 && $widthM > 0) ? round($widthM / $numLines * 100) / 
             ?>
             <rect x="<?= $x ?>" y="0" width="<?= $w ?>" height="<?= $svgH ?>" fill="<?= $color ?>" fill-opacity="0.75"/>
             <?php if ($li > 0): ?><line x1="<?= $x ?>" y1="0" x2="<?= $x ?>" y2="<?= $svgH ?>" stroke="#fff" stroke-width="1.5"/><?php endif; ?>
-            <?php if ($cropLabel): ?>
-            <text x="<?= $x + $w/2 ?>" y="<?= $svgH/2 + 4 ?>" text-anchor="middle" font-size="<?= min(11, max(8, $w/strlen($cropLabel)*1.4)) ?>" fill="#1e293b" font-family="sans-serif" font-weight="600"><?= e(mb_substr($cropLabel, 0, 10)) ?></text>
+            <?php if ($cropLabel):
+                $cx = round($x + $w/2);
+                $cy = round($svgH/2);
+                $fs = min(11, max(7, $svgH / max(1, mb_strlen($cropLabel)) * 0.85));
+            ?>
+            <text x="<?= $cx ?>" y="<?= $cy + 4 ?>" text-anchor="middle" transform="rotate(-90 <?= $cx ?> <?= $cy ?>)" font-size="<?= $fs ?>" fill="#1e293b" font-family="sans-serif" font-weight="600"><?= e(mb_substr($cropLabel, 0, 22)) ?></text>
             <?php endif; ?>
             <text x="<?= $x + $w/2 ?>" y="<?= $svgH - 6 ?>" text-anchor="middle" font-size="9" fill="#64748b" font-family="sans-serif"><?= $lNum ?></text>
             <?php endfor; ?>

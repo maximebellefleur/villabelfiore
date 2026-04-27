@@ -462,7 +462,7 @@ class GardenBedController
 
             $db    = DB::getInstance();
             $seeds = $db->fetchAll(
-                "SELECT name, companions, antagonists FROM seeds WHERE trashed_at IS NULL ORDER BY name ASC"
+                "SELECT name, companions, antagonists FROM seeds ORDER BY name ASC"
             ) ?: [];
 
             $data = self::rankCompanions($crop, $bedCrops, $seeds);
