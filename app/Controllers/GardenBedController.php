@@ -267,6 +267,14 @@ class GardenBedController
         $data = $this->loadBed($db, $id);
         if (!$data) { http_response_code(404); Response::render('errors/404', ['title' => 'Not Found']); return; }
 
+        $settingsRows = $db->fetchAll("SELECT setting_key, setting_value_text FROM settings WHERE setting_key IN ('weather.city_name','weather.lat','weather.lng')");
+        $loc = ['city' => '', 'lat' => '', 'lng' => ''];
+        foreach ($settingsRows as $r) {
+            if ($r['setting_key'] === 'weather.city_name') $loc['city'] = (string)$r['setting_value_text'];
+            if ($r['setting_key'] === 'weather.lat')       $loc['lat']  = (string)$r['setting_value_text'];
+            if ($r['setting_key'] === 'weather.lng')       $loc['lng']  = (string)$r['setting_value_text'];
+        }
+
         Response::render('garden/plan_inline', [
             'title'        => ($data['item']['name'] ?? 'Garden Bed') . ' — Plan',
             'mode'         => 'inline',
@@ -281,6 +289,7 @@ class GardenBedController
             'bed'          => $data['bed'],
             'catalog'      => $data['catalog'],
             'cropsById'    => $data['cropsById'],
+            'location'     => $loc,
         ]);
     }
 
@@ -826,6 +835,96 @@ class GardenBedController
         );
 
         Response::json(['success' => true]);
+    }
+
+    /**
+     * AJAX: harvest one or more crops on a line with optional per-crop yields.
+     *
+     * POST shape:
+     *   line_number = N
+     *   harvest[<planting_id>][plants] = int   (plants harvested; subtracted from plant_count)
+     *   harvest[<planting_id>][qty]    = float (yield amount, optional)
+     *   harvest[<planting_id>][unit]   = str   (yield unit, optional, default "kg")
+     *   notes = str (optional, applied to all entries)
+     *
+     * For each entry:
+     *   - plants harvested is subtracted; row is DELETEd if it reaches 0
+     *   - if qty > 0 a row is inserted into harvest_entries
+     *
+     * If after the operation the line has no remaining plantings, the line is
+     * marked as empty (rotation_history appended, sown_at cleared).
+     */
+    public function harvestPartial(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId   = (int)($params['id'] ?? 0);
+        $lineNum  = max(1, (int)$request->post('line_number', 1));
+        $harvest  = $request->post('harvest', []);
+        $notes    = trim((string)$request->post('notes', ''));
+
+        if (!is_array($harvest) || empty($harvest)) { Response::json(['success' => false, 'error' => 'Nothing to harvest']); return; }
+
+        try {
+            $clearedSeedIds = [];
+            foreach ($harvest as $pid => $entry) {
+                $pid    = (int)$pid;
+                $plants = max(0, (int)($entry['plants'] ?? 0));
+                $qty    = (float)($entry['qty'] ?? 0);
+                $unit   = trim((string)($entry['unit'] ?? 'kg')) ?: 'kg';
+                if ($pid <= 0 || ($plants <= 0 && $qty <= 0)) continue;
+
+                $row = $db->fetchOne("SELECT id, plant_count, crop_name, seed_id FROM garden_plantings WHERE id = ? AND item_id = ? AND line_number = ?", [$pid, $itemId, $lineNum]);
+                if (!$row) continue;
+
+                $cur = (int)($row['plant_count'] ?? 0);
+                if ($plants > 0) {
+                    if ($plants >= $cur) {
+                        $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$pid]);
+                        if (!empty($row['seed_id'])) $clearedSeedIds[] = (int)$row['seed_id'];
+                    } else {
+                        $db->execute("UPDATE garden_plantings SET plant_count = plant_count - ? WHERE id = ?", [$plants, $pid]);
+                    }
+                }
+
+                if ($qty > 0) {
+                    try {
+                        $name = (string)($row['crop_name'] ?? 'Crop');
+                        $db->execute(
+                            "INSERT INTO harvest_entries (item_id, harvest_type, quantity, unit, notes, recorded_at, created_at)
+                             VALUES (?, ?, ?, ?, ?, CURDATE(), NOW())",
+                            [$itemId, $name, $qty, $unit, $notes]
+                        );
+                    } catch (\Throwable $e) { /* harvest_entries optional */ }
+                }
+            }
+
+            // If the line is now empty, mark it as such and append rotation history.
+            $remaining = (int)($db->fetchOne("SELECT COUNT(*) AS c FROM garden_plantings WHERE item_id = ? AND line_number = ?", [$itemId, $lineNum])['c'] ?? 0);
+            if ($remaining === 0) {
+                $row  = $db->fetchOne("SELECT id, rotation_history FROM garden_bed_lines WHERE item_id = ? AND line_number = ?", [$itemId, $lineNum]);
+                $hist = ($row && !empty($row['rotation_history'])) ? (json_decode($row['rotation_history'], true) ?: []) : [];
+                $year = (int)date('Y');
+                $season = GardenHelpers::seasonOfMonth((int)date('n'));
+                foreach (array_unique($clearedSeedIds) as $sid) {
+                    $hist[] = ['year' => $year, 'season' => $season, 'cropId' => $sid];
+                }
+                $today = GardenHelpers::todayIso();
+                if ($row) {
+                    $db->execute("UPDATE garden_bed_lines SET rotation_history = ?, empty_since = ?, sown_at = NULL WHERE id = ?", [json_encode(array_values($hist)), $today, (int)$row['id']]);
+                } else {
+                    $db->execute("INSERT INTO garden_bed_lines (item_id, line_number, empty_since, rotation_history) VALUES (?, ?, ?, ?)", [$itemId, $lineNum, $today, json_encode($hist)]);
+                }
+            }
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+            return;
+        }
+
+        Response::json(['success' => true, 'line_empty' => $remaining === 0]);
     }
 
     public function adjustQty(Request $request, array $params = []): void

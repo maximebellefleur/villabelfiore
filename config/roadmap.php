@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Per-crop partial harvest',
+        'features' => [
+            ['title' => 'Per-crop harvest rows', 'detail' => 'Each crop on the line has its own plant-count stepper + yield/unit fields.'],
+            ['title' => 'Quick presets',        'detail' => '1 each / Half line / Full line buttons fill all crop rows in one click.'],
+            ['title' => 'Partial endpoint',     'detail' => 'POST /items/{id}/harvest-partial subtracts counts, deletes only at 0, records one harvest_entries row per crop.'],
+        ],
+    ],
+
     '3.0.17' => [
         'status'   => 'released',
         'released' => '2026-04-28',

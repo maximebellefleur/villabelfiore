@@ -172,6 +172,7 @@ $router->post('/items/{id}/bed-config',          'GardenBedController@updateConf
 $router->post('/items/{id}/plant-tap',           'GardenBedController@tapPlant');
 $router->post('/items/{id}/clear-line',          'GardenBedController@clearLine');
 $router->post('/items/{id}/harvest-clear',       'GardenBedController@harvestClearLine');
+$router->post('/items/{id}/harvest-partial',     'GardenBedController@harvestPartial');
 $router->post('/items/{id}/lines/succession/set',   'GardenBedController@setSuccession');
 $router->post('/items/{id}/lines/succession/clear', 'GardenBedController@clearSuccession');
 $router->post('/items/{id}/lines/set-sown',         'GardenBedController@setLineSown');

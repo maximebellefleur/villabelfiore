@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.1.0' => [
+        'date'  => '2026-04-28',
+        'title' => 'Per-crop partial harvest with quick presets',
+        'new' => [
+            'Harvest modal redesigned: instead of one quantity for the whole line, every crop on the line gets its own row with a plant-count stepper (clamped to the current count) and an optional yield + unit field.',
+            'Quick presets across all crops on the line: "1 each", "Half line" (rounds up), "Full line" (clears everything).',
+            'Notes field at the bottom applied to all harvest entries created in one save.',
+        ],
+        'improved' => [
+            'New POST /items/{id}/harvest-partial endpoint: subtracts plant_count per crop, deletes the row only when count reaches 0, inserts one harvest_entries row per crop with non-zero yield, and updates rotation_history + empty_since only if the line ends up with nothing planted.',
+            'You can now record a 1-plant harvest, half-row, or full-row clear with the same flow.',
+        ],
+    ],
+
     '3.0.17' => [
         'date'  => '2026-04-28',
         'title' => 'Inline-edit sown date on planning view',
