@@ -165,8 +165,15 @@ $router->get('/garden/biodynamic',               'BiodynamicController@index');
 
 // Garden bed planting
 $router->get('/items/{id}/planting',             'GardenBedController@show');
+$router->get('/items/{id}/planting/inline',      'GardenBedController@showPlanInline');
+$router->get('/items/{id}/planting/timeline',    'GardenBedController@showPlanTimeline');
 $router->post('/items/{id}/planting',            'GardenBedController@storeLine');
 $router->post('/items/{id}/bed-config',          'GardenBedController@updateConfig');
+$router->post('/items/{id}/plant-tap',           'GardenBedController@tapPlant');
+$router->post('/items/{id}/clear-line',          'GardenBedController@clearLine');
+$router->post('/items/{id}/harvest-clear',       'GardenBedController@harvestClearLine');
+$router->post('/items/{id}/lines/succession/set',   'GardenBedController@setSuccession');
+$router->post('/items/{id}/lines/succession/clear', 'GardenBedController@clearSuccession');
 $router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
 $router->post('/garden/plantings/{id}/harvest-line', 'GardenBedController@harvestLine');
 $router->post('/garden/plantings/{id}/adjust-qty',   'GardenBedController@adjustQty');

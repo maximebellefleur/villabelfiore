@@ -6,6 +6,8 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Support\GardenSchema;
+use App\Support\GardenHelpers;
 
 class GardenBedController
 {
@@ -16,32 +18,211 @@ class GardenBedController
 
     private function ensureTable(DB $db): void
     {
-        static $done = false;
-        if ($done) { return; }
-        $db->execute("CREATE TABLE IF NOT EXISTS garden_plantings (
-            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            item_id INT UNSIGNED NOT NULL,
-            line_number SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-            crop_name VARCHAR(200) DEFAULT NULL,
-            variety VARCHAR(200) DEFAULT NULL,
-            status ENUM('empty','planned','growing','harvested') NOT NULL DEFAULT 'empty',
-            planted_at DATE DEFAULT NULL,
-            expected_harvest_at DATE DEFAULT NULL,
-            notes TEXT DEFAULT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        GardenSchema::ensure($db);
+    }
 
-        // Migrate: seed_id and plant_count
-        $col = $db->fetchAll("SHOW COLUMNS FROM garden_plantings LIKE 'seed_id'");
-        if (empty($col)) {
-            $db->execute("ALTER TABLE garden_plantings ADD COLUMN seed_id INT UNSIGNED DEFAULT NULL AFTER notes");
+    /**
+     * Load a bed and assemble all data needed for the redesigned views (merged,
+     * plan-inline, plan-timeline). Returns null if bed not found.
+     *
+     * Output shape:
+     *   [
+     *     'item' => items row,
+     *     'meta' => item_meta map,
+     *     'parentGarden' => items row|null,
+     *     'numLines', 'lengthM', 'widthM', 'lineDir',
+     *     'bed' => [
+     *        'id','name','garden','lengthM','widthM','last_watered_at',
+     *        'lines' => [ /* see below *\/ ]
+     *     ],
+     *     'catalog' => [crop array,...],
+     *     'cropsById' => map id => crop,
+     *   ]
+     *
+     * Each line:
+     *   id (line_number), lineNumber, lengthCm, status, sown_at, empty_since,
+     *   last_watered_at, succession (null|{cropId,startsOn}),
+     *   succession_starts_on, rotation_history,
+     *   plantings => [{id, cropId, plants, sown_at, name, color, ...},...]
+     */
+    private function loadBed(DB $db, int $id): ?array
+    {
+        $item = $db->fetchOne("SELECT * FROM items WHERE id = ? AND deleted_at IS NULL", [$id]);
+        if (!$item) return null;
+
+        $metaRows = $db->fetchAll("SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?", [$id]);
+        $meta = [];
+        foreach ($metaRows as $row) {
+            $meta[$row['meta_key']] = $row['meta_value_text'];
         }
-        $col2 = $db->fetchAll("SHOW COLUMNS FROM garden_plantings LIKE 'plant_count'");
-        if (empty($col2)) {
-            $db->execute("ALTER TABLE garden_plantings ADD COLUMN plant_count SMALLINT UNSIGNED DEFAULT NULL AFTER seed_id");
+
+        $bedRows = max(1, (int)($meta['bed_rows'] ?? 1));
+        $lengthM = (float)($meta['bed_length_m'] ?? 0);
+        $widthM  = (float)($meta['bed_width_m'] ?? 0);
+        $lineDir = $meta['line_direction'] ?? 'NS';
+        $lengthCm = (int)round($lengthM * 100);
+        if ($lengthCm <= 0) $lengthCm = 400;
+
+        $parentGarden = null;
+        if (!empty($item['parent_id'])) {
+            $parentGarden = $db->fetchOne("SELECT * FROM items WHERE id = ?", [(int)$item['parent_id']]);
         }
-        $done = true;
+
+        // Load seed catalog with new fields
+        $catalog  = $this->loadCatalog($db);
+        $cropsById = [];
+        foreach ($catalog as $c) { $cropsById[(int)$c['id']] = $c; }
+
+        // Hydrate garden_bed_lines for each line_number 1..bedRows (idempotent)
+        $existingLines = $db->fetchAll(
+            "SELECT * FROM garden_bed_lines WHERE item_id = ? ORDER BY line_number ASC",
+            [$id]
+        );
+        $linesByNum = [];
+        foreach ($existingLines as $l) { $linesByNum[(int)$l['line_number']] = $l; }
+        for ($n = 1; $n <= $bedRows; $n++) {
+            if (!isset($linesByNum[$n])) {
+                $db->execute(
+                    "INSERT INTO garden_bed_lines (item_id, line_number, length_cm, rotation_history)
+                     VALUES (?, ?, ?, '[]')",
+                    [$id, $n, $lengthCm]
+                );
+                $linesByNum[$n] = [
+                    'id' => null,
+                    'item_id' => $id,
+                    'line_number' => $n,
+                    'length_cm' => $lengthCm,
+                    'sown_at' => null,
+                    'empty_since' => null,
+                    'last_watered_at' => null,
+                    'succession_crop_id' => null,
+                    'succession_starts_on' => null,
+                    'rotation_history' => '[]',
+                ];
+            }
+        }
+
+        // Plantings indexed by line_number
+        $plantings = $db->fetchAll(
+            "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, id ASC",
+            [$id]
+        );
+        $plantingMap = [];
+        foreach ($plantings as $p) {
+            $plantingMap[(int)$p['line_number']][] = $p;
+        }
+
+        // Build rich line objects
+        $lines = [];
+        for ($n = 1; $n <= $bedRows; $n++) {
+            $lstate = $linesByNum[$n] ?? null;
+            $rawPlantings = $plantingMap[$n] ?? [];
+            $linePlantings = [];
+            $hasGrowing = false;
+            foreach ($rawPlantings as $rp) {
+                $cid = (int)($rp['seed_id'] ?? 0);
+                if ($cid > 0 && !isset($cropsById[$cid])) continue;
+                $cnt = max(0, (int)($rp['plant_count'] ?? 1));
+                if ($cnt <= 0) continue;
+                $sownAt = $rp['sown_at'] ?? $rp['planted_at'] ?? null;
+                $linePlantings[] = [
+                    'id'         => (int)$rp['id'],
+                    'cropId'     => $cid,
+                    'plants'     => $cnt,
+                    'sown_at'    => $sownAt,
+                    'crop_name'  => $rp['crop_name'] ?? ($cropsById[$cid]['name'] ?? ''),
+                    'status'     => $rp['status'] ?? 'growing',
+                ];
+                if (($rp['status'] ?? '') === 'growing') $hasGrowing = true;
+            }
+
+            $hist = [];
+            if (!empty($lstate['rotation_history'])) {
+                $hist = json_decode($lstate['rotation_history'], true) ?: [];
+            }
+
+            $status = 'empty';
+            if (!empty($linePlantings) && $hasGrowing) $status = 'growing';
+            elseif (!empty($linePlantings))            $status = 'growing';
+            elseif (!empty($lstate['succession_crop_id'])) $status = 'planned';
+            elseif (!empty($lstate['empty_since']))    $status = 'harvested';
+
+            $succession = null;
+            if (!empty($lstate['succession_crop_id'])) {
+                $succession = [
+                    'cropId'   => (int)$lstate['succession_crop_id'],
+                    'startsOn' => $lstate['succession_starts_on'],
+                ];
+            }
+
+            $lines[] = [
+                'id'                   => $n,
+                'lineNumber'           => $n,
+                'lengthCm'             => (int)($lstate['length_cm'] ?? $lengthCm),
+                'status'               => $status,
+                'sown_at'              => $lstate['sown_at'] ?? null,
+                'empty_since'          => $lstate['empty_since'] ?? null,
+                'last_watered_at'      => $lstate['last_watered_at'] ?? null,
+                'succession'           => $succession,
+                'succession_starts_on' => $lstate['succession_starts_on'] ?? null,
+                'rotation_history'     => $hist,
+                'plantings'            => $linePlantings,
+            ];
+        }
+
+        $bed = [
+            'id'              => (int)$item['id'],
+            'name'            => $item['name'] ?? 'Bed',
+            'garden'          => $parentGarden['name'] ?? '',
+            'lengthM'         => $lengthM,
+            'widthM'          => $widthM,
+            'lineDir'         => $lineDir,
+            'last_watered_at' => null,
+            'lines'           => $lines,
+        ];
+
+        return [
+            'item'         => $item,
+            'meta'         => $meta,
+            'parentGarden' => $parentGarden,
+            'numLines'     => $bedRows,
+            'lengthM'      => $lengthM,
+            'widthM'       => $widthM,
+            'lineDir'      => $lineDir,
+            'bed'          => $bed,
+            'catalog'      => $catalog,
+            'cropsById'    => $cropsById,
+        ];
+    }
+
+    /** Load the seed catalog with the redesign fields (family/season/emoji/color). */
+    private function loadCatalog(DB $db): array
+    {
+        try {
+            $rows = $db->fetchAll(
+                "SELECT id, name, variety, days_to_maturity, spacing_cm, family, season, emoji, color
+                 FROM seeds
+                 WHERE COALESCE(stock_enabled,1) = 1
+                 ORDER BY name ASC, variety ASC"
+            ) ?: [];
+        } catch (\Throwable $e) {
+            $rows = $db->fetchAll(
+                "SELECT id, name, variety, days_to_maturity, spacing_cm
+                 FROM seeds ORDER BY name ASC"
+            ) ?: [];
+        }
+        $out = [];
+        foreach ($rows as $r) {
+            $r['id']                = (int)$r['id'];
+            $r['days_to_maturity']  = (int)($r['days_to_maturity'] ?? 60) ?: 60;
+            $r['spacing_cm']        = max(1, (int)($r['spacing_cm'] ?? 5));
+            $r['family']            = $r['family'] ?? 'other';
+            $r['season']            = $r['season'] ?? 'any';
+            $r['emoji']             = $r['emoji'] ?: GardenHelpers::cropEmoji($r);
+            $r['color']             = GardenHelpers::cropColor($r);
+            $out[] = $r;
+        }
+        return $out;
     }
 
     public function show(Request $request, array $params = []): void
@@ -52,133 +233,237 @@ class GardenBedController
 
         $this->ensureTable($db);
 
-        $item = $db->fetchOne("SELECT * FROM items WHERE id = ? AND deleted_at IS NULL", [$id]);
-        if (!$item) {
+        $data = $this->loadBed($db, $id);
+        if (!$data) {
             http_response_code(404);
             Response::render('errors/404', ['title' => 'Not Found']);
             return;
         }
 
-        $metaRows = $db->fetchAll("SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?", [$id]);
-        $meta = [];
-        foreach ($metaRows as $row) {
-            $meta[$row['meta_key']] = $row['meta_value_text'];
-        }
-
-        $bedRows   = (int)($meta['bed_rows'] ?? 0);
-        $lengthM   = (float)($meta['bed_length_m'] ?? 0);
-        $widthM    = (float)($meta['bed_width_m'] ?? 0);
-        $lineDir   = $meta['line_direction'] ?? 'NS';
-
-        $parentGarden = null;
-        if (!empty($item['parent_id'])) {
-            $parentGarden = $db->fetchOne("SELECT * FROM items WHERE id = ?", [(int)$item['parent_id']]);
-        }
-
-        $plantings = $db->fetchAll(
-            "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC",
-            [$id]
-        );
-
-        $plantingMap = [];
-        foreach ($plantings as $planting) {
-            $plantingMap[(int)$planting['line_number']][] = $planting;
-        }
-
-        $now45 = (new \DateTime())->modify('+45 days');
-        $prepNext = [];
-        foreach ($plantings as $planting) {
-            if (in_array($planting['status'], ['empty', 'harvested'], true)) {
-                $prepNext[] = array_merge($planting, ['reason' => 'ready_to_plant']);
-            } elseif (!empty($planting['expected_harvest_at'])) {
-                $harvestDate = new \DateTime($planting['expected_harvest_at']);
-                if ($harvestDate <= $now45) {
-                    $prepNext[] = array_merge($planting, ['reason' => 'harvest_soon']);
-                }
-            }
-        }
-
-        $climateRow  = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'garden.climate_zone'");
-        $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
-
-        $apiKeyRow        = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'companion_api_key'");
-        $hasCompanionApi  = !empty($apiKeyRow['setting_value_text']);
-
-        // Family needs + seeds for suggestions and planting backlog
-        // These queries are optional — wrap in try/catch so missing columns/tables never break the page
-        $familyNeeds = [];
-        $allSeeds    = [];
-        try {
-            // Check if needs_restock column exists; if not, run the migration
-            $hasRestockCol = !empty($db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'needs_restock'"));
-            if (!$hasRestockCol) {
-                $db->execute("ALTER TABLE seeds ADD COLUMN needs_restock TINYINT(1) NOT NULL DEFAULT 0 AFTER stock_enabled");
-            }
-
-            $familyNeeds = $db->fetchAll(
-                "SELECT fn.*, s.name AS seed_name, s.variety AS seed_variety,
-                        s.planting_months, s.spacing_cm, s.needs_restock, s.id AS sid
-                 FROM family_needs fn
-                 LEFT JOIN seeds s ON s.id = fn.seed_id
-                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-            );
-            $allSeeds = $db->fetchAll(
-                "SELECT id, name, variety, planting_months, spacing_cm, row_spacing_cm, sowing_depth_mm, days_to_maturity, notes FROM seeds WHERE needs_restock = 0 ORDER BY name ASC"
-            );
-        } catch (\Throwable $e) {
-            // family_needs table doesn't exist yet or seeds schema mismatch — suggestions will be empty
-            $familyNeeds = [];
-            $allSeeds    = $db->fetchAll("SELECT id, name, variety, planting_months, spacing_cm, row_spacing_cm, sowing_depth_mm, days_to_maturity, notes FROM seeds ORDER BY name ASC") ?: [];
-        }
-
-        $currentMonth = (int)date('n');
-        $plantedSeedIds   = array_filter(array_column($plantings, 'seed_id'));
-        $plantedCropNames = array_map('strtolower', array_filter(array_column($plantings, 'crop_name')));
-
-        // Planting backlog: next 6 months × family needs
-        $backlog = [];
-        for ($offset = 0; $offset < 6; $offset++) {
-            $m = (($currentMonth - 1 + $offset) % 12) + 1;
-            $items = [];
-            foreach ($familyNeeds as $fn) {
-                $pm = !empty($fn['planting_months']) ? json_decode($fn['planting_months'], true) : [];
-                if (!in_array($m, $pm)) continue;
-                $alreadyInBed = in_array($fn['sid'], $plantedSeedIds)
-                             || in_array(strtolower($fn['vegetable_name']), $plantedCropNames);
-                $items[] = [
-                    'seed_id'       => (int)($fn['sid'] ?? 0),
-                    'name'          => $fn['seed_name'] ?: $fn['vegetable_name'],
-                    'variety'       => $fn['seed_variety'] ?? '',
-                    'priority'      => (int)$fn['priority'],
-                    'already_in_bed'=> $alreadyInBed,
-                    'needs_restock' => !empty($fn['needs_restock']),
-                    'spacing_cm'    => $fn['spacing_cm'] ?? null,
-                ];
-            }
-            if (!empty($items)) {
-                $backlog[] = ['month' => $m, 'items' => $items];
-            }
-        }
-
+        $today = GardenHelpers::todayIso();
         Response::render('garden/bed', [
-            'title'          => $item['name'] ?? 'Garden Bed',
-            'item'           => $item,
-            'meta'           => $meta,
-            'bedRows'        => $bedRows,
-            'lengthM'        => $lengthM,
-            'widthM'         => $widthM,
-            'lineDir'        => $lineDir,
-            'parentGarden'   => $parentGarden,
-            'plantings'      => $plantings,
-            'plantingMap'    => $plantingMap,
-            'prepNext'       => $prepNext,
-            'climateZone'    => $climateZone,
-            'hasCompanionApi'=> $hasCompanionApi,
-            'currentMonth'   => $currentMonth,
-            'familyNeeds'    => $familyNeeds,
-            'allSeeds'       => $allSeeds,
-            'backlog'        => $backlog,
+            'title'        => $data['item']['name'] ?? 'Garden Bed',
+            'mode'         => 'merged',
+            'today'        => $today,
+            'item'         => $data['item'],
+            'meta'         => $data['meta'],
+            'parentGarden' => $data['parentGarden'],
+            'numLines'     => $data['numLines'],
+            'lengthM'      => $data['lengthM'],
+            'widthM'       => $data['widthM'],
+            'lineDir'      => $data['lineDir'],
+            'bed'          => $data['bed'],
+            'catalog'      => $data['catalog'],
+            'cropsById'    => $data['cropsById'],
         ]);
+    }
+
+    public function showPlanInline(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+        $id = (int)($params['id'] ?? 0);
+        $this->ensureTable($db);
+        $data = $this->loadBed($db, $id);
+        if (!$data) { http_response_code(404); Response::render('errors/404', ['title' => 'Not Found']); return; }
+
+        Response::render('garden/plan_inline', [
+            'title'        => ($data['item']['name'] ?? 'Garden Bed') . ' — Plan',
+            'mode'         => 'inline',
+            'today'        => GardenHelpers::todayIso(),
+            'item'         => $data['item'],
+            'meta'         => $data['meta'],
+            'parentGarden' => $data['parentGarden'],
+            'numLines'     => $data['numLines'],
+            'lengthM'      => $data['lengthM'],
+            'widthM'       => $data['widthM'],
+            'lineDir'      => $data['lineDir'],
+            'bed'          => $data['bed'],
+            'catalog'      => $data['catalog'],
+            'cropsById'    => $data['cropsById'],
+        ]);
+    }
+
+    public function showPlanTimeline(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+        $id = (int)($params['id'] ?? 0);
+        $this->ensureTable($db);
+        $data = $this->loadBed($db, $id);
+        if (!$data) { http_response_code(404); Response::render('errors/404', ['title' => 'Not Found']); return; }
+
+        Response::render('garden/plan_timeline', [
+            'title'        => ($data['item']['name'] ?? 'Garden Bed') . ' — Timeline',
+            'mode'         => 'timeline',
+            'today'        => GardenHelpers::todayIso(),
+            'item'         => $data['item'],
+            'meta'         => $data['meta'],
+            'parentGarden' => $data['parentGarden'],
+            'numLines'     => $data['numLines'],
+            'lengthM'      => $data['lengthM'],
+            'widthM'       => $data['widthM'],
+            'lineDir'      => $data['lineDir'],
+            'bed'          => $data['bed'],
+            'catalog'      => $data['catalog'],
+            'cropsById'    => $data['cropsById'],
+        ]);
+    }
+
+    /** AJAX: tap-to-plant. Adds 1 plant of cropId to (item, line). Creates planting row if missing. */
+    public function tapPlant(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $lineNum = max(1, (int)$request->post('line_number', 1));
+        $cropId  = (int)$request->post('crop_id', 0);
+        $count   = max(1, (int)$request->post('count', 1));
+
+        if ($cropId <= 0) { Response::json(['success' => false, 'error' => 'crop_id required']); return; }
+
+        $crop = $db->fetchOne("SELECT id, name, days_to_maturity, spacing_cm FROM seeds WHERE id = ?", [$cropId]);
+        if (!$crop) { Response::json(['success' => false, 'error' => 'Crop not found']); return; }
+
+        $today = GardenHelpers::todayIso();
+
+        $existing = $db->fetchOne(
+            "SELECT id, plant_count FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id = ? AND status IN ('growing','planned','sown') ORDER BY id DESC LIMIT 1",
+            [$itemId, $lineNum, $cropId]
+        );
+        if ($existing) {
+            $newCount = (int)$existing['plant_count'] + $count;
+            $db->execute(
+                "UPDATE garden_plantings SET plant_count = ? WHERE id = ?",
+                [$newCount, (int)$existing['id']]
+            );
+            $plantingId = (int)$existing['id'];
+        } else {
+            $expected = null;
+            if (!empty($crop['days_to_maturity'])) {
+                $expected = GardenHelpers::addDays($today, (int)$crop['days_to_maturity']);
+            }
+            $db->execute(
+                "INSERT INTO garden_plantings (item_id, line_number, crop_name, status, planted_at, sown_at, expected_harvest_at, seed_id, plant_count)
+                 VALUES (?, ?, ?, 'growing', ?, ?, ?, ?, ?)",
+                [$itemId, $lineNum, $crop['name'], $today, $today, $expected, $cropId, $count]
+            );
+            $plantingId = (int)$db->lastInsertId();
+        }
+
+        // ensure a garden_bed_lines row, set sown_at if blank, clear empty_since
+        $existingLine = $db->fetchOne(
+            "SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
+        if ($existingLine) {
+            $db->execute(
+                "UPDATE garden_bed_lines
+                    SET sown_at = COALESCE(sown_at, ?), empty_since = NULL
+                  WHERE id = ?",
+                [$today, (int)$existingLine['id']]
+            );
+        } else {
+            $db->execute(
+                "INSERT INTO garden_bed_lines (item_id, line_number, sown_at, rotation_history) VALUES (?, ?, ?, '[]')",
+                [$itemId, $lineNum, $today]
+            );
+        }
+
+        Response::json(['success' => true, 'planting_id' => $plantingId]);
+    }
+
+    /** AJAX: clear all plantings on a single line. Sets status=harvested with empty_since=today. */
+    public function clearLine(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $lineNum = max(1, (int)$request->post('line_number', 1));
+        $today   = GardenHelpers::todayIso();
+
+        $db->execute(
+            "DELETE FROM garden_plantings WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
+        $existingLine = $db->fetchOne(
+            "SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
+        if ($existingLine) {
+            $db->execute(
+                "UPDATE garden_bed_lines SET empty_since = ?, sown_at = NULL WHERE id = ?",
+                [$today, (int)$existingLine['id']]
+            );
+        } else {
+            $db->execute(
+                "INSERT INTO garden_bed_lines (item_id, line_number, empty_since, rotation_history) VALUES (?, ?, ?, '[]')",
+                [$itemId, $lineNum, $today]
+            );
+        }
+
+        Response::json(['success' => true]);
+    }
+
+    /** AJAX: set succession (cropId + startsOn) for a line. */
+    public function setSuccession(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId   = (int)($params['id'] ?? 0);
+        $lineNum  = max(1, (int)$request->post('line_number', 1));
+        $cropId   = (int)$request->post('crop_id', 0);
+        $startsOn = trim((string)$request->post('starts_on', ''));
+
+        if ($cropId <= 0) { Response::json(['success' => false, 'error' => 'crop_id required']); return; }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startsOn)) {
+            $startsOn = GardenHelpers::addDays(GardenHelpers::todayIso(), 7);
+        }
+
+        $existingLine = $db->fetchOne(
+            "SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
+        if ($existingLine) {
+            $db->execute(
+                "UPDATE garden_bed_lines SET succession_crop_id = ?, succession_starts_on = ? WHERE id = ?",
+                [$cropId, $startsOn, (int)$existingLine['id']]
+            );
+        } else {
+            $db->execute(
+                "INSERT INTO garden_bed_lines (item_id, line_number, succession_crop_id, succession_starts_on, rotation_history) VALUES (?, ?, ?, ?, '[]')",
+                [$itemId, $lineNum, $cropId, $startsOn]
+            );
+        }
+
+        Response::json(['success' => true, 'starts_on' => $startsOn]);
+    }
+
+    /** AJAX: clear succession for a line. */
+    public function clearSuccession(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $lineNum = max(1, (int)$request->post('line_number', 1));
+
+        $db->execute(
+            "UPDATE garden_bed_lines SET succession_crop_id = NULL, succession_starts_on = NULL WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
+        Response::json(['success' => true]);
     }
 
     public function updateConfig(Request $request, array $params = []): void
@@ -397,6 +682,7 @@ class GardenBedController
         CSRF::validate($request->post('_token', ''));
         $db  = DB::getInstance();
         $id  = (int)($params['id'] ?? 0);
+        $this->ensureTable($db);
 
         $planting = $db->fetchOne("SELECT * FROM garden_plantings WHERE id = ?", [$id]);
         if (!$planting) {
@@ -406,8 +692,41 @@ class GardenBedController
 
         $cropName = $planting['crop_name'] ?? 'Unknown crop';
         $itemId   = (int)$planting['item_id'];
+        $lineNum  = (int)$planting['line_number'];
+        $seedId   = (int)($planting['seed_id'] ?? 0);
 
-        // Mark line as harvested and free it
+        // Append to line's rotation_history before clearing
+        $year = (int)date('Y');
+        $season = GardenHelpers::seasonOfMonth((int)date('n'));
+        if ($seedId > 0) {
+            try {
+                $row = $db->fetchOne(
+                    "SELECT id, rotation_history FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+                    [$itemId, $lineNum]
+                );
+                $hist = [];
+                if ($row && !empty($row['rotation_history'])) {
+                    $hist = json_decode($row['rotation_history'], true) ?: [];
+                }
+                $hist[] = ['year' => $year, 'season' => $season, 'cropId' => $seedId];
+                $today = GardenHelpers::todayIso();
+                if ($row) {
+                    $db->execute(
+                        "UPDATE garden_bed_lines SET rotation_history = ?, empty_since = ?, sown_at = NULL WHERE id = ?",
+                        [json_encode(array_values($hist)), $today, (int)$row['id']]
+                    );
+                } else {
+                    $db->execute(
+                        "INSERT INTO garden_bed_lines (item_id, line_number, empty_since, rotation_history) VALUES (?, ?, ?, ?)",
+                        [$itemId, $lineNum, $today, json_encode($hist)]
+                    );
+                }
+            } catch (\Throwable $e) {
+                // silent — line bookkeeping is best-effort
+            }
+        }
+
+        // Mark planting as harvested
         $db->execute(
             "UPDATE garden_plantings SET status='harvested', crop_name=NULL, variety=NULL, seed_id=NULL, plant_count=NULL WHERE id=?",
             [$id]
@@ -428,6 +747,78 @@ class GardenBedController
                 // silent — harvest_entries schema may differ
             }
         }
+
+        Response::json(['success' => true]);
+    }
+
+    /** AJAX: clear all plantings on a single line via line_number (used by Harvest blackout 'clear all crops'). */
+    public function harvestClearLine(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $lineNum = max(1, (int)$request->post('line_number', 1));
+        $today   = GardenHelpers::todayIso();
+        $year    = (int)date('Y');
+        $season  = GardenHelpers::seasonOfMonth((int)date('n'));
+
+        // Append everything currently planted to rotation_history
+        try {
+            $rows = $db->fetchAll(
+                "SELECT seed_id FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id IS NOT NULL",
+                [$itemId, $lineNum]
+            );
+            $row = $db->fetchOne(
+                "SELECT id, rotation_history FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+                [$itemId, $lineNum]
+            );
+            $hist = [];
+            if ($row && !empty($row['rotation_history'])) {
+                $hist = json_decode($row['rotation_history'], true) ?: [];
+            }
+            foreach ($rows as $r) {
+                $hist[] = ['year' => $year, 'season' => $season, 'cropId' => (int)$r['seed_id']];
+            }
+            if ($row) {
+                $db->execute(
+                    "UPDATE garden_bed_lines SET rotation_history = ?, empty_since = ?, sown_at = NULL WHERE id = ?",
+                    [json_encode(array_values($hist)), $today, (int)$row['id']]
+                );
+            } else {
+                $db->execute(
+                    "INSERT INTO garden_bed_lines (item_id, line_number, empty_since, rotation_history) VALUES (?, ?, ?, ?)",
+                    [$itemId, $lineNum, $today, json_encode($hist)]
+                );
+            }
+        } catch (\Throwable $e) {
+            // silent
+        }
+
+        $qty   = (float)$request->post('qty', 0);
+        $unit  = trim($request->post('unit', 'items')) ?: 'items';
+        $notes = trim($request->post('notes', ''));
+        if ($qty > 0) {
+            try {
+                $names = $db->fetchAll(
+                    "SELECT crop_name FROM garden_plantings WHERE item_id = ? AND line_number = ?",
+                    [$itemId, $lineNum]
+                );
+                $name = $names[0]['crop_name'] ?? 'Mixed crop';
+                $db->execute(
+                    "INSERT INTO harvest_entries (item_id, harvest_type, quantity, unit, notes, recorded_at, created_at)
+                     VALUES (?, ?, ?, ?, ?, CURDATE(), NOW())",
+                    [$itemId, $name, $qty, $unit, $notes]
+                );
+            } catch (\Throwable $e) { /* silent */ }
+        }
+
+        $db->execute(
+            "DELETE FROM garden_plantings WHERE item_id = ? AND line_number = ?",
+            [$itemId, $lineNum]
+        );
 
         Response::json(['success' => true]);
     }

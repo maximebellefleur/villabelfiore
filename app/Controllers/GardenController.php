@@ -6,6 +6,8 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\BiodynamicCalendar;
+use App\Support\GardenSchema;
+use App\Support\GardenHelpers;
 
 class GardenController
 {
@@ -220,8 +222,12 @@ class GardenController
             $bioWeek[$i] = BiodynamicCalendar::computePoint($dt);
         }
 
+        // ---- Action-first hub data (Garden Redesign v3) -----------------
+        $hub = $this->buildHub($db);
+
         Response::render('garden/index', [
             'title'              => 'Garden',
+            'hub'                => $hub,
             'totalSeeds'         => $totalSeeds,
             'plantNow'           => $plantNow,
             'harvestSoon'        => $harvestSoon,
@@ -240,6 +246,172 @@ class GardenController
             'schematicBeds'      => $schematicBeds,
             'schematicGardens'   => $schematicGardens,
         ]);
+    }
+
+    /**
+     * Build the property-level "action-first" hub.
+     * Returns ['gardens'=>[...], 'beds_by_garden'=>[gid=>[...]], 'summary'=>[...], 'today'=>str].
+     */
+    private function buildHub(DB $db): array
+    {
+        GardenSchema::ensure($db);
+        $today = GardenHelpers::todayIso();
+
+        // Catalog with redesign fields
+        try {
+            $rows = $db->fetchAll(
+                "SELECT id, name, days_to_maturity, spacing_cm, family, season, emoji, color
+                 FROM seeds ORDER BY name ASC"
+            ) ?: [];
+        } catch (\Throwable $e) {
+            $rows = $db->fetchAll("SELECT id, name, days_to_maturity, spacing_cm FROM seeds ORDER BY name ASC") ?: [];
+        }
+        $cropsById = [];
+        foreach ($rows as $r) {
+            $r['id']                = (int)$r['id'];
+            $r['days_to_maturity']  = (int)($r['days_to_maturity'] ?? 60) ?: 60;
+            $r['spacing_cm']        = max(1, (int)($r['spacing_cm'] ?? 5));
+            $r['family']            = $r['family'] ?? 'other';
+            $r['season']            = $r['season'] ?? 'any';
+            $r['emoji']             = $r['emoji'] ?: GardenHelpers::cropEmoji($r);
+            $r['color']             = GardenHelpers::cropColor($r);
+            $cropsById[$r['id']]    = $r;
+        }
+
+        // Gardens (parents)
+        $gardens = $db->fetchAll(
+            "SELECT id, name, gps_lat, gps_lng FROM items
+             WHERE type='garden' AND deleted_at IS NULL AND status='active'
+             ORDER BY name ASC"
+        ) ?: [];
+
+        // Beds with their meta (length/width/rows)
+        $beds = $db->fetchAll(
+            "SELECT i.id, i.name, i.parent_id, i.gps_lat, i.gps_lng,
+                    MAX(CASE WHEN m.meta_key='bed_length_m' THEN m.meta_value_text END) AS length_m,
+                    MAX(CASE WHEN m.meta_key='bed_width_m'  THEN m.meta_value_text END) AS width_m,
+                    MAX(CASE WHEN m.meta_key='bed_rows'     THEN m.meta_value_text END) AS bed_rows
+             FROM items i
+             LEFT JOIN item_meta m ON m.item_id = i.id
+                AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows')
+             WHERE i.type='bed' AND i.deleted_at IS NULL AND i.status='active'
+             GROUP BY i.id ORDER BY i.parent_id, i.name"
+        ) ?: [];
+
+        // Plantings & line state — load all in one go, group by bed
+        $bedIds = array_column($beds, 'id');
+        $plantingsByBed = [];
+        $linesByBed = [];
+        if (!empty($bedIds)) {
+            $ph = implode(',', array_fill(0, count($bedIds), '?'));
+            try {
+                $prows = $db->fetchAll(
+                    "SELECT * FROM garden_plantings WHERE item_id IN ($ph)",
+                    $bedIds
+                );
+                foreach ($prows as $pr) {
+                    $plantingsByBed[(int)$pr['item_id']][(int)$pr['line_number']][] = $pr;
+                }
+            } catch (\Throwable $e) {}
+            try {
+                $lrows = $db->fetchAll(
+                    "SELECT * FROM garden_bed_lines WHERE item_id IN ($ph)",
+                    $bedIds
+                );
+                foreach ($lrows as $lr) {
+                    $linesByBed[(int)$lr['item_id']][(int)$lr['line_number']] = $lr;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // Build rich bed objects with computed lines + actions
+        $bedsByGarden = [];
+        foreach ($beds as $bed) {
+            $bedId = (int)$bed['id'];
+            $gid   = (int)($bed['parent_id'] ?? 0);
+            $bedRows = max(1, (int)($bed['bed_rows'] ?? 1));
+            $lengthM = (float)($bed['length_m'] ?? 0);
+            $widthM  = (float)($bed['width_m'] ?? 0);
+            $lengthCm = (int)round($lengthM * 100); if ($lengthCm <= 0) $lengthCm = 400;
+
+            // Build line array
+            $lines = [];
+            $cropsSeen = [];
+            for ($n = 1; $n <= $bedRows; $n++) {
+                $rawPlantings = $plantingsByBed[$bedId][$n] ?? [];
+                $linePlantings = [];
+                foreach ($rawPlantings as $rp) {
+                    $cid = (int)($rp['seed_id'] ?? 0);
+                    $cnt = max(0, (int)($rp['plant_count'] ?? 1));
+                    if ($cid <= 0 || $cnt <= 0) continue;
+                    $linePlantings[] = [
+                        'cropId'  => $cid,
+                        'plants'  => $cnt,
+                        'sown_at' => $rp['sown_at'] ?? $rp['planted_at'] ?? null,
+                        'status'  => $rp['status'] ?? 'growing',
+                    ];
+                    $cropsSeen[$cid] = true;
+                }
+                $lstate = $linesByBed[$bedId][$n] ?? null;
+                $hist = [];
+                if ($lstate && !empty($lstate['rotation_history'])) {
+                    $hist = json_decode($lstate['rotation_history'], true) ?: [];
+                }
+                $status = 'empty';
+                if (!empty($linePlantings)) $status = 'growing';
+                elseif ($lstate && !empty($lstate['succession_crop_id'])) $status = 'planned';
+                elseif ($lstate && !empty($lstate['empty_since'])) $status = 'harvested';
+
+                $lines[] = [
+                    'id' => $n, 'lineNumber' => $n,
+                    'lengthCm' => (int)($lstate['length_cm'] ?? $lengthCm),
+                    'status' => $status,
+                    'sown_at' => $lstate['sown_at'] ?? null,
+                    'empty_since' => $lstate['empty_since'] ?? null,
+                    'last_watered_at' => $lstate['last_watered_at'] ?? null,
+                    'succession_crop_id' => $lstate['succession_crop_id'] ?? null,
+                    'succession_starts_on' => $lstate['succession_starts_on'] ?? null,
+                    'rotation_history' => $hist,
+                    'plantings' => $linePlantings,
+                ];
+            }
+
+            // Bed-level status: growing if any line growing, etc.
+            $bedStatus = 'empty';
+            $any = function($lines, $st) { foreach ($lines as $l) { if ($l['status'] === $st) return true; } return false; };
+            if ($any($lines, 'growing')) $bedStatus = 'growing';
+            elseif ($any($lines, 'planned')) $bedStatus = 'planned';
+            elseif ($any($lines, 'harvested')) $bedStatus = 'harvested';
+
+            $bedObj = [
+                'id'        => $bedId,
+                'name'      => $bed['name'],
+                'gardenId'  => $gid,
+                'gps_lat'   => $bed['gps_lat'],
+                'gps_lng'   => $bed['gps_lng'],
+                'lengthM'   => $lengthM,
+                'widthM'    => $widthM,
+                'numLines'  => $bedRows,
+                'status'    => $bedStatus,
+                'lines'     => $lines,
+                'cropChips' => array_values(array_map(fn($cid) => $cropsById[$cid] ?? null, array_keys($cropsSeen))),
+            ];
+            $bedObj['actions'] = GardenHelpers::bedActions($bedObj, $cropsById, $today);
+            $bedsByGarden[$gid][] = $bedObj;
+        }
+
+        // Property-level summary
+        $allBeds = [];
+        foreach ($bedsByGarden as $arr) { foreach ($arr as $b) $allBeds[] = $b; }
+        $summary = GardenHelpers::propertySummary($allBeds, $cropsById, $today);
+
+        return [
+            'today'         => $today,
+            'gardens'       => $gardens,
+            'beds_by_garden'=> $bedsByGarden,
+            'summary'       => $summary,
+            'cropsById'     => $cropsById,
+        ];
     }
 
     /**

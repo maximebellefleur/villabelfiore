@@ -64,19 +64,166 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 .garden-hint-body { font-size:.83rem; color:var(--color-text-muted); line-height:1.6; }
 </style>
 
-<div class="garden-hub">
+<div class="rg-hub-page">
+
+<!-- ===== Garden Redesign v3 — Action-First Hub ===== -->
+<div class="rg-hub-header">
+  <div>
+    <div class="rg-label-tiny">Property</div>
+    <h1 class="rg-hub-title">Your gardens</h1>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="<?= url('/items/create?type=bed') ?>" class="btn btn-secondary btn-sm">＋ Bed</a>
+    <a href="<?= url('/items/create?type=garden') ?>" class="btn btn-primary btn-sm">＋ Garden</a>
+  </div>
+</div>
+
+<?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
+
+<?php
+use App\Support\GardenHelpers;
+$_summary  = $hub['summary']  ?? ['harvest'=>0,'water'=>0,'sow'=>0,'plan'=>0,'thin'=>0];
+$_cropsById = $hub['cropsById'] ?? [];
+$_today    = $hub['today']    ?? GardenHelpers::todayIso();
+$_gardens  = $hub['gardens']  ?? [];
+$_byGarden = $hub['beds_by_garden'] ?? [];
+$_weekItems = [];
+if (($_summary['harvest'] ?? 0) > 0) $_weekItems[] = ['icon'=>'🌾','label'=>'Ready to harvest','count'=>(int)$_summary['harvest'],'level'=>'high'];
+if (($_summary['water']   ?? 0) > 0) $_weekItems[] = ['icon'=>'💧','label'=>'Water today',     'count'=>(int)$_summary['water'],  'level'=>'water'];
+if (($_summary['sow']     ?? 0) > 0) $_weekItems[] = ['icon'=>'🌱','label'=>'Sow scheduled',   'count'=>(int)$_summary['sow'],    'level'=>'sow'];
+if (($_summary['plan']    ?? 0) > 0) $_weekItems[] = ['icon'=>'🪴','label'=>'Beds to plan',    'count'=>(int)$_summary['plan'],   'level'=>'plan'];
+if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Thin seedlings',   'count'=>(int)$_summary['thin'],   'level'=>'low'];
+?>
+
+<!-- This week summary -->
+<div class="rg-week-strip">
+  <div class="rg-label-tiny" style="margin-bottom:8px">📅 This week · <span class="rg-mono"><?= e(GardenHelpers::fmtDate($_today)) ?></span></div>
+  <?php if (empty($_weekItems)): ?>
+    <div class="rg-week-empty">✨ Nothing urgent this week. Garden's tucked in.</div>
+  <?php else: ?>
+    <div class="rg-week-grid">
+      <?php foreach ($_weekItems as $it): ?>
+        <div class="rg-week-card rg-week-card--<?= e($it['level']) ?>">
+          <span class="rg-week-card-emoji"><?= e($it['icon']) ?></span>
+          <div>
+            <div class="rg-week-card-count"><?= (int)$it['count'] ?></div>
+            <div class="rg-week-card-label"><?= e($it['label']) ?></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</div>
+
+<!-- Garden sections -->
+<?php foreach ($_gardens as $g):
+  $gid = (int)$g['id'];
+  $gBeds = $_byGarden[$gid] ?? [];
+  $gGrowing = 0; $gEmpty = 0; $gTotal = count($gBeds);
+  foreach ($gBeds as $b) {
+    if ($b['status'] === 'growing') $gGrowing++;
+    if ($b['status'] === 'empty')   $gEmpty++;
+  }
+?>
+  <div class="rg-garden-section is-open" data-garden-id="<?= $gid ?>">
+    <button type="button" class="rg-garden-toggle">
+      <span style="font-size:1.1rem">🌿</span>
+      <div style="flex:1;min-width:0">
+        <div class="rg-garden-name"><?= e($g['name']) ?></div>
+        <div class="rg-garden-summary rg-mono"><?= $gTotal ?> beds · <?= $gGrowing ?> growing · <?= $gEmpty ?> empty</div>
+      </div>
+      <span class="rg-garden-caret">›</span>
+    </button>
+    <div class="rg-garden-beds">
+      <?php foreach ($gBeds as $bed):
+        $action = $bed['actions'][0] ?? null;
+        $level  = $action ? $action['urgency'] : 'low';
+        $orient = GardenHelpers::bedOrientation($bed, $gBeds);
+      ?>
+        <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" class="rg-bedrow rg-bedrow--<?= e($level) ?>">
+          <?php if ($orient): ?>
+            <div class="rg-orient" title="<?= e($orient) ?> side"><?= e($orient) ?></div>
+          <?php else: ?>
+            <div style="width:32px;flex-shrink:0"></div>
+          <?php endif; ?>
+          <div class="rg-bedrow-id">
+            <div class="rg-bedrow-line1">
+              <span class="rg-bedrow-name"><?= e($bed['name']) ?></span>
+              <?php if ($bed['lengthM'] > 0): ?>
+                <span class="rg-bedrow-dim"><?= e(rtrim(rtrim(number_format($bed['lengthM'],1,'.',''),'0'),'.')) ?>×<?= e(rtrim(rtrim(number_format($bed['widthM'],1,'.',''),'0'),'.')) ?>m · <?= (int)$bed['numLines'] ?> lines</span>
+              <?php endif; ?>
+            </div>
+            <div class="rg-bedrow-line2">
+              <?php if (!empty($bed['cropChips'])): ?>
+                <?php foreach (array_slice($bed['cropChips'], 0, 3) as $c):
+                  if (!$c) continue;
+                  $color = $c['color'];
+                ?>
+                  <span class="rg-cropchip" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>44;color:<?= e($color) ?>">
+                    <span class="rg-cropchip-emoji"><?= e($c['emoji']) ?></span>
+                    <span class="rg-cropchip-name"><?= e($c['name']) ?></span>
+                  </span>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <span class="rg-bedrow-bare">bare</span>
+              <?php endif; ?>
+              <?php if ($action): ?>
+                <span class="rg-action-pill rg-action-pill--<?= e($action['urgency']) ?>" style="margin-left:auto">
+                  <span><?= e($action['icon']) ?></span>
+                  <span><?= e($action['label']) ?></span>
+                </span>
+              <?php endif; ?>
+            </div>
+          </div>
+          <span class="rg-bedrow-chev">›</span>
+        </a>
+      <?php endforeach; ?>
+      <?php if (empty($gBeds)): ?>
+        <div class="rg-week-empty" style="text-align:left">No beds yet. <a href="<?= url('/items/create?type=bed&parent_id=' . $gid) ?>">Add a bed</a>.</div>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endforeach; ?>
+
+<?php if (empty($_gardens)): ?>
+  <div class="rg-week-empty" style="margin-top:14px">No gardens yet. <a href="<?= url('/items/create?type=garden') ?>">Create your first garden</a>.</div>
+<?php endif; ?>
+
+<script>
+(function () {
+  // Section collapse persistence in localStorage
+  var STORAGE = 'rooted.garden.collapsed';
+  var collapsed = [];
+  try { collapsed = JSON.parse(localStorage.getItem(STORAGE) || '[]') || []; } catch(e) {}
+  $('.rg-garden-section').each(function () {
+    var gid = parseInt($(this).data('garden-id'), 10);
+    if (collapsed.indexOf(gid) >= 0) $(this).removeClass('is-open').addClass('is-collapsed');
+  });
+  $('.rg-garden-toggle').on('click', function () {
+    var $sec = $(this).closest('.rg-garden-section');
+    var gid = parseInt($sec.data('garden-id'), 10);
+    if ($sec.hasClass('is-open')) {
+      $sec.removeClass('is-open').addClass('is-collapsed');
+      if (collapsed.indexOf(gid) < 0) collapsed.push(gid);
+    } else {
+      $sec.addClass('is-open').removeClass('is-collapsed');
+      collapsed = collapsed.filter(function(x){ return x !== gid; });
+    }
+    try { localStorage.setItem(STORAGE, JSON.stringify(collapsed)); } catch(e) {}
+  });
+})();
+</script>
+
+<!-- ===== Legacy garden hub content below (seeds, biodynamic, etc.) ===== -->
+<div class="garden-hub" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--color-border)">
 
 <div class="garden-header">
-    <h1>🌿 Garden</h1>
+    <h2 style="font-size:1.05rem;font-weight:700;margin:0;color:var(--color-text-muted)">Seeds & calendar</h2>
     <div class="garden-actions">
-        <a href="<?= url('/items/create?type=garden') ?>" class="btn btn-primary btn-sm">+ New Garden</a>
-        <a href="<?= url('/items/create?type=bed') ?>" class="btn btn-secondary btn-sm">+ New Bed</a>
         <a href="<?= url('/seeds/create') ?>" class="btn btn-secondary btn-sm">+ Seed</a>
         <a href="<?= url('/seeds') ?>" class="btn btn-ghost btn-sm">📖 Catalog</a>
     </div>
 </div>
-
-<?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
 <?php if (!empty($schematicBeds)): ?>
 <?php
@@ -619,4 +766,6 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
 </div>
 <?php endif; ?>
 
-</div>
+</div><!-- /.garden-hub -->
+
+</div><!-- /.rg-hub-page -->

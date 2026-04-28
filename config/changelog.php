@@ -8,6 +8,34 @@
  */
 return [
 
+    '3.0.0' => [
+        'date'  => '2026-04-28',
+        'title' => 'Garden Module Redesign — action-first hub, tap-to-plant beds, succession planning',
+        'new' => [
+            'Garden hub redesigned as an action-first list: a "This week" summary strip aggregates urgency counts (ready to harvest, water today, sow scheduled, beds to plan, thin seedlings) across the property, then each garden expands into a clickable bed list with a per-row urgency callout pill, orientation badge (cardinal direction relative to garden centroid), and crop chips.',
+            'Bed view rewritten as the merged tap-to-plant interface: per-line stripe bar showing proportional planting segments + dot grid (one dot per 5 cm, tap empty dot to plant the active crop), stepper chips for each crop on the line, and a sticky active-crop palette at the bottom for tap selection.',
+            'New inline planning view (/items/{id}/planting/inline): per-line maturity stripe with elapsed-progress tick, sown→harvest dates, succession card with "Pick what comes next" picker, rotation warnings for same-family follow-ons, and rotation-history pills.',
+            'New 4-month timeline view (/items/{id}/planting/timeline, desktop-only): 16-week grid with TODAY accent line, current plantings rendered as gradient bars (solid → 33% alpha at maturity), successions rendered with diagonal stripes + dashed border, plus a property-wide rotation memory panel grouped by year.',
+            'Per-line state table (garden_bed_lines): persists succession queue (crop + start date), empty_since, last_watered_at, length_cm override, and rotation_history JSON array. Auto-hydrated when a bed is opened.',
+            'Seed catalog gains four redesign fields: family (root/leaf/fruit/herb/allium/legume), season (cool/warm), emoji (1-glyph), color (hex). Existing seeds default to "other"/"any" until tagged.',
+            'Pure server helpers in App\\Support\\GardenHelpers: lineHarvestDate, daysToLineHarvest, maturity, rotationWarning, getSuggestions, bedActions, bedOrientation, propertySummary — fully unit-testable.',
+            'Tap-to-plant endpoint: POST /items/{id}/plant-tap adds 1 plant of cropId to (line_number), creating the planting row if absent and clearing empty_since on that line.',
+            'Succession set/clear endpoints: POST /items/{id}/lines/succession/set and /items/{id}/lines/succession/clear.',
+            'Harvest workflow: harvesting a line now appends the cleared cropIds to that line\'s rotation_history (year + season + cropId) so future succession pickers can warn on same-family clashes.',
+            'Active-crop palette persists last selected crop in localStorage per bed (key rooted.activeCrop.{bedId}); garden hub section collapse state persists in localStorage (key rooted.garden.collapsed).',
+        ],
+        'improved' => [
+            'Urgency palette tokens added to app.css (--urg-{high,med,low,water,sow,plan}-bg/bdr/text) for consistent action coloring across the hub, succession warnings, and modal alerts.',
+            'Bed dimensions display switched to compact mono format (4×1.2m) with tabular numerals.',
+            'Mode tabs at the top of every bed view (Plant / Plan / Timeline) for quick switching between the three workflows on the same bed.',
+            'GardenSchema::ensure() — single idempotent migration entrypoint called from every garden controller; safe to run repeatedly, adds columns/tables only when missing.',
+        ],
+        'fixed' => [
+            'Bed-line view no longer assumes a single planting per line — multiple plantings render side-by-side in the dot grid based on each crop\'s in-row spacing.',
+            'Rotation-history queries no longer fail silently when garden_bed_lines is missing — the schema bootstrap creates it on first access.',
+        ],
+    ],
+
     '2.8.9' => [
         'date'  => '2026-04-27',
         'title' => 'Fix fill bar reset to 0 after +/- click',

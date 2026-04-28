@@ -8,6 +8,23 @@
  */
 return [
 
+    '3.0.0' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Garden Module Redesign — action-first hub, tap-to-plant, succession planning',
+        'features' => [
+            ['title' => 'Action-first garden hub', 'detail' => '/garden replaces the dashboard-y stats grid with an urgency-driven list. A "This week" strip aggregates harvest/water/sow/plan/thin counts across the property; each garden collapses into a bed list with orientation badges (cardinal direction vs garden centroid), crop chips, and a single highest-urgency callout pill per row. Section collapse state persists in localStorage.'],
+            ['title' => 'Tap-to-plant bed view', 'detail' => 'The bed-line view is rewritten as a merged stripe + dot grid: each line shows a proportional 32px stripe bar of plantings, a dot grid (one dot per 5cm) below it, stepper chips per crop, and a sticky active-crop palette at the bottom of the screen. Tapping an empty dot plants 1 of the active crop. The active crop persists per-bed in localStorage.'],
+            ['title' => 'Inline succession planning', 'detail' => 'New /items/{id}/planting/inline route renders per-line "what\'s growing now / what comes next". MaturityStripe shows elapsed-progress ticks per planting; a dashed succession card holds the queued follow-on (crop tile, sow→harvest dates, Remove/Change). The picker grid amber-borders any tile whose family was grown in the line within the last 2 years.'],
+            ['title' => '4-month timeline view (desktop)', 'detail' => 'New /items/{id}/planting/timeline route renders a 16-week grid panel. Each line is a track: current plantings render as gradient bars (solid → 33% alpha at maturity %), successions as diagonal-striped dashed bars in the crop color. A vertical 2px accent line marks today. Below the timeline, a Rotation memory panel groups history pills by year.'],
+            ['title' => 'garden_bed_lines + line state', 'detail' => 'New table persists per-line state: length_cm, sown_at, empty_since, last_watered_at, succession_crop_id, succession_starts_on, rotation_history JSON. Idempotent migration via App\\Support\\GardenSchema::ensure(); auto-hydrates on bed open.'],
+            ['title' => 'Seed catalog redesign fields', 'detail' => 'seeds gains family (root/leaf/fruit/herb/allium/legume/other), season (cool/warm/any), emoji (1 glyph), color (hex). Color/emoji fall back to family defaults when a seed is untagged. The whole catalog is exposed to the bed view\'s active-crop palette.'],
+            ['title' => 'Pure server helpers', 'detail' => 'App\\Support\\GardenHelpers ports the JSX prototype\'s data.jsx — lineHarvestDate, daysToLineHarvest, maturity, rotationWarning, getSuggestions, bedActions, bedOrientation, propertySummary, nextSuccessionStart, computeFill, computeSegments. Pure PHP, no DB calls in helper logic.'],
+            ['title' => 'Action-pill urgency palette', 'detail' => 'New CSS tokens (--urg-high/med/low/water/sow/plan-bg/bdr/text) drive consistent action coloring: hub callouts, week-summary cards, rotation warnings, succession alerts. Components scoped under .rg-* prefix.'],
+            ['title' => 'Harvest workflow logs rotation', 'detail' => 'Harvesting a planting (single or via "clear all crops" line harvest) appends {year, season, cropId} to that line\'s rotation_history JSON, sets empty_since=today, and clears sown_at. Future succession pickers and the timeline\'s Rotation memory panel read from this.'],
+        ],
+    ],
+
     '2.8.9' => [
         'status'   => 'released',
         'released' => '2026-04-27',
