@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.0.8' => [
+        'date'  => '2026-04-28',
+        'title' => 'Planting drag-and-drop, Garden nav submenu, + Seed button',
+        'new' => [
+            'Drag a crop chip from the bottom palette and drop it directly onto any bed line — line highlights with a dashed green border while dragging.',
+            '+ Seed button added next to + Bed and + Garden in the Active Gardens hub header.',
+            'Garden nav item on desktop is now a dropdown with quick-create links: + Seed, + Bed, + Garden.',
+        ],
+        'fixed' => [
+            'plantOne() now checks data.success before reloading — server-side errors are shown as toasts instead of silent phantom reloads with nothing planted.',
+            'All AJAX callbacks (stepper +/−, remove crop, clear all) now show error toasts on failure instead of swallowing errors.',
+            'Desktop nav Tasks dropdown no longer gets clipped — fixed overflow:hidden on the nav bar.',
+        ],
+    ],
+
     '3.0.7' => [
         'date'  => '2026-04-28',
         'title' => 'Desktop nav Tasks dropdown',

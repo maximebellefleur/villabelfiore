@@ -26,7 +26,11 @@ $navLinks = [
     ['href' => '/dashboard',     'label' => 'Dashboard', 'icon' => 'dashboard'],
     ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
     ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
-    ['href' => '/garden',        'label' => 'Garden',    'icon' => 'garden'],
+    ['href' => '/garden', 'label' => 'Garden', 'icon' => 'garden', 'children' => [
+        ['href' => '/seeds/create',            'label' => '＋ Seed',   'icon' => 'items'],
+        ['href' => '/items/create?type=bed',   'label' => '＋ Bed',    'icon' => 'garden'],
+        ['href' => '/items/create?type=garden','label' => '＋ Garden', 'icon' => 'items'],
+    ]],
     ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
         ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
         ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
@@ -75,8 +79,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
     <ul class="nav-desktop">
         <?php foreach ($navLinks as $nl):
             $hasChildren = !empty($nl['children']);
-            $isTasksActive = $hasChildren && strpos($currentPath, url('/tasks')) === 0;
-            $active = (!$hasChildren && $currentPath === url($nl['href'])) || $isTasksActive ? ' nav-link--active' : '';
+            $isParentActive = $hasChildren && strpos($currentPath, url($nl['href'])) === 0;
+            $active = (!$hasChildren && $currentPath === url($nl['href'])) || $isParentActive ? ' nav-link--active' : '';
         ?>
         <?php if ($hasChildren): ?>
         <li class="nav-has-dropdown">

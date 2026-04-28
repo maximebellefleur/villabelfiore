@@ -73,6 +73,7 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
     <h1 class="rg-hub-title">Active Gardens</h1>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="<?= url('/seeds/create') ?>" class="btn btn-ghost btn-sm">＋ Seed</a>
     <a href="<?= url('/items/create?type=bed') ?>" class="btn btn-secondary btn-sm">＋ Bed</a>
     <a href="<?= url('/items/create?type=garden') ?>" class="btn btn-primary btn-sm">＋ Garden</a>
   </div>
