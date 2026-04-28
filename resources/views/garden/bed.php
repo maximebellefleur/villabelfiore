@@ -38,7 +38,16 @@ $bedId = (int)$item['id'];
 
   <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
-  <?php if (empty($bed['lines'])): ?>
+  <?php if (!$parentGarden): ?>
+  <div style="margin:12px 0;padding:14px 16px;background:#fff3cd;border:1px solid #ffc107;border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start">
+    <span style="font-size:1.4rem;flex-shrink:0">🟫</span>
+    <div>
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">Prep Bed — not assigned to a garden</div>
+      <div style="font-size:.82rem;color:#856404;line-height:1.5">Assign this bed to an Active Garden before adding plantings. Logs, treatments and harvests can still be recorded from the bed's <a href="<?= url('/items/' . $bedId) ?>" style="color:#856404;font-weight:600">item page</a>.</div>
+      <a href="<?= url('/garden') ?>" style="display:inline-block;margin-top:8px;font-size:.82rem;font-weight:600;color:#856404;text-decoration:underline">Go to Active Gardens →</a>
+    </div>
+  </div>
+  <?php elseif (empty($bed['lines'])): ?>
     <div class="rg-week-empty">No lines configured. <a href="<?= url('/items/' . $bedId . '/edit') ?>">Set bed dimensions</a> to add lines.</div>
   <?php else: ?>
 

@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.0.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Prep Bed restriction + hero overlay buttons + nav shortcuts',
+        'features' => [
+            ['title' => 'Hero photo overlay buttons', 'detail' => 'Edit and 📍 Position buttons are now displayed directly on top of the item hero photo as glassmorphism pill buttons (bottom-right corner). Tapping the photo still opens the gallery; the buttons have their own tap targets with stopPropagation.'],
+            ['title' => 'Prep Bed planting restriction', 'detail' => 'Beds not assigned to an Active Garden are flagged as Prep Beds. The planting page shows a yellow warning banner and hides the seed/line UI entirely. Logs, treatments, and harvests remain accessible from the item page.'],
+            ['title' => 'Harvest + Irrigation nav shortcuts', 'detail' => 'Two new direct links — Harvest and Irrigation — appear in the main nav drawer between Garden and Tasks on both mobile and desktop.'],
+        ],
+    ],
+
     '3.0.3' => [
         'status'   => 'released',
         'released' => '2026-04-28',

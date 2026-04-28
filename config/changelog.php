@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.0.4' => [
+        'date'  => '2026-04-28',
+        'title' => 'Prep Bed restriction + hero overlay buttons + nav shortcuts',
+        'new' => [
+            'Edit and Position buttons are now overlaid directly on the item hero photo (bottom-right corner, glassmorphism pill buttons) — no need to scroll to find them.',
+            'Prep Beds (unassigned beds) now show a yellow banner on the planting page and block the seed/planting UI. Logs, treatments, and harvests can still be recorded.',
+        ],
+        'improved' => [
+            'Harvest and Irrigation shortcuts added to the main nav drawer (mobile and desktop), positioned between Garden and Tasks for faster access.',
+        ],
+    ],
+
     '3.0.3' => [
         'date'  => '2026-04-28',
         'title' => 'Edit UX overhaul — position modal, Active Gardens, bed assignment popup',
