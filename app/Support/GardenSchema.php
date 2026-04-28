@@ -62,7 +62,7 @@ class GardenSchema
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        self::ensureColumn($db, 'garden_plantings', 'sown_at',     "ALTER TABLE garden_plantings ADD COLUMN sown_at DATE DEFAULT NULL AFTER planted_at");
+        self::ensureColumn($db, 'garden_plantings', 'sown_at',     "ALTER TABLE garden_plantings ADD COLUMN sown_at DATE DEFAULT NULL");
 
         self::ensureColumn($db, 'garden_bed_lines', 'sown_at',       "ALTER TABLE garden_bed_lines ADD COLUMN sown_at DATE DEFAULT NULL");
         self::ensureColumn($db, 'garden_bed_lines', 'empty_since',    "ALTER TABLE garden_bed_lines ADD COLUMN empty_since DATE DEFAULT NULL");
