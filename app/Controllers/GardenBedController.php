@@ -832,13 +832,20 @@ class GardenBedController
     {
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
-        $db    = DB::getInstance();
-        $id    = (int)($params['id'] ?? 0);
-        $delta = (int)$request->post('delta', 0);
-        $db->execute(
-            "UPDATE garden_plantings SET plant_count = GREATEST(1, COALESCE(plant_count,1) + ?) WHERE id = ?",
-            [$delta, $id]
-        );
+        $db = DB::getInstance();
+        $id = (int)($params['id'] ?? 0);
+
+        // Absolute set takes priority over delta when provided
+        if ($request->post('count', null) !== null) {
+            $count = max(1, (int)$request->post('count', 1));
+            $db->execute("UPDATE garden_plantings SET plant_count = ? WHERE id = ?", [$count, $id]);
+        } else {
+            $delta = (int)$request->post('delta', 0);
+            $db->execute(
+                "UPDATE garden_plantings SET plant_count = GREATEST(1, COALESCE(plant_count,1) + ?) WHERE id = ?",
+                [$delta, $id]
+            );
+        }
         Response::json(['success' => true]);
     }
 

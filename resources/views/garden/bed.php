@@ -134,7 +134,7 @@ $bedId = (int)$item['id'];
             <span><?= e($c['name']) ?></span>
             <div class="rg-stepper" data-planting-id="<?= (int)$p['id'] ?>">
               <button type="button" class="rg-step-minus" style="color:<?= e($color) ?>" aria-label="-1">−</button>
-              <span class="rg-stepper-val"><?= (int)$p['plants'] ?></span>
+              <input type="number" class="rg-stepper-val" min="1" step="1" value="<?= (int)$p['plants'] ?>" inputmode="numeric" aria-label="Plant count">
               <button type="button" class="rg-step-plus"  style="color:<?= e($color) ?>" aria-label="+1">+</button>
             </div>
             <button type="button" class="rg-stepchip-remove" data-planting-id="<?= (int)$p['id'] ?>" title="Remove <?= e($c['name']) ?> from this line">✕</button>
@@ -424,6 +424,29 @@ $bedId = (int)$item['id'];
         else window.location.reload();
       })
       .fail(function (xhr) { ajaxErr(xhr, 'Could not adjust quantity'); });
+  });
+
+  // ── Stepper direct numeric entry ────────────────────────────────
+  $page.on('click focus', '.rg-stepper-val', function () { this.select(); });
+  $page.on('keydown', '.rg-stepper-val', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+    else if (e.key === 'Escape') { this.value = $(this).data('orig') || this.value; this.blur(); }
+  });
+  $page.on('focus', '.rg-stepper-val', function () { $(this).data('orig', this.value); });
+  $page.on('change blur', '.rg-stepper-val', function () {
+    var $input = $(this);
+    var orig   = parseInt($input.data('orig'), 10);
+    var count  = parseInt($input.val(), 10);
+    if (!count || count < 1) count = 1;
+    $input.val(count);
+    if (count === orig) return;
+    var pid = parseInt($input.closest('.rg-stepper').data('planting-id'), 10);
+    $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, count: count })
+      .done(function (data) {
+        if (data && data.success === false) { $input.val(orig); showToast(data.error || 'Could not set', 'error'); }
+        else window.location.reload();
+      })
+      .fail(function (xhr) { $input.val(orig); ajaxErr(xhr, 'Could not set quantity'); });
   });
 
   // ── Per-crop remove ──────────────────────────────────────────────

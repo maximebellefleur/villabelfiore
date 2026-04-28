@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.0.15' => [
+        'date'  => '2026-04-28',
+        'title' => 'Stepper numeric entry on bed planting',
+        'new' => [
+            'The plant-count number on each crop chip is now an editable input — tap it and type any number, hit Enter or click away to save. The +/− buttons still work for incremental changes.',
+        ],
+        'improved' => [
+            'adjustQty endpoint now accepts an absolute "count" parameter alongside the existing "delta" parameter so both interaction modes share one route.',
+        ],
+    ],
+
     '3.0.14' => [
         'date'  => '2026-04-28',
         'title' => 'Bed Overview at top of garden page, no GPS row splitting',

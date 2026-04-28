@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.15' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Direct numeric entry on planting stepper',
+        'features' => [
+            ['title' => 'Type plant counts', 'detail' => 'Tap the count between − and + on a stepper chip and type a number directly. Enter or blur saves; Escape cancels.'],
+        ],
+    ],
+
     '3.0.14' => [
         'status'   => 'released',
         'released' => '2026-04-28',
