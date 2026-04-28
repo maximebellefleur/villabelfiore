@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.1' => [
+        'date'  => '2026-04-28',
+        'title' => 'Fix photo attach log — AJAX submit ensures image is always sent',
+        'fixed' => [
+            'Log Action form with a photo attached did nothing on submit (iOS Safari and some Android browsers silently dropped the file when the native form POST used a width:0/height:0 hidden file input). The form now submits via fetch + FormData so the file is always explicitly included, and an error alert is shown if the request fails.',
+            'File input hiding changed from width:0/height:0 to left:-9999px/1px×1px so iOS webkit includes the input in the form payload even in fallback scenarios.',
+        ],
+    ],
+
     '3.0.0' => [
         'date'  => '2026-04-28',
         'title' => 'Garden Module Redesign — action-first hub, tap-to-plant beds, succession planning',

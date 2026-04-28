@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.0.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Fix photo attach log — AJAX submit ensures image is always sent',
+        'features' => [
+            ['title' => 'Log Action AJAX submit', 'detail' => 'The Log Action form with a photo attached silently did nothing on iOS Safari because the native POST did not include the file from a width:0/height:0 hidden input. The submit is now handled via fetch+FormData, which explicitly reads the file input and always includes the bytes. An error alert is shown if the server rejects the request.'],
+            ['title' => 'iOS-compatible file input hiding', 'detail' => 'The hidden file input style changed from width:0/height:0 to left:-9999px with 1×1px so webkit includes it in form payloads in all fallback paths.'],
+        ],
+    ],
+
     '3.0.0' => [
         'status'   => 'released',
         'released' => '2026-04-28',

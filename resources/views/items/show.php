@@ -416,7 +416,7 @@ window.MINI_MAP_READONLY = true;
                 <input type="file" name="log_photos[]" id="logPhotoInput"
                        accept="image/jpeg,image/png,image/webp,image/gif,image/*"
                        multiple
-                       style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;overflow:hidden">
+                       style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none">
                 <button type="button" id="logPhotoPickerBtn" class="log-photo-btn">📂 Choose Photos</button>
                 <div id="logPhotoPreview" class="log-photo-preview"></div>
             </div>
@@ -1261,6 +1261,47 @@ function preCheckReminder() {
     });
     nextBtn.addEventListener('click', function() {
         viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar();
+    });
+}());
+
+// ── Log action form — AJAX submission so file inputs are always included ──────
+(function() {
+    var form = document.querySelector('#note-section form');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var btn  = form.querySelector('[type="submit"]');
+        var orig = btn.textContent;
+        btn.disabled    = true;
+        btn.textContent = 'Logging…';
+
+        var fd = new FormData(form);
+
+        fetch(form.action, {
+            method:  'POST',
+            body:    fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) {
+            // CSRF 403 still returns JSON from validate()
+            return r.json().catch(function() { throw new Error('Server error ' + r.status); });
+        })
+        .then(function(data) {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                btn.disabled    = false;
+                btn.textContent = orig;
+                alert(data.error || 'Could not log action. Please try again.');
+            }
+        })
+        .catch(function() {
+            btn.disabled    = false;
+            btn.textContent = orig;
+            alert('Something went wrong. Please check your connection and try again.');
+        });
     });
 }());
 </script>
