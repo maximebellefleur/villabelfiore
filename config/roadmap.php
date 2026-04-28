@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.10' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Planting INSERT fix',
+        'features' => [
+            ['title' => 'Planting bug fix', 'detail' => 'Removed sown_at from garden_plantings INSERT to fix SQL column-not-found error on older installs.'],
+        ],
+    ],
+
     '3.0.9' => [
         'status'   => 'released',
         'released' => '2026-04-28',

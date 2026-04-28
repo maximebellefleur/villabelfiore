@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.0.10' => [
+        'date'  => '2026-04-28',
+        'title' => 'Planting INSERT fix',
+        'fixed' => [
+            'Removed sown_at from the garden_plantings INSERT — column did not exist on older installs, causing every plant action to fail with a SQL column-not-found error.',
+        ],
+    ],
+
     '3.0.9' => [
         'date'  => '2026-04-28',
         'title' => 'Position modal overhaul, schematic compact grid, nav Garden submenu fix',
