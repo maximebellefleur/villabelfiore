@@ -224,6 +224,24 @@ $bedId = (int)$item['id'];
 
 </div>
 
+<!-- Toast notification (fixed above palette) -->
+<div id="rgToast" style="
+  display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  max-width:360px;width:calc(100% - 32px);
+  padding:11px 16px;border-radius:10px;
+  font-size:.84rem;font-weight:600;color:#fff;
+  z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.22);
+  transition:opacity .25s;pointer-events:none;text-align:center
+"></div>
+
+<style>
+@keyframes rg-toast-in {
+  from { opacity:0; transform:translateX(-50%) translateY(8px); }
+  to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+#rgToast.is-visible { animation: rg-toast-in .2s ease forwards; }
+</style>
+
 <script>
 (function () {
   var $page = $('#rgBedPage');
@@ -299,6 +317,8 @@ $bedId = (int)$item['id'];
     setActiveCrop(cropId);
     if (activeLineNum) {
       plantOne(activeLineNum, cropId);
+    } else {
+      showToast('Tap a line above first ↑', 'warn');
     }
   });
 
@@ -321,10 +341,32 @@ $bedId = (int)$item['id'];
     plantOne(lineNum, cropId);
   });
 
+  // ---- toast ----
+  var toastTimer = null;
+  function showToast(msg, type) {
+    var $t = $('#rgToast');
+    if (toastTimer) clearTimeout(toastTimer);
+    $t.text(msg)
+      .css('background', type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a')
+      .css('display', 'block')
+      .addClass('is-visible');
+    toastTimer = setTimeout(function () {
+      $t.css('opacity', 0);
+      setTimeout(function () { $t.css({display:'none', opacity:''}); }, 260);
+    }, type === 'error' ? 4000 : 2500);
+  }
+
+  function ajaxErr(xhr, fallback) {
+    var msg = fallback;
+    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
+    showToast(msg, 'error');
+  }
+
   function plantOne(lineNum, cropId) {
     $.post('<?= url('/items/' . $bedId . '/plant-tap') ?>', {
       _token: csrf, line_number: lineNum, crop_id: cropId, count: 1
-    }).done(function () { window.location.reload(); }).fail(function () { alert('Could not plant. Try again.'); });
+    }).done(function () { window.location.reload(); })
+      .fail(function (xhr) { ajaxErr(xhr, 'Could not plant — try again'); });
   }
 
   // ---- stepper +/- ----
@@ -335,7 +377,7 @@ $bedId = (int)$item['id'];
     var delta = $(this).hasClass('rg-step-plus') ? 1 : -1;
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, delta: delta })
       .done(function () { window.location.reload(); })
-      .fail(function () { alert('Could not adjust.'); });
+      .fail(function (xhr) { ajaxErr(xhr, 'Could not adjust quantity'); });
   });
 
   // ---- per-crop remove ----
@@ -344,17 +386,25 @@ $bedId = (int)$item['id'];
     var pid = parseInt($(this).data('planting-id'), 10);
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/remove', { _token: csrf })
       .done(function () { window.location.reload(); })
-      .fail(function () { alert('Could not remove.'); });
+      .fail(function (xhr) { ajaxErr(xhr, 'Could not remove crop'); });
   });
 
-  // ---- clear all on line ----
+  // ---- clear all on line (double-tap confirm) ----
   $page.on('click', '.rg-clear-btn', function (e) {
     e.stopPropagation();
-    if (!confirm('Clear all plantings on this line?')) return;
-    var lineNum = parseInt($(this).data('line'), 10);
-    $.post('<?= url('/items/' . $bedId . '/clear-line') ?>', { _token: csrf, line_number: lineNum })
-      .done(function () { window.location.reload(); })
-      .fail(function () { alert('Could not clear line.'); });
+    var $btn = $(this);
+    if ($btn.data('confirm')) {
+      $btn.removeData('confirm').text('Clear All');
+      var lineNum = parseInt($btn.data('line'), 10);
+      $.post('<?= url('/items/' . $bedId . '/clear-line') ?>', { _token: csrf, line_number: lineNum })
+        .done(function () { window.location.reload(); })
+        .fail(function (xhr) { ajaxErr(xhr, 'Could not clear line'); });
+    } else {
+      $btn.data('confirm', true).text('Tap again to confirm');
+      setTimeout(function () {
+        if ($btn.data('confirm')) $btn.removeData('confirm').text('Clear All');
+      }, 3000);
+    }
   });
 
   // ---- harvest blackout ----
@@ -379,7 +429,8 @@ $bedId = (int)$item['id'];
     var unit = $('#rgHarvestUnit').val();
     $.post('<?= url('/items/' . $bedId . '/harvest-clear') ?>', {
       _token: csrf, line_number: harvestLine, qty: qty, unit: unit
-    }).done(function () { window.location.reload(); }).fail(function () { alert('Could not save harvest.'); });
+    }).done(function () { window.location.reload(); })
+      .fail(function (xhr) { closeHarvest(); ajaxErr(xhr, 'Could not save harvest'); });
   });
 })();
 </script>
