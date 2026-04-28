@@ -172,7 +172,7 @@ $bedId = (int)$item['id'];
     </div>
     <div class="rg-palette-row">
       <?php foreach ($catalog as $c): ?>
-      <button type="button" class="rg-palette-chip" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>">
+      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>">
         <span class="rg-palette-chip-emoji"><?= e($c['emoji']) ?></span>
         <span><?= e($c['name']) ?></span>
         <span class="rg-palette-chip-spacing"><?= (int)$c['spacing_cm'] ?>cm</span>
@@ -242,29 +242,108 @@ $bedId = (int)$item['id'];
 #rgToast.is-visible { animation: rg-toast-in .2s ease forwards; }
 </style>
 
+<style>
+/* Drag-and-drop states */
+.rg-palette-chip[draggable] { cursor: grab; }
+.rg-palette-chip.is-dragging { opacity: .45; cursor: grabbing; transform: scale(.96); }
+.rg-line.is-drag-over {
+  border: 2.5px dashed var(--color-primary) !important;
+  background: rgba(22,101,52,.07) !important;
+  box-shadow: inset 0 0 0 3px rgba(22,101,52,.12) !important;
+}
+.rg-line.is-planting { opacity: .6; pointer-events: none; }
+</style>
+
 <script>
 (function () {
   var $page = $('#rgBedPage');
   var bedId = parseInt($page.data('item-id'), 10);
-  var csrf = <?= json_encode($csrf) ?>;
-  var CROP_KEY = 'rooted.activeCrop.' + bedId;
-  var LINE_KEY = 'rooted.activeLine.' + bedId;
+  var csrf  = <?= json_encode($csrf) ?>;
+  var PLANT_URL = '<?= url('/items/' . $bedId . '/plant-tap') ?>';
+  var LINE_KEY  = 'rooted.activeLine.' + bedId;
+  var CROP_KEY  = 'rooted.activeCrop.' + bedId;
 
-  // ---- active crop ----
-  var activeCropId = parseInt(localStorage.getItem(CROP_KEY), 10) || 0;
-  if (!activeCropId) {
-    var $first = $('.rg-palette-chip').first();
-    if ($first.length) activeCropId = parseInt($first.data('crop-id'), 10);
+  // ── Toast ───────────────────────────────────────────────────────
+  var _toastTimer = null;
+  function showToast(msg, type) {
+    var $t = $('#rgToast');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    $t.text(msg)
+      .css('background', type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a')
+      .css({display:'block', opacity:''})
+      .addClass('is-visible');
+    _toastTimer = setTimeout(function () {
+      $t.css('opacity', 0);
+      setTimeout(function () { $t.css({display:'none', opacity:''}); }, 260);
+    }, type === 'error' ? 4000 : 2500);
+  }
+  function ajaxErr(xhr, fallback) {
+    var msg = fallback;
+    try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e){}
+    showToast(msg, 'error');
   }
 
+  // ── Core plant action ────────────────────────────────────────────
+  function plantOne(lineNum, cropId) {
+    var $line = $page.find('.rg-line[data-line="' + lineNum + '"]');
+    $line.addClass('is-planting');
+    $.post(PLANT_URL, { _token: csrf, line_number: lineNum, crop_id: cropId, count: 1 })
+      .done(function (data) {
+        // Check success explicitly — server returns {success:false} with HTTP 200 on errors
+        if (data && data.success === false) {
+          $line.removeClass('is-planting');
+          showToast(data.error || 'Could not plant — try again', 'error');
+        } else {
+          window.location.reload();
+        }
+      })
+      .fail(function (xhr) {
+        $line.removeClass('is-planting');
+        ajaxErr(xhr, 'Could not plant — try again');
+      });
+  }
+
+  // ── Active line ──────────────────────────────────────────────────
+  var activeLineNum = parseInt(localStorage.getItem(LINE_KEY), 10) || 0;
+  function setActiveLine(lineNum) {
+    activeLineNum = parseInt(lineNum, 10) || 0;
+    if (activeLineNum) localStorage.setItem(LINE_KEY, String(activeLineNum));
+    $page.find('.rg-line').each(function () {
+      var ln = parseInt($(this).data('line'), 10);
+      if (ln === activeLineNum) {
+        if (!$(this).hasClass('is-active')) {
+          $(this).addClass('is-active');
+          var el = this; el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
+        }
+      } else {
+        $(this).removeClass('is-active');
+      }
+    });
+    var $lbl = $('#rgPaletteLabel');
+    if (activeLineNum) {
+      $lbl.html('→ Drop or tap a crop to plant in <strong>Line ' + activeLineNum + '</strong>').css('color','var(--color-primary)');
+    } else {
+      $lbl.html('Drag a crop onto a line — or tap a line then tap a crop').css('color','');
+    }
+  }
+  if (activeLineNum) setActiveLine(activeLineNum);
+
+  // Tap line header/stripe to select it
+  $page.on('click', '.rg-line', function (e) {
+    if ($(e.target).closest('button, a, .rg-stepper').length) return;
+    setActiveLine(parseInt($(this).data('line'), 10));
+  });
+
+  // ── Active crop ──────────────────────────────────────────────────
+  var activeCropId = parseInt(localStorage.getItem(CROP_KEY), 10) || 0;
+  if (!activeCropId) activeCropId = parseInt($('.rg-palette-chip').first().data('crop-id'), 10) || 0;
   function setActiveCrop(cropId) {
     activeCropId = parseInt(cropId, 10) || 0;
     if (activeCropId) localStorage.setItem(CROP_KEY, String(activeCropId));
-    $('.rg-palette-chip').each(function () {
-      var cid = parseInt($(this).data('crop-id'), 10);
-      if (cid === activeCropId) {
-        var color = $(this).data('color');
-        $(this).addClass('is-active').css({'background': color, 'border-color': color, 'color': '#fff'});
+    $('#rgPalette .rg-palette-chip').each(function () {
+      if (parseInt($(this).data('crop-id'), 10) === activeCropId) {
+        var col = $(this).data('color');
+        $(this).addClass('is-active').css({background: col, 'border-color': col, color: '#fff'});
       } else {
         $(this).removeClass('is-active').removeAttr('style');
       }
@@ -272,142 +351,112 @@ $bedId = (int)$item['id'];
   }
   setActiveCrop(activeCropId);
 
-  // ---- active line ----
-  var activeLineNum = parseInt(localStorage.getItem(LINE_KEY), 10) || 0;
-
-  function setActiveLine(lineNum) {
-    activeLineNum = parseInt(lineNum, 10) || 0;
-    if (activeLineNum) localStorage.setItem(LINE_KEY, String(activeLineNum));
-    $('.rg-line').each(function () {
-      var ln = parseInt($(this).data('line'), 10);
-      $(this).removeClass('is-active');
-      if (ln === activeLineNum) {
-        $(this).addClass('is-active');
-        // re-trigger animation by removing and re-adding class
-        var el = this;
-        el.style.animation = 'none';
-        el.offsetHeight; // reflow
-        el.style.animation = '';
-      }
-    });
-    var $lbl = $('#rgPaletteLabel');
-    if ($lbl.length) {
-      if (activeLineNum) {
-        $lbl.html('Adding to <strong>Line ' + activeLineNum + '</strong> — tap a crop below');
-        $lbl.css('color', 'var(--color-primary)');
-      } else {
-        $lbl.html('Tap a line above to select it ↑');
-        $lbl.css('color', '');
-      }
-    }
-  }
-
-  // Restore last active line on load
-  if (activeLineNum) setActiveLine(activeLineNum);
-
-  // Tap anywhere on a line header/stripe to select it (but not on buttons/links inside)
-  $page.on('click', '.rg-line', function (e) {
-    if ($(e.target).closest('button, a, .rg-stepper, .rg-palette-chip').length) return;
-    setActiveLine($(this).data('line'));
-  });
-
-  // ---- palette chip: plant in active line ----
+  // ── Palette chip: tap to plant in selected line ──────────────────
   $('#rgPalette').on('click', '.rg-palette-chip', function () {
     var cropId = parseInt($(this).data('crop-id'), 10);
     setActiveCrop(cropId);
     if (activeLineNum) {
       plantOne(activeLineNum, cropId);
     } else {
-      showToast('Tap a line above first ↑', 'warn');
+      showToast('Drag onto a line — or tap a line first ↑', 'warn');
     }
   });
 
-  // ---- tap a dot to plant (also selects that line) ----
+  // ── "Try this" suggestion chips ──────────────────────────────────
+  $page.on('click', '.rg-plant-action', function (e) {
+    e.stopPropagation();
+    plantOne(parseInt($(this).data('line'), 10), parseInt($(this).data('crop-id'), 10));
+  });
+
+  // ── Tap a dot to plant ───────────────────────────────────────────
   $page.on('click', '.rg-dot--clickable', function (e) {
     e.stopPropagation();
-    if (!activeCropId) return;
-    var $line = $(this).closest('.rg-line');
-    var lineNum = parseInt($line.data('line'), 10);
+    if (!activeCropId) { showToast('Select a crop from the palette first', 'warn'); return; }
+    var lineNum = parseInt($(this).closest('.rg-line').data('line'), 10);
     setActiveLine(lineNum);
     plantOne(lineNum, activeCropId);
   });
 
-  // ---- "Try this" suggestion chip ----
-  $page.on('click', '.rg-plant-action', function (e) {
-    e.stopPropagation();
+  // ── HTML5 Drag-and-Drop ─────────────────────────────────────────
+  // Drag start: store crop id
+  $page.on('dragstart', '.rg-palette-chip', function (e) {
+    var cropId = $(this).data('crop-id');
+    e.originalEvent.dataTransfer.setData('text/plain', String(cropId));
+    e.originalEvent.dataTransfer.effectAllowed = 'copy';
+    $(this).addClass('is-dragging');
+    setActiveCrop(cropId);
+  });
+  $page.on('dragend', '.rg-palette-chip', function () {
+    $(this).removeClass('is-dragging');
+    $page.find('.rg-line').removeClass('is-drag-over');
+  });
+
+  // Line as drop zone
+  $page.on('dragover', '.rg-line', function (e) {
+    e.preventDefault();
+    e.originalEvent.dataTransfer.dropEffect = 'copy';
+    $(this).addClass('is-drag-over');
+  });
+  $page.on('dragleave', '.rg-line', function (e) {
+    // Only clear when actually leaving this element (not entering a child)
+    if (!this.contains(e.originalEvent.relatedTarget)) {
+      $(this).removeClass('is-drag-over');
+    }
+  });
+  $page.on('drop', '.rg-line', function (e) {
+    e.preventDefault();
+    $(this).removeClass('is-drag-over');
+    var cropId  = parseInt(e.originalEvent.dataTransfer.getData('text/plain'), 10);
     var lineNum = parseInt($(this).data('line'), 10);
-    var cropId  = parseInt($(this).data('crop-id'), 10);
+    if (!cropId || !lineNum) return;
     setActiveLine(lineNum);
     plantOne(lineNum, cropId);
   });
 
-  // ---- toast ----
-  var toastTimer = null;
-  function showToast(msg, type) {
-    var $t = $('#rgToast');
-    if (toastTimer) clearTimeout(toastTimer);
-    $t.text(msg)
-      .css('background', type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a')
-      .css('display', 'block')
-      .addClass('is-visible');
-    toastTimer = setTimeout(function () {
-      $t.css('opacity', 0);
-      setTimeout(function () { $t.css({display:'none', opacity:''}); }, 260);
-    }, type === 'error' ? 4000 : 2500);
-  }
-
-  function ajaxErr(xhr, fallback) {
-    var msg = fallback;
-    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
-    showToast(msg, 'error');
-  }
-
-  function plantOne(lineNum, cropId) {
-    $.post('<?= url('/items/' . $bedId . '/plant-tap') ?>', {
-      _token: csrf, line_number: lineNum, crop_id: cropId, count: 1
-    }).done(function () { window.location.reload(); })
-      .fail(function (xhr) { ajaxErr(xhr, 'Could not plant — try again'); });
-  }
-
-  // ---- stepper +/- ----
+  // ── Stepper +/− ─────────────────────────────────────────────────
   $page.on('click', '.rg-step-plus, .rg-step-minus', function (e) {
     e.stopPropagation();
-    var $stepper = $(this).closest('.rg-stepper');
-    var pid = parseInt($stepper.data('planting-id'), 10);
+    var pid   = parseInt($(this).closest('.rg-stepper').data('planting-id'), 10);
     var delta = $(this).hasClass('rg-step-plus') ? 1 : -1;
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, delta: delta })
-      .done(function () { window.location.reload(); })
+      .done(function (data) {
+        if (data && data.success === false) showToast(data.error || 'Could not adjust', 'error');
+        else window.location.reload();
+      })
       .fail(function (xhr) { ajaxErr(xhr, 'Could not adjust quantity'); });
   });
 
-  // ---- per-crop remove ----
+  // ── Per-crop remove ──────────────────────────────────────────────
   $page.on('click', '.rg-stepchip-remove', function (e) {
     e.stopPropagation();
     var pid = parseInt($(this).data('planting-id'), 10);
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/remove', { _token: csrf })
-      .done(function () { window.location.reload(); })
+      .done(function (data) {
+        if (data && data.success === false) showToast(data.error || 'Could not remove', 'error');
+        else window.location.reload();
+      })
       .fail(function (xhr) { ajaxErr(xhr, 'Could not remove crop'); });
   });
 
-  // ---- clear all on line (double-tap confirm) ----
+  // ── Clear all (double-tap confirm) ──────────────────────────────
   $page.on('click', '.rg-clear-btn', function (e) {
     e.stopPropagation();
     var $btn = $(this);
     if ($btn.data('confirm')) {
       $btn.removeData('confirm').text('Clear All');
-      var lineNum = parseInt($btn.data('line'), 10);
-      $.post('<?= url('/items/' . $bedId . '/clear-line') ?>', { _token: csrf, line_number: lineNum })
-        .done(function () { window.location.reload(); })
+      $.post('<?= url('/items/' . $bedId . '/clear-line') ?>', { _token: csrf, line_number: parseInt($btn.data('line'), 10) })
+        .done(function (data) {
+          if (data && data.success === false) showToast(data.error || 'Could not clear', 'error');
+          else window.location.reload();
+        })
         .fail(function (xhr) { ajaxErr(xhr, 'Could not clear line'); });
     } else {
       $btn.data('confirm', true).text('Tap again to confirm');
-      setTimeout(function () {
-        if ($btn.data('confirm')) $btn.removeData('confirm').text('Clear All');
-      }, 3000);
+      setTimeout(function () { if ($btn.data('confirm')) $btn.removeData('confirm').text('Clear All'); }, 3000);
     }
   });
 
-  // ---- harvest blackout ----
+  // ── Harvest modal ────────────────────────────────────────────────
   var harvestLine = null;
   $page.on('click', '.rg-harvest-btn', function (e) {
     e.stopPropagation();
@@ -419,18 +468,19 @@ $bedId = (int)$item['id'];
   });
   function closeHarvest() { $('#rgHarvestModal').hide(); harvestLine = null; }
   $('#rgHarvestClose, #rgHarvestCancel').on('click', closeHarvest);
-  $('.rg-q').on('click', function () {
+  $page.on('click', '.rg-q', function () {
     $('.rg-q').removeClass('btn-primary').addClass('btn-secondary');
     $(this).removeClass('btn-secondary').addClass('btn-primary');
   });
   $('#rgHarvestConfirm').on('click', function () {
     if (harvestLine === null) return;
-    var qty = parseFloat($('#rgHarvestQty').val()) || 0;
-    var unit = $('#rgHarvestUnit').val();
     $.post('<?= url('/items/' . $bedId . '/harvest-clear') ?>', {
-      _token: csrf, line_number: harvestLine, qty: qty, unit: unit
-    }).done(function () { window.location.reload(); })
-      .fail(function (xhr) { closeHarvest(); ajaxErr(xhr, 'Could not save harvest'); });
+      _token: csrf, line_number: harvestLine,
+      qty: parseFloat($('#rgHarvestQty').val()) || 0, unit: $('#rgHarvestUnit').val()
+    }).done(function (data) {
+      if (data && data.success === false) { closeHarvest(); showToast(data.error || 'Could not save harvest', 'error'); }
+      else window.location.reload();
+    }).fail(function (xhr) { closeHarvest(); ajaxErr(xhr, 'Could not save harvest'); });
   });
 })();
 </script>
