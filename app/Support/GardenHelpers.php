@@ -162,6 +162,7 @@ class GardenHelpers
             if (!$c) continue;
             $cm = (int)($c['spacing_cm'] ?? 0) * (int)($p['plants'] ?? 0);
             $out[] = [
+                'plantingId' => (int)($p['id'] ?? 0),
                 'cropId' => (int)$p['cropId'],
                 'crop'   => $c,
                 'plants' => (int)$p['plants'],

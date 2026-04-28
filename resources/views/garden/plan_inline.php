@@ -97,7 +97,7 @@ $bedId = (int)$item['id'];
           $w = max(0.5, $s['pct'] * 100);
           $c = $s['crop'];
           $color = $c['color'];
-          $planting = ['cropId' => $s['cropId'], 'sown_at' => $s['sown_at']];
+          $planting = ['cropId' => $s['cropId'], 'sown_at' => $s['sown_at'] ?? $sownDate];
           $m = GardenHelpers::maturity($planting, $line, $c, $today);
         ?>
           <div class="rg-stripe-seg" style="position:relative;width: <?= $w ?>%; background: linear-gradient(180deg, <?= e($color) ?>, <?= e($color) ?>dd);">

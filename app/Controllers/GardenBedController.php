@@ -354,6 +354,8 @@ class GardenBedController
                 "SELECT id, plant_count FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id = ? AND status IN ('growing','planned','sown') ORDER BY id DESC LIMIT 1",
                 [$itemId, $lineNum, $cropId]
             );
+            $isNew = false;
+            $newPlants = $count;
             if ($existing) {
                 $newCount = (int)$existing['plant_count'] + $count;
                 $db->execute(
@@ -361,7 +363,9 @@ class GardenBedController
                     [$newCount, (int)$existing['id']]
                 );
                 $plantingId = (int)$existing['id'];
+                $newPlants = $newCount;
             } else {
+                $isNew = true;
                 $expected = null;
                 if (!empty($crop['days_to_maturity'])) {
                     $expected = GardenHelpers::addDays($today, (int)$crop['days_to_maturity']);
@@ -397,7 +401,7 @@ class GardenBedController
             return;
         }
 
-        Response::json(['success' => true, 'planting_id' => $plantingId]);
+        Response::json(['success' => true, 'planting_id' => $plantingId, 'plants' => $newPlants, 'is_new' => $isNew]);
     }
 
     /** AJAX: clear all plantings on a single line. Sets status=harvested with empty_since=today. */
@@ -955,7 +959,8 @@ class GardenBedController
                 [$delta, $id]
             );
         }
-        Response::json(['success' => true]);
+        $row = $db->fetchOne("SELECT plant_count FROM garden_plantings WHERE id = ?", [$id]);
+        Response::json(['success' => true, 'plants' => max(1, (int)($row['plant_count'] ?? 1))]);
     }
 
     /** AJAX: remove a single planting row entirely. */

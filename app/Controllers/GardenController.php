@@ -112,11 +112,17 @@ class GardenController
                 && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold'];
         }));
 
-        // Family needs with seed info
+        // Family needs with in-ground plant counts and harvest estimates
         $familyNeeds = $db->fetchAll(
-            'SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
+            'SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,
+                    COALESCE(SUM(gp.plant_count), 0) AS plants_in_ground,
+                    MAX(COALESCE(gp.expected_harvest_at,
+                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)
+                    )) AS harvest_est
              FROM family_needs fn
              LEFT JOIN seeds s ON s.id = fn.seed_id
+             LEFT JOIN garden_plantings gp ON gp.seed_id = fn.seed_id AND gp.status IN (\'growing\',\'planned\',\'sown\')
+             GROUP BY fn.id
              ORDER BY fn.priority ASC, fn.vegetable_name ASC'
         );
 

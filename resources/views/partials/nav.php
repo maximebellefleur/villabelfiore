@@ -27,15 +27,17 @@ $navLinks = [
     ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
     ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
     ['href' => '/garden', 'label' => 'Garden', 'icon' => 'garden', 'children' => [
-        ['href' => '/seeds/create', 'label' => '＋ Seed',      'icon' => 'items'],
-        ['href' => '/seeds',        'label' => 'All Seeds',    'icon' => 'harvest'],
-        ['href' => '/garden',       'label' => 'Garden Beds',  'icon' => 'garden'],
+        ['href' => '/seeds/create',     'label' => '＋ Seed',       'icon' => 'items'],
+        ['href' => '/seeds',            'label' => 'All Seeds',     'icon' => 'harvest'],
+        ['href' => '/seeds/family-needs','label' => 'Family Needs', 'icon' => 'harvest'],
+        ['href' => '/garden',           'label' => 'Garden Beds',   'icon' => 'garden'],
     ]],
     ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
         ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
         ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
         ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
     ]],
+    ['href' => '/harvest/quick', 'label' => 'Harvest',  'icon' => 'harvest'],
     ['href' => '/finance',       'label' => 'Finance',  'icon' => 'finance'],
     ['href' => '/activity-log',  'label' => 'Activity', 'icon' => 'activity'],
     ['href' => '/settings',      'label' => 'Settings', 'icon' => 'settings'],
@@ -66,9 +68,9 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 
 <!-- ─── Top nav bar ───────────────────────────────────────────────── -->
 <nav class="nav" id="mainNav" style="overflow:visible">
-    <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px">
+    <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px;overflow:hidden;align-self:stretch">
         <?php if ($_navIconUrl && $_navLogoUrl): ?>
-            <img src="<?= $_navIconUrl ?>" alt="" style="height:84px;width:84px;object-fit:cover;flex-shrink:0;padding:4px;border-radius:100px;margin:0 -7px 0 -40px">
+            <img src="<?= $_navIconUrl ?>" alt="" style="height:84px;width:84px;object-fit:cover;flex-shrink:0;padding:4px;border-radius:100px;margin:0 -7px 0 -40px;align-self:flex-start">
             <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:26px;max-width:120px;object-fit:contain">
         <?php elseif ($_navEffective): ?>
             <img src="<?= $_navEffective ?>" alt="Logo" style="height:44px;width:44px;object-fit:cover;flex-shrink:0;background:#2b552d;padding:4px;border-radius:100px;border:3px solid #fff;margin:0 3px 0 -15px">
@@ -201,9 +203,9 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <span class="bottom-nav-icon"><?= _navIcon('garden') ?></span>
         <span class="bottom-nav-label">Garden</span>
     </a>
-    <a href="<?= url('/tasks?tab=achats') ?>" class="bottom-nav-item" data-bnav="harvest">
+    <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
         <span class="bottom-nav-icon"><?= _navIcon('harvest') ?></span>
-        <span class="bottom-nav-label">Achats</span>
+        <span class="bottom-nav-label">Harvest</span>
     </a>
     <a href="<?= url('/tasks') ?>" class="bottom-nav-item" data-bnav="tasks">
         <span class="bottom-nav-icon"><?= _navIcon('tasks') ?></span>

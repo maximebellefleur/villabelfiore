@@ -13,6 +13,14 @@ $csrf = CSRF::getToken();
 $mode = $mode ?? 'merged';
 $bedId = (int)$item['id'];
 ?>
+<!-- Desktop crop-info sidebar (hidden on mobile, position:fixed) -->
+<aside class="rg-bed-sidebar" id="rgBedSidebar">
+  <div class="rg-sidebar-head">Crop Info</div>
+  <div id="rgSidebarContent" class="rg-sidebar-empty">
+    <div class="rg-sidebar-hint">Select a crop from the palette to see details</div>
+  </div>
+</aside>
+
 <div class="rg-bed-page" id="rgBedPage" data-item-id="<?= $bedId ?>">
 
   <!-- Header -->
@@ -87,18 +95,16 @@ $bedId = (int)$item['id'];
     $bannerMsg      = $overcap ? 'Overpacked — plants are competing for space, expect smaller yields.'
                                : 'Nearly full — careful, you are close to overpacking the line.';
   ?>
-    <div class="rg-line <?= e($lineClass) ?>" data-line="<?= (int)$line['lineNumber'] ?>">
+    <div class="rg-line <?= e($lineClass) ?>" data-line="<?= (int)$line['lineNumber'] ?>" data-length-cm="<?= (int)$line['lengthCm'] ?>">
       <div class="rg-line-head">
         <div class="rg-line-num"><?= (int)$line['lineNumber'] ?></div>
         <div class="rg-line-name">
           Line <?= (int)$line['lineNumber'] ?>
           <span class="rg-line-fill">&middot; <?= (int)$fill['used'] ?>/<?= (int)$line['lengthCm'] ?>cm <?= $fillLabel ?></span>
         </div>
-        <?php if (!empty($line['plantings'])): ?>
-        <div class="rg-line-actions">
+        <div class="rg-line-actions" style="display:<?= empty($line['plantings']) ? 'none' : 'inline-flex' ?>">
           <button class="btn btn-secondary btn-sm rg-harvest-btn" data-line="<?= (int)$line['lineNumber'] ?>" style="border-color:var(--color-accent);color:var(--color-accent)">&#x1F33E; Harvest</button>
         </div>
-        <?php endif; ?>
       </div>
       <?php if ($overpack): ?>
       <div class="rg-overpack-banner" style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;background:<?= e($bannerBg) ?>;border:1px solid <?= e($bannerBorder) ?>;border-radius:8px;font-size:.78rem;color:<?= e($bannerColor) ?>;font-weight:600">
@@ -114,7 +120,7 @@ $bedId = (int)$item['id'];
           $c = $s['crop'];
           $color = $c['color'];
         ?>
-          <div class="rg-stripe-seg" style="width: <?= $w ?>%; background: linear-gradient(180deg, <?= e($color) ?>, <?= e($color) ?>dd);">
+          <div class="rg-stripe-seg" data-planting-id="<?= (int)$s['plantingId'] ?>" style="width: <?= $w ?>%; background: linear-gradient(180deg, <?= e($color) ?>, <?= e($color) ?>dd);">
             <?php if ($s['pct'] > 0.10): ?>
             <span><?= e($c['emoji']) ?> <?= (int)$s['plants'] ?></span>
             <?php endif; ?>
@@ -139,14 +145,13 @@ $bedId = (int)$item['id'];
       </div>
 
       <!-- Stepper chips -->
-      <?php if (!empty($line['plantings'])): ?>
-      <div class="rg-steppers">
+      <div class="rg-steppers" style="display:<?= empty($line['plantings']) ? 'none' : 'flex' ?>">
         <?php foreach ($line['plantings'] as $p):
           $c = $cropsById[$p['cropId']] ?? null;
           if (!$c) continue;
           $color = $c['color'];
         ?>
-          <div class="rg-stepchip" draggable="true" data-planting-id="<?= (int)$p['id'] ?>" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>;cursor:grab">
+          <div class="rg-stepchip" draggable="true" data-planting-id="<?= (int)$p['id'] ?>" data-crop-id="<?= (int)$p['cropId'] ?>" data-spacing-cm="<?= (int)($c['spacing_cm'] ?? 0) ?>" data-color="<?= e($color) ?>" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>;cursor:grab">
             <span class="rg-stepchip-emoji"><?= e($c['emoji']) ?></span>
             <span><?= e($c['name']) ?></span>
             <div class="rg-stepper" data-planting-id="<?= (int)$p['id'] ?>">
@@ -159,7 +164,6 @@ $bedId = (int)$item['id'];
         <?php endforeach; ?>
         <button type="button" class="rg-clear-btn" data-line="<?= (int)$line['lineNumber'] ?>">Clear All</button>
       </div>
-      <?php endif; ?>
 
       <!-- Suggestions -->
       <?php if ($fill['remaining'] > 0 && !empty($suggestions)): ?>
@@ -185,11 +189,11 @@ $bedId = (int)$item['id'];
   <!-- Fixed crop palette -->
   <div class="rg-palette" id="rgPalette">
     <div id="rgPaletteLabel" style="font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:6px">
-      Tap a line above to select it ↑
+      Tap a line to select it, then tap a crop to plant
     </div>
     <div class="rg-palette-row">
       <?php foreach ($catalog as $c): ?>
-      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>">
+      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>" data-name="<?= e($c['name']) ?>" data-emoji="<?= e($c['emoji']) ?>" data-days="<?= (int)$c['days_to_maturity'] ?>" data-variety="<?= e($c['variety'] ?? '') ?>" data-family="<?= e($c['family'] ?? 'other') ?>" data-season="<?= e($c['season'] ?? 'any') ?>">
         <span class="rg-palette-chip-emoji"><?= e($c['emoji']) ?></span>
         <span><?= e($c['name']) ?></span>
         <span class="rg-palette-chip-spacing"><?= (int)$c['spacing_cm'] ?>cm</span>
@@ -198,6 +202,23 @@ $bedId = (int)$item['id'];
     </div>
   </div>
   <?php endif; ?>
+
+  <!-- Mobile seed info modal (double-tap palette chip) -->
+  <div class="rg-blackout" id="rgSeedInfoModal" style="display:none">
+    <div class="rg-blackout-card" style="max-width:360px">
+      <div class="rg-blackout-head">
+        <div style="flex:1;display:flex;align-items:center;gap:12px">
+          <span id="rgSeedInfoEmoji" style="font-size:2rem;line-height:1"></span>
+          <div>
+            <div id="rgSeedInfoName" style="font-weight:800;font-size:1.05rem"></div>
+            <div id="rgSeedInfoVariety" style="font-size:.78rem;color:var(--color-text-muted)"></div>
+          </div>
+        </div>
+        <button type="button" class="rg-blackout-close" id="rgSeedInfoClose">×</button>
+      </div>
+      <div class="rg-blackout-body" id="rgSeedInfoBody"></div>
+    </div>
+  </div>
 
   <!-- Harvest blackout modal -->
   <div class="rg-blackout" id="rgHarvestModal" style="display:none">
@@ -273,12 +294,25 @@ $bedId = (int)$item['id'];
 
 <script>
 (function () {
-  var $page = $('#rgBedPage');
-  var bedId = parseInt($page.data('item-id'), 10);
-  var csrf  = <?= json_encode($csrf) ?>;
+  var $page    = $('#rgBedPage');
+  var bedId    = parseInt($page.data('item-id'), 10);
+  var csrf     = <?= json_encode($csrf) ?>;
   var PLANT_URL = '<?= url('/items/' . $bedId . '/plant-tap') ?>';
   var LINE_KEY  = 'rooted.activeLine.' + bedId;
   var CROP_KEY  = 'rooted.activeCrop.' + bedId;
+  var isMobile  = window.innerWidth < 900;
+
+  // ── Crops map (from palette data attributes) ─────────────────────
+  var cropsMap = {};
+  $('#rgPalette .rg-palette-chip').each(function () {
+    var $c = $(this), id = parseInt($c.data('crop-id'), 10);
+    cropsMap[id] = {
+      id: id, name: $c.data('name') || '', emoji: $c.data('emoji') || '',
+      color: $c.data('color') || '#A66141', spacing: parseInt($c.data('spacing'), 10) || 5,
+      days: parseInt($c.data('days'), 10) || 60, variety: $c.data('variety') || '',
+      family: $c.data('family') || 'other', season: $c.data('season') || 'any',
+    };
+  });
 
   // ── Toast ───────────────────────────────────────────────────────
   var _toastTimer = null;
@@ -287,8 +321,7 @@ $bedId = (int)$item['id'];
     if (_toastTimer) clearTimeout(_toastTimer);
     $t.text(msg)
       .css('background', type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a')
-      .css({display:'block', opacity:''})
-      .addClass('is-visible');
+      .css({display:'block', opacity:''}).addClass('is-visible');
     _toastTimer = setTimeout(function () {
       $t.css('opacity', 0);
       setTimeout(function () { $t.css({display:'none', opacity:''}); }, 260);
@@ -300,19 +333,176 @@ $bedId = (int)$item['id'];
     showToast(msg, 'error');
   }
 
+  // ── recalcLine — redraws fill, stripe, dots, banner without reload ─
+  function recalcLine($line) {
+    var lengthCm = parseInt($line.data('length-cm'), 10) || 100;
+    var chips = [];
+    $line.find('.rg-stepchip').each(function () {
+      var $chip = $(this);
+      var plants = parseInt($chip.find('.rg-stepper-val').val(), 10) || 0;
+      if (plants > 0) chips.push({
+        pid: parseInt($chip.data('planting-id'), 10),
+        spacingCm: parseInt($chip.data('spacing-cm'), 10) || 5,
+        plants: plants,
+        color: $chip.data('color') || '#A66141',
+        emoji: $chip.find('.rg-stepchip-emoji').text() || '',
+      });
+    });
+
+    var usedCm = 0;
+    chips.forEach(function (c) { usedCm += c.spacingCm * c.plants; });
+    var pct     = lengthCm > 0 ? usedCm / lengthCm : 0;
+    var overcap = usedCm > lengthCm;
+    var overpack = pct >= 0.9;
+
+    // Fill label
+    var fillHtml = '&middot; ' + usedCm + '/' + lengthCm + 'cm';
+    if (overpack) fillHtml += ' &middot; <strong style="color:#b91c1c">' + Math.round(pct * 100) + '%</strong>';
+    $line.find('.rg-line-fill').html(fillHtml);
+
+    // Line border class
+    $line.removeClass('rg-line--overcap rg-line--overpack');
+    if (overcap) $line.addClass('rg-line--overcap');
+    else if (overpack) $line.addClass('rg-line--overpack');
+
+    // Stripe bar
+    var $stripe = $line.find('.rg-stripe');
+    $stripe.empty();
+    chips.forEach(function (c) {
+      var w = Math.max(0.5, (c.spacingCm * c.plants / lengthCm) * 100);
+      var $seg = $('<div class="rg-stripe-seg">').attr('data-planting-id', c.pid)
+        .css({width: w + '%', background: 'linear-gradient(180deg,' + c.color + ',' + c.color + 'dd)'});
+      if (w > 10) $seg.append('<span>' + c.emoji + ' ' + c.plants + '</span>');
+      $stripe.append($seg);
+    });
+
+    // Dot grid
+    var totalSlots = Math.max(1, Math.floor(lengthCm / 5));
+    var $dotgrid = $line.find('.rg-dotgrid');
+    $dotgrid.toggleClass('rg-dotgrid--dense', totalSlots > 60);
+    var $dots = $dotgrid.find('.rg-dots'), cur = 0;
+    $dots.empty();
+    chips.forEach(function (c) {
+      var spp = Math.max(1, Math.round(c.spacingCm / 5));
+      for (var n = 0; n < c.plants && cur + spp <= totalSlots; n++) {
+        for (var k = 0; k < spp && cur < totalSlots; k++) {
+          $dots.append('<div class="rg-dot rg-dot--filled' + (k === 0 ? ' is-head' : '') + '" style="background:' + c.color + ';border-color:' + c.color + '"></div>');
+          cur++;
+        }
+      }
+    });
+    for (var i = cur; i < totalSlots; i++) {
+      $dots.append('<div class="rg-dot rg-dot--clickable" data-slot="' + i + '" title="tap to plant"></div>');
+    }
+
+    // Overpack banner
+    var $banner = $line.find('.rg-overpack-banner');
+    if (overpack) {
+      var bg  = overcap ? 'rgba(220,38,38,.08)' : 'rgba(234,179,8,.12)';
+      var bdr = overcap ? 'rgba(220,38,38,.35)' : 'rgba(234,179,8,.45)';
+      var clr = overcap ? '#991b1b' : '#854d0e';
+      var ico = overcap ? '⛔' : '⚠️';
+      var msg = overcap ? 'Overpacked — plants are competing for space, expect smaller yields.'
+                        : 'Nearly full — careful, you are close to overpacking the line.';
+      if (!$banner.length) {
+        $banner = $('<div class="rg-overpack-banner" style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;border-radius:8px;font-size:.78rem;font-weight:600">' +
+          '<span class="rg-banner-icon" style="font-size:1rem"></span><span class="rg-banner-msg"></span></div>');
+        $stripe.before($banner);
+      }
+      $banner.css({background: bg, border: '1px solid ' + bdr, color: clr}).show();
+      $banner.find('.rg-banner-icon').text(ico);
+      $banner.find('.rg-banner-msg').text(msg);
+    } else if ($banner.length) {
+      $banner.hide();
+    }
+
+    // Show/hide steppers and harvest button
+    var hasChips = chips.length > 0;
+    $line.find('.rg-steppers').css('display', hasChips ? 'flex' : 'none');
+    $line.find('.rg-line-actions').css('display', hasChips ? 'inline-flex' : 'none');
+  }
+
+  // ── Sidebar (desktop) / seed info modal (mobile) ─────────────────
+  function updateCropSidebar(crop) {
+    if (!crop) return;
+    var famLabel = crop.family ? crop.family.charAt(0).toUpperCase() + crop.family.slice(1) : '';
+    var seaLabel = crop.season === 'warm' ? '☀️ Warm season' : crop.season === 'cool' ? '🌧 Cool season' : '';
+    $('#rgSidebarContent').html(
+      '<div style="text-align:center;padding:10px 0 8px">' +
+        '<div style="font-size:2.6rem;margin-bottom:6px">' + (crop.emoji || '') + '</div>' +
+        '<div style="font-weight:800;font-size:1rem;color:var(--color-text)">' + (crop.name || '') + '</div>' +
+        (crop.variety ? '<div style="font-size:.75rem;color:var(--color-text-muted);margin-top:2px">' + crop.variety + '</div>' : '') +
+        (crop.color ? '<div style="height:4px;border-radius:999px;margin:10px 0 0;background:' + crop.color + '"></div>' : '') +
+      '</div>' +
+      '<div style="background:var(--color-surface);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.78rem;display:flex;flex-direction:column;gap:7px">' +
+        (famLabel ? '<div><span style="color:var(--color-text-muted)">Family</span><br><strong>' + famLabel + '</strong></div>' : '') +
+        (seaLabel ? '<div>' + seaLabel + '</div>' : '') +
+        (crop.days ? '<div><span style="color:var(--color-text-muted)">Days to maturity</span><br><strong>' + crop.days + 'd</strong></div>' : '') +
+        (crop.spacing ? '<div><span style="color:var(--color-text-muted)">Spacing</span><br><strong>' + crop.spacing + ' cm</strong></div>' : '') +
+      '</div>'
+    );
+  }
+
+  function showSeedInfoModal(crop) {
+    $('#rgSeedInfoEmoji').text(crop.emoji || '');
+    $('#rgSeedInfoName').text(crop.name || '');
+    $('#rgSeedInfoVariety').text(crop.variety || '');
+    var famLabel = crop.family ? crop.family.charAt(0).toUpperCase() + crop.family.slice(1) : '';
+    var seaLabel = crop.season === 'warm' ? '☀️ Warm season' : crop.season === 'cool' ? '🌧 Cool season' : '';
+    $('#rgSeedInfoBody').html(
+      '<div style="display:flex;flex-direction:column;gap:12px;font-size:.85rem">' +
+        (famLabel ? '<div><span style="color:var(--color-text-muted)">Family</span>: <strong>' + famLabel + '</strong></div>' : '') +
+        (seaLabel ? '<div>' + seaLabel + '</div>' : '') +
+        (crop.days ? '<div><span style="color:var(--color-text-muted)">Days to maturity</span>: <strong>' + crop.days + '</strong></div>' : '') +
+        (crop.spacing ? '<div><span style="color:var(--color-text-muted)">Spacing</span>: <strong>' + crop.spacing + ' cm</strong></div>' : '') +
+      '</div>'
+    );
+    $('#rgSeedInfoModal').css('display', 'flex');
+  }
+  $('#rgSeedInfoClose').on('click', function () { $('#rgSeedInfoModal').hide(); });
+
   // ── Core plant action ────────────────────────────────────────────
   function plantOne(lineNum, cropId) {
     var $line = $page.find('.rg-line[data-line="' + lineNum + '"]');
     $line.addClass('is-planting');
+    var crop = cropsMap[cropId] || {};
     $.post(PLANT_URL, { _token: csrf, line_number: lineNum, crop_id: cropId, count: 1 })
       .done(function (data) {
-        // Check success explicitly — server returns {success:false} with HTTP 200 on errors
+        $line.removeClass('is-planting');
         if (data && data.success === false) {
-          $line.removeClass('is-planting');
           showToast(data.error || 'Could not plant — try again', 'error');
-        } else {
-          window.location.reload();
+          return;
         }
+        var pid    = parseInt(data.planting_id, 10);
+        var plants = parseInt(data.plants, 10) || 1;
+        // Update existing chip or create new one
+        var $chip = $line.find('.rg-stepchip[data-planting-id="' + pid + '"]');
+        if ($chip.length) {
+          $chip.find('.rg-stepper-val').val(plants).data('orig', plants);
+        } else {
+          var color  = crop.color || '#A66141';
+          var $step  = $line.find('.rg-steppers');
+          var $clrBtn = $step.find('.rg-clear-btn');
+          var newChip = '<div class="rg-stepchip" draggable="true"' +
+            ' data-planting-id="' + pid + '"' +
+            ' data-crop-id="' + cropId + '"' +
+            ' data-spacing-cm="' + (crop.spacing || 5) + '"' +
+            ' data-color="' + color + '"' +
+            ' style="background:' + color + '15;border:1px solid ' + color + '55;color:' + color + ';cursor:grab">' +
+            '<span class="rg-stepchip-emoji">' + (crop.emoji || '') + '</span>' +
+            '<span>' + (crop.name || '') + '</span>' +
+            '<div class="rg-stepper" data-planting-id="' + pid + '">' +
+            '<button type="button" class="rg-step-minus" style="color:' + color + '" aria-label="-1">−</button>' +
+            '<input type="number" class="rg-stepper-val" min="1" step="1" value="' + plants + '" inputmode="numeric" aria-label="Plant count">' +
+            '<button type="button" class="rg-step-plus" style="color:' + color + '" aria-label="+1">+</button>' +
+            '</div>' +
+            '<button type="button" class="rg-stepchip-remove" data-planting-id="' + pid + '" title="Remove">✕</button>' +
+            '</div>';
+          if ($clrBtn.length) $clrBtn.before(newChip);
+          else $step.append(newChip);
+        }
+        recalcLine($line);
+        showToast('Planted!', 'ok');
       })
       .fail(function (xhr) {
         $line.removeClass('is-planting');
@@ -338,14 +528,13 @@ $bedId = (int)$item['id'];
     });
     var $lbl = $('#rgPaletteLabel');
     if (activeLineNum) {
-      $lbl.html('→ Drop or tap a crop to plant in <strong>Line ' + activeLineNum + '</strong>').css('color','var(--color-primary)');
+      $lbl.html('Tap a crop to plant in <strong>Line ' + activeLineNum + '</strong>').css('color','var(--color-primary)');
     } else {
-      $lbl.html('Drag a crop onto a line — or tap a line then tap a crop').css('color','');
+      $lbl.html('Tap a line to select it, then tap a crop to plant').css('color','');
     }
   }
   if (activeLineNum) setActiveLine(activeLineNum);
 
-  // Tap line header/stripe to select it
   $page.on('click', '.rg-line', function (e) {
     if ($(e.target).closest('button, a, .rg-stepper').length) return;
     setActiveLine(parseInt($(this).data('line'), 10));
@@ -365,27 +554,36 @@ $bedId = (int)$item['id'];
         $(this).removeClass('is-active').removeAttr('style');
       }
     });
+    if (activeCropId && cropsMap[activeCropId]) updateCropSidebar(cropsMap[activeCropId]);
   }
   setActiveCrop(activeCropId);
 
-  // ── Palette chip: tap to plant in selected line ──────────────────
-  $('#rgPalette').on('click', '.rg-palette-chip', function () {
+  // ── Palette chip: tap to plant; double-tap for info (mobile) ─────
+  var _lastTap = 0, _lastTapEl = null;
+  $('#rgPalette').on('click', '.rg-palette-chip', function (e) {
     var cropId = parseInt($(this).data('crop-id'), 10);
     setActiveCrop(cropId);
-    if (activeLineNum) {
-      plantOne(activeLineNum, cropId);
+    if (activeLineNum) plantOne(activeLineNum, cropId);
+    else showToast('Tap a line first to select it', 'warn');
+  });
+  $('#rgPalette').on('touchend', '.rg-palette-chip', function (e) {
+    if (!isMobile) return;
+    var now = Date.now(), el = this;
+    if (now - _lastTap < 320 && _lastTapEl === el) {
+      e.preventDefault();
+      var cropId = parseInt($(this).data('crop-id'), 10);
+      if (cropsMap[cropId]) showSeedInfoModal(cropsMap[cropId]);
+      _lastTap = 0; _lastTapEl = null;
     } else {
-      showToast('Drag onto a line — or tap a line first ↑', 'warn');
+      _lastTap = now; _lastTapEl = el;
     }
   });
 
-  // ── "Try this" suggestion chips ──────────────────────────────────
+  // ── Suggestion chips + dot clicks ────────────────────────────────
   $page.on('click', '.rg-plant-action', function (e) {
     e.stopPropagation();
     plantOne(parseInt($(this).data('line'), 10), parseInt($(this).data('crop-id'), 10));
   });
-
-  // ── Tap a dot to plant ───────────────────────────────────────────
   $page.on('click', '.rg-dot--clickable', function (e) {
     e.stopPropagation();
     if (!activeCropId) { showToast('Select a crop from the palette first', 'warn'); return; }
@@ -394,8 +592,7 @@ $bedId = (int)$item['id'];
     plantOne(lineNum, activeCropId);
   });
 
-  // ── HTML5 Drag-and-Drop ─────────────────────────────────────────
-  // Drag start: store crop id
+  // ── HTML5 Drag-and-Drop ──────────────────────────────────────────
   $page.on('dragstart', '.rg-palette-chip', function (e) {
     var cropId = $(this).data('crop-id');
     e.originalEvent.dataTransfer.setData('text/plain', String(cropId));
@@ -407,23 +604,17 @@ $bedId = (int)$item['id'];
     $(this).removeClass('is-dragging');
     $page.find('.rg-line').removeClass('is-drag-over');
   });
-
-  // Line as drop zone
   $page.on('dragover', '.rg-line', function (e) {
     e.preventDefault();
     e.originalEvent.dataTransfer.dropEffect = 'copy';
     $(this).addClass('is-drag-over');
   });
   $page.on('dragleave', '.rg-line', function (e) {
-    // Only clear when actually leaving this element (not entering a child)
-    if (!this.contains(e.originalEvent.relatedTarget)) {
-      $(this).removeClass('is-drag-over');
-    }
+    if (!this.contains(e.originalEvent.relatedTarget)) $(this).removeClass('is-drag-over');
   });
   $page.on('drop', '.rg-line', function (e) {
     e.preventDefault();
     $(this).removeClass('is-drag-over');
-    // Ignore reorder drags — those are handled at the .rg-stepchip drop target
     var dt = e.originalEvent.dataTransfer;
     if (dt.types && Array.prototype.indexOf.call(dt.types, 'text/x-rooted-reorder') >= 0) return;
     var cropId  = parseInt(dt.getData('text/plain'), 10);
@@ -433,7 +624,7 @@ $bedId = (int)$item['id'];
     plantOne(lineNum, cropId);
   });
 
-  // ── Drag-reorder stepchips inside a line ─────────────────────────
+  // ── Drag-reorder stepchips ────────────────────────────────────────
   $page.on('dragstart', '.rg-stepchip', function (e) {
     var pid = $(this).data('planting-id');
     if (!pid) return;
@@ -448,8 +639,7 @@ $bedId = (int)$item['id'];
   $page.on('dragover', '.rg-stepchip', function (e) {
     var dt = e.originalEvent.dataTransfer;
     if (!dt.types || Array.prototype.indexOf.call(dt.types, 'text/x-rooted-reorder') < 0) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     dt.dropEffect = 'move';
     $(this).addClass('is-drop-target');
   });
@@ -463,35 +653,41 @@ $bedId = (int)$item['id'];
     $target.removeClass('is-drop-target');
     var tgtId = parseInt($target.data('planting-id'), 10);
     if (!tgtId || srcId === tgtId) return;
-    var $row = $target.closest('.rg-steppers');
-    // Build the new id order (move srcId to the slot of tgtId)
     var ids = [];
-    $row.find('.rg-stepchip').each(function () { ids.push(parseInt($(this).data('planting-id'), 10)); });
+    $target.closest('.rg-steppers').find('.rg-stepchip').each(function () { ids.push(parseInt($(this).data('planting-id'), 10)); });
     var srcIdx = ids.indexOf(srcId); if (srcIdx >= 0) ids.splice(srcIdx, 1);
     var tgtIdx = ids.indexOf(tgtId); if (tgtIdx < 0) return;
     ids.splice(tgtIdx, 0, srcId);
     $.post('<?= url('/garden/plantings/reorder') ?>', { _token: csrf, planting_ids: ids })
-      .done(function (data) {
-        if (!data || data.success === false) { showToast((data && data.error) || 'Could not reorder', 'error'); return; }
+      .done(function (d) {
+        if (!d || d.success === false) { showToast((d && d.error) || 'Could not reorder', 'error'); return; }
         window.location.reload();
       })
       .fail(function () { showToast('Could not reorder', 'error'); });
   });
 
-  // ── Stepper +/− ─────────────────────────────────────────────────
+  // ── Stepper +/− (optimistic, no reload) ──────────────────────────
   $page.on('click', '.rg-step-plus, .rg-step-minus', function (e) {
     e.stopPropagation();
-    var pid   = parseInt($(this).closest('.rg-stepper').data('planting-id'), 10);
-    var delta = $(this).hasClass('rg-step-plus') ? 1 : -1;
-    $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, delta: delta })
-      .done(function (data) {
-        if (data && data.success === false) showToast(data.error || 'Could not adjust', 'error');
-        else window.location.reload();
-      })
-      .fail(function (xhr) { ajaxErr(xhr, 'Could not adjust quantity'); });
+    var $btn    = $(this);
+    var $stepper = $btn.closest('.rg-stepper');
+    var pid     = parseInt($stepper.data('planting-id'), 10);
+    var delta   = $btn.hasClass('rg-step-plus') ? 1 : -1;
+    var $input  = $stepper.find('.rg-stepper-val');
+    var orig    = parseInt($input.val(), 10) || 1;
+    var newVal  = Math.max(1, orig + delta);
+    $input.val(newVal).data('orig', newVal);
+    var $line = $btn.closest('.rg-line');
+    recalcLine($line);
+    $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, count: newVal })
+      .fail(function (xhr) {
+        $input.val(orig).data('orig', orig);
+        recalcLine($line);
+        ajaxErr(xhr, 'Could not adjust quantity');
+      });
   });
 
-  // ── Stepper direct numeric entry ────────────────────────────────
+  // ── Stepper numeric entry (optimistic, no reload) ─────────────────
   $page.on('click focus', '.rg-stepper-val', function () { this.select(); });
   $page.on('keydown', '.rg-stepper-val', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
@@ -505,37 +701,44 @@ $bedId = (int)$item['id'];
     if (!count || count < 1) count = 1;
     $input.val(count);
     if (count === orig) return;
-    var pid = parseInt($input.closest('.rg-stepper').data('planting-id'), 10);
+    var pid   = parseInt($input.closest('.rg-stepper').data('planting-id'), 10);
+    var $line = $input.closest('.rg-line');
+    $input.data('orig', count);
+    recalcLine($line);
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/adjust-qty', { _token: csrf, count: count })
-      .done(function (data) {
-        if (data && data.success === false) { $input.val(orig); showToast(data.error || 'Could not set', 'error'); }
-        else window.location.reload();
+      .done(function (d) {
+        if (d && d.success === false) { $input.val(orig).data('orig', orig); recalcLine($line); showToast(d.error || 'Could not set', 'error'); }
       })
-      .fail(function (xhr) { $input.val(orig); ajaxErr(xhr, 'Could not set quantity'); });
+      .fail(function (xhr) { $input.val(orig).data('orig', orig); recalcLine($line); ajaxErr(xhr, 'Could not set quantity'); });
   });
 
-  // ── Per-crop remove ──────────────────────────────────────────────
+  // ── Per-crop remove (no reload) ───────────────────────────────────
   $page.on('click', '.rg-stepchip-remove', function (e) {
     e.stopPropagation();
-    var pid = parseInt($(this).data('planting-id'), 10);
+    var pid   = parseInt($(this).data('planting-id'), 10);
+    var $chip = $(this).closest('.rg-stepchip');
+    var $line = $chip.closest('.rg-line');
     $.post('<?= url('/garden/plantings/') ?>' + pid + '/remove', { _token: csrf })
-      .done(function (data) {
-        if (data && data.success === false) showToast(data.error || 'Could not remove', 'error');
-        else window.location.reload();
+      .done(function (d) {
+        if (d && d.success === false) { showToast(d.error || 'Could not remove', 'error'); return; }
+        $chip.remove();
+        recalcLine($line);
       })
       .fail(function (xhr) { ajaxErr(xhr, 'Could not remove crop'); });
   });
 
-  // ── Clear all (double-tap confirm) ──────────────────────────────
+  // ── Clear all (confirm + no reload) ──────────────────────────────
   $page.on('click', '.rg-clear-btn', function (e) {
     e.stopPropagation();
-    var $btn = $(this);
+    var $btn  = $(this);
+    var $line = $btn.closest('.rg-line');
     if ($btn.data('confirm')) {
       $btn.removeData('confirm').text('Clear All');
       $.post('<?= url('/items/' . $bedId . '/clear-line') ?>', { _token: csrf, line_number: parseInt($btn.data('line'), 10) })
-        .done(function (data) {
-          if (data && data.success === false) showToast(data.error || 'Could not clear', 'error');
-          else window.location.reload();
+        .done(function (d) {
+          if (d && d.success === false) { showToast(d.error || 'Could not clear', 'error'); return; }
+          $line.find('.rg-stepchip').remove();
+          recalcLine($line);
         })
         .fail(function (xhr) { ajaxErr(xhr, 'Could not clear line'); });
     } else {
@@ -544,7 +747,7 @@ $bedId = (int)$item['id'];
     }
   });
 
-  // ── Harvest modal ────────────────────────────────────────────────
+  // ── Harvest modal (keeps reload — full state reset needed) ────────
   var harvestLine = null;
   $page.on('click', '.rg-harvest-btn', function (e) {
     e.stopPropagation();
@@ -565,8 +768,8 @@ $bedId = (int)$item['id'];
     $.post('<?= url('/items/' . $bedId . '/harvest-clear') ?>', {
       _token: csrf, line_number: harvestLine,
       qty: parseFloat($('#rgHarvestQty').val()) || 0, unit: $('#rgHarvestUnit').val()
-    }).done(function (data) {
-      if (data && data.success === false) { closeHarvest(); showToast(data.error || 'Could not save harvest', 'error'); }
+    }).done(function (d) {
+      if (d && d.success === false) { closeHarvest(); showToast(d.error || 'Could not save harvest', 'error'); }
       else window.location.reload();
     }).fail(function (xhr) { closeHarvest(); ajaxErr(xhr, 'Could not save harvest'); });
   });

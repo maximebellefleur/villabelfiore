@@ -8,6 +8,31 @@
  */
 return [
 
+    '3.1.5' => [
+        'date'  => '2026-04-28',
+        'title' => 'No-reload bed steppers, seed-packet catalog, family needs in-ground tracking',
+        'new' => [
+            'Bed planting view: all stepper +/−, numeric input, remove chip, and clear-all operations now update the DOM instantly without a page reload — stripe, dot grid, fill label, and overpack banner all recalculate client-side.',
+            'Desktop bed view now has a fixed left sidebar showing the selected crop\'s details (family, season, spacing, days to maturity) when a palette chip is selected.',
+            'Mobile bed view: palette chip bar moved to the top (below the nav) so it\'s no longer hidden behind the bottom nav bar.',
+            'Mobile bed view: double-tap a palette chip to open a full-screen seed info modal with all crop details.',
+            'Seeds catalog: redesigned cards look like real seed packets — coloured header with large emoji, key specs row, month calendar, stock indicator, and clean action buttons.',
+            'Seeds catalog: search and type filter are now side-by-side (50/50), with sort buttons for Name, Type, and Days to harvest.',
+            'Seeds catalog: sort by name, type, or days to maturity.',
+            'Harvest added to the main navigation menu (before Finance) and to the mobile bottom nav (replacing Achats which is accessible from the slide-out drawer).',
+            'Family Needs added to Garden submenu in desktop nav and mobile drawer.',
+            'Garden index Family Needs section now shows plants currently in the ground + estimated harvest date instead of seed stock levels.',
+        ],
+        'improved' => [
+            'Bed planting tapPlant and adjustQty AJAX responses now return the new plant count so the client can update the DOM without re-fetching the page.',
+            'computeSegments in GardenHelpers now includes plantingId in each segment for reliable DOM linking.',
+            'Logo icon in top nav no longer overflows the nav bar on mobile and desktop — overflow:hidden is applied only to the nav-logo link without breaking dropdown menus.',
+        ],
+        'fixed' => [
+            'Plan view (⏭ Plan tab): maturity percentage was always showing 0% when the sown date was set only at the line level (not on individual plantings). Fixed by using the line\'s canonical sown date as fallback in the maturity computation.',
+        ],
+    ],
+
     '3.1.4' => [
         'date'  => '2026-04-28',
         'title' => 'Hotfix: bed planting page crash fix',

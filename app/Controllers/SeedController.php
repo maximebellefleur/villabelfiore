@@ -112,6 +112,7 @@ class SeedController
 
         $type   = $request->get('type', '');
         $search = trim($request->get('q', ''));
+        $sort   = in_array($request->get('sort', 'name'), ['name', 'type', 'days'], true) ? $request->get('sort', 'name') : 'name';
         $where  = 'WHERE 1=1';
         $bind   = [];
 
@@ -126,8 +127,14 @@ class SeedController
             $bind[] = '%' . $search . '%';
         }
 
-        $seeds      = $db->fetchAll("SELECT * FROM seeds $where ORDER BY name ASC", $bind);
-        $lowStock   = array_filter($seeds, fn($s) => $s['stock_enabled'] && $s['stock_low_threshold'] !== null && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold']);
+        $orderBy = match($sort) {
+            'type'  => 'type ASC, name ASC',
+            'days'  => 'COALESCE(days_to_maturity,9999) ASC, name ASC',
+            default => 'name ASC',
+        };
+
+        $seeds    = $db->fetchAll("SELECT * FROM seeds $where ORDER BY $orderBy", $bind);
+        $lowStock = array_filter($seeds, fn($s) => $s['stock_enabled'] && $s['stock_low_threshold'] !== null && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold']);
 
         Response::render('seeds/index', [
             'title'    => 'Seed Catalog',
@@ -135,6 +142,7 @@ class SeedController
             'lowStock' => $lowStock,
             'type'     => $type,
             'search'   => $search,
+            'sort'     => $sort,
         ]);
     }
 

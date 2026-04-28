@@ -562,22 +562,31 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     <?php else: ?>
     <div class="garden-needs-list">
         <?php foreach (array_slice($familyNeeds, 0, 10) as $fn):
-            $hasSeed    = !empty($fn['seed_id']);
-            $hasStock   = $hasSeed && $fn['stock_qty'] !== null;
-            $stockOk    = false;
-            if ($hasStock && $fn['yearly_qty'] > 0) {
-                $stockOk = (float)$fn['stock_qty'] > 0;
+            $hasSeed       = !empty($fn['seed_id']);
+            $inGround      = (int)($fn['plants_in_ground'] ?? 0);
+            $harvestEst    = $fn['harvest_est'] ?? null;
+            $hasPlants     = $inGround > 0;
+            $dotColor = $hasPlants ? '#22c55e' : ($hasSeed ? '#f59e0b' : '#94a3b8');
+            // Format harvest estimate
+            $harvestLabel = null;
+            if ($harvestEst) {
+                try {
+                    $hd = new DateTime($harvestEst);
+                    $harvestLabel = $hd->format('M j');
+                } catch (\Throwable $e) {}
             }
-            $dotColor = $hasSeed ? ($stockOk ? '#22c55e' : '#f59e0b') : '#94a3b8';
         ?>
         <div class="garden-need-row">
             <div class="garden-need-dot" style="background:<?= $dotColor ?>"></div>
             <div style="flex:1;min-width:0">
                 <div class="garden-need-name"><?= e($fn['vegetable_name']) ?></div>
-                <?php if ($hasSeed): ?>
-                <div class="garden-need-stock <?= $stockOk ? 'garden-need-stock--ok' : 'garden-need-stock--low' ?>">
-                    Seed: <?= e($fn['seed_name']) ?> · <?= number_format((float)$fn['stock_qty'],1) ?> <?= e($fn['stock_unit']) ?> in stock
+                <?php if ($hasPlants): ?>
+                <div class="garden-need-stock garden-need-stock--ok">
+                    🌱 <?= $inGround ?> plant<?= $inGround > 1 ? 's' : '' ?> in ground
+                    <?php if ($harvestLabel): ?> · Harvest ~<?= e($harvestLabel) ?><?php endif; ?>
                 </div>
+                <?php elseif ($hasSeed): ?>
+                <div class="garden-need-stock garden-need-stock--low">Not yet planted</div>
                 <?php else: ?>
                 <div class="garden-need-stock garden-need-stock--na">No seed linked</div>
                 <?php endif; ?>

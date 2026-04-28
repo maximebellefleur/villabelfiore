@@ -8,6 +8,24 @@
  */
 return [
 
+    '3.1.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'No-reload bed UI, seed-packet catalog, family needs in-ground',
+        'features' => [
+            ['title' => 'No-reload bed steppers',     'detail' => 'Stepper +/−, numeric input, remove chip, clear-all all update the DOM instantly without page reload.'],
+            ['title' => 'Desktop crop sidebar',       'detail' => 'Fixed left sidebar on desktop bed view shows the selected crop\'s full details.'],
+            ['title' => 'Mobile palette at top',      'detail' => 'Palette chip bar repositioned to below the nav bar on mobile so it\'s never hidden behind the bottom nav.'],
+            ['title' => 'Mobile double-tap seed info','detail' => 'Double-tapping a palette chip on mobile opens a full-screen info card for that crop.'],
+            ['title' => 'Seed packet cards',          'detail' => 'Seeds catalog redesigned with coloured headers, key specs, and month calendars to resemble real seed packets.'],
+            ['title' => 'Seeds sort + inline filter', 'detail' => 'Search and type filter side-by-side; sort by name, type, or days to maturity.'],
+            ['title' => 'Harvest in navigation',      'detail' => 'Harvest link added to main nav (before Finance) and mobile bottom nav.'],
+            ['title' => 'Family Needs in garden nav', 'detail' => 'Family Needs linked under Garden in desktop dropdown and mobile drawer.'],
+            ['title' => 'Family needs in-ground info','detail' => 'Garden index shows plants currently in the ground + harvest estimate for each family need.'],
+            ['title' => '0% maturity bug fix',        'detail' => 'Plan view maturity bar was always 0% when sown date was set at line level only.'],
+        ],
+    ],
+
     '3.1.4' => [
         'status'   => 'released',
         'released' => '2026-04-28',
