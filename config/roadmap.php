@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.11' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Map: no duplicate pin + polygon',
+        'features' => [
+            ['title' => 'Polygon-only rendering', 'detail' => 'Items with a saved polygon no longer also draw a pin at their GPS center. Polygon is the source of truth for items that have one.'],
+        ],
+    ],
+
     '3.0.10' => [
         'status'   => 'released',
         'released' => '2026-04-28',

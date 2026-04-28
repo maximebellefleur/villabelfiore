@@ -123,14 +123,17 @@
             if (!layerGroups[item.type]) {
                 layerGroups[item.type] = L.layerGroup().addTo(map);
             }
-            if (item.lat && item.lng) {
+            // Polygon takes priority: if an item has a boundary, the polygon IS its position.
+            // Don't double-render a pin marker on top of it.
+            if (item.boundary) {
+                renderBoundary(item);
+            } else if (item.lat && item.lng) {
                 var marker = L.marker([item.lat, item.lng], { icon: makeIcon(item.type) });
                 marker.bindPopup(buildPopup(item));
                 marker.on('click', function () { showItemInfo(item); });
                 marker.addTo(layerGroups[item.type]);
                 markerMap[item.id] = marker;
 
-                // Show GPS accuracy circle for point items
                 if (item.gps_accuracy && BOUNDARY_TYPES.indexOf(item.type) === -1) {
                     L.circle([item.lat, item.lng], {
                         radius: item.gps_accuracy,
@@ -142,9 +145,6 @@
                         interactive: false,
                     }).addTo(layerGroups[item.type]);
                 }
-            }
-            if (item.boundary) {
-                renderBoundary(item);
             }
         });
 

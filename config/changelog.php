@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.0.11' => [
+        'date'  => '2026-04-28',
+        'title' => 'Map: stop double-rendering pin + polygon on the same item',
+        'fixed' => [
+            'On the Land Map, items with a saved polygon were also getting a pin marker drawn at their GPS center — two visual representations of the same item, cluttering the map. Now if an item has a polygon, only the polygon is shown. Items without a polygon still get the pin.',
+        ],
+    ],
+
     '3.0.10' => [
         'date'  => '2026-04-28',
         'title' => 'Planting INSERT fix',
