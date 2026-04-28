@@ -23,17 +23,18 @@ function _navIcon(string $name): string {
 }
 
 $navLinks = [
-    ['href' => '/dashboard',      'label' => 'Dashboard', 'icon' => 'dashboard'],
-    ['href' => '/dashboard/map',  'label' => 'Map',       'icon' => 'map'],
-    ['href' => '/items',          'label' => 'Items',     'icon' => 'items'],
-    ['href' => '/garden',         'label' => 'Garden',     'icon' => 'garden'],
-    ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
-    ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
-    ['href' => '/tasks',                'label' => 'Tasks',      'icon' => 'tasks'],
-    ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
-    ['href' => '/finance',        'label' => 'Finance',   'icon' => 'finance'],
-    ['href' => '/activity-log',   'label' => 'Activity',  'icon' => 'activity'],
-    ['href' => '/settings',        'label' => 'Settings',  'icon' => 'settings'],
+    ['href' => '/dashboard',     'label' => 'Dashboard', 'icon' => 'dashboard'],
+    ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
+    ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
+    ['href' => '/garden',        'label' => 'Garden',    'icon' => 'garden'],
+    ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
+        ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
+        ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
+        ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
+    ]],
+    ['href' => '/finance',       'label' => 'Finance',  'icon' => 'finance'],
+    ['href' => '/activity-log',  'label' => 'Activity', 'icon' => 'activity'],
+    ['href' => '/settings',      'label' => 'Settings', 'icon' => 'settings'],
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
@@ -73,14 +74,38 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
     <!-- Desktop inline links -->
     <ul class="nav-desktop">
         <?php foreach ($navLinks as $nl):
-            $active = ($currentPath === url($nl['href'])) ? ' nav-link--active' : '';
+            $hasChildren = !empty($nl['children']);
+            $isTasksActive = $hasChildren && strpos($currentPath, url('/tasks')) === 0;
+            $active = (!$hasChildren && $currentPath === url($nl['href'])) || $isTasksActive ? ' nav-link--active' : '';
         ?>
+        <?php if ($hasChildren): ?>
+        <li class="nav-has-dropdown">
+            <a href="<?= url($nl['href']) ?>" class="nav-link<?= $active ?>">
+                <?= _navIcon($nl['icon']) ?>
+                <span class="nav-link-text"><?= $nl['label'] ?></span>
+                <svg class="nav-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </a>
+            <ul class="nav-dropdown">
+                <?php foreach ($nl['children'] as $child):
+                    $childActive = (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY) && strpos($_SERVER['REQUEST_URI'], $child['href']) !== false) ? ' nav-link--active' : '';
+                ?>
+                <li>
+                    <a href="<?= url($child['href']) ?>" class="nav-link<?= $childActive ?>">
+                        <?= _navIcon($child['icon']) ?>
+                        <span class="nav-link-text"><?= $child['label'] ?></span>
+                    </a>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </li>
+        <?php else: ?>
         <li>
             <a href="<?= url($nl['href']) ?>" class="nav-link<?= $active ?>">
                 <?= _navIcon($nl['icon']) ?>
                 <span class="nav-link-text"><?= $nl['label'] ?></span>
             </a>
         </li>
+        <?php endif; ?>
         <?php endforeach; ?>
         <li>
             <form method="POST" action="<?= url('/logout') ?>">
@@ -125,6 +150,16 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
                 <?= $nl['label'] ?>
             </a>
         </li>
+        <?php foreach ($nl['children'] ?? [] as $child):
+            $childActive = strpos($_SERVER['REQUEST_URI'] ?? '', $child['href']) !== false ? ' class="active"' : '';
+        ?>
+        <li style="padding-left:18px">
+            <a href="<?= url($child['href']) ?>"<?= $childActive ?>>
+                <span class="nav-drawer-icon"><?= _navIcon($child['icon']) ?></span>
+                <?= $child['label'] ?>
+            </a>
+        </li>
+        <?php endforeach; ?>
         <?php endforeach; ?>
         <li class="nav-drawer-signout-row">
             <form method="POST" action="<?= url('/logout') ?>">
@@ -182,6 +217,36 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 .nav-link svg { flex-shrink: 0; opacity: .85; }
 .nav-link--active svg { opacity: 1; }
 .nav-link-text { font-size: .8rem; }
+.nav-chevron { opacity: .6; margin-left: 1px; flex-shrink: 0; }
+
+/* Desktop dropdown */
+.nav-has-dropdown { position: relative; }
+.nav-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--nav-bg, #1a3a1c);
+    border-radius: 10px;
+    padding: 6px 0;
+    min-width: 168px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.35);
+    z-index: 500;
+    list-style: none;
+    margin: 0;
+}
+.nav-has-dropdown:hover .nav-dropdown,
+.nav-has-dropdown:focus-within .nav-dropdown { display: block; }
+.nav-dropdown .nav-link {
+    padding: 9px 16px;
+    border-radius: 0;
+    width: 100%;
+    white-space: nowrap;
+    opacity: 1;
+}
+.nav-dropdown .nav-link:hover { background: rgba(255,255,255,.08); }
+.nav-dropdown .nav-link svg { opacity: .75; }
 
 /* Drawer icon alignment */
 .nav-drawer-icon {
