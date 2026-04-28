@@ -348,9 +348,9 @@ class GardenBedController
                     $expected = GardenHelpers::addDays($today, (int)$crop['days_to_maturity']);
                 }
                 $db->execute(
-                    "INSERT INTO garden_plantings (item_id, line_number, crop_name, status, planted_at, sown_at, expected_harvest_at, seed_id, plant_count)
-                     VALUES (?, ?, ?, 'growing', ?, ?, ?, ?, ?)",
-                    [$itemId, $lineNum, $crop['name'], $today, $today, $expected, $cropId, $count]
+                    "INSERT INTO garden_plantings (item_id, line_number, crop_name, status, planted_at, expected_harvest_at, seed_id, plant_count)
+                     VALUES (?, ?, ?, 'growing', ?, ?, ?, ?)",
+                    [$itemId, $lineNum, $crop['name'], $today, $expected, $cropId, $count]
                 );
                 $plantingId = (int)$db->lastInsertId();
             }
