@@ -277,10 +277,13 @@ function doDistanceSort(pos) {
     rows.forEach(function(row){ list.appendChild(row); });
 }
 
+var SORT_KEY = 'rooted.items.sort';
+
 document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.items-sort-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
+        try { localStorage.setItem(SORT_KEY, btn.dataset.sort); } catch (e) {}
         if (btn.dataset.sort === 'default') {
             _distSortActive = false;
             var list = document.getElementById('itemsList');
@@ -302,6 +305,14 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     var distBtn = document.getElementById('sortByDist');
     var nameBtn = document.querySelector('[data-sort="default"]');
     if (!distBtn || typeof RootedGPS === 'undefined') return;
+    var saved = null;
+    try { saved = localStorage.getItem(SORT_KEY); } catch (e) {}
+    // Default to distance unless user previously chose Name
+    if (saved === 'default') {
+        if (nameBtn) nameBtn.classList.add('active');
+        distBtn.classList.remove('active');
+        return;
+    }
     distBtn.classList.add('active'); if (nameBtn) nameBtn.classList.remove('active');
     distBtn.textContent = '⏳ Locating…'; _distSortActive = true;
     RootedGPS.get(function(pos) {

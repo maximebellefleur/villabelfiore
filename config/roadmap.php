@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.13' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Items list: filters retained',
+        'features' => [
+            ['title' => 'Filter persistence', 'detail' => 'Type/status/search persist in session; sort preference persists in localStorage. Visit an item and come back — your view is still there.'],
+        ],
+    ],
+
     '3.0.12' => [
         'status'   => 'released',
         'released' => '2026-04-28',

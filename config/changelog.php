@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.13' => [
+        'date'  => '2026-04-28',
+        'title' => 'Items list: filters retained between visits',
+        'improved' => [
+            'Type, status and search filters on the items list are now stored in your session — leave the page and come back, the filter is still applied. Submit a new filter to overwrite.',
+            'Sort by Name vs Distance preference is stored in localStorage and remembered across sessions on the same device.',
+        ],
+    ],
+
     '3.0.12' => [
         'date'  => '2026-04-28',
         'title' => 'Item show hero cleanup',

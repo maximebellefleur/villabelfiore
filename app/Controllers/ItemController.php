@@ -38,9 +38,24 @@ class ItemController
         $this->requireAuth();
 
         $db      = DB::getInstance();
-        $type    = $request->get('type', '');
-        $status  = $request->get('status', 'active');
-        $search  = $request->get('search', '');
+
+        // ── Filter persistence ─────────────────────────────────────────────
+        // If the request includes any filter query param, treat it as the
+        // user's current intent and remember it. Otherwise restore the last
+        // session-saved filters so navigating away and back keeps state.
+        $hasFilterQuery = isset($_GET['type']) || isset($_GET['status']) || isset($_GET['search']);
+        if ($hasFilterQuery) {
+            $type   = $request->get('type', '');
+            $status = $request->get('status', 'active');
+            $search = $request->get('search', '');
+            $_SESSION['items_filters'] = compact('type', 'status', 'search');
+        } else {
+            $saved  = $_SESSION['items_filters'] ?? [];
+            $type   = $saved['type']   ?? '';
+            $status = $saved['status'] ?? 'active';
+            $search = $saved['search'] ?? '';
+        }
+
         $page    = max(1, (int) $request->get('page', 1));
         $perPage = 20;
         $offset  = ($page - 1) * $perPage;
