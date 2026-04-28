@@ -1264,10 +1264,48 @@ function preCheckReminder() {
     });
 }());
 
-// ── Log action form — AJAX submission so file inputs are always included ──────
+// ── Log action form — compress photos then AJAX submit ────────────────────────
 (function() {
     var form = document.querySelector('#note-section form');
     if (!form) return;
+
+    // Compress a single image file to max 1600px / 80% JPEG (~300–800 KB).
+    function compressPhoto(file, cb) {
+        if (!file.type || file.type.indexOf('image/') !== 0) { cb(file); return; }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var MAX = 1600, w = img.width, h = img.height;
+                var ratio = Math.min(MAX / w, MAX / h, 1);
+                var canvas = document.createElement('canvas');
+                canvas.width  = Math.round(w * ratio);
+                canvas.height = Math.round(h * ratio);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(function(blob) {
+                    if (!blob) { cb(file); return; }
+                    cb(new File([blob],
+                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
+                        { type: 'image/jpeg', lastModified: Date.now() }));
+                }, 'image/jpeg', 0.80);
+            };
+            img.onerror  = function() { cb(file); };
+            img.src      = ev.target.result;
+        };
+        reader.onerror = function() { cb(file); };
+        reader.readAsDataURL(file);
+    }
+
+    function compressAll(files, cb) {
+        var out = [], remaining = files.length;
+        if (!remaining) { cb(out); return; }
+        files.forEach(function(file, i) {
+            compressPhoto(file, function(compressed) {
+                out[i] = compressed;
+                if (--remaining === 0) cb(out);
+            });
+        });
+    }
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1275,33 +1313,68 @@ function preCheckReminder() {
         var btn  = form.querySelector('[type="submit"]');
         var orig = btn.textContent;
         btn.disabled    = true;
-        btn.textContent = 'Logging…';
 
-        var fd = new FormData(form);
+        var fileInput = document.getElementById('logPhotoInput');
+        var files     = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
 
-        fetch(form.action, {
-            method:  'POST',
-            body:    fd,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function(r) {
-            // CSRF 403 still returns JSON from validate()
-            return r.json().catch(function() { throw new Error('Server error ' + r.status); });
-        })
-        .then(function(data) {
-            if (data.success) {
-                window.location.reload();
+        function doUpload(compressedFiles) {
+            btn.textContent = 'Logging…';
+
+            var fd;
+            if (!compressedFiles.length) {
+                fd = new FormData(form);
             } else {
+                // Build FormData manually so we can swap in compressed blobs.
+                fd = new FormData();
+                Array.from(form.elements).forEach(function(el) {
+                    if (!el.name || el.disabled || el.type === 'file') return;
+                    if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+                    fd.append(el.name, el.value);
+                });
+                compressedFiles.forEach(function(f) {
+                    fd.append('log_photos[]', f, f.name);
+                });
+            }
+
+            var ctrl  = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 60000) : null;
+
+            fetch(form.action, {
+                method:  'POST',
+                body:    fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal:  ctrl ? ctrl.signal : undefined,
+            })
+            .then(function(r) {
+                if (timer) clearTimeout(timer);
+                return r.json().catch(function() { throw new Error('status:' + r.status); });
+            })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    btn.disabled    = false;
+                    btn.textContent = orig;
+                    alert(data.error || 'Could not log action. Please try again.');
+                }
+            })
+            .catch(function(err) {
+                if (timer) clearTimeout(timer);
                 btn.disabled    = false;
                 btn.textContent = orig;
-                alert(data.error || 'Could not log action. Please try again.');
-            }
-        })
-        .catch(function() {
-            btn.disabled    = false;
-            btn.textContent = orig;
-            alert('Something went wrong. Please check your connection and try again.');
-        });
+                var msg = (err && err.name === 'AbortError')
+                    ? 'Upload timed out. Check your connection and try again.'
+                    : 'Something went wrong. Please try again.';
+                alert(msg);
+            });
+        }
+
+        if (files.length) {
+            btn.textContent = 'Compressing…';
+            compressAll(files, doUpload);
+        } else {
+            doUpload([]);
+        }
     });
 }());
 </script>

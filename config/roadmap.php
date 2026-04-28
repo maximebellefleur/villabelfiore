@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.0.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Log photo compression — compress to ~800 KB before upload so it never hangs',
+        'features' => [
+            ['title' => 'Client-side photo compression for log attachments', 'detail' => 'Raw phone photos (5–15 MB) are now compressed to max 1600 px / 80 % JPEG before upload using canvas.toBlob — same pattern as the survey flow. Reduces upload payload by 10–20×, making submission reliable on slow mobile connections. Button shows "Compressing…" during the brief canvas step then "Logging…" during transfer.'],
+            ['title' => 'AbortController timeout (60 s)', 'detail' => 'If the server fails to respond within 60 seconds, the fetch is aborted, the button re-enables, and a clear "Upload timed out" alert is shown instead of the spinner hanging indefinitely.'],
+        ],
+    ],
+
     '3.0.1' => [
         'status'   => 'released',
         'released' => '2026-04-28',

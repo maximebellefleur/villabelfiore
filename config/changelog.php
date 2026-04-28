@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.2' => [
+        'date'  => '2026-04-28',
+        'title' => 'Log photo compression — compress to ~800 KB before upload so it never hangs',
+        'fixed' => [
+            'Log Action form with a photo attached showed "Logging…" indefinitely. Root cause: raw iPhone/Android photos (5–15 MB HEIC/JPEG) were sent as-is, making the upload slow on mobile connections and occasionally causing the server to time out reading the multipart body. Photos are now compressed to max 1600 px / 80 % JPEG (~300–800 KB) using an in-browser canvas step (same pattern as the survey flow) before the fetch request is sent. The button shows "Compressing…" for 1–2 s then "Logging…" while uploading.',
+            'Added a 60-second AbortController timeout on the fetch; if the server does not respond in time the button re-enables and an "Upload timed out" alert is shown instead of hanging forever.',
+        ],
+    ],
+
     '3.0.1' => [
         'date'  => '2026-04-28',
         'title' => 'Fix photo attach log — AJAX submit ensures image is always sent',
