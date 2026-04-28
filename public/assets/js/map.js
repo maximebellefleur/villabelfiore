@@ -180,8 +180,12 @@
         var isLine      = LINE_TYPES.indexOf(item.type) >= 0;
         var hasBoundary = !!item.boundary;
 
+        // Garden beds don't get a polygon edit affordance here — their
+        // boundary is set from the item edit page (which understands the
+        // length/width/rotation rectangle model). For other drawable types
+        // (gardens, orchards, zones, lines) the inline draw/edit button stays.
         var polyHtml = '';
-        if (isDrawable) {
+        if (isDrawable && item.type !== 'bed') {
             var statusTxt   = hasBoundary
                 ? (isLine ? '〰️ Row saved' : '⬡ Polygon saved')
                 : (isLine ? 'No row yet'   : 'No polygon yet');
@@ -193,6 +197,13 @@
                 '<span class="map-info-poly-status ' + statusCls + '">' + statusTxt + '</span>' +
                 '<button class="btn btn-secondary btn-sm" id="infoDrawBtn">' + btnLabel + '</button>' +
                 '</div>';
+        } else if (item.type === 'bed') {
+            // Just the status label, no edit button — Edit item below covers it.
+            var statusTxt = hasBoundary ? '⬡ Polygon saved' : 'No polygon yet';
+            var statusCls = hasBoundary ? 'map-info-poly-status--ok' : 'map-info-poly-status--none';
+            polyHtml = '<div class="map-info-poly-row">' +
+                '<span class="map-info-poly-status ' + statusCls + '">' + statusTxt + '</span>' +
+                '</div>';
         }
 
         content.innerHTML = [
@@ -201,8 +212,9 @@
             item.lat ? '<p class="text-sm">📍 ' + item.lat.toFixed(6) + ', ' + item.lng.toFixed(6) + '</p>' : '',
             item.gps_accuracy ? '<p class="text-sm">GPS ±' + Math.round(item.gps_accuracy) + 'm</p>' : '',
             polyHtml,
-            '<div style="margin-top:10px">',
+            '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">',
             '<a href="' + MAP_ITEM_URL + item.id + '" class="btn btn-primary btn-sm">Open item</a>',
+            '<a href="' + MAP_ITEM_URL + item.id + '/edit" class="btn btn-secondary btn-sm">✏️ Edit item</a>',
             '</div>',
         ].join('');
 

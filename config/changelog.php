@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.1' => [
+        'date'  => '2026-04-28',
+        'title' => 'Map sidebar: Edit item button, no Edit polygon for beds',
+        'fixed' => [
+            'Garden beds no longer show the "✏️ Edit polygon" button in the map selected-item panel — the bed polygon is a length/width rectangle and must be edited from the item edit page.',
+        ],
+        'new' => [
+            'New "✏️ Edit item" button (white) sits next to "Open item" in the selected-item panel, going straight to /items/{id}/edit.',
+        ],
+    ],
+
     '3.1.0' => [
         'date'  => '2026-04-28',
         'title' => 'Per-crop partial harvest with quick presets',

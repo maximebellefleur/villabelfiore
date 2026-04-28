@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.1' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Map sidebar: Edit item, no bed polygon edit',
+        'features' => [
+            ['title' => 'Edit item button', 'detail' => 'White-bg "Edit item" link next to "Open item" jumps to /items/{id}/edit.'],
+            ['title' => 'No polygon edit on beds', 'detail' => 'Garden bed type no longer shows Edit polygon in the map sidebar — beds use the rectangle editor on the item edit page.'],
+        ],
+    ],
+
     '3.1.0' => [
         'status'   => 'released',
         'released' => '2026-04-28',
