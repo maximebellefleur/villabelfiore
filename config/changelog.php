@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.12' => [
+        'date'  => '2026-04-28',
+        'title' => 'Item show hero cleanup',
+        'fixed' => [
+            'Removed the duplicate Edit button from the top hero-back nav row. Only one Edit button now, in the bottom-right corner of the photo.',
+            'Position button moved out of the top nav and placed right next to the Edit button in the bottom-right photo overlay, with a full-color amber pill so it stands out.',
+        ],
+    ],
+
     '3.0.11' => [
         'date'  => '2026-04-28',
         'title' => 'Map: stop double-rendering pin + polygon on the same item',

@@ -57,21 +57,31 @@ $recentReminders = array_slice($reminders, 0, 3);
         <img src="<?= att_url((int)$idPhoto['id']) ?>"
              alt="<?= e($item['name']) ?>" loading="eager">
         <div class="show-hero-photo-overlay"></div>
-        <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:8px;z-index:3" onclick="event.stopPropagation()">
+        <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:6px;z-index:3" onclick="event.stopPropagation()">
             <a href="<?= url('/items/' . (int)$item['id'] . '/edit') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);color:#fff;border-radius:20px;font-size:.78rem;font-weight:600;text-decoration:none">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 Edit
             </a>
+            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:#f4b324;color:#1a1a1a;border-radius:20px;font-size:.78rem;font-weight:700;text-decoration:none">
+                📍 Position
+            </a>
+            <?php endif; ?>
         </div>
     </div>
     <?php else: ?>
     <div class="show-hero-photo show-hero-photo--placeholder" style="position:relative">
         <span class="show-hero-placeholder-emoji"><?= $emoji ?></span>
-        <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:8px;z-index:3">
+        <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:6px;z-index:3">
             <a href="<?= url('/items/' . (int)$item['id'] . '/edit') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);color:#fff;border-radius:20px;font-size:.78rem;font-weight:600;text-decoration:none">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 Edit
             </a>
+            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:#f4b324;color:#1a1a1a;border-radius:20px;font-size:.78rem;font-weight:700;text-decoration:none">
+                📍 Position
+            </a>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -82,15 +92,6 @@ $recentReminders = array_slice($reminders, 0, 3);
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
                 Items
             </a>
-            <a href="<?= url('/items/' . (int)$item['id'] . '/edit') ?>" class="show-edit-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-                Edit
-            </a>
-            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
-            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" class="show-edit-btn" style="background:rgba(255,255,255,.22)">
-                📍 Position
-            </a>
-            <?php endif; ?>
         </div>
         <?php if ($idPhoto): ?>
         <div class="show-hero-avatar">

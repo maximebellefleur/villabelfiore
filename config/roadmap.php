@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.12' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Item show hero cleanup',
+        'features' => [
+            ['title' => 'Single Edit, amber Position', 'detail' => 'Removed duplicate Edit button. Position is full-color amber and sits right next to Edit in the bottom-right of the photo.'],
+        ],
+    ],
+
     '3.0.11' => [
         'status'   => 'released',
         'released' => '2026-04-28',
