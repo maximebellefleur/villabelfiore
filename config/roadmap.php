@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.0.5' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Planting UX overhaul — tap-to-select line, fixed palette, toasts, nav tab links',
+        'features' => [
+            ['title' => 'Tap-to-select line', 'detail' => 'Tapping a line on the bed planting page selects it with a pulsing green border animation. The fixed palette label updates to confirm which line is active. Tapping a crop chip then immediately plants it in that line.'],
+            ['title' => 'Fixed crop palette', 'detail' => 'The crop palette is now position:fixed — always visible at the bottom of the screen regardless of how far you scroll. Selected line is remembered across page reloads via localStorage.'],
+            ['title' => 'Per-crop ✕ Remove + Clear All double-tap', 'detail' => 'Each crop chip now has a ✕ button to remove only that crop. "Clear All" uses a double-tap confirm (no browser dialog). Stepper floor stays at 1.'],
+            ['title' => 'In-page toast notifications', 'detail' => 'All alert() and confirm() dialogs replaced with slide-in toast banners above the palette. Errors show the actual server message when available.'],
+            ['title' => 'Nav tab deep-links', 'detail' => 'Achats, Irrigation, and Reminders nav shortcuts now open Tasks with the correct tab pre-selected (?tab=achats, ?tab=irrigation, ?tab=reminders). Bottom nav updated to match.'],
+        ],
+    ],
+
     '3.0.4' => [
         'status'   => 'released',
         'released' => '2026-04-28',

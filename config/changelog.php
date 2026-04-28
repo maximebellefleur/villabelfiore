@@ -8,6 +8,24 @@
  */
 return [
 
+    '3.0.5' => [
+        'date'  => '2026-04-28',
+        'title' => 'Planting UX overhaul — tap-to-select line, fixed palette, toasts, nav tab links',
+        'new' => [
+            'Tap any line to select it — animated green pulsing border confirms selection; palette label updates to "Adding to Line N — tap a crop below".',
+            'Tapping a crop in the bottom palette instantly plants it in the selected line — no dot-tap required.',
+            'Per-crop ✕ Remove button on each crop chip removes only that crop from the line (new removePlanting endpoint).',
+            'In-page toast notifications replace all browser alert()/confirm() dialogs — slide in above the palette, auto-dismiss, show server error text when available.',
+            '"Clear All" uses a double-tap confirm pattern: first tap → "Tap again to confirm" for 3s, no dialog.',
+        ],
+        'improved' => [
+            'Crop palette is now position:fixed — always visible at the bottom regardless of scroll position.',
+            'Back arrow on bed planting page returns to Active Gardens hub (not the item page) when the bed has a parent garden.',
+            'Dimensions removed from bed header; replaced with a circular pencil button linking directly to the edit page.',
+            'Achats, Irrigation and Reminders nav shortcuts now open the Tasks page with the correct tab pre-selected instead of separate pages. Bottom nav Harvest renamed Achats.',
+        ],
+    ],
+
     '3.0.4' => [
         'date'  => '2026-04-28',
         'title' => 'Prep Bed restriction + hero overlay buttons + nav shortcuts',
