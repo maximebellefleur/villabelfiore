@@ -17,7 +17,7 @@ $bedId = (int)$item['id'];
 
   <!-- Header -->
   <div class="rg-bed-header">
-    <a href="<?= url('/items/' . $bedId) ?>" class="rg-bed-back" aria-label="Back to bed">
+    <a href="<?= $parentGarden ? url('/garden') : url('/items/' . $bedId) ?>" class="rg-bed-back" aria-label="<?= $parentGarden ? 'Back to garden hub' : 'Back to bed' ?>">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
     </a>
     <div style="flex:1;min-width:0">
@@ -26,7 +26,9 @@ $bedId = (int)$item['id'];
       <?php endif; ?>
       <div class="rg-bed-title"><?= e($item['name']) ?></div>
     </div>
-    <span class="rg-bed-dim"><?= e(rtrim(rtrim(number_format($lengthM,1,'.',''),'0'),'.')) ?>×<?= e(rtrim(rtrim(number_format($widthM,1,'.',''),'0'),'.')) ?>m</span>
+    <a href="<?= url('/items/' . $bedId . '/edit') ?>" aria-label="Edit bed" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.07);color:#444;flex-shrink:0;text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+    </a>
   </div>
 
   <!-- Mode tabs -->
