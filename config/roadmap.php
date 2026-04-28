@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.0.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Position modal overhaul, schematic compact grid, nav Garden submenu fix',
+        'features' => [
+            ['title' => 'Draggable polygon in position modal', 'detail' => 'The position modal now lets you drag the polygon directly on a Google satellite map instead of using nudge buttons. Save button appears only when something changed.'],
+            ['title' => 'Compact schematic grid', 'detail' => 'Garden groups in the schematic widget now wrap into rows of up to 3 per row instead of stacking vertically.'],
+            ['title' => 'Garden nav submenu updated', 'detail' => 'Garden dropdown now shows +Seed, All Seeds, and Garden Beds.'],
+            ['title' => 'Planting column fix', 'detail' => 'GardenSchema now ensures all required columns exist on garden_bed_lines for older installs, fixing the Plant failed error.'],
+        ],
+    ],
+
     '3.0.7' => [
         'status'   => 'released',
         'released' => '2026-04-28',

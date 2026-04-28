@@ -64,6 +64,13 @@ class GardenSchema
 
         self::ensureColumn($db, 'garden_plantings', 'sown_at',     "ALTER TABLE garden_plantings ADD COLUMN sown_at DATE DEFAULT NULL AFTER planted_at");
 
+        self::ensureColumn($db, 'garden_bed_lines', 'sown_at',       "ALTER TABLE garden_bed_lines ADD COLUMN sown_at DATE DEFAULT NULL");
+        self::ensureColumn($db, 'garden_bed_lines', 'empty_since',    "ALTER TABLE garden_bed_lines ADD COLUMN empty_since DATE DEFAULT NULL");
+        self::ensureColumn($db, 'garden_bed_lines', 'last_watered_at',"ALTER TABLE garden_bed_lines ADD COLUMN last_watered_at DATETIME DEFAULT NULL");
+        self::ensureColumn($db, 'garden_bed_lines', 'succession_crop_id',   "ALTER TABLE garden_bed_lines ADD COLUMN succession_crop_id INT UNSIGNED DEFAULT NULL");
+        self::ensureColumn($db, 'garden_bed_lines', 'succession_starts_on', "ALTER TABLE garden_bed_lines ADD COLUMN succession_starts_on DATE DEFAULT NULL");
+        self::ensureColumn($db, 'garden_bed_lines', 'rotation_history',     "ALTER TABLE garden_bed_lines ADD COLUMN rotation_history JSON DEFAULT NULL");
+
         self::ensureColumn($db, 'seeds', 'family',        "ALTER TABLE seeds ADD COLUMN family ENUM('root','leaf','fruit','herb','allium','legume','other') NOT NULL DEFAULT 'other'");
         self::ensureColumn($db, 'seeds', 'season',        "ALTER TABLE seeds ADD COLUMN season ENUM('cool','warm','any') NOT NULL DEFAULT 'any'");
         self::ensureColumn($db, 'seeds', 'emoji',         "ALTER TABLE seeds ADD COLUMN emoji VARCHAR(10) DEFAULT NULL");

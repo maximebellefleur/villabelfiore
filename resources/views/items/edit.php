@@ -5,6 +5,12 @@
 </div>
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
+<?php if ($boundaryGeojson && in_array($item['type'], ['bed', 'garden'])): ?>
+<div style="margin-bottom:var(--spacing-3)">
+    <button type="button" id="editAdjustPositionBtn" class="btn btn-secondary" style="width:100%">📐 Adjust Position on Map</button>
+</div>
+<?php endif; ?>
+
 <?php if ($item['type'] === 'bed'): ?>
 <div class="card" style="margin-bottom:var(--spacing-3)">
     <div class="card-body">
@@ -192,11 +198,6 @@
         </div>
         <?php endif; ?>
 
-        <?php if ($boundaryGeojson && $hasCornerMode): ?>
-        <div style="margin-top:var(--spacing-2)">
-            <button type="button" id="editAdjustPositionBtn" class="btn btn-secondary btn-sm">📐 Adjust Position on Map</button>
-        </div>
-        <?php endif; ?>
 
         <div id="editBoundaryActions" style="display:none;margin-top:var(--spacing-2);display:flex;gap:var(--spacing-2)">
             <button type="button" id="editBoundarySave" class="btn btn-primary btn-sm">💾 Save Boundary</button>
@@ -229,32 +230,12 @@
     </div>
     <div id="posModalMap" style="flex:1;min-height:0;z-index:1"></div>
     <div style="padding:12px 16px;border-top:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0">
-        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:10px">
-            <div style="display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px">
-                <div></div>
-                <button type="button" class="pos-nudge btn btn-secondary" data-dir="N" style="padding:0;font-size:1.4rem;line-height:1">↑</button>
-                <div></div>
-                <button type="button" class="pos-nudge btn btn-secondary" data-dir="W" style="padding:0;font-size:1.4rem;line-height:1">←</button>
-                <div style="display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.03em">move</div>
-                <button type="button" class="pos-nudge btn btn-secondary" data-dir="E" style="padding:0;font-size:1.4rem;line-height:1">→</button>
-                <div></div>
-                <button type="button" class="pos-nudge btn btn-secondary" data-dir="S" style="padding:0;font-size:1.4rem;line-height:1">↓</button>
-                <div></div>
-            </div>
-            <div style="flex:1">
-                <div style="display:flex;gap:6px;margin-bottom:8px">
-                    <button type="button" class="btn btn-secondary btn-sm" id="posRotateCCW" style="flex:1">↺ 5°</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="posRotateCW" style="flex:1">↻ 5°</button>
-                </div>
-                <div style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Step size</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="0.5" checked style="accent-color:var(--color-primary)">0.5 m</label>
-                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="1" style="accent-color:var(--color-primary)">1 m</label>
-                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="5" style="accent-color:var(--color-primary)">5 m</label>
-                </div>
-            </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button type="button" class="btn btn-secondary btn-sm" id="posRotateCCW" style="flex:1">↺ 5°</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="posRotateCW"  style="flex:1">↻ 5°</button>
         </div>
-        <button type="button" id="posModalSave" class="btn btn-primary" style="width:100%">💾 Save Position</button>
+        <p style="font-size:.75rem;color:#999;margin:0 0 8px;text-align:center">Drag the polygon to move · rotate with buttons</p>
+        <button type="button" id="posModalSave" class="btn btn-primary" style="width:100%;display:none">💾 Save Changes</button>
     </div>
 </div>
 
@@ -290,7 +271,10 @@
     var posMap = null;
     var posPolygon = null;
     var posPts = [];
+    var posOrigPts = [];
     var posBedMeta = null;
+    var posDragging = false;
+    var posDragLastLatLng = null;
 
     var statusEl  = document.getElementById('editBoundaryStatus');
     var statsEl   = document.getElementById('editWalkStats');
@@ -529,17 +513,64 @@
     }
 
     // ── Position Modal ────────────────────────────────────────────────────────
+    function checkPosChanged() {
+        var changed = posOrigPts.length !== posPts.length;
+        if (!changed) {
+            for (var i = 0; i < posPts.length; i++) {
+                if (Math.abs(posPts[i][0] - posOrigPts[i][0]) > 1e-9 || Math.abs(posPts[i][1] - posOrigPts[i][1]) > 1e-9) {
+                    changed = true; break;
+                }
+            }
+        }
+        document.getElementById('posModalSave').style.display = changed ? '' : 'none';
+    }
+
     function openPositionModal(pts, bedMeta) {
-        posPts = pts.slice(); posBedMeta = bedMeta || {};
+        posPts = pts.slice();
+        posOrigPts = pts.map(function(p) { return [p[0], p[1]]; });
+        posBedMeta = bedMeta || {};
+        document.getElementById('posModalSave').style.display = 'none';
         var modal = document.getElementById('posModal');
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         setTimeout(function() {
             if (!posMap) {
                 posMap = L.map('posModalMap', { zoomControl: true });
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap', maxZoom: 22
+                L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                    maxZoom: 22,
+                    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                    attribution: '© Google'
                 }).addTo(posMap);
+                posMap.on('mousemove', function(e) {
+                    if (!posDragging) return;
+                    var dLat = e.latlng.lat - posDragLastLatLng.lat;
+                    var dLng = e.latlng.lng - posDragLastLatLng.lng;
+                    posDragLastLatLng = e.latlng;
+                    posPts = posPts.map(function(p) { return [p[0]+dLat, p[1]+dLng]; });
+                    if (posPolygon) posPolygon.setLatLngs(posPts);
+                    checkPosChanged();
+                });
+                posMap.on('mouseup', function() {
+                    if (posDragging) { posDragging = false; posMap.dragging.enable(); }
+                });
+                posMap.getContainer().addEventListener('mouseleave', function() {
+                    if (posDragging) { posDragging = false; posMap.dragging.enable(); }
+                });
+                posMap.getContainer().addEventListener('touchmove', function(e) {
+                    if (!posDragging) return;
+                    e.preventDefault();
+                    var t = e.touches[0];
+                    var latlng = posMap.containerPointToLatLng(posMap.mouseEventToContainerPoint({clientX: t.clientX, clientY: t.clientY}));
+                    var dLat = latlng.lat - posDragLastLatLng.lat;
+                    var dLng = latlng.lng - posDragLastLatLng.lng;
+                    posDragLastLatLng = latlng;
+                    posPts = posPts.map(function(p) { return [p[0]+dLat, p[1]+dLng]; });
+                    if (posPolygon) posPolygon.setLatLngs(posPts);
+                    checkPosChanged();
+                }, { passive: false });
+                posMap.getContainer().addEventListener('touchend', function() {
+                    if (posDragging) { posDragging = false; posMap.dragging.enable(); }
+                });
             } else {
                 posMap.invalidateSize();
             }
@@ -552,24 +583,26 @@
     function drawPosPolygon() {
         if (!posMap) return;
         if (posPolygon) { posMap.removeLayer(posPolygon); posPolygon = null; }
-        posPolygon = L.polygon(posPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.20, weight: 2.5 }).addTo(posMap);
-    }
-
-    document.querySelectorAll('.pos-nudge').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            if (!posPts.length) return;
-            var stepEl = document.querySelector('input[name="posNudgeStep"]:checked');
-            var amt = stepEl ? parseFloat(stepEl.value) : 1;
-            var dir = this.dataset.dir;
-            var refLat = posPts[0][0];
-            var latPerM = 1 / 111111;
-            var lngPerM = 1 / (111111 * Math.cos(refLat * Math.PI / 180));
-            var dLat = dir === 'N' ?  amt * latPerM : dir === 'S' ? -amt * latPerM : 0;
-            var dLng = dir === 'E' ?  amt * lngPerM : dir === 'W' ? -amt * lngPerM : 0;
-            posPts = posPts.map(function(p) { return [p[0]+dLat, p[1]+dLng]; });
-            drawPosPolygon();
+        posPolygon = L.polygon(posPts, {
+            color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.25, weight: 3,
+            interactive: true
+        }).addTo(posMap);
+        posPolygon.on('mousedown', function(e) {
+            L.DomEvent.stopPropagation(e);
+            posMap.dragging.disable();
+            posDragging = true;
+            posDragLastLatLng = e.latlng;
         });
-    });
+        posPolygon.on('touchstart', function(e) {
+            L.DomEvent.stopPropagation(e);
+            posMap.dragging.disable();
+            posDragging = true;
+            var t = e.originalEvent.touches[0];
+            posDragLastLatLng = posMap.containerPointToLatLng(posMap.mouseEventToContainerPoint({clientX: t.clientX, clientY: t.clientY}));
+        });
+        var el = posPolygon.getElement ? posPolygon.getElement() : null;
+        if (el) el.style.cursor = 'grab';
+    }
 
     function rotatePts(pts, deg) {
         var cx = pts.reduce(function(s,p){return s+p[0];},0) / pts.length;
@@ -585,8 +618,8 @@
         });
     }
 
-    document.getElementById('posRotateCCW').addEventListener('click', function() { posPts = rotatePts(posPts, -5); drawPosPolygon(); });
-    document.getElementById('posRotateCW').addEventListener('click',  function() { posPts = rotatePts(posPts,  5); drawPosPolygon(); });
+    document.getElementById('posRotateCCW').addEventListener('click', function() { posPts = rotatePts(posPts, -5); drawPosPolygon(); checkPosChanged(); });
+    document.getElementById('posRotateCW').addEventListener('click',  function() { posPts = rotatePts(posPts,  5); drawPosPolygon(); checkPosChanged(); });
 
     document.getElementById('posModalClose').addEventListener('click', function() {
         document.getElementById('posModal').style.display = 'none';
@@ -609,7 +642,7 @@
         xhr.open('POST', SAVE_URL, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.addEventListener('load', function() {
-            btn.disabled = false; btn.textContent = '💾 Save Position';
+            btn.disabled = false; btn.textContent = '💾 Save Changes';
             var res; try { res = JSON.parse(xhr.responseText); } catch(e) {}
             if (res && res.success) {
                 EXISTING = geojson;
@@ -625,7 +658,7 @@
             }
         });
         xhr.addEventListener('error', function() {
-            btn.disabled = false; btn.textContent = '💾 Save Position';
+            btn.disabled = false; btn.textContent = '💾 Save Changes';
             showToast('❌ Network error — try again.', 'error');
         });
         xhr.send(fd);

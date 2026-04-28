@@ -27,9 +27,9 @@ $navLinks = [
     ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
     ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
     ['href' => '/garden', 'label' => 'Garden', 'icon' => 'garden', 'children' => [
-        ['href' => '/seeds/create',            'label' => '＋ Seed',   'icon' => 'items'],
-        ['href' => '/items/create?type=bed',   'label' => '＋ Bed',    'icon' => 'garden'],
-        ['href' => '/items/create?type=garden','label' => '＋ Garden', 'icon' => 'items'],
+        ['href' => '/seeds/create', 'label' => '＋ Seed',      'icon' => 'items'],
+        ['href' => '/seeds',        'label' => 'All Seeds',    'icon' => 'harvest'],
+        ['href' => '/garden',       'label' => 'Garden Beds',  'icon' => 'garden'],
     ]],
     ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
         ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],

@@ -374,8 +374,7 @@ class GardenBedController
                 );
             }
         } catch (\Throwable $e) {
-            $msg = (bool) env('APP_DEBUG', false) ? $e->getMessage() : 'Plant failed — please try again.';
-            Response::json(['success' => false, 'error' => $msg]);
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
             return;
         }
 

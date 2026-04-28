@@ -15,8 +15,8 @@ if (!function_exists('_gs_renderBed')) {
         $pl = $bed['plantings'] ?? [];
 
         // width_m = E-W → card width; length_m = N-S → card height
-        $cardW = (int) max(70,  min(220, round($wM * $scale)));
-        $cardH = (int) max(48,  min(140, round($lM * $scale)));
+        $cardW = (int) max(55,  min(160, round($wM * $scale)));
+        $cardH = (int) max(36,  min(110, round($lM * $scale)));
 
         $sc = ['growing' => '#6b9952', 'planned' => '#c8924a', 'harvested' => '#c04838'];
         $dc = ['growing' => '#4d7a34', 'planned'  => '#a07028', 'harvested' => '#962e20', 'empty' => '#b8a898'];
@@ -155,8 +155,17 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
     letter-spacing: .06em;
     flex-shrink: 0;
 }
-.gs-group { margin-bottom: 20px; }
-.gs-group:last-of-type { margin-bottom: 8px; }
+.gs-groups-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-bottom: 8px;
+}
+.gs-group {
+    flex: 1 1 200px;
+    min-width: 0;
+    margin-bottom: 10px;
+}
 .gs-group-head {
     display: flex;
     align-items: center;
@@ -303,6 +312,7 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
             <?php endif; ?>
         </div>
 
+        <div class="gs-groups-flex">
         <?php foreach ($_bedsByGarden as $_gardenId => $_beds): ?>
         <div class="gs-group">
             <div class="gs-group-head">
@@ -324,7 +334,7 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
                 $_allDims[] = (float)($_b['length_m'] ?? 0);
             }
             $_maxDim   = max(array_merge($_allDims, [1]));
-            $_scale    = min(55, 220 / max(1, $_maxDim));
+            $_scale    = min(38, 150 / max(1, $_maxDim));
 
             // GPS shelf-row grouping
             $_gpsCount = 0;
@@ -372,6 +382,7 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
+        </div><!-- .gs-groups-flex -->
 
         <!-- Legend -->
         <div class="gs-legend">

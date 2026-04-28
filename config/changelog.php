@@ -8,6 +8,26 @@
  */
 return [
 
+    '3.0.9' => [
+        'date'  => '2026-04-28',
+        'title' => 'Position modal overhaul, schematic compact grid, nav Garden submenu fix',
+        'new' => [
+            'Position modal now uses Google satellite tiles instead of OpenStreetMap — no more grey blank map.',
+            'Polygon is directly draggable on the map — grab and drag to move the bed rectangle, no more nudge arrow buttons.',
+            '"Save Changes" button in position modal only appears when the polygon has actually moved or rotated.',
+            '"Adjust Position on Map" button moved to the very top of the edit page for instant access.',
+        ],
+        'improved' => [
+            'Garden schematic widget on dashboard shows up to 3 garden groups per row in a compact flex layout.',
+            'Garden nav dropdown updated: +Seed, All Seeds, Garden Beds — matches actual user workflow.',
+            'Duplicate "Position" buttons on the item show page removed — only one remains in the hero nav bar.',
+        ],
+        'fixed' => [
+            'Planting errors now always show the real server exception message in the toast instead of a generic fallback.',
+            'GardenSchema now adds missing columns (sown_at, empty_since, last_watered_at, succession columns) to garden_bed_lines on existing installs — fixes "Plant failed" errors caused by missing DB columns.',
+        ],
+    ],
+
     '3.0.8' => [
         'date'  => '2026-04-28',
         'title' => 'Planting drag-and-drop, Garden nav submenu, + Seed button',

@@ -62,11 +62,6 @@ $recentReminders = array_slice($reminders, 0, 3);
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 Edit
             </a>
-            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
-            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:rgba(255,193,7,.75);backdrop-filter:blur(4px);color:#000;border-radius:20px;font-size:.78rem;font-weight:600;text-decoration:none">
-                📍 Position
-            </a>
-            <?php endif; ?>
         </div>
     </div>
     <?php else: ?>
@@ -77,11 +72,6 @@ $recentReminders = array_slice($reminders, 0, 3);
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 Edit
             </a>
-            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
-            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" style="display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:rgba(255,193,7,.75);backdrop-filter:blur(4px);color:#000;border-radius:20px;font-size:.78rem;font-weight:600;text-decoration:none">
-                📍 Position
-            </a>
-            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
