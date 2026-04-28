@@ -115,8 +115,6 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
   <?php endif; ?>
 </div>
 
-<?php include BASE_PATH . '/resources/views/partials/garden-schematic.php'; ?>
-
 <!-- Garden sections -->
 <?php foreach ($_gardens as $g):
   $gid = (int)$g['id'];
@@ -194,6 +192,8 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
 <?php if (empty($_gardens)): ?>
   <div class="rg-week-empty" style="margin-top:14px">No active gardens yet. <a href="<?= url('/items/create?type=garden') ?>">Create your first garden</a>.</div>
 <?php endif; ?>
+
+<?php include BASE_PATH . '/resources/views/partials/garden-schematic.php'; ?>
 
 <!-- Assign Beds Popup -->
 <div id="assignBedsModal" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.5);align-items:flex-end">
