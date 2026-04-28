@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.14' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Schematic at top of garden page',
+        'features' => [
+            ['title' => 'Schematic on top', 'detail' => 'Bed Overview moved above the active gardens list. Beds flow side-by-side with flex-wrap; no GPS-based row splitting.'],
+        ],
+    ],
+
     '3.0.13' => [
         'status'   => 'released',
         'released' => '2026-04-28',

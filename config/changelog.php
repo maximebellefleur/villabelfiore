@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.0.14' => [
+        'date'  => '2026-04-28',
+        'title' => 'Bed Overview at top of garden page, no GPS row splitting',
+        'improved' => [
+            'Bed Overview schematic moved to the top of the Garden page, above the active gardens list, so you see the property layout first.',
+            'Within each garden group, beds now flow side-by-side and wrap naturally — no more vertical stacking based on GPS latitude. Each bed is treated as a whole entity that never gets split across rows.',
+            'Bed cards bumped back up in size — no more tiny thumbnails.',
+        ],
+    ],
+
     '3.0.13' => [
         'date'  => '2026-04-28',
         'title' => 'Items list: filters retained between visits',

@@ -327,59 +327,22 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
             </div>
 
             <?php
-            // Compute per-group scale from physical dimensions
+            // Compute per-group scale from physical dimensions.
+            // Bigger scale = bigger cards. Beds always render whole and flex-wrap
+            // naturally within the group; no GPS-based row splitting.
             $_allDims = [];
             foreach ($_beds as $_b) {
                 $_allDims[] = (float)($_b['width_m']  ?? 0);
                 $_allDims[] = (float)($_b['length_m'] ?? 0);
             }
-            $_maxDim   = max(array_merge($_allDims, [1]));
-            $_scale    = min(38, 150 / max(1, $_maxDim));
-
-            // GPS shelf-row grouping
-            $_gpsCount = 0;
-            foreach ($_beds as $_b) {
-                if (!empty($_b['gps_lat']) && !empty($_b['gps_lng'])) $_gpsCount++;
-            }
-
-            if ($_gpsCount >= 2):
-                $_bedsGps   = array_values(array_filter($_beds, fn($b) => !empty($b['gps_lat']) && !empty($b['gps_lng'])));
-                $_bedsNoGps = array_values(array_filter($_beds, fn($b) => empty($b['gps_lat'])  || empty($b['gps_lng'])));
-                usort($_bedsGps, function($a, $b) {
-                    $d = (float)$b['gps_lat'] - (float)$a['gps_lat'];
-                    if (abs($d) > 1e-9) return $d > 0 ? 1 : -1;
-                    return ((float)$a['gps_lng'] - (float)$b['gps_lng']) > 0 ? 1 : -1;
-                });
-                $_allLats   = array_map(fn($b) => (float)$b['gps_lat'], $_bedsGps);
-                $_latSpan   = count($_allLats) > 1 ? (max($_allLats) - min($_allLats)) : 0;
-                $_latTol    = max($_latSpan > 0 ? $_latSpan / (ceil(count($_bedsGps) / 3) + 1) : 0.00005, 0.00003);
-                $_shelfRows = []; $_shelf = []; $_prevLat = null;
-                foreach ($_bedsGps as $_b) {
-                    $_lat = (float)$_b['gps_lat'];
-                    if ($_prevLat !== null && ($_prevLat - $_lat) > $_latTol) {
-                        $_shelfRows[] = $_shelf; $_shelf = [];
-                    }
-                    $_shelf[] = $_b; $_prevLat = $_lat;
-                }
-                if ($_shelf) $_shelfRows[] = $_shelf;
-                if ($_bedsNoGps) $_shelfRows[] = $_bedsNoGps;
-
-                foreach ($_shelfRows as $_shelf):
-                    usort($_shelf, fn($a, $b) => ((float)($a['gps_lng'] ?? 0) - (float)($b['gps_lng'] ?? 0)) > 0 ? 1 : -1);
+            $_maxDim = max(array_merge($_allDims, [1]));
+            $_scale  = min(52, 220 / max(1, $_maxDim));
             ?>
-            <div class="gs-shelf">
-                <?php foreach ($_shelf as $_bed): ?>
-                    <?= _gs_renderBed($_bed, $_scale) ?>
-                <?php endforeach; ?>
-            </div>
-            <?php       endforeach;
-            else: ?>
             <div class="gs-shelf">
                 <?php foreach ($_beds as $_bed): ?>
                     <?= _gs_renderBed($_bed, $_scale) ?>
                 <?php endforeach; ?>
             </div>
-            <?php endif; ?>
         </div>
         <?php endforeach; ?>
         </div><!-- .gs-groups-flex -->
