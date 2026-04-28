@@ -94,6 +94,12 @@ class SeedController
         if (empty($restockCol)) {
             $db->execute("ALTER TABLE seeds ADD COLUMN needs_restock TINYINT(1) NOT NULL DEFAULT 0 AFTER stock_enabled");
         }
+
+        // Migrate: add display color column (used in planting view chips)
+        $colorCol = $db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'color'");
+        if (empty($colorCol)) {
+            try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
+        }
     }
 
     // ── Seed CRUD ─────────────────────────────────────────────────────────────
@@ -152,9 +158,6 @@ class SeedController
         $this->ensureTables($db);
 
         $data = $this->extractSeedData($request);
-
-        // Tolerate older 'seeds' tables that may not yet have the 'color' column.
-        try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
 
         $db->execute(
             "INSERT INTO seeds (name, variety, botanical_family, type, sowing_type,
@@ -232,8 +235,6 @@ class SeedController
         $this->ensureTables($db);
 
         $data = $this->extractSeedData($request);
-
-        try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
 
         $db->execute(
             "UPDATE seeds SET name=?, variety=?, botanical_family=?, type=?, sowing_type=?,

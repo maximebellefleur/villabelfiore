@@ -58,7 +58,9 @@ $bedId = (int)$item['id'];
     $segments = GardenHelpers::computeSegments($line, $cropsById);
     $fill     = GardenHelpers::computeFill($line, $cropsById);
     $totalSlots = max(1, (int)floor((int)$line['lengthCm'] / 5));
-    $overcap = $fill['used'] > (int)$line['lengthCm'];
+    $overcap  = $fill['used'] > (int)$line['lengthCm'];
+    $usedPct  = ((int)$line['lengthCm'] > 0) ? ($fill['used'] / (int)$line['lengthCm']) : 0;
+    $overpack = $usedPct >= 0.9;
 
     // Build slot map (1 slot = 5 cm)
     $slots = array_fill(0, $totalSlots, null);
@@ -76,12 +78,12 @@ $bedId = (int)$item['id'];
     }
     $suggestions = GardenHelpers::getSuggestions($line, $catalog, $cropsById);
   ?>
-    <div class="rg-line <?= $overcap ? 'rg-line--overcap' : '' ?>" data-line="<?= (int)$line['lineNumber'] ?>">
+    <div class="rg-line <?= $overcap ? 'rg-line--overcap' : ($overpack ? 'rg-line--overpack' : '') ?>" data-line="<?= (int)$line['lineNumber'] ?>">
       <div class="rg-line-head">
         <div class="rg-line-num"><?= (int)$line['lineNumber'] ?></div>
         <div class="rg-line-name">
           Line <?= (int)$line['lineNumber'] ?>
-          <span class="rg-line-fill">· <?= (int)$fill['used'] ?>/<?= (int)$line['lengthCm'] ?>cm</span>
+          <span class="rg-line-fill">· <?= (int)$fill['used'] ?>/<?= (int)$line['lengthCm'] ?>cm <?= $overpack ? '· <strong style="color:#b91c1c">' . round($usedPct * 100) . '%</strong>' : '' ?></span>
         </div>
         <?php if (!empty($line['plantings'])): ?>
         <div class="rg-line-actions">
@@ -89,6 +91,12 @@ $bedId = (int)$item['id'];
         </div>
         <?php endif; ?>
       </div>
+      <?php if ($overpack): ?>
+      <div class="rg-overpack-banner" style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;background:<?= $overcap ? 'rgba(220,38,38,.08)' : 'rgba(234,179,8,.12)' ?>;border:1px solid <?= $overcap ? 'rgba(220,38,38,.35)' : 'rgba(234,179,8,.45)' ?>;border-radius:8px;font-size:.78rem;color:<?= $overcap ? '#991b1b' : '#854d0e' ?>;font-weight:600">
+        <span style="font-size:1rem"><?= $overcap ? '⛔' : '⚠️' ?></span>
+        <span><?= $overcap ? 'Overpacked — plants are competing for space, expect smaller yields.' : 'Nearly full — careful, you are close to overpacking the line.' ?></span>
+      </div>
+      <?php endif; ?>
 
       <!-- Stripe -->
       <div class="rg-stripe">
@@ -129,7 +137,7 @@ $bedId = (int)$item['id'];
           if (!$c) continue;
           $color = $c['color'];
         ?>
-          <div class="rg-stepchip" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>">
+          <div class="rg-stepchip" draggable="true" data-planting-id="<?= (int)$p['id'] ?>" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>;cursor:grab">
             <span class="rg-stepchip-emoji"><?= e($c['emoji']) ?></span>
             <span><?= e($c['name']) ?></span>
             <div class="rg-stepper" data-planting-id="<?= (int)$p['id'] ?>">
@@ -406,11 +414,59 @@ $bedId = (int)$item['id'];
   $page.on('drop', '.rg-line', function (e) {
     e.preventDefault();
     $(this).removeClass('is-drag-over');
-    var cropId  = parseInt(e.originalEvent.dataTransfer.getData('text/plain'), 10);
+    // Ignore reorder drags — those are handled at the .rg-stepchip drop target
+    var dt = e.originalEvent.dataTransfer;
+    if (dt.types && Array.prototype.indexOf.call(dt.types, 'text/x-rooted-reorder') >= 0) return;
+    var cropId  = parseInt(dt.getData('text/plain'), 10);
     var lineNum = parseInt($(this).data('line'), 10);
     if (!cropId || !lineNum) return;
     setActiveLine(lineNum);
     plantOne(lineNum, cropId);
+  });
+
+  // ── Drag-reorder stepchips inside a line ─────────────────────────
+  $page.on('dragstart', '.rg-stepchip', function (e) {
+    var pid = $(this).data('planting-id');
+    if (!pid) return;
+    e.originalEvent.dataTransfer.setData('text/x-rooted-reorder', String(pid));
+    e.originalEvent.dataTransfer.effectAllowed = 'move';
+    $(this).addClass('is-dragging').css('opacity', '.5');
+  });
+  $page.on('dragend', '.rg-stepchip', function () {
+    $(this).removeClass('is-dragging').css('opacity', '');
+    $page.find('.rg-stepchip').removeClass('is-drop-target');
+  });
+  $page.on('dragover', '.rg-stepchip', function (e) {
+    var dt = e.originalEvent.dataTransfer;
+    if (!dt.types || Array.prototype.indexOf.call(dt.types, 'text/x-rooted-reorder') < 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dt.dropEffect = 'move';
+    $(this).addClass('is-drop-target');
+  });
+  $page.on('dragleave', '.rg-stepchip', function () { $(this).removeClass('is-drop-target'); });
+  $page.on('drop', '.rg-stepchip', function (e) {
+    var dt = e.originalEvent.dataTransfer;
+    var srcId = parseInt(dt.getData('text/x-rooted-reorder'), 10);
+    if (!srcId) return;
+    e.preventDefault(); e.stopPropagation();
+    var $target = $(this);
+    $target.removeClass('is-drop-target');
+    var tgtId = parseInt($target.data('planting-id'), 10);
+    if (!tgtId || srcId === tgtId) return;
+    var $row = $target.closest('.rg-steppers');
+    // Build the new id order (move srcId to the slot of tgtId)
+    var ids = [];
+    $row.find('.rg-stepchip').each(function () { ids.push(parseInt($(this).data('planting-id'), 10)); });
+    var srcIdx = ids.indexOf(srcId); if (srcIdx >= 0) ids.splice(srcIdx, 1);
+    var tgtIdx = ids.indexOf(tgtId); if (tgtIdx < 0) return;
+    ids.splice(tgtIdx, 0, srcId);
+    $.post('<?= url('/garden/plantings/reorder') ?>', { _token: csrf, planting_ids: ids })
+      .done(function (data) {
+        if (!data || data.success === false) { showToast((data && data.error) || 'Could not reorder', 'error'); return; }
+        window.location.reload();
+      })
+      .fail(function () { showToast('Could not reorder', 'error'); });
   });
 
   // ── Stepper +/− ─────────────────────────────────────────────────

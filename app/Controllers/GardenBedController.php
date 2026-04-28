@@ -276,14 +276,6 @@ class GardenBedController
         $data = $this->loadBed($db, $id);
         if (!$data) { http_response_code(404); Response::render('errors/404', ['title' => 'Not Found']); return; }
 
-        $settingsRows = $db->fetchAll("SELECT setting_key, setting_value_text FROM settings WHERE setting_key IN ('weather.city_name','weather.lat','weather.lng')");
-        $loc = ['city' => '', 'lat' => '', 'lng' => ''];
-        foreach ($settingsRows as $r) {
-            if ($r['setting_key'] === 'weather.city_name') $loc['city'] = (string)$r['setting_value_text'];
-            if ($r['setting_key'] === 'weather.lat')       $loc['lat']  = (string)$r['setting_value_text'];
-            if ($r['setting_key'] === 'weather.lng')       $loc['lng']  = (string)$r['setting_value_text'];
-        }
-
         Response::render('garden/plan_inline', [
             'title'        => ($data['item']['name'] ?? 'Garden Bed') . ' — Plan',
             'mode'         => 'inline',
@@ -298,7 +290,6 @@ class GardenBedController
             'bed'          => $data['bed'],
             'catalog'      => $data['catalog'],
             'cropsById'    => $data['cropsById'],
-            'location'     => $loc,
         ]);
     }
 

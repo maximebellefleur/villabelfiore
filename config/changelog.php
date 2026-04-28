@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.1.3' => [
+        'date'  => '2026-04-28',
+        'title' => 'Cleanup + finished tasks',
+        'new' => [
+            'Overpacking warning on the bed planting view: when a line is at ≥90% capacity, an amber banner appears under the line head ("Nearly full…"); over 100% it switches to red ("Overpacked — plants competing for space"). The percentage is also added to the line header.',
+            'Drag-and-drop reorder of crop chips inside a line is now wired up — drag a stepchip onto another to swap order. The sort_order is persisted via POST /garden/plantings/reorder and respected by loadBed.',
+        ],
+        'fixed' => [
+            'Removed an unused location-settings fetch from showPlanInline (was passed to the view as $location but never read).',
+            'Removed two redundant ALTER TABLE seeds ADD COLUMN color statements from SeedController::store and ::update — added a single proper ensureTables migration instead.',
+            'Sanity-passed: schematic partial has no leftover shelf-row variables; harvestClearLine kept (still referenced from bed.php and plan_timeline.php).',
+        ],
+    ],
+
     '3.1.2' => [
         'date'  => '2026-04-28',
         'title' => 'Hotfix: bed planting page 500 when sort_order column missing',

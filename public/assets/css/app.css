@@ -1043,6 +1043,9 @@ fieldset.fieldset {
   transition: border-color .18s, box-shadow .18s;
 }
 .rg-line--overcap { border-color: #fca5a5; }
+.rg-line--overpack { border-color: #fbbf24; }
+.rg-stepchip[draggable] { user-select: none; }
+.rg-stepchip.is-drop-target { outline: 2px dashed var(--color-primary); outline-offset: 2px; }
 .rg-line.is-active { border-color: var(--color-primary) !important; box-shadow: 0 0 0 3px rgba(22,101,52,.14); }
 @keyframes rg-line-pulse {
   0%,100% { box-shadow: 0 0 0 3px rgba(22,101,52,.14); }

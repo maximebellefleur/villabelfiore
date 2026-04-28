@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Cleanup + finished tasks',
+        'features' => [
+            ['title' => 'Overpacking warning', 'detail' => 'Banner at ≥90% of line capacity, escalates to red over 100%.'],
+            ['title' => 'Drag-reorder UI',     'detail' => 'Stepchips are draggable; drop on a sibling reorders. Backend reorder endpoint already existed; UI now uses it.'],
+            ['title' => 'Dead-code removal',   'detail' => 'Unused location fetch and redundant ALTERs cleaned up; proper migration added in SeedController::ensureTables.'],
+        ],
+    ],
+
     '3.1.2' => [
         'status'   => 'released',
         'released' => '2026-04-28',
