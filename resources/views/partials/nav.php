@@ -27,10 +27,10 @@ $navLinks = [
     ['href' => '/dashboard/map',  'label' => 'Map',       'icon' => 'map'],
     ['href' => '/items',          'label' => 'Items',     'icon' => 'items'],
     ['href' => '/garden',         'label' => 'Garden',     'icon' => 'garden'],
-    ['href' => '/harvest/quick',  'label' => 'Harvest',    'icon' => 'harvest'],
-    ['href' => '/irrigation',     'label' => 'Irrigation', 'icon' => 'irrigation'],
-    ['href' => '/tasks',          'label' => 'Tasks',      'icon' => 'tasks'],
-    ['href' => '/reminders',      'label' => 'Reminders', 'icon' => 'reminders'],
+    ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
+    ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
+    ['href' => '/tasks',                'label' => 'Tasks',      'icon' => 'tasks'],
+    ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
     ['href' => '/finance',        'label' => 'Finance',   'icon' => 'finance'],
     ['href' => '/activity-log',   'label' => 'Activity',  'icon' => 'activity'],
     ['href' => '/settings',        'label' => 'Settings',  'icon' => 'settings'],
@@ -162,9 +162,9 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <span class="bottom-nav-icon"><?= _navIcon('garden') ?></span>
         <span class="bottom-nav-label">Garden</span>
     </a>
-    <a href="<?= url('/harvest/quick') ?>" class="bottom-nav-item" data-bnav="harvest">
+    <a href="<?= url('/tasks?tab=achats') ?>" class="bottom-nav-item" data-bnav="harvest">
         <span class="bottom-nav-icon"><?= _navIcon('harvest') ?></span>
-        <span class="bottom-nav-label">Harvest</span>
+        <span class="bottom-nav-label">Achats</span>
     </a>
     <a href="<?= url('/tasks') ?>" class="bottom-nav-item" data-bnav="tasks">
         <span class="bottom-nav-icon"><?= _navIcon('tasks') ?></span>
