@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.0.16' => [
+        'date'  => '2026-04-28',
+        'title' => 'Distinct default colors per seed',
+        'new' => [
+            'Each seed in the catalog now gets a unique display color picked deterministically from a 20-color palette. No more identical brownish chips for everything in the same family — Borlotti bean and Haricot mangetout are visually distinct on planting lines.',
+            'New "Display Color" field on the seed form with a color picker and hex input — pick any color you want, leave it on the auto-default, and it persists in the seeds.color column.',
+        ],
+        'improved' => [
+            'Existing seeds in your catalog get colors immediately without needing a DB migration — the fallback hashes by id, so what you saw before as one beige chip is now a colored chip the next time you view a planting.',
+        ],
+    ],
+
     '3.0.15' => [
         'date'  => '2026-04-28',
         'title' => 'Stepper numeric entry on bed planting',

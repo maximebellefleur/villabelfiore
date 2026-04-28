@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.16' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Distinct default colors per seed',
+        'features' => [
+            ['title' => 'Per-seed colors', 'detail' => '20-color palette, deterministic fallback by id. Color picker + hex input on the seed form. Persists in seeds.color.'],
+        ],
+    ],
+
     '3.0.15' => [
         'status'   => 'released',
         'released' => '2026-04-28',

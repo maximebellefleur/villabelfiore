@@ -153,13 +153,16 @@ class SeedController
 
         $data = $this->extractSeedData($request);
 
+        // Tolerate older 'seeds' tables that may not yet have the 'color' column.
+        try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
+
         $db->execute(
             "INSERT INTO seeds (name, variety, botanical_family, type, sowing_type,
              days_to_germinate, days_to_maturity, spacing_cm, row_spacing_cm, sowing_depth_mm,
              sun_exposure, soil_notes, planting_months, harvest_months, frost_hardy,
              companions, antagonists, yield_per_plant_kg,
-             stock_qty, stock_unit, stock_low_threshold, stock_enabled, notes)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+             stock_qty, stock_unit, stock_low_threshold, stock_enabled, notes, color)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             [
                 $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
                 $data['days_to_germinate'], $data['days_to_maturity'], $data['spacing_cm'],
@@ -168,7 +171,7 @@ class SeedController
                 $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
                 $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
                 $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
-                $data['stock_enabled'], $data['notes'],
+                $data['stock_enabled'], $data['notes'], $data['color'],
             ]
         );
 
@@ -230,12 +233,14 @@ class SeedController
 
         $data = $this->extractSeedData($request);
 
+        try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
+
         $db->execute(
             "UPDATE seeds SET name=?, variety=?, botanical_family=?, type=?, sowing_type=?,
              days_to_germinate=?, days_to_maturity=?, spacing_cm=?, row_spacing_cm=?, sowing_depth_mm=?,
              sun_exposure=?, soil_notes=?, planting_months=?, harvest_months=?, frost_hardy=?,
              companions=?, antagonists=?, yield_per_plant_kg=?,
-             stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?
+             stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?, color=?
              WHERE id=?",
             [
                 $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
@@ -245,7 +250,7 @@ class SeedController
                 $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
                 $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
                 $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
-                $data['stock_enabled'], $data['notes'],
+                $data['stock_enabled'], $data['notes'], $data['color'],
                 $id,
             ]
         );
@@ -551,6 +556,10 @@ class SeedController
             'stock_low_threshold' => ($request->post('stock_low_threshold', '') !== '' ? (float)$request->post('stock_low_threshold') : null),
             'stock_enabled'      => $request->post('stock_enabled', '0') === '1' ? 1 : 0,
             'notes'              => trim($request->post('notes', '')),
+            'color'              => (function() use ($request) {
+                $c = trim((string)$request->post('color', ''));
+                return preg_match('/^#[0-9a-fA-F]{6}$/', $c) ? strtolower($c) : null;
+            })(),
         ];
     }
 }

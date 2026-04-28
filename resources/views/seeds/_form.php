@@ -235,6 +235,29 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
             </select>
         </div>
     </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Display Color <small class="text-muted" style="font-weight:400">(used on planting chips)</small></label>
+            <?php
+            $_seedColor = $seed['color'] ?? null;
+            if (!$_seedColor || !preg_match('/^#[0-9a-f]{6}$/i', $_seedColor)) {
+                $_key = (int)($seed['id'] ?? 0) ?: ($seed['name'] ?? 'other');
+                $_seedColor = \App\Support\GardenHelpers::defaultCatalogColor($_key);
+            }
+            ?>
+            <div style="display:flex;align-items:center;gap:8px">
+                <input type="color" name="color" id="fColor" value="<?= e($_seedColor) ?>" style="width:46px;height:36px;padding:0;border:1px solid var(--color-border);border-radius:6px;cursor:pointer;background:transparent">
+                <input type="text" id="fColorHex" value="<?= e($_seedColor) ?>" pattern="^#[0-9a-fA-F]{6}$" maxlength="7" class="form-input" style="font-family:var(--font-mono);max-width:120px" oninput="document.getElementById('fColor').value = this.value;">
+                <span style="font-size:.75rem;color:var(--color-text-muted)">Auto-set on new seeds — change anytime.</span>
+            </div>
+            <script>
+            (function(){
+                var c = document.getElementById('fColor'), h = document.getElementById('fColorHex');
+                if (c && h) c.addEventListener('input', function(){ h.value = c.value; });
+            })();
+            </script>
+        </div>
+    </div>
 </fieldset>
 
 <fieldset class="fieldset">

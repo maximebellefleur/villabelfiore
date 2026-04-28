@@ -31,6 +31,27 @@ class GardenHelpers
         'other'  => '#A66141',
     ];
 
+    /**
+     * Distinct color palette used when no explicit color and no family color
+     * is set — picked deterministically per seed so each one gets a unique hue.
+     */
+    public const CATALOG_COLORS = [
+        '#E76F51', '#F4A261', '#E9C46A', '#2A9D8F', '#264653',
+        '#8AB17D', '#B5838D', '#6D597A', '#355070', '#E07A5F',
+        '#81B29A', '#F2CC8F', '#D62828', '#F77F00', '#588157',
+        '#9D4EDD', '#6A994E', '#BC4749', '#386641', '#A7C957',
+    ];
+
+    /**
+     * Pick a color from CATALOG_COLORS deterministically based on a seed's
+     * identifier (id or name). Same key → same color across the app.
+     */
+    public static function defaultCatalogColor(int|string $key): string
+    {
+        $hash = is_int($key) ? $key : crc32((string)$key);
+        return self::CATALOG_COLORS[abs($hash) % count(self::CATALOG_COLORS)];
+    }
+
     /** Fallback emoji by family. */
     public const FAMILY_EMOJI = [
         'root'   => '🥕',
@@ -47,13 +68,20 @@ class GardenHelpers
         return (new \DateTime('today'))->format('Y-m-d');
     }
 
-    /** A crop record's display color, with family fallback. */
+    /**
+     * A crop record's display color.
+     * Priority:
+     *  1. explicit color field on the seed (#RRGGBB)
+     *  2. deterministic per-seed pick from CATALOG_COLORS (so each seed in
+     *     the same family is still visually distinct in the planting view).
+     */
     public static function cropColor(array $crop): string
     {
         $c = $crop['color'] ?? null;
         if ($c && preg_match('/^#[0-9a-f]{6}$/i', $c)) return $c;
-        $fam = $crop['family'] ?? 'other';
-        return self::FAMILY_COLORS[$fam] ?? self::FAMILY_COLORS['other'];
+        $key = (int)($crop['id'] ?? 0);
+        if ($key === 0) $key = $crop['name'] ?? 'other';
+        return self::defaultCatalogColor($key);
     }
 
     /** A crop record's display emoji, with family fallback. */
