@@ -82,11 +82,21 @@ class GardenBedController
         foreach ($existingLines as $l) { $linesByNum[(int)$l['line_number']] = $l; }
         for ($n = 1; $n <= $bedRows; $n++) {
             if (!isset($linesByNum[$n])) {
-                $db->execute(
-                    "INSERT INTO garden_bed_lines (item_id, line_number, length_cm, rotation_history)
-                     VALUES (?, ?, ?, '[]')",
-                    [$id, $n, $lengthCm]
-                );
+                try {
+                    $db->execute(
+                        "INSERT INTO garden_bed_lines (item_id, line_number, length_cm, rotation_history)
+                         VALUES (?, ?, ?, '[]')",
+                        [$id, $n, $lengthCm]
+                    );
+                } catch (\Throwable $e) {
+                    // Try without rotation_history if column missing on old installs
+                    try {
+                        $db->execute(
+                            "INSERT INTO garden_bed_lines (item_id, line_number, length_cm) VALUES (?, ?, ?)",
+                            [$id, $n, $lengthCm]
+                        );
+                    } catch (\Throwable $e2) { /* duplicate or schema mismatch — continue */ }
+                }
                 $linesByNum[$n] = [
                     'id' => null,
                     'item_id' => $id,

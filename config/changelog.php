@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.4' => [
+        'date'  => '2026-04-28',
+        'title' => 'Hotfix: bed planting page crash fix',
+        'fixed' => [
+            'Pre-computed overpack banner variables before the HTML template loop to remove complex inline PHP ternaries inside HTML attributes — the previous approach with emoji literals in short-echo tags inside style attributes could fail on certain server configurations.',
+            'Added missing POST /garden/plantings/reorder route — the drag-reorder JS was posting to this endpoint but it had no route definition, causing a silent 404 on every reorder attempt.',
+            'Wrapped loadBed INSERT into garden_bed_lines in a try/catch with a fallback that omits the rotation_history column — on old installs where the ensureColumn ALTER silently failed, the INSERT was crashing the page.',
+        ],
+    ],
+
     '3.1.3' => [
         'date'  => '2026-04-28',
         'title' => 'Cleanup + finished tasks',

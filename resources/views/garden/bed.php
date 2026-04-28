@@ -77,24 +77,33 @@ $bedId = (int)$item['id'];
       }
     }
     $suggestions = GardenHelpers::getSuggestions($line, $catalog, $cropsById);
+    // Pre-compute overpack banner values to keep template clean
+    $lineClass      = $overcap ? 'rg-line--overcap' : ($overpack ? 'rg-line--overpack' : '');
+    $fillLabel      = $overpack ? '&middot; <strong style="color:#b91c1c">' . round($usedPct * 100) . '%</strong>' : '';
+    $bannerBg       = $overcap ? 'rgba(220,38,38,.08)'  : 'rgba(234,179,8,.12)';
+    $bannerBorder   = $overcap ? 'rgba(220,38,38,.35)'  : 'rgba(234,179,8,.45)';
+    $bannerColor    = $overcap ? '#991b1b' : '#854d0e';
+    $bannerIcon     = $overcap ? "\xE2\x9B\x94" : "\xE2\x9A\xA0\xEF\xB8\x8F";
+    $bannerMsg      = $overcap ? 'Overpacked — plants are competing for space, expect smaller yields.'
+                               : 'Nearly full — careful, you are close to overpacking the line.';
   ?>
-    <div class="rg-line <?= $overcap ? 'rg-line--overcap' : ($overpack ? 'rg-line--overpack' : '') ?>" data-line="<?= (int)$line['lineNumber'] ?>">
+    <div class="rg-line <?= e($lineClass) ?>" data-line="<?= (int)$line['lineNumber'] ?>">
       <div class="rg-line-head">
         <div class="rg-line-num"><?= (int)$line['lineNumber'] ?></div>
         <div class="rg-line-name">
           Line <?= (int)$line['lineNumber'] ?>
-          <span class="rg-line-fill">· <?= (int)$fill['used'] ?>/<?= (int)$line['lengthCm'] ?>cm <?= $overpack ? '· <strong style="color:#b91c1c">' . round($usedPct * 100) . '%</strong>' : '' ?></span>
+          <span class="rg-line-fill">&middot; <?= (int)$fill['used'] ?>/<?= (int)$line['lengthCm'] ?>cm <?= $fillLabel ?></span>
         </div>
         <?php if (!empty($line['plantings'])): ?>
         <div class="rg-line-actions">
-          <button class="btn btn-secondary btn-sm rg-harvest-btn" data-line="<?= (int)$line['lineNumber'] ?>" style="border-color:var(--color-accent);color:var(--color-accent)">🌾 Harvest</button>
+          <button class="btn btn-secondary btn-sm rg-harvest-btn" data-line="<?= (int)$line['lineNumber'] ?>" style="border-color:var(--color-accent);color:var(--color-accent)">&#x1F33E; Harvest</button>
         </div>
         <?php endif; ?>
       </div>
       <?php if ($overpack): ?>
-      <div class="rg-overpack-banner" style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;background:<?= $overcap ? 'rgba(220,38,38,.08)' : 'rgba(234,179,8,.12)' ?>;border:1px solid <?= $overcap ? 'rgba(220,38,38,.35)' : 'rgba(234,179,8,.45)' ?>;border-radius:8px;font-size:.78rem;color:<?= $overcap ? '#991b1b' : '#854d0e' ?>;font-weight:600">
-        <span style="font-size:1rem"><?= $overcap ? '⛔' : '⚠️' ?></span>
-        <span><?= $overcap ? 'Overpacked — plants are competing for space, expect smaller yields.' : 'Nearly full — careful, you are close to overpacking the line.' ?></span>
+      <div class="rg-overpack-banner" style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;background:<?= e($bannerBg) ?>;border:1px solid <?= e($bannerBorder) ?>;border-radius:8px;font-size:.78rem;color:<?= e($bannerColor) ?>;font-weight:600">
+        <span style="font-size:1rem"><?= e($bannerIcon) ?></span>
+        <span><?= e($bannerMsg) ?></span>
       </div>
       <?php endif; ?>
 

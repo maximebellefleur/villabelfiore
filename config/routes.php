@@ -176,6 +176,7 @@ $router->post('/items/{id}/harvest-partial',     'GardenBedController@harvestPar
 $router->post('/items/{id}/lines/succession/set',   'GardenBedController@setSuccession');
 $router->post('/items/{id}/lines/succession/clear', 'GardenBedController@clearSuccession');
 $router->post('/items/{id}/lines/set-sown',         'GardenBedController@setLineSown');
+$router->post('/garden/plantings/reorder',           'GardenBedController@reorderPlantings');
 $router->post('/garden/plantings/{id}/trash',    'GardenBedController@trashLine');
 $router->post('/garden/plantings/{id}/harvest-line', 'GardenBedController@harvestLine');
 $router->post('/garden/plantings/{id}/adjust-qty',   'GardenBedController@adjustQty');

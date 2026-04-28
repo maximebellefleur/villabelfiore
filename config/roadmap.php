@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.4' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Hotfix: bed planting crash fix',
+        'features' => [
+            ['title' => 'Overpack banner fix',    'detail' => 'Pre-computed banner variables replace inline PHP ternaries with emojis inside HTML attributes — avoids encoding issues on certain servers.'],
+            ['title' => 'Reorder route added',    'detail' => 'POST /garden/plantings/reorder now has a proper route entry so drag-reorder actually persists.'],
+            ['title' => 'loadBed INSERT safety',  'detail' => 'Fallback INSERT omits rotation_history column on old installs where the ensureColumn ALTER silently failed.'],
+        ],
+    ],
+
     '3.1.3' => [
         'status'   => 'released',
         'released' => '2026-04-28',
