@@ -102,11 +102,20 @@ class GardenBedController
             }
         }
 
-        // Plantings indexed by line_number; sort_order first (drag-reorder), then id
-        $plantings = $db->fetchAll(
-            "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, sort_order ASC, id ASC",
-            [$id]
-        );
+        // Plantings indexed by line_number; sort_order first (drag-reorder), then id.
+        // Tolerate older installs where the sort_order column hasn't been added yet
+        // (e.g. DB user lacks ALTER privilege so the ensureColumn migration fails silently).
+        try {
+            $plantings = $db->fetchAll(
+                "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, sort_order ASC, id ASC",
+                [$id]
+            );
+        } catch (\Throwable $e) {
+            $plantings = $db->fetchAll(
+                "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, id ASC",
+                [$id]
+            );
+        }
         $plantingMap = [];
         foreach ($plantings as $p) {
             $plantingMap[(int)$p['line_number']][] = $p;
@@ -1034,6 +1043,8 @@ class GardenBedController
         $ids = $request->post('planting_ids', []);
         if (!is_array($ids) || empty($ids)) { Response::json(['success' => false, 'error' => 'No ids']); return; }
 
+        // Try to add the column on the fly if missing (no-op if it already exists or user lacks ALTER)
+        try { $db->execute("ALTER TABLE garden_plantings ADD COLUMN sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0"); } catch (\Throwable $e) {}
         try {
             foreach ($ids as $idx => $pid) {
                 $db->execute("UPDATE garden_plantings SET sort_order = ? WHERE id = ?", [$idx + 1, (int)$pid]);

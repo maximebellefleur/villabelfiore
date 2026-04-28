@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.2' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Hotfix: bed planting page 500',
+        'features' => [
+            ['title' => 'Defensive ORDER BY', 'detail' => 'loadBed() falls back to ORDER BY id if sort_order column is missing on older installs.'],
+        ],
+    ],
+
     '3.1.1' => [
         'status'   => 'released',
         'released' => '2026-04-28',

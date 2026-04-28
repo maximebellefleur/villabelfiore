@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.2' => [
+        'date'  => '2026-04-28',
+        'title' => 'Hotfix: bed planting page 500 when sort_order column missing',
+        'fixed' => [
+            'On installs where the DB user has no ALTER privilege, the new sort_order column added in v3.1 was never created — and loadBed() then crashed on ORDER BY sort_order, breaking every /items/{id}/planting page with "Something went wrong. Please try again." Now wrapped in try/catch with a fallback that orders by id only.',
+            'Reorder endpoint now also attempts the ALTER on demand and silently no-ops if it cannot run, so the existing UI keeps working without the feature.',
+        ],
+    ],
+
     '3.1.1' => [
         'date'  => '2026-04-28',
         'title' => 'Map sidebar: Edit item button, no Edit polygon for beds',
