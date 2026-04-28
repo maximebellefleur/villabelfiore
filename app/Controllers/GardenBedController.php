@@ -837,6 +837,17 @@ class GardenBedController
         Response::json(['success' => true]);
     }
 
+    /** AJAX: remove a single planting row entirely. */
+    public function removePlanting(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $id = (int)($params['id'] ?? 0);
+        $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$id]);
+        Response::json(['success' => true]);
+    }
+
     public function companions(Request $request, array $params = []): void
     {
         $this->requireAuth();

@@ -1019,7 +1019,7 @@ fieldset.fieldset {
 .rg-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* Bed-view layout */
-.rg-bed-page { max-width: 720px; margin: 0 auto; padding-bottom: 110px; position: relative; }
+.rg-bed-page { max-width: 720px; margin: 0 auto; padding-bottom: 160px; position: relative; }
 .rg-bed-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .rg-bed-back { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: var(--color-text-muted); background: transparent; border: 1px solid transparent; cursor: pointer; text-decoration: none; }
 .rg-bed-back:hover { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); text-decoration: none; }
@@ -1034,13 +1034,21 @@ fieldset.fieldset {
 /* Per-line block */
 .rg-line {
   background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 12px 14px;
   margin-bottom: 10px;
   box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: border-color .18s, box-shadow .18s;
 }
 .rg-line--overcap { border-color: #fca5a5; }
+.rg-line.is-active { border-color: var(--color-primary) !important; box-shadow: 0 0 0 3px rgba(22,101,52,.14); }
+@keyframes rg-line-pulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(22,101,52,.14); }
+  50%      { box-shadow: 0 0 0 7px rgba(22,101,52,.28); }
+}
+.rg-line.is-active { animation: rg-line-pulse 1s ease-in-out 2; }
 .rg-line-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .rg-line-num {
   width: 22px; height: 22px; border-radius: 50%;
@@ -1106,8 +1114,10 @@ fieldset.fieldset {
 .rg-stepper { display: inline-flex; align-items: center; background: #fff; border: 1px solid var(--color-border); border-radius: 999px; overflow: hidden; }
 .rg-stepper button { width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; font-weight: 800; font-size: 1rem; line-height: 1; }
 .rg-stepper-val { min-width: 26px; text-align: center; font-weight: 700; font-size: .78rem; font-family: var(--font-mono); }
-.rg-clear-btn { margin-left: auto; background: transparent; border: none; color: var(--color-text-muted); font-size: .76rem; font-weight: 600; cursor: pointer; padding: 4px 8px; }
-.rg-clear-btn:hover { color: var(--color-danger); }
+.rg-clear-btn { margin-left: auto; background: transparent; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-text-muted); font-size: .72rem; font-weight: 600; cursor: pointer; padding: 3px 10px; }
+.rg-clear-btn:hover { border-color: var(--color-danger); color: var(--color-danger); }
+.rg-stepchip-remove { background: transparent; border: none; color: var(--color-text-muted); font-size: .78rem; line-height: 1; cursor: pointer; padding: 0 2px 0 4px; opacity: .6; }
+.rg-stepchip-remove:hover { color: var(--color-danger); opacity: 1; }
 
 /* Suggestion chips */
 .rg-suggest-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
@@ -1123,13 +1133,12 @@ fieldset.fieldset {
 
 /* Sticky active-crop palette */
 .rg-palette {
-  position: sticky; bottom: 0; left: 0; right: 0;
-  background: rgba(255,255,255,.96);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  border-top: 1px solid var(--color-border);
-  padding: 8px 12px 10px;
-  margin: 14px -16px 0;
-  z-index: 5;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(255,255,255,.97);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-top: 2px solid var(--color-border);
+  padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
 }
 .rg-palette-row { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
 .rg-palette-row::-webkit-scrollbar { height: 4px; }
@@ -1351,7 +1360,7 @@ fieldset.fieldset {
 
 /* Mobile responsive for redesign */
 @media (max-width: 640px) {
-  .rg-bed-page { padding-bottom: 110px; }
+  .rg-bed-page { padding-bottom: 160px; }
   .rg-line { padding: 10px 12px; }
   .rg-stripe { height: 26px; }
   .rg-week-grid { grid-template-columns: repeat(2, 1fr); }
