@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.0.7' => [
+        'date'  => '2026-04-28',
+        'title' => 'Desktop nav Tasks dropdown',
+        'improved' => [
+            'Achats, Irrigation and Reminders are now grouped under a Tasks dropdown on the desktop nav bar — reduces top-level items. Mobile drawer keeps all items flat.',
+        ],
+    ],
+
     '3.0.6' => [
         'date'  => '2026-04-28',
         'title' => 'Garden schematic on hub & dashboard, schema fix, planting UX polish',

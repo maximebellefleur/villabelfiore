@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Desktop nav Tasks dropdown',
+        'features' => [
+            ['title' => 'Tasks dropdown on desktop', 'detail' => 'Achats, Irrigation and Reminders are collapsed under a Tasks hover dropdown on the desktop nav bar, reducing clutter. Mobile drawer is unchanged.'],
+        ],
+    ],
+
     '3.0.6' => [
         'status'   => 'released',
         'released' => '2026-04-28',
