@@ -88,12 +88,21 @@ $bedId = (int)$item['id'];
           </div>
         <?php endforeach; ?>
       </div>
-      <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px;font-size:.74rem;color:var(--color-text-muted)">
-        <span><strong style="color:var(--color-text)">Sown</strong> <?= e(GardenHelpers::fmtDate($sownDate)) ?></span>
+      <div class="rg-sown-row" data-line="<?= (int)$line['lineNumber'] ?>" style="display:flex;align-items:baseline;gap:10px;margin-top:6px;font-size:.74rem;color:var(--color-text-muted);flex-wrap:wrap">
+        <span><strong style="color:var(--color-text)">Sown</strong>
+          <span class="rg-sown-display" style="cursor:pointer;border-bottom:1px dashed var(--color-text-muted)" title="Click to edit sown date"><?= e(GardenHelpers::fmtDate($sownDate)) ?></span>
+          <span class="rg-sown-edit" style="display:none;align-items:center;gap:6px">
+            <input type="date" class="rg-sown-input" value="<?= e($sownDate) ?>" style="font-size:.74rem;padding:2px 6px;border:1px solid var(--color-border);border-radius:4px;font-family:inherit">
+            <button type="button" class="btn btn-primary btn-xs rg-sown-save" style="padding:2px 8px;font-size:.7rem">Save</button>
+            <button type="button" class="btn btn-ghost btn-xs rg-sown-cancel" style="padding:2px 8px;font-size:.7rem">Cancel</button>
+          </span>
+        </span>
         <span>→</span>
-        <span><strong style="color:var(--color-text)">Harvest</strong> ~<?= e(GardenHelpers::fmtDate($harvestDate)) ?>
+        <span><strong style="color:var(--color-text)">Harvest</strong> ~<span class="rg-harvest-display"><?= e(GardenHelpers::fmtDate($harvestDate)) ?></span>
           <?php if ($daysLeft !== null): ?>
-            <span class="rg-mono">(<?= $daysLeft >= 0 ? 'in ' . $daysLeft . 'd' : abs($daysLeft) . 'd ago' ?>)</span>
+            <span class="rg-mono rg-harvest-days">(<?= $daysLeft >= 0 ? 'in ' . $daysLeft . 'd' : abs($daysLeft) . 'd ago' ?>)</span>
+          <?php else: ?>
+            <span class="rg-mono rg-harvest-days"></span>
           <?php endif; ?>
         </span>
       </div>
@@ -203,6 +212,44 @@ $bedId = (int)$item['id'];
   var $page = $('#rgBedPage');
   var bedId = parseInt($page.data('item-id'), 10);
   var csrf = <?= json_encode($csrf) ?>;
+
+  // ---- inline sown date edit ----
+  $page.on('click', '.rg-sown-display', function () {
+    var $row = $(this).closest('.rg-sown-row');
+    $row.find('.rg-sown-display').hide();
+    $row.find('.rg-sown-edit').css('display', 'inline-flex');
+    $row.find('.rg-sown-input').focus();
+  });
+  $page.on('click', '.rg-sown-cancel', function () {
+    var $row = $(this).closest('.rg-sown-row');
+    $row.find('.rg-sown-edit').hide();
+    $row.find('.rg-sown-display').show();
+  });
+  $page.on('keydown', '.rg-sown-input', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $(this).closest('.rg-sown-row').find('.rg-sown-save').click(); }
+    else if (e.key === 'Escape') { $(this).closest('.rg-sown-row').find('.rg-sown-cancel').click(); }
+  });
+  $page.on('click', '.rg-sown-save', function () {
+    var $row   = $(this).closest('.rg-sown-row');
+    var line   = parseInt($row.data('line'), 10);
+    var sownAt = $row.find('.rg-sown-input').val();
+    var $btn   = $(this); $btn.prop('disabled', true).text('…');
+    $.post('<?= url('/items/' . $bedId . '/lines/set-sown') ?>', { _token: csrf, line_number: line, sown_at: sownAt })
+      .done(function (data) {
+        $btn.prop('disabled', false).text('Save');
+        if (!data || data.success === false) {
+          alert((data && data.error) || 'Could not save');
+          return;
+        }
+        $row.find('.rg-sown-display').text(data.sown_at_label).show();
+        $row.find('.rg-sown-edit').hide();
+        $row.find('.rg-harvest-display').text(data.harvest_at_label);
+        var d = parseInt(data.days_to_harvest, 10);
+        var label = isNaN(d) ? '' : '(' + (d >= 0 ? 'in ' + d + 'd' : Math.abs(d) + 'd ago') + ')';
+        $row.find('.rg-harvest-days').text(label);
+      })
+      .fail(function () { $btn.prop('disabled', false).text('Save'); alert('Network error'); });
+  });
 
   // ---- picker open/close ----
   $page.on('click', '.rg-succ-pick', function () {

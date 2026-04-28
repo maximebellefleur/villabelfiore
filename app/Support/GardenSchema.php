@@ -63,6 +63,7 @@ class GardenSchema
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         self::ensureColumn($db, 'garden_plantings', 'sown_at',     "ALTER TABLE garden_plantings ADD COLUMN sown_at DATE DEFAULT NULL");
+        self::ensureColumn($db, 'garden_plantings', 'sort_order',  "ALTER TABLE garden_plantings ADD COLUMN sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0");
 
         self::ensureColumn($db, 'garden_bed_lines', 'sown_at',       "ALTER TABLE garden_bed_lines ADD COLUMN sown_at DATE DEFAULT NULL");
         self::ensureColumn($db, 'garden_bed_lines', 'empty_since',    "ALTER TABLE garden_bed_lines ADD COLUMN empty_since DATE DEFAULT NULL");

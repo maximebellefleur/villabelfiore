@@ -102,9 +102,9 @@ class GardenBedController
             }
         }
 
-        // Plantings indexed by line_number
+        // Plantings indexed by line_number; sort_order first (drag-reorder), then id
         $plantings = $db->fetchAll(
-            "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, id ASC",
+            "SELECT * FROM garden_plantings WHERE item_id = ? ORDER BY line_number ASC, sort_order ASC, id ASC",
             [$id]
         );
         $plantingMap = [];
@@ -857,6 +857,92 @@ class GardenBedController
         $db = DB::getInstance();
         $id = (int)($params['id'] ?? 0);
         $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$id]);
+        Response::json(['success' => true]);
+    }
+
+    /**
+     * AJAX: set the sown date for one line.
+     * POST: line_number, sown_at (YYYY-MM-DD).
+     * Returns: success, sown_at_label, harvest_at, harvest_at_label, days_to_harvest.
+     */
+    public function setLineSown(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $lineNum = max(1, (int)$request->post('line_number', 0));
+        $sownRaw = trim((string)$request->post('sown_at', ''));
+
+        $ts = strtotime($sownRaw);
+        if ($ts === false) { Response::json(['success' => false, 'error' => 'Invalid date']); return; }
+        $sownIso = date('Y-m-d', $ts);
+
+        try {
+            $existing = $db->fetchOne("SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?", [$itemId, $lineNum]);
+            if ($existing) {
+                $db->execute("UPDATE garden_bed_lines SET sown_at = ? WHERE id = ?", [$sownIso, (int)$existing['id']]);
+            } else {
+                $db->execute("INSERT INTO garden_bed_lines (item_id, line_number, sown_at, rotation_history) VALUES (?, ?, ?, '[]')", [$itemId, $lineNum, $sownIso]);
+            }
+            // Mirror onto active plantings so maturity computations pick it up immediately
+            $db->execute("UPDATE garden_plantings SET planted_at = ? WHERE item_id = ? AND line_number = ? AND status IN ('growing','planned','sown')", [$sownIso, $itemId, $lineNum]);
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+            return;
+        }
+
+        // Compute new harvest date based on the longest days_to_maturity among
+        // active plantings on this line; fall back to 60 if unknown.
+        $rows = $db->fetchAll(
+            "SELECT s.days_to_maturity FROM garden_plantings p
+             LEFT JOIN seeds s ON s.id = p.seed_id
+             WHERE p.item_id = ? AND p.line_number = ? AND p.status IN ('growing','planned','sown')",
+            [$itemId, $lineNum]
+        );
+        $dth = 60;
+        foreach ($rows as $r) {
+            $d = (int)($r['days_to_maturity'] ?? 0);
+            if ($d > $dth) $dth = $d;
+        }
+        $harvestIso = date('Y-m-d', $ts + $dth * 86400);
+        $today      = strtotime(\App\Support\GardenHelpers::todayIso());
+        $daysOut    = (int)round(($ts + $dth * 86400 - $today) / 86400);
+
+        Response::json([
+            'success'           => true,
+            'sown_at'           => $sownIso,
+            'sown_at_label'     => \App\Support\GardenHelpers::fmtDate($sownIso),
+            'harvest_at'        => $harvestIso,
+            'harvest_at_label'  => \App\Support\GardenHelpers::fmtDate($harvestIso),
+            'days_to_harvest'   => $daysOut,
+        ]);
+    }
+
+    /**
+     * AJAX: reorder plantings within a single line.
+     * POST: planting_ids[] in the new order. Writes incremental sort_order.
+     */
+    public function reorderPlantings(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $ids = $request->post('planting_ids', []);
+        if (!is_array($ids) || empty($ids)) { Response::json(['success' => false, 'error' => 'No ids']); return; }
+
+        try {
+            foreach ($ids as $idx => $pid) {
+                $db->execute("UPDATE garden_plantings SET sort_order = ? WHERE id = ?", [$idx + 1, (int)$pid]);
+            }
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+            return;
+        }
         Response::json(['success' => true]);
     }
 

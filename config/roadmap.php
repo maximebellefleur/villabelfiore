@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.17' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Inline-edit sown date on planning view',
+        'features' => [
+            ['title' => 'Edit Sown date', 'detail' => 'Click the Sown date on a planning line to reveal a date input + Save/Cancel. AJAX save returns the new harvest date which is updated in place.'],
+        ],
+    ],
+
     '3.0.16' => [
         'status'   => 'released',
         'released' => '2026-04-28',

@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.0.17' => [
+        'date'  => '2026-04-28',
+        'title' => 'Inline-edit sown date on planning view',
+        'new' => [
+            'On the Plan tab of any bed, click the "Sown" date to reveal a date input + Save/Cancel buttons. Save sends an AJAX update; the harvest date and "in N days" badge to the right both refresh in place — no page reload.',
+            'Server endpoint POST /items/{id}/lines/set-sown writes the new sown_at to garden_bed_lines and mirrors it to active plantings on the same line so maturity percentages update too.',
+        ],
+    ],
+
     '3.0.16' => [
         'date'  => '2026-04-28',
         'title' => 'Distinct default colors per seed',
