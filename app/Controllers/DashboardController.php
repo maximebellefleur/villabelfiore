@@ -128,6 +128,43 @@ class DashboardController
             );
         } catch (\Throwable $e) { /* table may not exist yet */ }
 
+        // Garden bed schematic data (for dashboard widget)
+        $schematicBeds    = [];
+        $schematicGardens = [];
+        try {
+            $rawBeds = $db->fetchAll(
+                "SELECT i.id, i.name, i.parent_id, i.gps_lat, i.gps_lng,
+                        MAX(CASE WHEN m.meta_key='bed_length_m'   THEN m.meta_value_text END) AS length_m,
+                        MAX(CASE WHEN m.meta_key='bed_width_m'    THEN m.meta_value_text END) AS width_m,
+                        MAX(CASE WHEN m.meta_key='bed_rows'       THEN m.meta_value_text END) AS bed_rows,
+                        MAX(CASE WHEN m.meta_key='line_direction' THEN m.meta_value_text END) AS line_dir
+                 FROM items i
+                 LEFT JOIN item_meta m ON m.item_id = i.id
+                   AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
+                 WHERE i.type = 'bed' AND i.deleted_at IS NULL AND i.status = 'active'
+                 GROUP BY i.id ORDER BY i.parent_id, i.name"
+            );
+            $bedIds = array_column($rawBeds, 'id');
+            $plantingsByBed = [];
+            if ($bedIds) {
+                $ph = implode(',', array_fill(0, count($bedIds), '?'));
+                $prows = $db->fetchAll(
+                    "SELECT item_id, line_number, crop_name, status FROM garden_plantings WHERE item_id IN ($ph) ORDER BY line_number",
+                    $bedIds
+                );
+                foreach ($prows as $pr) {
+                    $plantingsByBed[$pr['item_id']][$pr['line_number']] = $pr;
+                }
+            }
+            foreach ($rawBeds as $bed) {
+                $schematicBeds[$bed['id']] = array_merge($bed, ['plantings' => $plantingsByBed[$bed['id']] ?? []]);
+            }
+            $gardenRows = $db->fetchAll(
+                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY name"
+            );
+            foreach ($gardenRows as $g) $schematicGardens[$g['id']] = $g['name'];
+        } catch (\Throwable $e) { /* non-fatal — table may not exist yet */ }
+
         // Tasks widget
         $dashTodayTasks = [];
         $dashWeekTasks  = [];
@@ -176,6 +213,8 @@ class DashboardController
             'dashWeekTasks'     => $dashWeekTasks,
             'dashTasks'         => $dashTasks,
             'dashAchats'        => $dashAchats,
+            'schematicBeds'     => $schematicBeds,
+            'schematicGardens'  => $schematicGardens,
         ]);
     }
 

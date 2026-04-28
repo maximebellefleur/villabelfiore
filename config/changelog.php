@@ -8,6 +8,23 @@
  */
 return [
 
+    '3.0.6' => [
+        'date'  => '2026-04-28',
+        'title' => 'Garden schematic on hub & dashboard, schema fix, planting UX polish',
+        'new' => [
+            'Garden bed schematic now appears at the top of the Active Gardens hub — before the bed list — so you get a visual overview first.',
+            'Garden bed schematic also appears on the home dashboard right after the "What to do in the Garden" section, with a "Full view →" link to the garden hub.',
+        ],
+        'improved' => [
+            'Schematic extracted into a reusable partial (garden-schematic.php) — shared between the garden hub and dashboard with no duplication.',
+            'Old inline schematic removed from the legacy seeds & calendar section of the garden hub.',
+        ],
+        'fixed' => [
+            'Removed static $done guard from GardenSchema::ensure() — PHP-FPM worker persistence was causing schema migrations to be skipped after the first request, leading to a 500 on plant-tap when the sown_at column was missing.',
+            'tapPlant DB block wrapped in try/catch — server errors now return a JSON error response and show a toast instead of a bare 500.',
+        ],
+    ],
+
     '3.0.5' => [
         'date'  => '2026-04-28',
         'title' => 'Planting UX overhaul — tap-to-select line, fixed palette, toasts, nav tab links',

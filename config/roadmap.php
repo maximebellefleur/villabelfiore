@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.0.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Garden schematic on hub & dashboard, schema fix, planting UX polish',
+        'features' => [
+            ['title' => 'Schematic before bed list', 'detail' => 'The SVG bed schematic is now rendered at the top of the Active Gardens hub, before the collapsible garden/bed list. GPS spatial layout and fallback flex grid are both supported.'],
+            ['title' => 'Schematic on dashboard', 'detail' => 'The bed schematic also appears on the home dashboard right after the "What to do in the Garden" section. It uses the same reusable partial with a "Full view →" link.'],
+            ['title' => 'GardenSchema static guard fix', 'detail' => 'Removed the static $done guard that caused PHP-FPM workers to skip schema migrations after the first request. The sown_at column is now reliably created on all workers.'],
+        ],
+    ],
+
     '3.0.5' => [
         'status'   => 'released',
         'released' => '2026-04-28',

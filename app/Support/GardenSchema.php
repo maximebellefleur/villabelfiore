@@ -10,9 +10,6 @@ class GardenSchema
 {
     public static function ensure(DB $db): void
     {
-        static $done = false;
-        if ($done) { return; }
-
         $db->execute("CREATE TABLE IF NOT EXISTS garden_plantings (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             item_id INT UNSIGNED NOT NULL,
@@ -21,6 +18,7 @@ class GardenSchema
             variety VARCHAR(200) DEFAULT NULL,
             status ENUM('empty','planned','growing','harvested') NOT NULL DEFAULT 'empty',
             planted_at DATE DEFAULT NULL,
+            sown_at DATE DEFAULT NULL,
             expected_harvest_at DATE DEFAULT NULL,
             notes TEXT DEFAULT NULL,
             seed_id INT UNSIGNED DEFAULT NULL,
@@ -71,7 +69,6 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'emoji',         "ALTER TABLE seeds ADD COLUMN emoji VARCHAR(10) DEFAULT NULL");
         self::ensureColumn($db, 'seeds', 'color',         "ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL");
 
-        $done = true;
     }
 
     private static function ensureColumn(DB $db, string $table, string $column, string $alter): void

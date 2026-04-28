@@ -325,52 +325,58 @@ class GardenBedController
 
         if ($cropId <= 0) { Response::json(['success' => false, 'error' => 'crop_id required']); return; }
 
-        $crop = $db->fetchOne("SELECT id, name, days_to_maturity, spacing_cm FROM seeds WHERE id = ?", [$cropId]);
-        if (!$crop) { Response::json(['success' => false, 'error' => 'Crop not found']); return; }
+        try {
+            $crop = $db->fetchOne("SELECT id, name, days_to_maturity, spacing_cm FROM seeds WHERE id = ?", [$cropId]);
+            if (!$crop) { Response::json(['success' => false, 'error' => 'Crop not found']); return; }
 
-        $today = GardenHelpers::todayIso();
+            $today = GardenHelpers::todayIso();
 
-        $existing = $db->fetchOne(
-            "SELECT id, plant_count FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id = ? AND status IN ('growing','planned','sown') ORDER BY id DESC LIMIT 1",
-            [$itemId, $lineNum, $cropId]
-        );
-        if ($existing) {
-            $newCount = (int)$existing['plant_count'] + $count;
-            $db->execute(
-                "UPDATE garden_plantings SET plant_count = ? WHERE id = ?",
-                [$newCount, (int)$existing['id']]
+            $existing = $db->fetchOne(
+                "SELECT id, plant_count FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id = ? AND status IN ('growing','planned','sown') ORDER BY id DESC LIMIT 1",
+                [$itemId, $lineNum, $cropId]
             );
-            $plantingId = (int)$existing['id'];
-        } else {
-            $expected = null;
-            if (!empty($crop['days_to_maturity'])) {
-                $expected = GardenHelpers::addDays($today, (int)$crop['days_to_maturity']);
+            if ($existing) {
+                $newCount = (int)$existing['plant_count'] + $count;
+                $db->execute(
+                    "UPDATE garden_plantings SET plant_count = ? WHERE id = ?",
+                    [$newCount, (int)$existing['id']]
+                );
+                $plantingId = (int)$existing['id'];
+            } else {
+                $expected = null;
+                if (!empty($crop['days_to_maturity'])) {
+                    $expected = GardenHelpers::addDays($today, (int)$crop['days_to_maturity']);
+                }
+                $db->execute(
+                    "INSERT INTO garden_plantings (item_id, line_number, crop_name, status, planted_at, sown_at, expected_harvest_at, seed_id, plant_count)
+                     VALUES (?, ?, ?, 'growing', ?, ?, ?, ?, ?)",
+                    [$itemId, $lineNum, $crop['name'], $today, $today, $expected, $cropId, $count]
+                );
+                $plantingId = (int)$db->lastInsertId();
             }
-            $db->execute(
-                "INSERT INTO garden_plantings (item_id, line_number, crop_name, status, planted_at, sown_at, expected_harvest_at, seed_id, plant_count)
-                 VALUES (?, ?, ?, 'growing', ?, ?, ?, ?, ?)",
-                [$itemId, $lineNum, $crop['name'], $today, $today, $expected, $cropId, $count]
-            );
-            $plantingId = (int)$db->lastInsertId();
-        }
 
-        // ensure a garden_bed_lines row, set sown_at if blank, clear empty_since
-        $existingLine = $db->fetchOne(
-            "SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
-            [$itemId, $lineNum]
-        );
-        if ($existingLine) {
-            $db->execute(
-                "UPDATE garden_bed_lines
-                    SET sown_at = COALESCE(sown_at, ?), empty_since = NULL
-                  WHERE id = ?",
-                [$today, (int)$existingLine['id']]
+            // ensure a garden_bed_lines row, set sown_at if blank, clear empty_since
+            $existingLine = $db->fetchOne(
+                "SELECT id FROM garden_bed_lines WHERE item_id = ? AND line_number = ?",
+                [$itemId, $lineNum]
             );
-        } else {
-            $db->execute(
-                "INSERT INTO garden_bed_lines (item_id, line_number, sown_at, rotation_history) VALUES (?, ?, ?, '[]')",
-                [$itemId, $lineNum, $today]
-            );
+            if ($existingLine) {
+                $db->execute(
+                    "UPDATE garden_bed_lines
+                        SET sown_at = COALESCE(sown_at, ?), empty_since = NULL
+                      WHERE id = ?",
+                    [$today, (int)$existingLine['id']]
+                );
+            } else {
+                $db->execute(
+                    "INSERT INTO garden_bed_lines (item_id, line_number, sown_at, rotation_history) VALUES (?, ?, ?, '[]')",
+                    [$itemId, $lineNum, $today]
+                );
+            }
+        } catch (\Throwable $e) {
+            $msg = (bool) env('APP_DEBUG', false) ? $e->getMessage() : 'Plant failed — please try again.';
+            Response::json(['success' => false, 'error' => $msg]);
+            return;
         }
 
         Response::json(['success' => true, 'planting_id' => $plantingId]);

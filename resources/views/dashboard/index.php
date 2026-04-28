@@ -325,6 +325,14 @@ foreach ($bioWeek as $i => $bw) {
 </section>
 <?php endif; ?>
 
+<?php
+$schematicTitle     = '🌱 Garden Overview';
+$schematicLink      = url('/garden');
+$schematicLinkLabel = 'Full view →';
+include BASE_PATH . '/resources/views/partials/garden-schematic.php';
+unset($schematicTitle, $schematicLink, $schematicLinkLabel);
+?>
+
 <!-- ============================================================
      WHAT TO IRRIGATE TODAY
      ============================================================ -->
