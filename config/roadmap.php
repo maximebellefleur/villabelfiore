@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.0.3' => [
+        'status'   => 'released',
+        'released' => '2026-04-28',
+        'title'    => 'Edit UX overhaul — position modal, Active Gardens, bed assignment popup',
+        'features' => [
+            ['title' => 'Full-screen position modal', 'detail' => 'Boundary positioning for beds and gardens now opens a full-screen Leaflet map modal with nudge (N/S/E/W), rotate (±5°), step size selector (0.5/1/5 m), and a Save Position button. The old inline nudge controls below the mini-map are replaced.'],
+            ['title' => 'Active Gardens + Prep Beds', 'detail' => 'Garden hub is relabelled "Active Gardens". Beds not assigned to any garden appear in a "Prep Beds (unassigned)" section in the Bed Overview schematic.'],
+            ['title' => 'Assign beds popup', 'detail' => 'Each empty garden row now shows "+ Assign existing beds" which opens a bottom-sheet popup listing all unassigned beds as checkboxes. Tap and save to instantly associate multiple beds with a garden.'],
+            ['title' => 'Edit form: type select + garden select', 'detail' => 'The Type field in Edit is now an editable select (line excluded). Parent field for beds is a garden name select, hidden for all other types.'],
+            ['title' => 'Position button + CTA banner', 'detail' => 'A 📍 Position button appears in the item show hero for all boundary-capable items. A yellow CTA banner above the page prompts users to position beds and gardens that have no boundary yet.'],
+        ],
+    ],
+
     '3.0.2' => [
         'status'   => 'released',
         'released' => '2026-04-28',

@@ -8,6 +8,29 @@
  */
 return [
 
+    '3.0.3' => [
+        'date'  => '2026-04-28',
+        'title' => 'Edit UX overhaul — position modal, Active Gardens, bed assignment popup',
+        'new' => [
+            'Full-screen "Position on Map" modal for bed/garden boundaries: tap to open, nudge N/S/E/W, rotate ±5°, Save button — replaces the tiny inline nudge section that was below the mini-map.',
+            'Garden hub renamed to "Active Gardens"; unassigned beds now shown as "Prep Beds (unassigned)" in the Bed Overview section.',
+            '"Assign existing beds" button on empty gardens opens a multi-select popup listing all unassigned beds — tap checkboxes, hit Save, instantly associates beds with the garden.',
+            '"+ New bed" from a garden hub row pre-fills the garden association so the new bed is automatically linked.',
+            'Position button (📍) added to item show hero bar for all boundary-capable item types.',
+            'Yellow CTA banner shown above the page for beds and gardens that have no boundary set yet.',
+            '"Adjust Position on Map" button shown in the boundary card when a boundary already exists.',
+        ],
+        'improved' => [
+            'Type field in Edit form is now a full editable select (excludes "line" type which is managed internally).',
+            'Parent/garden field in Edit form is a smart select showing all gardens (for bed type) instead of a useless raw ID input. Hidden for all other item types.',
+            'Corner + Size boundary mode no longer duplicates the Height/Width/Lines/Direction fields — it reads them from the Garden Bed Layout card above.',
+            '"Remove Boundary" is now clearly styled as a danger button in a "Danger zone" sub-section, not red text that looked like a notification.',
+            'Save/remove boundary feedback is now a full-width colored toast banner (green for success, red for errors) instead of inline text next to a button.',
+            'Create Item form now pre-fills parent garden from URL (fixing the flow from "Add a bed" on a specific garden).',
+            'Create Item form shows garden select for bed type, hidden for other types.',
+        ],
+    ],
+
     '3.0.2' => [
         'date'  => '2026-04-28',
         'title' => 'Log photo compression — compress to ~800 KB before upload so it never hangs',

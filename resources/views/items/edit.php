@@ -85,7 +85,14 @@
 
             <div class="form-group">
                 <label class="form-label">Type</label>
-                <input type="text" class="form-input" value="<?= e(str_replace('_', ' ', ucwords($item['type'], '_'))) ?>" readonly disabled>
+                <select name="type" class="form-input form-input--touch">
+                    <?php foreach ($itemTypes as $typeKey => $typeDef): ?>
+                    <?php if ($typeKey === 'line') continue; ?>
+                    <option value="<?= e($typeKey) ?>" <?= $item['type'] === $typeKey ? 'selected' : '' ?>>
+                        <?= e($typeDef['label'] ?? ucwords(str_replace('_', ' ', $typeKey))) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div class="form-group">
@@ -93,11 +100,19 @@
                 <input type="text" name="name" class="form-input form-input--touch" required value="<?= e($item['name']) ?>">
             </div>
 
+            <?php if ($item['type'] === 'bed'): ?>
             <div class="form-group">
-                <label class="form-label">Parent Item <small class="text-muted">(optional)</small></label>
-                <input type="number" name="parent_id" class="form-input form-input--touch" placeholder="Parent item ID"
-                       value="<?= e($item['parent_id'] ?? '') ?>">
+                <label class="form-label">Garden <small class="text-muted">(optional)</small></label>
+                <select name="parent_id" class="form-input form-input--touch">
+                    <option value="">— No garden —</option>
+                    <?php foreach ($allGardens ?? [] as $g): ?>
+                    <option value="<?= (int)$g['id'] ?>" <?= (int)($item['parent_id'] ?? 0) === (int)$g['id'] ? 'selected' : '' ?>>
+                        <?= e($g['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
+            <?php endif; ?>
 
             <!-- Coordinates display -->
             <div class="gps-coords-display" id="gpsCoordsDisplay" style="<?= ($item['gps_lat'] ?? '') ? '' : 'display:none' ?>">
@@ -157,7 +172,7 @@
         <?php if ($hasCornerMode): ?>
         <!-- Corner + Size mode -->
         <div id="editCornerSection" style="display:none">
-            <p class="text-muted text-sm" style="margin:0 0 var(--spacing-2)">Stand at one corner of your <?= e($item['type']) ?>, tap <strong>Get Position</strong>, then enter the corner and dimensions.</p>
+            <p class="text-muted text-sm" style="margin:0 0 var(--spacing-2)">Stand at one corner of your <?= e($item['type']) ?>, tap <strong>Get Position</strong>, select the corner, then tap <strong>Position on Map</strong>. Dimensions come from the Layout card above.</p>
             <button type="button" id="editCornerGpsBtn" class="btn btn-secondary btn-sm">📡 Get Corner Position</button>
             <div id="editCornerGpsStatus" class="map-gps-status" style="display:none"></div>
 
@@ -171,57 +186,15 @@
                         <button type="button" class="btn btn-secondary btn-sm edit-corner-btn" data-corner="SE">↘ SE</button>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Height N–S (m)</label>
-                        <input type="number" id="editBedLengthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 8">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Width E–W (m)</label>
-                        <input type="number" id="editBedWidthM" class="form-input" min="0.1" step="0.1" placeholder="e.g. 1.2">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Number of lines</label>
-                        <input type="number" id="editBedRows" class="form-input" min="1" step="1" placeholder="e.g. 4">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Lines run in direction</label>
-                        <div style="display:flex;gap:8px;margin-top:6px">
-                            <label style="display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer">
-                                <input type="radio" name="editLineDir" id="editLineDirNS" value="NS" checked style="accent-color:var(--color-primary)"> N–S
-                            </label>
-                            <label style="display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer">
-                                <input type="radio" name="editLineDir" id="editLineDirEW" value="EW" style="accent-color:var(--color-primary)"> E–W
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <button type="button" id="editCornerPreviewBtn" class="btn btn-secondary btn-sm">👁 Preview on Map</button>
-                <div id="editCornerMsg" class="text-sm" style="margin-top:6px"></div>
+                <button type="button" id="editCornerPreviewBtn" class="btn btn-primary btn-sm">🗺 Position on Map</button>
+                <div id="editCornerMsg" class="text-sm" style="margin-top:6px;color:var(--color-danger,#c0392b)"></div>
             </div>
+        </div>
+        <?php endif; ?>
 
-            <!-- Nudge controls — shown after polygon is previewed or already saved -->
-            <div id="editNudgeSection" style="display:none;margin-top:var(--spacing-3);padding:10px;background:var(--color-surface);border-radius:var(--radius);border:1px solid var(--color-border)">
-                <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:8px">Move Polygon</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;max-width:150px;margin:0 auto 8px">
-                    <div></div>
-                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="N">↑</button>
-                    <div></div>
-                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="W">←</button>
-                    <div style="display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--color-text-muted)">move</div>
-                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="E">→</button>
-                    <div></div>
-                    <button type="button" class="btn btn-secondary btn-sm nudge-btn" data-dir="S">↓</button>
-                    <div></div>
-                </div>
-                <div style="display:flex;justify-content:center;gap:6px">
-                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="0.5" checked style="accent-color:var(--color-primary)">0.5m</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="1" style="accent-color:var(--color-primary)">1m</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer"><input type="radio" name="editNudgeAmt" value="5" style="accent-color:var(--color-primary)">5m</label>
-                </div>
-            </div>
+        <?php if ($boundaryGeojson && $hasCornerMode): ?>
+        <div style="margin-top:var(--spacing-2)">
+            <button type="button" id="editAdjustPositionBtn" class="btn btn-secondary btn-sm">📐 Adjust Position on Map</button>
         </div>
         <?php endif; ?>
 
@@ -230,17 +203,58 @@
             <button type="button" id="editBoundaryDiscard" class="btn btn-secondary btn-sm">✕ Discard</button>
         </div>
 
+        <div id="editBoundaryToast" style="display:none;margin-top:var(--spacing-2);padding:10px 14px;border-radius:var(--radius);font-size:.875rem;font-weight:500"></div>
+
         <?php if ($boundaryGeojson): ?>
-        <div style="margin-top:var(--spacing-2)" id="editBoundaryDeleteRow">
-            <button type="button" id="editBoundaryDelete" class="btn btn-link btn-sm" style="color:var(--color-danger,#c0392b);padding:0">Remove boundary</button>
+        <div style="margin-top:var(--spacing-3);padding-top:var(--spacing-2);border-top:1px solid var(--color-border)" id="editBoundaryDeleteRow">
+            <p class="text-sm" style="margin:0 0 var(--spacing-2);color:var(--color-text-muted)">Danger zone</p>
+            <span id="editBoundaryDeleteConfirmWrap" style="display:flex;gap:6px;align-items:center">
+                <button type="button" id="editBoundaryDelete" class="btn btn-danger btn-sm" style="font-size:.8rem">🗑 Remove Boundary</button>
+            </span>
             <span id="editBoundaryDeleteConfirm" style="display:none;gap:6px;align-items:center">
-                <button type="button" id="editBoundaryDeleteYes" class="btn btn-danger btn-sm">✓ Remove</button>
+                <span style="font-size:.85rem;color:var(--color-danger,#c0392b)">Sure?</span>
+                <button type="button" id="editBoundaryDeleteYes" class="btn btn-danger btn-sm">Yes, remove</button>
                 <button type="button" id="editBoundaryDeleteNo" class="btn btn-secondary btn-sm">Cancel</button>
             </span>
         </div>
         <?php endif; ?>
+    </div>
+</div>
 
-        <div id="editBoundaryMsg" class="text-sm" style="margin-top:6px"></div>
+<!-- Full-screen Position Modal -->
+<div id="posModal" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0">
+        <span style="font-weight:700;font-size:1rem;flex:1">📍 Position on Map</span>
+        <button type="button" id="posModalClose" class="btn btn-secondary btn-sm">✕ Cancel</button>
+    </div>
+    <div id="posModalMap" style="flex:1;min-height:0;z-index:1"></div>
+    <div style="padding:12px 16px;border-top:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0">
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px">
+                <div></div>
+                <button type="button" class="pos-nudge btn btn-secondary" data-dir="N" style="padding:0;font-size:1.4rem;line-height:1">↑</button>
+                <div></div>
+                <button type="button" class="pos-nudge btn btn-secondary" data-dir="W" style="padding:0;font-size:1.4rem;line-height:1">←</button>
+                <div style="display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.03em">move</div>
+                <button type="button" class="pos-nudge btn btn-secondary" data-dir="E" style="padding:0;font-size:1.4rem;line-height:1">→</button>
+                <div></div>
+                <button type="button" class="pos-nudge btn btn-secondary" data-dir="S" style="padding:0;font-size:1.4rem;line-height:1">↓</button>
+                <div></div>
+            </div>
+            <div style="flex:1">
+                <div style="display:flex;gap:6px;margin-bottom:8px">
+                    <button type="button" class="btn btn-secondary btn-sm" id="posRotateCCW" style="flex:1">↺ 5°</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="posRotateCW" style="flex:1">↻ 5°</button>
+                </div>
+                <div style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Step size</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="0.5" checked style="accent-color:var(--color-primary)">0.5 m</label>
+                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="1" style="accent-color:var(--color-primary)">1 m</label>
+                    <label style="display:flex;align-items:center;gap:3px;font-size:.78rem;cursor:pointer"><input type="radio" name="posNudgeStep" value="5" style="accent-color:var(--color-primary)">5 m</label>
+                </div>
+            </div>
+        </div>
+        <button type="button" id="posModalSave" class="btn btn-primary" style="width:100%">💾 Save Position</button>
     </div>
 </div>
 
@@ -265,19 +279,35 @@
     var walkPolyline = null;
     var walkPolygon  = null;
     var boundaryLayer= null;
-    var pendingPts   = null; // simplified points waiting to be saved
-    var pendingBedMeta = null; // {bed_rows, bed_length_m, bed_width_m} from corner mode
+    var pendingPts   = null;
+    var pendingBedMeta = null;
 
     // Corner+Size mode state
     var cornerLat = null, cornerLng = null, cornerAcc = null;
     var cornerSide = null;
-    var cornerPolygon = null;
+
+    // Position modal state
+    var posMap = null;
+    var posPolygon = null;
+    var posPts = [];
+    var posBedMeta = null;
 
     var statusEl  = document.getElementById('editBoundaryStatus');
     var statsEl   = document.getElementById('editWalkStats');
     var activeEl  = document.getElementById('editWalkActive');
     var actionsEl = document.getElementById('editBoundaryActions');
-    var msgEl     = document.getElementById('editBoundaryMsg');
+    var toastEl   = document.getElementById('editBoundaryToast');
+
+    function showToast(msg, type) {
+        if (!toastEl) return;
+        var bg    = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#fff3cd';
+        var color = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#856404';
+        var border= type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#ffeeba';
+        toastEl.style.cssText = 'display:block;padding:10px 14px;border-radius:var(--radius);font-size:.875rem;font-weight:500;'
+            + 'background:' + bg + ';color:' + color + ';border:1px solid ' + border;
+        toastEl.textContent = msg;
+        if (type === 'success') { setTimeout(function() { toastEl.style.display = 'none'; }, 4000); }
+    }
 
     function mm() { return window.miniMapLeaflet || null; }
 
@@ -294,7 +324,6 @@
         } catch (e) {}
     }
 
-    // Show existing boundary on mini-map after it initialises
     if (EXISTING) { setTimeout(function () { drawBoundary(EXISTING); }, 350); }
 
     // ── Walk ──────────────────────────────────────────────────────────────────
@@ -302,35 +331,24 @@
     document.getElementById('editWalkStopBtn').addEventListener('click', function () { stopWalk(true); });
 
     function startWalk() {
+        if (!navigator.geolocation) { showToast('⚠️ Geolocation not available.', 'error'); return; }
         var m = mm();
-        if (!navigator.geolocation) { if (msgEl) msgEl.textContent = '⚠️ Geolocation not available.'; return; }
-        walkActive  = true;
-        walkPts     = [];
-        walkDist    = 0;
-        walkLastLat = null;
-        walkLastLng = null;
+        walkActive  = true; walkPts = []; walkDist = 0; walkLastLat = null; walkLastLng = null;
         pendingPts  = null;
-
         if (m) {
             if (walkPolyline) { m.removeLayer(walkPolyline); walkPolyline = null; }
             if (walkPolygon)  { m.removeLayer(walkPolygon);  walkPolygon  = null; }
         }
-
         document.getElementById('editWalkBtn').style.display = 'none';
-        activeEl.style.display  = 'block';
-        actionsEl.style.display = 'none';
-        statsEl.innerHTML       = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
-        if (msgEl) msgEl.textContent = '';
-
+        activeEl.style.display = 'block'; actionsEl.style.display = 'none';
+        statsEl.innerHTML = '<span class="walk-recording-dot"></span> Waiting for GPS fix…';
         if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').catch(function () {}); }
-
         walkUnsub = window.RootedGPS
             ? RootedGPS.subscribe(onWalkPos)
             : (function () {
                 var wid = navigator.geolocation.watchPosition(
                     function (p) { onWalkPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }); },
-                    function () {},
-                    { enableHighAccuracy: true, maximumAge: 0 }
+                    function () {}, { enableHighAccuracy: true, maximumAge: 0 }
                 );
                 return function () { navigator.geolocation.clearWatch(wid); };
             })();
@@ -338,9 +356,8 @@
 
     function onWalkPos(pos) {
         if (!walkActive) return;
-        if (!pos) { stopWalk(false); if (msgEl) msgEl.textContent = '🔒 GPS denied — enable Location in browser settings.'; return; }
+        if (!pos) { stopWalk(false); showToast('🔒 GPS denied — enable Location in browser settings.', 'error'); return; }
         var lat = pos.lat, lng = pos.lng, acc = pos.accuracy;
-
         if (acc > WALK_MAX_ACC_M) {
             statsEl.innerHTML = '<span class="walk-recording-dot"></span>⚠️ Weak signal ±' + Math.round(acc) + ' m — move to open sky';
             return;
@@ -353,9 +370,7 @@
             }
             walkDist += d;
         }
-        walkLastLat = lat; walkLastLng = lng;
-        walkPts.push([lat, lng]);
-
+        walkLastLat = lat; walkLastLng = lng; walkPts.push([lat, lng]);
         var m = mm();
         if (m) {
             if (walkPolyline) { walkPolyline.setLatLngs(walkPts); }
@@ -370,16 +385,12 @@
     function stopWalk(usePath) {
         walkActive = false;
         if (walkUnsub) { walkUnsub(); walkUnsub = null; }
-
         document.getElementById('editWalkBtn').style.display = '';
-        activeEl.style.display = 'none';
-        statsEl.innerHTML      = '';
-
+        activeEl.style.display = 'none'; statsEl.innerHTML = '';
         var m = mm();
         if (walkPolyline && m) { m.removeLayer(walkPolyline); walkPolyline = null; }
-
         if (!usePath || walkPts.length < 3) {
-            if (usePath && msgEl) msgEl.textContent = '⚠️ Not enough points (' + walkPts.length + '). Walk further before stopping.';
+            if (usePath) showToast('⚠️ Not enough points (' + walkPts.length + '). Walk further before stopping.', 'error');
             return;
         }
         pendingPts = rdp(walkPts, WALK_SIMPLIFY_M);
@@ -390,7 +401,6 @@
         }
         if (statusEl) statusEl.textContent = '✅ ' + pendingPts.length + ' points · ' + Math.round(walkDist) + ' m — tap Save to confirm';
         actionsEl.style.display = 'flex';
-        if (msgEl) msgEl.textContent = '';
     }
 
     // ── Mode toggle (bed/garden only) ─────────────────────────────────────────
@@ -402,24 +412,20 @@
         if (!walkSec || !cornerSec) return;
         if (mode === 'walk') {
             walkSec.style.display = ''; cornerSec.style.display = 'none';
-            walkBtn.className = 'btn btn-primary btn-sm';
-            cornerBtn.className = 'btn btn-secondary btn-sm';
+            walkBtn.className = 'btn btn-primary btn-sm'; cornerBtn.className = 'btn btn-secondary btn-sm';
         } else {
             walkSec.style.display = 'none'; cornerSec.style.display = '';
-            cornerBtn.className = 'btn btn-primary btn-sm';
-            walkBtn.className = 'btn btn-secondary btn-sm';
+            cornerBtn.className = 'btn btn-primary btn-sm'; walkBtn.className = 'btn btn-secondary btn-sm';
         }
-        // clear pending from other mode
-        pendingPts = null; pendingBedMeta = null;
-        actionsEl.style.display = 'none';
+        pendingPts = null; pendingBedMeta = null; actionsEl.style.display = 'none';
     };
 
     // ── Corner + Size mode ────────────────────────────────────────────────────
     if (HAS_CORNER_MODE) {
-        var cornerGpsBtn = document.getElementById('editCornerGpsBtn');
+        var cornerGpsBtn    = document.getElementById('editCornerGpsBtn');
         var cornerGpsStatus = document.getElementById('editCornerGpsStatus');
-        var cornerFormEl = document.getElementById('editCornerForm');
-        var cornerMsgEl  = document.getElementById('editCornerMsg');
+        var cornerFormEl    = document.getElementById('editCornerForm');
+        var cornerMsgEl     = document.getElementById('editCornerMsg');
 
         function showCornerStatus(msg, type) {
             cornerGpsStatus.textContent = msg;
@@ -443,9 +449,9 @@
                 cornerLat = best.reduce(function (s, r) { return s + r.lat; }, 0) / best.length;
                 cornerLng = best.reduce(function (s, r) { return s + r.lng; }, 0) / best.length;
                 cornerAcc = best[0].acc;
-                var dot = cornerAcc <= 5 ? '🟢' : cornerAcc <= 20 ? '🟡' : '🔴';
+                var dot  = cornerAcc <= 5 ? '🟢' : cornerAcc <= 20 ? '🟡' : '🔴';
                 var type = cornerAcc <= 5 ? 'success' : cornerAcc <= 20 ? 'warning' : 'info';
-                showCornerStatus(dot + ' ±' + Math.round(cornerAcc) + ' m — select corner and enter dimensions', type);
+                showCornerStatus(dot + ' ±' + Math.round(cornerAcc) + ' m — select corner and tap Position on Map', type);
                 cornerFormEl.style.display = 'block';
             }
 
@@ -466,7 +472,6 @@
             setTimeout(function () { if (readings.length > 0) finish(); }, 6000);
         });
 
-        // Corner selector buttons
         document.querySelectorAll('.edit-corner-btn').forEach(function (b) {
             b.addEventListener('click', function () {
                 cornerSide = this.dataset.corner;
@@ -476,14 +481,18 @@
             });
         });
 
-        // Preview polygon from corner + dimensions
+        // "Position on Map" — reads dims from Layout card, opens modal
         document.getElementById('editCornerPreviewBtn').addEventListener('click', function () {
             if (!cornerLat) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Get your GPS position first.'; return; }
             if (!cornerSide) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Select which corner you are at.'; return; }
-            var lM = parseFloat(document.getElementById('editBedLengthM').value);
-            var wM = parseFloat(document.getElementById('editBedWidthM').value);
-            if (!lM || !wM || lM <= 0 || wM <= 0) { if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Enter length and width.'; return; }
-
+            var lmEl = document.getElementById('bedCfgLength');
+            var wmEl = document.getElementById('bedCfgWidth');
+            var lM   = lmEl ? parseFloat(lmEl.value) : NaN;
+            var wM   = wmEl ? parseFloat(wmEl.value) : NaN;
+            if (!lM || !wM || lM <= 0 || wM <= 0) {
+                if (cornerMsgEl) cornerMsgEl.textContent = '⚠️ Set length and width in the Garden Bed Layout card first.';
+                return;
+            }
             var latPerM = 1 / 111111;
             var lngPerM = 1 / (111111 * Math.cos(cornerLat * Math.PI / 180));
             var dLat = lM * latPerM, dLng = wM * lngPerM;
@@ -492,82 +501,160 @@
             else if (cornerSide === 'NW') { nw=[cornerLat,cornerLng]; ne=[cornerLat,cornerLng+dLng]; sw=[cornerLat-dLat,cornerLng]; se=[cornerLat-dLat,cornerLng+dLng]; }
             else if (cornerSide === 'SE') { se=[cornerLat,cornerLng]; sw=[cornerLat,cornerLng-dLng]; ne=[cornerLat+dLat,cornerLng]; nw=[cornerLat+dLat,cornerLng-dLng]; }
             else { sw=[cornerLat,cornerLng]; se=[cornerLat,cornerLng+dLng]; nw=[cornerLat+dLat,cornerLng]; ne=[cornerLat+dLat,cornerLng+dLng]; }
-
-            pendingPts = [nw, ne, se, sw];
-            var rows    = parseInt(document.getElementById('editBedRows').value) || 0;
-            var lineDir = document.querySelector('input[name="editLineDir"]:checked');
-            var lineDirVal = lineDir ? lineDir.value : 'NS';
-            pendingBedMeta = { bed_rows: rows, bed_length_m: lM, bed_width_m: wM, line_direction: lineDirVal };
-            document.getElementById('editNudgeSection').style.display = 'block';
-
-            var m = mm();
-            if (m) {
-                if (cornerPolygon) m.removeLayer(cornerPolygon);
-                cornerPolygon = L.polygon(pendingPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.18, weight: 2 }).addTo(m);
-                // Draw row lines preview
-                if (rows > 0) {
-                    var lats = pendingPts.map(function(p){return p[0];});
-                    var lngs = pendingPts.map(function(p){return p[1];});
-                    var minLat = Math.min.apply(null,lats), maxLat = Math.max.apply(null,lats);
-                    var minLng = Math.min.apply(null,lngs), maxLng = Math.max.apply(null,lngs);
-                    var step = (maxLat - minLat) / (rows + 1);
-                    for (var i = 1; i <= rows; i++) {
-                        L.polyline([[minLat+i*step, minLng],[minLat+i*step, maxLng]], {
-                            color: '#2d8a27', weight: 1, opacity: 0.6, dashArray: '5 5', interactive: false
-                        }).addTo(m);
-                    }
-                }
-                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20], maxZoom: 20 });
-            }
-            if (statusEl) statusEl.textContent = '✅ Preview ready — tap Save Boundary to confirm';
-            actionsEl.style.display = 'flex';
+            var pts = [nw, ne, se, sw];
+            var linesEl = document.getElementById('bedCfgLines');
+            var dirEl   = document.querySelector('input[name="bedCfgDir"]:checked');
+            var bm = {
+                bed_rows: linesEl ? (parseInt(linesEl.value) || 0) : 0,
+                bed_length_m: lM, bed_width_m: wM,
+                line_direction: dirEl ? dirEl.value : 'NS'
+            };
             if (cornerMsgEl) cornerMsgEl.textContent = '';
+            openPositionModal(pts, bm);
+        });
+
+        // "Adjust Position on Map" button (shown when boundary already exists)
+        var adjBtn = document.getElementById('editAdjustPositionBtn');
+        if (adjBtn) {
+            adjBtn.addEventListener('click', function() {
+                if (!EXISTING) return;
+                try {
+                    var geo    = typeof EXISTING === 'string' ? JSON.parse(EXISTING) : EXISTING;
+                    var coords = geo.coordinates[0];
+                    var pts    = coords.slice(0,-1).map(function(c){ return [c[1], c[0]]; });
+                    openPositionModal(pts, pendingBedMeta || {});
+                } catch(e) {}
+            });
+        }
+    }
+
+    // ── Position Modal ────────────────────────────────────────────────────────
+    function openPositionModal(pts, bedMeta) {
+        posPts = pts.slice(); posBedMeta = bedMeta || {};
+        var modal = document.getElementById('posModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        setTimeout(function() {
+            if (!posMap) {
+                posMap = L.map('posModalMap', { zoomControl: true });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap', maxZoom: 22
+                }).addTo(posMap);
+            } else {
+                posMap.invalidateSize();
+            }
+            drawPosPolygon();
+            var bounds = L.latLngBounds(posPts.map(function(p){ return [p[0], p[1]]; }));
+            posMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 20 });
+        }, 80);
+    }
+
+    function drawPosPolygon() {
+        if (!posMap) return;
+        if (posPolygon) { posMap.removeLayer(posPolygon); posPolygon = null; }
+        posPolygon = L.polygon(posPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.20, weight: 2.5 }).addTo(posMap);
+    }
+
+    document.querySelectorAll('.pos-nudge').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!posPts.length) return;
+            var stepEl = document.querySelector('input[name="posNudgeStep"]:checked');
+            var amt = stepEl ? parseFloat(stepEl.value) : 1;
+            var dir = this.dataset.dir;
+            var refLat = posPts[0][0];
+            var latPerM = 1 / 111111;
+            var lngPerM = 1 / (111111 * Math.cos(refLat * Math.PI / 180));
+            var dLat = dir === 'N' ?  amt * latPerM : dir === 'S' ? -amt * latPerM : 0;
+            var dLng = dir === 'E' ?  amt * lngPerM : dir === 'W' ? -amt * lngPerM : 0;
+            posPts = posPts.map(function(p) { return [p[0]+dLat, p[1]+dLng]; });
+            drawPosPolygon();
+        });
+    });
+
+    function rotatePts(pts, deg) {
+        var cx = pts.reduce(function(s,p){return s+p[0];},0) / pts.length;
+        var cy = pts.reduce(function(s,p){return s+p[1];},0) / pts.length;
+        var latPerM = 1 / 111111;
+        var lngPerM = 1 / (111111 * Math.cos(cx * Math.PI / 180));
+        var rad = deg * Math.PI / 180;
+        return pts.map(function(p) {
+            var dy = (p[0] - cx) / latPerM, dx = (p[1] - cy) / lngPerM;
+            var rDy = dy * Math.cos(rad) - dx * Math.sin(rad);
+            var rDx = dx * Math.cos(rad) + dy * Math.sin(rad);
+            return [cx + rDy * latPerM, cy + rDx * lngPerM];
         });
     }
 
-    // ── Save ─────────────────────────────────────────────────────────────────
-    document.getElementById('editBoundarySave').addEventListener('click', function () {
-        if (!pendingPts || pendingPts.length < 3) { if (msgEl) msgEl.textContent = '⚠️ Walk a boundary or preview a corner+size polygon first.'; return; }
-        var geojson = { type: 'Polygon', coordinates: [pendingPts.map(function (p) { return [p[1], p[0]]; })] };
+    document.getElementById('posRotateCCW').addEventListener('click', function() { posPts = rotatePts(posPts, -5); drawPosPolygon(); });
+    document.getElementById('posRotateCW').addEventListener('click',  function() { posPts = rotatePts(posPts,  5); drawPosPolygon(); });
+
+    document.getElementById('posModalClose').addEventListener('click', function() {
+        document.getElementById('posModal').style.display = 'none';
+        document.body.style.overflow = '';
+    });
+
+    document.getElementById('posModalSave').addEventListener('click', function() {
+        var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+        var geojson = { type: 'Polygon', coordinates: [posPts.map(function(p){ return [p[1], p[0]]; })] };
         geojson.coordinates[0].push(geojson.coordinates[0][0]);
-        if (msgEl) msgEl.textContent = 'Saving…';
         var fd = new FormData();
-        fd.append('_token', CSRF);
-        fd.append('geojson', JSON.stringify(geojson));
-        if (pendingBedMeta) {
-            if (pendingBedMeta.bed_rows > 0)      fd.append('bed_rows',       pendingBedMeta.bed_rows);
-            if (pendingBedMeta.bed_length_m > 0)  fd.append('bed_length_m',   pendingBedMeta.bed_length_m);
-            if (pendingBedMeta.bed_width_m > 0)   fd.append('bed_width_m',    pendingBedMeta.bed_width_m);
-            if (pendingBedMeta.line_direction)     fd.append('line_direction', pendingBedMeta.line_direction);
+        fd.append('_token', CSRF); fd.append('geojson', JSON.stringify(geojson));
+        if (posBedMeta) {
+            if (posBedMeta.bed_rows > 0)     fd.append('bed_rows',       posBedMeta.bed_rows);
+            if (posBedMeta.bed_length_m > 0) fd.append('bed_length_m',   posBedMeta.bed_length_m);
+            if (posBedMeta.bed_width_m > 0)  fd.append('bed_width_m',    posBedMeta.bed_width_m);
+            if (posBedMeta.line_direction)   fd.append('line_direction',  posBedMeta.line_direction);
         }
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SAVE_URL, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.addEventListener('load', function() {
+            btn.disabled = false; btn.textContent = '💾 Save Position';
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) {}
+            if (res && res.success) {
+                EXISTING = geojson;
+                pendingPts = posPts.slice(); pendingBedMeta = posBedMeta;
+                drawBoundary(geojson);
+                if (statusEl) statusEl.textContent = '⬡ Boundary saved';
+                document.getElementById('posModal').style.display = 'none';
+                document.body.style.overflow = '';
+                showToast('✅ Position saved successfully', 'success');
+                ensureDeleteRow();
+            } else {
+                showToast('❌ ' + (res ? (res.message || res.error || 'Save failed') : 'Save failed'), 'error');
+            }
+        });
+        xhr.addEventListener('error', function() {
+            btn.disabled = false; btn.textContent = '💾 Save Position';
+            showToast('❌ Network error — try again.', 'error');
+        });
+        xhr.send(fd);
+    });
+
+    // ── Save (Walk mode) ─────────────────────────────────────────────────────
+    document.getElementById('editBoundarySave').addEventListener('click', function () {
+        if (!pendingPts || pendingPts.length < 3) { showToast('⚠️ Walk a boundary first.', 'error'); return; }
+        var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+        var geojson = { type: 'Polygon', coordinates: [pendingPts.map(function (p) { return [p[1], p[0]]; })] };
+        geojson.coordinates[0].push(geojson.coordinates[0][0]);
+        var fd = new FormData();
+        fd.append('_token', CSRF); fd.append('geojson', JSON.stringify(geojson));
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SAVE_URL, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.addEventListener('load', function () {
+            btn.disabled = false; btn.textContent = '💾 Save Boundary';
             var res; try { res = JSON.parse(xhr.responseText); } catch (e) {}
             if (res && res.success) {
                 EXISTING = geojson;
                 if (walkPolygon) { var m = mm(); if (m) m.removeLayer(walkPolygon); walkPolygon = null; }
                 drawBoundary(geojson);
-                actionsEl.style.display = 'none';
-                pendingPts = null;
+                actionsEl.style.display = 'none'; pendingPts = null;
                 if (statusEl) statusEl.textContent = '⬡ Boundary saved';
-                if (msgEl) msgEl.textContent = '✅ ' + (res.message || 'Saved');
-                // Show delete button if it was missing (first-time save)
-                var delRow = document.getElementById('editBoundaryDeleteRow');
-                if (!delRow) {
-                    var row = document.createElement('div');
-                    row.id = 'editBoundaryDeleteRow';
-                    row.style.marginTop = 'var(--spacing-2)';
-                    row.innerHTML = '<button type="button" id="editBoundaryDelete" class="btn btn-link btn-sm" style="color:var(--color-danger,#c0392b);padding:0">Remove boundary</button>'
-                        + '<span id="editBoundaryDeleteConfirm" style="display:none;gap:6px;align-items:center">'
-                        + '<button type="button" id="editBoundaryDeleteYes" class="btn btn-danger btn-sm">✓ Remove</button>'
-                        + '<button type="button" id="editBoundaryDeleteNo" class="btn btn-secondary btn-sm">Cancel</button></span>';
-                    msgEl.parentNode.insertBefore(row, msgEl);
-                    wireDeleteBtn();
-                }
+                showToast('✅ Boundary saved', 'success');
+                ensureDeleteRow();
             } else {
-                if (msgEl) msgEl.textContent = '❌ ' + (res ? res.message : 'Save failed');
+                showToast('❌ ' + (res ? (res.message || 'Save failed') : 'Save failed'), 'error');
             }
         });
         xhr.send(fd);
@@ -577,23 +664,41 @@
     document.getElementById('editBoundaryDiscard').addEventListener('click', function () {
         var m = mm();
         if (walkPolygon && m) { m.removeLayer(walkPolygon); walkPolygon = null; }
-        if (cornerPolygon && m) { m.removeLayer(cornerPolygon); cornerPolygon = null; }
-        actionsEl.style.display = 'none';
-        pendingPts = null; pendingBedMeta = null;
-        if (msgEl) msgEl.textContent = '';
+        actionsEl.style.display = 'none'; pendingPts = null; pendingBedMeta = null;
         if (EXISTING) { drawBoundary(EXISTING); if (statusEl) statusEl.textContent = '⬡ Boundary saved'; }
         else if (statusEl) statusEl.textContent = 'No boundary set yet';
     });
 
     // ── Delete ────────────────────────────────────────────────────────────────
+    function ensureDeleteRow() {
+        var delRow = document.getElementById('editBoundaryDeleteRow');
+        if (delRow) { delRow.style.display = ''; return; }
+        var row = document.createElement('div');
+        row.id = 'editBoundaryDeleteRow';
+        row.style.cssText = 'margin-top:var(--spacing-3);padding-top:var(--spacing-2);border-top:1px solid var(--color-border)';
+        row.innerHTML = '<p class="text-sm" style="margin:0 0 var(--spacing-2);color:var(--color-text-muted)">Danger zone</p>'
+            + '<span id="editBoundaryDeleteConfirmWrap" style="display:flex;gap:6px;align-items:center">'
+            + '<button type="button" id="editBoundaryDelete" class="btn btn-danger btn-sm" style="font-size:.8rem">🗑 Remove Boundary</button>'
+            + '</span>'
+            + '<span id="editBoundaryDeleteConfirm" style="display:none;gap:6px;align-items:center">'
+            + '<span style="font-size:.85rem;color:var(--color-danger,#c0392b)">Sure?</span>'
+            + '<button type="button" id="editBoundaryDeleteYes" class="btn btn-danger btn-sm">Yes, remove</button>'
+            + '<button type="button" id="editBoundaryDeleteNo" class="btn btn-secondary btn-sm">Cancel</button>'
+            + '</span>';
+        var t2 = document.getElementById('editBoundaryToast');
+        if (t2) t2.parentNode.insertBefore(row, t2); else document.querySelector('#editBoundaryMsg') || document.querySelector('.card-body').appendChild(row);
+        wireDeleteBtn();
+    }
+
     function wireDeleteBtn() {
-        var btn = document.getElementById('editBoundaryDelete');
+        var btn  = document.getElementById('editBoundaryDelete');
+        var wrap = document.getElementById('editBoundaryDeleteConfirmWrap');
         var conf = document.getElementById('editBoundaryDeleteConfirm');
         var yes  = document.getElementById('editBoundaryDeleteYes');
         var no   = document.getElementById('editBoundaryDeleteNo');
         if (!btn || !conf) return;
-        btn.addEventListener('click', function () { btn.style.display = 'none'; conf.style.display = 'flex'; });
-        no.addEventListener('click',  function () { conf.style.display = 'none'; btn.style.display = ''; });
+        btn.addEventListener('click', function () { if (wrap) wrap.style.display = 'none'; conf.style.display = 'flex'; });
+        no.addEventListener('click',  function () { conf.style.display = 'none'; if (wrap) wrap.style.display = 'flex'; });
         yes.addEventListener('click', function () {
             yes.textContent = '…';
             var fd = new FormData(); fd.append('_token', CSRF);
@@ -607,58 +712,18 @@
                     if (boundaryLayer && m) { m.removeLayer(boundaryLayer); boundaryLayer = null; }
                     document.getElementById('editBoundaryDeleteRow').style.display = 'none';
                     if (statusEl) statusEl.textContent = 'No boundary set yet';
-                    if (msgEl) msgEl.textContent = '✅ Boundary removed.';
+                    showToast('✅ Boundary removed', 'success');
                     EXISTING = null;
-                } else { yes.textContent = '✓ Remove'; conf.style.display = 'none'; btn.style.display = ''; }
+                } else {
+                    yes.textContent = 'Yes, remove'; conf.style.display = 'none';
+                    if (wrap) wrap.style.display = 'flex';
+                    showToast('❌ Could not remove boundary', 'error');
+                }
             });
             xhr.send(fd);
         });
     }
     wireDeleteBtn();
-
-    // Show nudge section if boundary already saved
-    if (EXISTING) { setTimeout(function(){ document.getElementById('editNudgeSection').style.display='block'; }, 400); }
-
-    // ── Nudge polygon ─────────────────────────────────────────────────────────
-    document.querySelectorAll('.nudge-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            if (!pendingPts && !EXISTING) return;
-            var amtInput = document.querySelector('input[name="editNudgeAmt"]:checked');
-            var amt = amtInput ? parseFloat(amtInput.value) : 1;
-            var dir = this.dataset.dir;
-
-            // Load pendingPts from existing if not already in pending state
-            if (!pendingPts && EXISTING) {
-                try {
-                    var geo = typeof EXISTING === 'string' ? JSON.parse(EXISTING) : EXISTING;
-                    var coords = geo.coordinates[0];
-                    pendingPts = coords.slice(0,-1).map(function(c){ return [c[1], c[0]]; });
-                } catch(e) { return; }
-            }
-            if (!pendingPts || !pendingPts.length) return;
-
-            var refLat  = pendingPts[0][0];
-            var latPerM = 1 / 111111;
-            var lngPerM = 1 / (111111 * Math.cos(refLat * Math.PI / 180));
-            var dLat = 0, dLng = 0;
-            if (dir === 'N') dLat =  amt * latPerM;
-            if (dir === 'S') dLat = -amt * latPerM;
-            if (dir === 'E') dLng =  amt * lngPerM;
-            if (dir === 'W') dLng = -amt * lngPerM;
-
-            pendingPts = pendingPts.map(function(p){ return [p[0]+dLat, p[1]+dLng]; });
-
-            var m = mm();
-            if (m) {
-                if (cornerPolygon) { m.removeLayer(cornerPolygon); }
-                cornerPolygon = L.polygon(pendingPts, { color: '#2d8a27', fillColor: '#2d8a27', fillOpacity: 0.18, weight: 2 }).addTo(m);
-                m.fitBounds(cornerPolygon.getBounds(), { padding: [20, 20], maxZoom: 20 });
-            }
-            if (!pendingBedMeta) pendingBedMeta = {};
-            document.getElementById('editBoundaryActions').style.display = 'flex';
-            if (document.getElementById('editBoundaryStatus')) document.getElementById('editBoundaryStatus').textContent = '📐 Moved — tap Save to confirm';
-        });
-    });
 
     // ── Geo utilities ─────────────────────────────────────────────────────────
     function haversine(lat1, lng1, lat2, lng2) {

@@ -70,7 +70,7 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 <div class="rg-hub-header">
   <div>
     <div class="rg-label-tiny">Property</div>
-    <h1 class="rg-hub-title">Your gardens</h1>
+    <h1 class="rg-hub-title">Active Gardens</h1>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <a href="<?= url('/items/create?type=bed') ?>" class="btn btn-secondary btn-sm">＋ Bed</a>
@@ -179,15 +179,34 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
         </a>
       <?php endforeach; ?>
       <?php if (empty($gBeds)): ?>
-        <div class="rg-week-empty" style="text-align:left">No beds yet. <a href="<?= url('/items/create?type=bed&parent_id=' . $gid) ?>">Add a bed</a>.</div>
+        <div class="rg-week-empty" style="text-align:left;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          No beds yet.
+          <button type="button" class="btn btn-secondary btn-sm assign-beds-trigger" data-garden-id="<?= $gid ?>" data-garden-name="<?= e($g['name']) ?>">+ Assign existing beds</button>
+          <a href="<?= url('/items/create?type=bed&parent_id=' . $gid) ?>" class="btn btn-secondary btn-sm">+ New bed</a>
+        </div>
       <?php endif; ?>
     </div>
   </div>
 <?php endforeach; ?>
 
 <?php if (empty($_gardens)): ?>
-  <div class="rg-week-empty" style="margin-top:14px">No gardens yet. <a href="<?= url('/items/create?type=garden') ?>">Create your first garden</a>.</div>
+  <div class="rg-week-empty" style="margin-top:14px">No active gardens yet. <a href="<?= url('/items/create?type=garden') ?>">Create your first garden</a>.</div>
 <?php endif; ?>
+
+<!-- Assign Beds Popup -->
+<div id="assignBedsModal" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.5);align-items:flex-end">
+  <div style="background:#fff;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding:20px 16px 32px">
+    <div style="display:flex;align-items:center;margin-bottom:16px">
+      <span style="font-weight:700;font-size:1.05rem;flex:1">Assign Beds to <span id="assignGardenName"></span></span>
+      <button type="button" id="assignBedsClose" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>
+    <div id="assignBedsList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+      <div style="color:var(--color-text-muted);font-size:.85rem">Loading…</div>
+    </div>
+    <button type="button" id="assignBedsSave" class="btn btn-primary" style="width:100%">💾 Save</button>
+    <div id="assignBedsMsg" style="margin-top:8px;font-size:.85rem;text-align:center"></div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -212,6 +231,81 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     try { localStorage.setItem(STORAGE, JSON.stringify(collapsed)); } catch(e) {}
   });
 })();
+
+// ── Assign Beds Popup ──────────────────────────────────────────────────────
+(function() {
+  var ALL_BEDS  = <?= json_encode(array_map(fn($b) => ['id'=>(int)$b['id'],'name'=>$b['name'],'parent_id'=>$b['parent_id'] ? (int)$b['parent_id'] : null], $allBedsFlat ?? [])) ?>;
+  var CSRF      = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+  var currentGardenId = null;
+  var modal   = document.getElementById('assignBedsModal');
+  var nameEl  = document.getElementById('assignGardenName');
+  var listEl  = document.getElementById('assignBedsList');
+  var saveBtn = document.getElementById('assignBedsSave');
+  var msgEl   = document.getElementById('assignBedsMsg');
+
+  document.querySelectorAll('.assign-beds-trigger').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentGardenId = parseInt(this.dataset.gardenId, 10);
+      nameEl.textContent = this.dataset.gardenName || '';
+      msgEl.textContent = '';
+
+      // Render bed list: unassigned beds or beds already in this garden
+      var available = ALL_BEDS.filter(function(b) {
+        return b.parent_id === null || b.parent_id === currentGardenId;
+      });
+
+      if (!available.length) {
+        listEl.innerHTML = '<div style="color:var(--color-text-muted);font-size:.85rem">No unassigned beds found. <a href="' + window.APP_BASE + '/items/create?type=bed&parent_id=' + currentGardenId + '">Create a new bed</a>.</div>';
+      } else {
+        listEl.innerHTML = available.map(function(b) {
+          var checked = b.parent_id === currentGardenId ? ' checked' : '';
+          return '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius);cursor:pointer">'
+            + '<input type="checkbox" name="bed_ids" value="' + b.id + '"' + checked + ' style="width:18px;height:18px;accent-color:var(--color-primary);flex-shrink:0">'
+            + '<span style="font-size:.9rem;font-weight:500">' + b.name + '</span>'
+            + '</label>';
+        }).join('');
+      }
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    });
+  });
+
+  document.getElementById('assignBedsClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  saveBtn.addEventListener('click', function() {
+    if (!currentGardenId) return;
+    var checked = listEl.querySelectorAll('input[name="bed_ids"]:checked');
+    var ids = Array.from(checked).map(function(c){ return parseInt(c.value, 10); });
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    var fd = new FormData();
+    fd.append('_token', CSRF);
+    ids.forEach(function(id) { fd.append('bed_ids[]', id); });
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', window.APP_BASE + '/api/gardens/' + currentGardenId + '/assign-beds', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.addEventListener('load', function() {
+      saveBtn.disabled = false; saveBtn.textContent = '💾 Save';
+      var res; try { res = JSON.parse(xhr.responseText); } catch(e) {}
+      if (res && res.success) {
+        closeModal();
+        window.location.reload();
+      } else {
+        msgEl.textContent = '❌ ' + (res ? (res.error || 'Failed') : 'Error');
+      }
+    });
+    xhr.addEventListener('error', function() {
+      saveBtn.disabled = false; saveBtn.textContent = '💾 Save';
+      msgEl.textContent = '❌ Network error';
+    });
+    xhr.send(fd);
+  });
+}());
 </script>
 
 <!-- ===== Legacy garden hub content below (seeds, biodynamic, etc.) ===== -->
@@ -255,7 +349,7 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
 
 <div class="schematic-section">
     <div class="schematic-section-head">
-        <span class="schematic-section-title">🌱 Garden Beds</span>
+        <span class="schematic-section-title">🌱 Bed Overview</span>
     </div>
 
     <?php foreach ($bedsByGarden as $gardenId => $beds): ?>
@@ -264,7 +358,7 @@ $statusColors = ['growing'=>'#22c55e','planned'=>'#f59e0b','harvested'=>'#3b82f6
             <?php if ($gardenId && isset($schematicGardens[$gardenId])): ?>
                 🌿 <?= e($schematicGardens[$gardenId]) ?>
             <?php else: ?>
-                🛖 No garden
+                🟫 Prep Beds (unassigned)
             <?php endif; ?>
         </div>
         <?php

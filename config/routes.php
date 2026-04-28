@@ -179,6 +179,7 @@ $router->post('/garden/plantings/{id}/harvest-line', 'GardenBedController@harves
 $router->post('/garden/plantings/{id}/adjust-qty',   'GardenBedController@adjustQty');
 $router->get('/api/garden/companions',           'GardenBedController@companions');
 $router->get('/api/garden/seed-suggestions',     'GardenBedController@seedSuggestions');
+$router->post('/api/gardens/{id}/assign-beds',   'GardenController@assignBeds');
 
 // -------------------------------------------------------------------------
 // Seeds

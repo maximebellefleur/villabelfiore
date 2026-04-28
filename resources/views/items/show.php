@@ -74,6 +74,11 @@ $recentReminders = array_slice($reminders, 0, 3);
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 Edit
             </a>
+            <?php if (in_array($item['type'], ['garden','bed','orchard','zone','prep_zone','mobile_coop','building'])): ?>
+            <a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>" class="show-edit-btn" style="background:rgba(255,255,255,.22)">
+                📍 Position
+            </a>
+            <?php endif; ?>
         </div>
         <?php if ($idPhoto): ?>
         <div class="show-hero-avatar">
@@ -87,6 +92,17 @@ $recentReminders = array_slice($reminders, 0, 3);
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (in_array($item['type'], ['bed','garden']) && empty($boundaryGeojson)): ?>
+<a href="<?= url('/items/' . (int)$item['id'] . '/edit#boundary') ?>"
+   style="display:flex;align-items:center;gap:10px;background:#fff3cd;border-bottom:2px solid #ffc107;padding:12px 16px;text-decoration:none;color:#856404">
+    <span style="font-size:1.4rem">📍</span>
+    <div>
+        <div style="font-weight:700;font-size:.95rem">Position this <?= e($item['type']) ?> on the map</div>
+        <div style="font-size:.8rem;margin-top:1px">Tap to set the boundary and make it visible on your map →</div>
+    </div>
+</a>
+<?php endif; ?>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 

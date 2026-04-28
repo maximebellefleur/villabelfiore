@@ -225,9 +225,14 @@ class GardenController
         // ---- Action-first hub data (Garden Redesign v3) -----------------
         $hub = $this->buildHub($db);
 
+        $allBedsFlat = $db->fetchAll(
+            "SELECT id, name, parent_id FROM items WHERE type='bed' AND deleted_at IS NULL AND status='active' ORDER BY name ASC"
+        ) ?: [];
+
         Response::render('garden/index', [
             'title'              => 'Garden',
             'hub'                => $hub,
+            'allBedsFlat'        => $allBedsFlat,
             'totalSeeds'         => $totalSeeds,
             'plantNow'           => $plantNow,
             'harvestSoon'        => $harvestSoon,
@@ -463,5 +468,41 @@ class GardenController
 
         $calendar = $zones[$zone] ?? $med_sicily;
         return $calendar[$month] ?? [];
+    }
+
+    public function assignBeds(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        header('Content-Type: application/json');
+        \App\Support\CSRF::validate($request->post('_token', ''));
+
+        $gardenId = (int)($params['id'] ?? 0);
+        $db = DB::getInstance();
+
+        $garden = $db->fetchOne(
+            "SELECT id FROM items WHERE id = ? AND type='garden' AND deleted_at IS NULL",
+            [$gardenId]
+        );
+        if (!$garden) {
+            echo json_encode(['success' => false, 'error' => 'Garden not found']);
+            exit;
+        }
+
+        $bedIds = array_filter(array_map('intval', (array)($request->post('bed_ids', []))));
+
+        if (empty($bedIds)) {
+            echo json_encode(['success' => true, 'assigned' => 0]);
+            exit;
+        }
+
+        $ph = implode(',', array_fill(0, count($bedIds), '?'));
+        $args = array_merge([$gardenId], array_values($bedIds));
+        $db->execute(
+            "UPDATE items SET parent_id=?, updated_at=NOW() WHERE id IN ($ph) AND type='bed' AND deleted_at IS NULL",
+            $args
+        );
+
+        echo json_encode(['success' => true, 'assigned' => count($bedIds)]);
+        exit;
     }
 }

@@ -48,10 +48,20 @@
                        value="<?= e(getFlash('old')['name'] ?? '') ?>" placeholder="e.g. Olive #12, North Garden…">
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Parent Item <small class="text-muted">(optional)</small></label>
-                <input type="number" name="parent_id" class="form-input form-input--touch" placeholder="Parent item ID"
-                       value="<?= e(getFlash('old')['parent_id'] ?? '') ?>">
+            <?php
+            $preParentId = getFlash('old')['parent_id'] ?? ($_GET['parent_id'] ?? '');
+            $preType2    = getFlash('old')['type'] ?? ($_GET['type'] ?? '');
+            ?>
+            <div class="form-group" id="parentGardenGroup" style="<?= $preType2 === 'bed' ? '' : 'display:none' ?>">
+                <label class="form-label">Garden <small class="text-muted">(optional)</small></label>
+                <select name="parent_id" id="parentGardenSelect" class="form-input form-input--touch">
+                    <option value="">— No garden —</option>
+                    <?php foreach ($allGardens ?? [] as $g): ?>
+                    <option value="<?= (int)$g['id'] ?>" <?= (string)(int)$preParentId === (string)(int)$g['id'] ? 'selected' : '' ?>>
+                        <?= e($g['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <!-- Coordinates (read-only display, set by map or GPS) -->
@@ -116,6 +126,7 @@ $('#clearGps').on('click', function() {
 
 $('#itemType').on('change', function() {
     var type = $(this).val();
+    $('#parentGardenGroup').toggle(type === 'bed');
     if (!type || !itemTypeMeta[type]) { $('#metaFields').hide(); return; }
     var fields = itemTypeMeta[type].required_meta.concat(itemTypeMeta[type].optional_meta);
     var metaOpts = itemTypeMeta[type].meta_options || {};

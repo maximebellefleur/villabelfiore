@@ -128,11 +128,13 @@ class ItemController
             ? (json_decode($row['setting_value_json'], true) ?: [])
             : [];
         $zoomRow     = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'gps.detect_zoom_level' LIMIT 1");
+        $allGardens  = $db->fetchAll("SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL ORDER BY name ASC");
         Response::render('items/create', [
             'title'          => 'Add Item',
             'itemTypes'      => $itemTypes,
             'customTypes'    => $customTypes,
             'gpsDetectZoom'  => (int)($zoomRow['setting_value_text'] ?? 18),
+            'allGardens'     => $allGardens,
         ]);
     }
 
@@ -423,7 +425,8 @@ class ItemController
             ? (json_decode($btRow['setting_value_json'], true) ?: $defaultBoundaryTypes)
             : $defaultBoundaryTypes;
 
-        $zoomRow = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'gps.detect_zoom_level' LIMIT 1");
+        $zoomRow    = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'gps.detect_zoom_level' LIMIT 1");
+        $allGardens = $db->fetchAll("SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL ORDER BY name ASC");
         Response::render('items/edit', [
             'title'          => 'Edit ' . e($item['name']),
             'item'           => $item,
@@ -433,6 +436,7 @@ class ItemController
             'boundaryTypes'  => $boundaryTypes,
             'boundaryGeojson'=> $boundaryGeojson,
             'gpsDetectZoom'  => (int)($zoomRow['setting_value_text'] ?? 18),
+            'allGardens'     => $allGardens,
         ]);
     }
 
@@ -452,10 +456,17 @@ class ItemController
             Response::redirect('/items/' . $id . '/edit');
         }
 
+        $currentItem  = $db->fetchOne('SELECT type FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $allowedTypes = array_diff(array_keys(require BASE_PATH . '/config/item_types.php'), ['line']);
+        $newType      = (!empty($data['type']) && in_array($data['type'], $allowedTypes))
+            ? $data['type']
+            : ($currentItem['type'] ?? 'tree');
+
         $db->execute(
-            'UPDATE items SET name=?, subtype=?, parent_id=?, gps_lat=?, gps_lng=?, gps_accuracy=?, gps_source=?, updated_at=NOW() WHERE id=?',
+            'UPDATE items SET name=?, type=?, subtype=?, parent_id=?, gps_lat=?, gps_lng=?, gps_accuracy=?, gps_source=?, updated_at=NOW() WHERE id=?',
             [
                 $data['name'] ?? '',
+                $newType,
                 $data['subtype'] ?? null,
                 !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
                 !empty($data['gps_lat'])   ? (float)$data['gps_lat'] : null,
