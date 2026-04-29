@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.8' => [
+        'date'  => '2026-04-29',
+        'title' => 'Nav padding 0, logo icon margin tweak',
+        'new' => [],
+        'improved' => [
+            '.nav padding set to 0 (was 0 var(--spacing-4)).',
+            'Nav logo icon margin adjusted to -12px -7px 0 -30px for better positioning.',
+        ],
+        'fixed' => [],
+    ],
+
     '3.1.7' => [
         'date'  => '2026-04-29',
         'title' => 'Custom nav icons: seed, family, basket',

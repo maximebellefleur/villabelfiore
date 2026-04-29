@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.8' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Nav padding 0, logo icon margin tweak',
+        'features' => [
+            ['title' => 'Nav padding 0',       'detail' => '.nav padding set to 0.'],
+            ['title' => 'Logo margin adjusted', 'detail' => 'Nav logo icon margin set to -12px -7px 0 -30px.'],
+        ],
+    ],
+
     '3.1.7' => [
         'status'   => 'released',
         'released' => '2026-04-29',
