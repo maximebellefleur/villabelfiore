@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.17' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Clearer Family Needs icon',
+        'features' => [
+            ['title' => 'Family icon redesign', 'detail' => 'Two adults + smaller child silhouette replaces the old abstract 4-dot icon.'],
+        ],
+    ],
+
     '3.1.16' => [
         'status'   => 'released',
         'released' => '2026-04-29',

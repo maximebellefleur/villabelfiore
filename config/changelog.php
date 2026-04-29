@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.17' => [
+        'date'  => '2026-04-29',
+        'title' => 'Clearer Family Needs icon',
+        'new' => [],
+        'improved' => [
+            'Family Needs nav icon redesigned: two adult figures flanking a smaller child — immediately readable as a family at any size.',
+        ],
+        'fixed' => [],
+    ],
+
     '3.1.16' => [
         'date'  => '2026-04-29',
         'title' => 'Mobile seed info modal background matches crop color',
