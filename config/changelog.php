@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.18' => [
+        'date'  => '2026-04-29',
+        'title' => 'Future-sow opacity in Plant tab + soonest harvest date fix',
+        'new' => [],
+        'improved' => [
+            'Plant tab now shows future-dated plantings at reduced opacity (38%) with a blue "🗓 Planned — sowing in N days" banner so you can tell apart what\'s in the ground vs. what\'s queued.',
+            'Family needs harvest estimate now uses MIN across all beds/lines of the same crop, ignoring rows with no sowing date rather than defaulting to today — gives the true soonest upcoming harvest.',
+        ],
+        'fixed' => [
+            'Harvest date "~Oct 25" for garlic was calculated as CURDATE() + days_to_maturity when planted_at was null. Now null-dated plantings are excluded from the estimate so only real dates count.',
+        ],
+    ],
+
     '3.1.17' => [
         'date'  => '2026-04-29',
         'title' => 'Clearer Family Needs icon',

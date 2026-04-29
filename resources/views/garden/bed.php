@@ -62,13 +62,27 @@ $bedId = (int)$item['id'];
   <?php else: ?>
 
   <!-- Lines -->
-  <?php foreach ($bed['lines'] as $idx => $line):
+  <?php
+  $todayIso = date('Y-m-d');
+  foreach ($bed['lines'] as $idx => $line):
     $segments = GardenHelpers::computeSegments($line, $cropsById);
     $fill     = GardenHelpers::computeFill($line, $cropsById);
     $totalSlots = max(1, (int)floor((int)$line['lengthCm'] / 5));
     $overcap  = $fill['used'] > (int)$line['lengthCm'];
     $usedPct  = ((int)$line['lengthCm'] > 0) ? ($fill['used'] / (int)$line['lengthCm']) : 0;
     $overpack = $usedPct >= 0.9;
+
+    // Detect future-dated plantings
+    $futurePids = [];   // planting id → sown_at
+    foreach ($line['plantings'] as $p) {
+        if (!empty($p['sown_at']) && $p['sown_at'] > $todayIso) {
+            $futurePids[(int)$p['id']] = $p['sown_at'];
+        }
+    }
+    $allFuture  = !empty($line['plantings']) && count($futurePids) === count($line['plantings']);
+    $someFuture = !empty($futurePids);
+    $nextSowDate = $someFuture ? min(array_values($futurePids)) : null;
+    $daysUntil   = $nextSowDate ? max(1, (int)ceil((strtotime($nextSowDate) - strtotime($todayIso)) / 86400)) : 0;
 
     // Build slot map (1 slot = 5 cm)
     $slots = array_fill(0, $totalSlots, null);
@@ -112,15 +126,22 @@ $bedId = (int)$item['id'];
         <span><?= e($bannerMsg) ?></span>
       </div>
       <?php endif; ?>
+      <?php if ($someFuture): ?>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 11px;margin:4px 0 8px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.3);border-radius:8px;font-size:.78rem;color:#1d4ed8;font-weight:600">
+        <span style="font-size:1rem">🗓</span>
+        <span>Planned — sowing in <?= $daysUntil ?> day<?= $daysUntil !== 1 ? 's' : '' ?> (<?= date('j M', strtotime($nextSowDate)) ?>)</span>
+      </div>
+      <?php endif; ?>
 
       <!-- Stripe -->
-      <div class="rg-stripe">
+      <div class="rg-stripe" <?= $allFuture ? 'style="opacity:.38"' : '' ?>>
         <?php foreach ($segments as $s):
           $w = max(0.5, $s['pct'] * 100);
           $c = $s['crop'];
           $color = $c['color'];
+          $segFuture = !$allFuture && isset($futurePids[(int)$s['plantingId']]);
         ?>
-          <div class="rg-stripe-seg" data-planting-id="<?= (int)$s['plantingId'] ?>" style="width: <?= $w ?>%; background: linear-gradient(180deg, <?= e($color) ?>, <?= e($color) ?>dd);">
+          <div class="rg-stripe-seg" data-planting-id="<?= (int)$s['plantingId'] ?>" style="width: <?= $w ?>%; background: linear-gradient(180deg, <?= e($color) ?>, <?= e($color) ?>dd);<?= $segFuture ? 'opacity:.38' : '' ?>">
             <?php if ($s['pct'] > 0.10): ?>
             <span><?= e($c['emoji']) ?> <?= (int)$s['plants'] ?></span>
             <?php endif; ?>
@@ -129,7 +150,7 @@ $bedId = (int)$item['id'];
       </div>
 
       <!-- Dot grid -->
-      <div class="rg-dotgrid <?= $totalSlots > 60 ? 'rg-dotgrid--dense' : '' ?>">
+      <div class="rg-dotgrid <?= $totalSlots > 60 ? 'rg-dotgrid--dense' : '' ?>" <?= $allFuture ? 'style="opacity:.38"' : '' ?>>
         <div class="rg-dots">
           <?php foreach ($slots as $i => $s):
             if ($s):
@@ -150,8 +171,9 @@ $bedId = (int)$item['id'];
           $c = $cropsById[$p['cropId']] ?? null;
           if (!$c) continue;
           $color = $c['color'];
+          $chipFuture = isset($futurePids[(int)$p['id']]);
         ?>
-          <div class="rg-stepchip" draggable="true" data-planting-id="<?= (int)$p['id'] ?>" data-crop-id="<?= (int)$p['cropId'] ?>" data-spacing-cm="<?= (int)($c['spacing_cm'] ?? 0) ?>" data-color="<?= e($color) ?>" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>;cursor:grab">
+          <div class="rg-stepchip" draggable="true" data-planting-id="<?= (int)$p['id'] ?>" data-crop-id="<?= (int)$p['cropId'] ?>" data-spacing-cm="<?= (int)($c['spacing_cm'] ?? 0) ?>" data-color="<?= e($color) ?>" style="background:<?= e($color) ?>15;border:1px solid <?= e($color) ?>55;color:<?= e($color) ?>;cursor:grab;<?= $chipFuture ? 'opacity:.5' : '' ?>">
             <span class="rg-stepchip-emoji"><?= e($c['emoji']) ?></span>
             <span><?= e($c['name']) ?></span>
             <div class="rg-stepper" data-planting-id="<?= (int)$p['id'] ?>">

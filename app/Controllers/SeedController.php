@@ -297,10 +297,18 @@ class SeedController
                         AS plants_in_ground,
                         COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'), 0)
                         AS plants_planned,
-                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                        (SELECT MIN(CASE
+                             WHEN gp.expected_harvest_at IS NOT NULL THEN gp.expected_harvest_at
+                             WHEN gp.sown_at IS NOT NULL THEN DATE_ADD(gp.sown_at, INTERVAL COALESCE(s.days_to_maturity,60) DAY)
+                             WHEN gp.planted_at IS NOT NULL THEN DATE_ADD(gp.planted_at, INTERVAL COALESCE(s.days_to_maturity,60) DAY)
+                             ELSE NULL END)
                          FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown'))
                         AS harvest_est_ground,
-                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                        (SELECT MIN(CASE
+                             WHEN gp.expected_harvest_at IS NOT NULL THEN gp.expected_harvest_at
+                             WHEN gp.sown_at IS NOT NULL THEN DATE_ADD(gp.sown_at, INTERVAL COALESCE(s.days_to_maturity,60) DAY)
+                             WHEN gp.planted_at IS NOT NULL THEN DATE_ADD(gp.planted_at, INTERVAL COALESCE(s.days_to_maturity,60) DAY)
+                             ELSE NULL END)
                          FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned')
                         AS harvest_est_planned
                  FROM family_needs fn

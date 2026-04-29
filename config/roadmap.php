@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.18' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Future-sow opacity + correct harvest date',
+        'features' => [
+            ['title' => 'Future planting opacity in Plant tab', 'detail' => 'Lines with a future sow date show at 38% opacity with a blue banner counting down to sowing day.'],
+            ['title' => 'Soonest harvest date in Family Needs', 'detail' => 'Harvest estimate now takes MIN across all dated plantings, ignoring null-sown rows instead of defaulting to today.'],
+        ],
+    ],
+
     '3.1.17' => [
         'status'   => 'released',
         'released' => '2026-04-29',
