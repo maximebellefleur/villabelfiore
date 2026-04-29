@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.15' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Sidebar color matches crop',
+        'features' => [
+            ['title' => 'Dynamic sidebar background', 'detail' => 'The left crop info panel background darkens to the selected crop\'s color so you always know at a glance what\'s active.'],
+        ],
+    ],
+
     '3.1.14' => [
         'status'   => 'released',
         'released' => '2026-04-29',

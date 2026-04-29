@@ -582,8 +582,20 @@ $bedId = (int)$item['id'];
       compHtml + antHtml + notesHtml;
   }
 
+  function darkenHex(hex, factor) {
+    hex = (hex || '').replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(function(c){return c+c;}).join('');
+    if (hex.length !== 6) return '#2c4a30';
+    var r = Math.round(parseInt(hex.substr(0,2),16) * factor);
+    var g = Math.round(parseInt(hex.substr(2,2),16) * factor);
+    var b = Math.round(parseInt(hex.substr(4,2),16) * factor);
+    return '#' + [r,g,b].map(function(v){return v.toString(16).padStart(2,'0');}).join('');
+  }
+
   function updateCropSidebar(crop) {
     if (!crop) return;
+    var bg = crop.color ? darkenHex(crop.color, 0.38) : '#2c4a30';
+    $('#rgBedSidebar').css({background: bg, borderRightColor: 'rgba(255,255,255,.08)'});
     $('#rgSidebarContent').html(buildCropInfoHtml(crop, true)).removeClass('rg-sidebar-empty');
   }
 

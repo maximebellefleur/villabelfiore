@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.15' => [
+        'date'  => '2026-04-29',
+        'title' => 'Sidebar background matches selected crop color',
+        'new' => [],
+        'improved' => [
+            'Crop info sidebar now changes background color to a darkened tint of the selected crop\'s color — makes it immediately clear which crop is active.',
+        ],
+        'fixed' => [],
+    ],
+
     '3.1.14' => [
         'date'  => '2026-04-29',
         'title' => 'Remove legacy bed_rows system, migrate data to garden_plantings',
