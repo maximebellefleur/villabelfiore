@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.16' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Mobile modal matches crop color',
+        'features' => [
+            ['title' => 'Crop-colored mobile modal', 'detail' => 'The seed info bottom sheet on mobile now uses the same darkened crop color as the desktop sidebar.'],
+        ],
+    ],
+
     '3.1.15' => [
         'status'   => 'released',
         'released' => '2026-04-29',

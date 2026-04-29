@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.16' => [
+        'date'  => '2026-04-29',
+        'title' => 'Mobile seed info modal background matches crop color',
+        'new' => [],
+        'improved' => [
+            'Mobile seed info bottom sheet now changes background to the darkened crop color, same as the desktop sidebar.',
+        ],
+        'fixed' => [],
+    ],
+
     '3.1.15' => [
         'date'  => '2026-04-29',
         'title' => 'Sidebar background matches selected crop color',

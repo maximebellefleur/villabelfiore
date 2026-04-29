@@ -607,6 +607,8 @@ $bedId = (int)$item['id'];
     var bar = $('#rgSeedInfoHead').find('.rg-seed-colorbar');
     if (!bar.length) bar = $('<div class="rg-seed-colorbar" style="height:3px;border-radius:999px;margin:6px 0 0"></div>').appendTo($('#rgSeedInfoHead'));
     bar.css('background', crop.color || '#4ade80');
+    var modalBg = crop.color ? darkenHex(crop.color, 0.38) : '#2c4a30';
+    $('#rgSeedInfoCard').css('background', modalBg);
     $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, true));
     $('#rgSeedInfoModal').css('display', 'flex').css('align-items', 'flex-end');
   }
