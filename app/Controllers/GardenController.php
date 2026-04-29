@@ -118,12 +118,12 @@ class GardenController
                     COALESCE(SUM(CASE WHEN gp.status IN (\'growing\',\'sown\') THEN gp.plant_count ELSE 0 END), 0) AS plants_in_ground,
                     COALESCE(SUM(CASE WHEN gp.status = \'planned\' THEN gp.plant_count ELSE 0 END), 0) AS plants_planned,
                     MIN(CASE WHEN gp.status IN (\'growing\',\'sown\') THEN COALESCE(gp.expected_harvest_at,
-                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_ground,
+                        DATE_ADD(COALESCE(gp.planted_at, gp.sown_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_ground,
                     MIN(CASE WHEN gp.status = \'planned\' THEN COALESCE(gp.expected_harvest_at,
-                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_planned
+                        DATE_ADD(COALESCE(gp.planted_at, gp.sown_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_planned
              FROM family_needs fn
              LEFT JOIN seeds s ON s.id = fn.seed_id
-             LEFT JOIN garden_plantings gp ON gp.seed_id = fn.seed_id AND gp.status IN (\'growing\',\'sown\',\'planted\')
+             LEFT JOIN garden_plantings gp ON gp.seed_id = fn.seed_id AND gp.status IN (\'growing\',\'sown\',\'planned\')
              GROUP BY fn.id
              ORDER BY fn.priority ASC, fn.vegetable_name ASC'
         );

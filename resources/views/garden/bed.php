@@ -193,7 +193,7 @@ $bedId = (int)$item['id'];
     </div>
     <div class="rg-palette-row">
       <?php foreach ($catalog as $c): ?>
-      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>" data-name="<?= e($c['name']) ?>" data-emoji="<?= e($c['emoji']) ?>" data-days="<?= (int)$c['days_to_maturity'] ?>" data-variety="<?= e($c['variety'] ?? '') ?>" data-family="<?= e($c['family'] ?? 'other') ?>" data-season="<?= e($c['season'] ?? 'any') ?>" data-stock="<?= (float)($c['stock_qty'] ?? 0) ?>" data-stock-unit="<?= e($c['stock_unit'] ?? 'seeds') ?>">
+      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>" data-name="<?= e($c['name']) ?>" data-emoji="<?= e($c['emoji']) ?>" data-days="<?= (int)$c['days_to_maturity'] ?>" data-variety="<?= e($c['variety'] ?? '') ?>" data-type="<?= e($c['type'] ?? 'vegetable') ?>" data-family="<?= e($c['family'] ?? 'other') ?>" data-season="<?= e($c['season'] ?? 'any') ?>" data-stock="<?= (float)($c['stock_qty'] ?? 0) ?>" data-stock-unit="<?= e($c['stock_unit'] ?? 'seeds') ?>" data-harvest-months="<?= e($c['harvest_months'] ?? '') ?>" data-notes="<?= e($c['notes'] ?? '') ?>">
         <span class="rg-palette-chip-emoji"><?= e($c['emoji']) ?></span>
         <span><?= e($c['name']) ?></span>
         <span class="rg-palette-chip-spacing"><?= (int)$c['spacing_cm'] ?>cm</span>
@@ -310,8 +310,10 @@ $bedId = (int)$item['id'];
       id: id, name: $c.data('name') || '', emoji: $c.data('emoji') || '',
       color: $c.data('color') || '#A66141', spacing: parseInt($c.data('spacing'), 10) || 5,
       days: parseInt($c.data('days'), 10) || 0, variety: $c.data('variety') || '',
-      family: $c.data('family') || 'other', season: $c.data('season') || 'any',
+      type: $c.data('type') || 'vegetable', family: $c.data('family') || 'other',
+      season: $c.data('season') || 'any',
       stock: parseFloat($c.data('stock')) || 0, stockUnit: $c.data('stock-unit') || 'seeds',
+      harvestMonths: $c.data('harvest-months') || '', notes: $c.data('notes') || '',
     };
   });
 
@@ -424,37 +426,82 @@ $bedId = (int)$item['id'];
   }
 
   // ── Sidebar (desktop) / seed info modal (mobile) ─────────────────
-  function buildCropInfoHtml(crop, compact) {
+  var MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function buildCropInfoHtml(crop, darkMode) {
+    var bg   = darkMode ? 'rgba(255,255,255,.06)'  : 'var(--color-surface)';
+    var bdr  = darkMode ? 'rgba(255,255,255,.08)'  : 'var(--color-border)';
+    var mute = darkMode ? 'rgba(255,255,255,.45)'  : 'var(--color-text-muted)';
+    var txt  = darkMode ? '#e8f0e9'                : 'var(--color-text)';
+
+    // Harvest months calendar
+    var calHtml = '';
+    if (crop.harvestMonths) {
+      var active = {};
+      String(crop.harvestMonths).replace(/\d+/g, function(m){ active[parseInt(m,10)] = true; });
+      var dots = '';
+      for (var mo = 1; mo <= 12; mo++) {
+        var on = active[mo];
+        dots += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:' + (on ? crop.color || '#A66141' : bdr) + ';opacity:' + (on ? '1' : '.5') + '"></div>' +
+          '<span style="font-size:.5rem;color:' + mute + '">' + MONTH_ABBR[mo-1].slice(0,1) + '</span>' +
+        '</div>';
+      }
+      calHtml = '<div style="padding:10px 16px;border-bottom:1px solid ' + bdr + '">' +
+        '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:8px">Harvest months</div>' +
+        '<div style="display:flex;gap:4px;justify-content:space-between">' + dots + '</div>' +
+      '</div>';
+    }
+
+    // Info rows
     var famLabel = crop.family ? crop.family.charAt(0).toUpperCase() + crop.family.slice(1) : '';
-    var seaLabel = crop.season === 'warm' ? '☀️ Warm season' : crop.season === 'cool' ? '🌧 Cool season' : (crop.season === 'any' ? '' : crop.season);
-    var stockOk = crop.stock > 0;
-    var stockColor = stockOk ? '#16a34a' : '#dc2626';
-    var stockLabel = stockOk ? crop.stock + ' ' + crop.stockUnit + ' in stock' : 'Out of stock';
+    var typeLabel = crop.type  ? crop.type.charAt(0).toUpperCase() + crop.type.slice(1) : '';
+    var seaLabel = crop.season === 'warm' ? '☀️ Warm' : crop.season === 'cool' ? '🌧 Cool' : (crop.season && crop.season !== 'any' ? crop.season : '');
+    var stockOk  = crop.stock > 0;
+    var stockTxt = stockOk ? crop.stock + ' ' + crop.stockUnit : 'Out of stock';
+    var stockColor = stockOk ? '#4ade80' : '#f87171';
+
+    function row(label, val) {
+      return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 16px;border-bottom:1px solid ' + bdr + '">' +
+        '<span style="color:' + mute + ';white-space:nowrap;margin-right:8px;font-size:.75rem">' + label + '</span>' +
+        '<span style="text-align:right;font-size:.8rem;font-weight:600;color:' + txt + '">' + val + '</span>' +
+      '</div>';
+    }
+
     var rows = '';
-    if (famLabel) rows += _infoRow('Family', famLabel);
-    if (seaLabel) rows += _infoRow('Season', seaLabel);
-    if (crop.days) rows += _infoRow('Days to maturity', '<strong>' + crop.days + 'd</strong>');
-    if (crop.spacing) rows += _infoRow('Spacing', '<strong>' + crop.spacing + ' cm</strong>');
-    rows += _infoRow('Stock', '<span style="color:' + stockColor + ';font-weight:700">' + stockLabel + '</span>');
+    if (typeLabel && typeLabel !== famLabel) rows += row('Type', typeLabel);
+    if (famLabel)  rows += row('Family', famLabel);
+    if (seaLabel)  rows += row('Season', seaLabel);
+    if (crop.days) rows += row('Days to maturity', crop.days + 'd');
+    if (crop.spacing) rows += row('Spacing', crop.spacing + ' cm');
+    rows += row('Stock', '<span style="color:' + stockColor + '">' + stockTxt + '</span>');
+
+    // Notes
+    var notesHtml = '';
+    if (crop.notes) {
+      notesHtml = '<div style="padding:10px 16px;font-size:.74rem;line-height:1.6;color:' + mute + '">' + crop.notes.replace(/</g,'&lt;') + '</div>';
+    }
+
     return (
-      '<div style="text-align:center;padding:' + (compact ? '8px 0 6px' : '14px 0 10px') + '">' +
-        '<div style="font-size:' + (compact ? '2.8rem' : '3.2rem') + ';margin-bottom:6px;line-height:1">' + (crop.emoji || '🌱') + '</div>' +
-        '<div style="font-weight:800;font-size:' + (compact ? '1rem' : '1.1rem') + ';color:var(--color-text);line-height:1.2">' + (crop.name || '') + '</div>' +
-        (crop.variety ? '<div style="font-size:.75rem;color:var(--color-text-muted);margin-top:3px">' + crop.variety + '</div>' : '') +
-        '<div style="height:4px;border-radius:999px;margin:10px 12px 0;background:' + (crop.color || '#A66141') + '"></div>' +
+      // Header
+      '<div style="padding:20px 16px 14px;text-align:center;border-bottom:1px solid ' + bdr + '">' +
+        '<div style="font-size:3rem;line-height:1;margin-bottom:10px">' + (crop.emoji || '🌱') + '</div>' +
+        '<div style="height:3px;border-radius:999px;margin:0 24px 12px;background:' + (crop.color || '#A66141') + '"></div>' +
+        '<div style="font-weight:800;font-size:1.05rem;color:' + txt + ';line-height:1.2">' + (crop.name || '') + '</div>' +
+        (crop.variety ? '<div style="font-size:.75rem;color:' + mute + ';margin-top:4px">' + crop.variety + '</div>' : '') +
       '</div>' +
-      '<div style="font-size:.79rem;display:flex;flex-direction:column;gap:0">' + rows + '</div>'
+      // Rows
+      rows +
+      // Harvest calendar
+      calHtml +
+      // Notes
+      notesHtml
     );
   }
-  function _infoRow(label, val) {
-    return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 12px;border-bottom:1px solid var(--color-border)">' +
-      '<span style="color:var(--color-text-muted);white-space:nowrap;margin-right:8px">' + label + '</span>' +
-      '<span style="text-align:right">' + val + '</span>' +
-    '</div>';
-  }
+
   function updateCropSidebar(crop) {
     if (!crop) return;
-    $('#rgSidebarContent').html(buildCropInfoHtml(crop, false)).removeClass('rg-sidebar-empty');
+    $('#rgSidebarContent').html(buildCropInfoHtml(crop, true)).removeClass('rg-sidebar-empty');
   }
 
   function showSeedInfoModal(crop) {
@@ -468,7 +515,7 @@ $bedId = (int)$item['id'];
       '</div>' +
       '<button type="button" class="rg-blackout-close" id="rgSeedInfoClose">×</button>'
     );
-    $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, true));
+    $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, false));
     $('#rgSeedInfoModal').css('display', 'flex');
     // re-bind close since we replaced the DOM node
     $('#rgSeedInfoClose').on('click', function () { $('#rgSeedInfoModal').hide(); });

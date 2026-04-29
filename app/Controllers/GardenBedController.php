@@ -219,7 +219,8 @@ class GardenBedController
     {
         try {
             $rows = $db->fetchAll(
-                "SELECT id, name, variety, days_to_maturity, spacing_cm, family, season, emoji, color
+                "SELECT id, name, variety, type, days_to_maturity, spacing_cm, family, season, emoji, color,
+                        stock_qty, stock_unit, harvest_months, notes
                  FROM seeds
                  WHERE COALESCE(stock_enabled,1) = 1
                  ORDER BY name ASC, variety ASC"

@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.9' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Dark sidebar, full crop info, acorn icon, family-needs crash fix',
+        'features' => [
+            ['title' => 'Dark bed sidebar',      'detail' => 'Sidebar uses deep forest dark background matching the nav.'],
+            ['title' => 'Full crop info card',   'detail' => 'Shows type, family, season, days to maturity, spacing, stock, harvest calendar, notes.'],
+            ['title' => 'Harvest month calendar','detail' => '12 coloured dots indicating which months the crop is ready to harvest.'],
+            ['title' => 'Acorn seed icon',       'detail' => 'Seeds nav icon replaced with a clear acorn shape.'],
+            ['title' => 'Family needs fix',      'detail' => 'Crash fixed, harvest soonest date now uses sown_at as fallback.'],
+        ],
+    ],
+
     '3.1.8' => [
         'status'   => 'released',
         'released' => '2026-04-29',

@@ -8,6 +8,26 @@
  */
 return [
 
+    '3.1.9' => [
+        'date'  => '2026-04-29',
+        'title' => 'Dark sidebar, full crop info, acorn icon, family-needs crash fix',
+        'new' => [
+            'Bed sidebar is now dark-mode (#1a2b1c background) with light text.',
+            'Sidebar and mobile modal now show ALL crop info: type, family, season, days, spacing, stock, harvest month calendar, and notes.',
+            'Harvest month calendar shown as 12 coloured dots with month initials.',
+            'Seed nav icon replaced with an acorn shape — clear and distinctive at small sizes.',
+        ],
+        'improved' => [
+            'Sidebar widened from 260px to 300px.',
+            'loadCatalog now fetches type, stock_qty, stock_unit, harvest_months, and notes so the sidebar has full data.',
+        ],
+        'fixed' => [
+            'Family Needs page crash: status \'planted\' corrected to \'planned\', JOIN filter updated to include planned rows.',
+            'Harvest estimate fallback now checks sown_at before defaulting to today, giving a much more accurate soonest-harvest date.',
+            'SeedController family needs query wrapped in try-catch so a schema mismatch degrades gracefully instead of crashing.',
+        ],
+    ],
+
     '3.1.8' => [
         'date'  => '2026-04-29',
         'title' => 'Nav padding 0, logo icon margin tweak',
