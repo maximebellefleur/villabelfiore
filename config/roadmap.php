@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.21' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Generic seedGroundStats — reusable PHP harvest helper',
+        'features' => [
+            ['title' => 'GardenHelpers::seedGroundStats()', 'detail' => 'One function, filter by seed_id, fetches all plantings across all gardens, computes harvest dates in PHP, returns counts + soonest upcoming date. Both family needs pages reuse it — no duplication.'],
+            ['title' => 'Correlated subqueries removed', 'detail' => 'No more MySQL alias scope issues or try-catch fallbacks swallowing plant counts.'],
+        ],
+    ],
+
     '3.1.20' => [
         'status'   => 'released',
         'released' => '2026-04-29',

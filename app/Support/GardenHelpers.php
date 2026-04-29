@@ -444,4 +444,53 @@ class GardenHelpers
         }
         return $sum;
     }
+
+    /**
+     * Ground stats for one seed across ALL beds and gardens.
+     * Fetches all garden_plantings for the given seed_id, computes harvest dates
+     * in PHP (no correlated subqueries), sorts ascending, returns soonest upcoming first.
+     *
+     * Returns:
+     *   plants_in_ground    — total plant count with status growing|sown
+     *   plants_planned      — total plant count with status planned
+     *   harvest_est_ground  — soonest upcoming harvest date for in-ground rows (ISO string or null)
+     *   harvest_est_planned — soonest upcoming harvest date for planned rows (ISO string or null)
+     */
+    public static function seedGroundStats(DB $db, int $seedId): array
+    {
+        $empty = ['plants_in_ground'=>0,'plants_planned'=>0,'harvest_est_ground'=>null,'harvest_est_planned'=>null];
+        if ($seedId <= 0) return $empty;
+        $today = self::todayIso();
+        $rows = $db->fetchAll(
+            "SELECT gp.plant_count, gp.status, gp.expected_harvest_at, gp.sown_at, gp.planted_at, s.days_to_maturity
+             FROM garden_plantings gp LEFT JOIN seeds s ON s.id = gp.seed_id
+             WHERE gp.seed_id = ? AND gp.status IN ('growing','sown','planned')",
+            [$seedId]
+        );
+        $inGround = 0; $planned = 0; $groundDates = []; $plannedDates = [];
+        foreach ($rows as $r) {
+            $count = max(1, (int)($r['plant_count'] ?? 1));
+            $mat   = (int)($r['days_to_maturity'] ?? 60) ?: 60;
+            $harvest = null;
+            if (!empty($r['expected_harvest_at']))  $harvest = $r['expected_harvest_at'];
+            elseif (!empty($r['sown_at']))           $harvest = date('Y-m-d', strtotime($r['sown_at']." +{$mat} days"));
+            elseif (!empty($r['planted_at']))        $harvest = date('Y-m-d', strtotime($r['planted_at']." +{$mat} days"));
+            if (in_array($r['status'], ['growing','sown'])) {
+                $inGround += $count;
+                if ($harvest) $groundDates[] = $harvest;
+            } else {
+                $planned += $count;
+                if ($harvest) $plannedDates[] = $harvest;
+            }
+        }
+        sort($groundDates); sort($plannedDates);
+        $upcoming = fn($dates) => array_values(array_filter($dates, fn($d) => $d >= $today));
+        $ug = $upcoming($groundDates); $up = $upcoming($plannedDates);
+        return [
+            'plants_in_ground'    => $inGround,
+            'plants_planned'      => $planned,
+            'harvest_est_ground'  => $ug[0]  ?? ($groundDates[0]  ?? null),
+            'harvest_est_planned' => $up[0]  ?? ($plannedDates[0] ?? null),
+        ];
+    }
 }

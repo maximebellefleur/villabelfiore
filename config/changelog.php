@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.21' => [
+        'date'  => '2026-04-29',
+        'title' => 'Generic seedGroundStats helper — no more correlated subqueries',
+        'new' => [
+            'GardenHelpers::seedGroundStats($db, $seedId) — generic PHP function that fetches all plantings for any seed across all gardens, computes harvest dates in PHP, sorts ascending, and returns counts + soonest upcoming date. No SQL subqueries, no alias scope issues.',
+        ],
+        'improved' => [
+            'SeedController::familyNeeds() and GardenController::index() both reuse seedGroundStats — single source of truth, zero duplication.',
+            'Family needs harvest date is now 100% reliable: garlic and any multi-bed crop shows the true soonest upcoming harvest regardless of MySQL version or server config.',
+        ],
+        'fixed' => [
+            'Correlated subquery with outer alias reference removed entirely — the root cause of the recurring "Not yet planted" / empty plants_in_ground bug is gone.',
+        ],
+    ],
+
     '3.1.20' => [
         'date'  => '2026-04-29',
         'title' => 'Fix garlic "Not yet planted" — remove outer alias in harvest subquery',

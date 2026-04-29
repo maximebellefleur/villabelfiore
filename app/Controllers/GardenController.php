@@ -97,34 +97,17 @@ class GardenController
         }));
 
         // Family needs
-        try {
-            $familyNeeds = $db->fetchAll(
-                "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,
-                        COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')), 0)
-                        AS plants_in_ground,
-                        COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'), 0)
-                        AS plants_planned,
-                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.sown_at, gp.planted_at), INTERVAL COALESCE(sd.days_to_maturity,60) DAY)))
-                         FROM garden_plantings gp LEFT JOIN seeds sd ON sd.id = gp.seed_id
-                         WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')
-                           AND (gp.expected_harvest_at IS NOT NULL OR gp.sown_at IS NOT NULL OR gp.planted_at IS NOT NULL))
-                        AS harvest_est_ground,
-                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.sown_at, gp.planted_at), INTERVAL COALESCE(sd.days_to_maturity,60) DAY)))
-                         FROM garden_plantings gp LEFT JOIN seeds sd ON sd.id = gp.seed_id
-                         WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'
-                           AND (gp.expected_harvest_at IS NOT NULL OR gp.sown_at IS NOT NULL OR gp.planted_at IS NOT NULL))
-                        AS harvest_est_planned
-                 FROM family_needs fn
-                 LEFT JOIN seeds s ON s.id = fn.seed_id
-                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-            ) ?: [];
-        } catch (\Throwable $e) {
-            $familyNeeds = $db->fetchAll(
-                'SELECT fn.*, s.name AS seed_name FROM family_needs fn
-                 LEFT JOIN seeds s ON s.id = fn.seed_id
-                 ORDER BY fn.priority ASC, fn.vegetable_name ASC'
-            ) ?: [];
+        $familyNeeds = $db->fetchAll(
+            "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
+             FROM family_needs fn
+             LEFT JOIN seeds s ON s.id = fn.seed_id
+             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+        ) ?: [];
+        foreach ($familyNeeds as &$need) {
+            $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
+            $need  = array_merge($need, $stats);
         }
+        unset($need);
 
         // Recent garden/bed activity
         $recentActivity = $db->fetchAll(
