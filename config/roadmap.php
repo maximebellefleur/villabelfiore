@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.19' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Fix family needs regression from v3.1.18',
+        'features' => [
+            ['title' => 'Stable harvest date query', 'detail' => 'COALESCE form replaces CASE WHEN — works on all MySQL versions. Null-dated rows still excluded so garlic shows real dates not today+180.'],
+        ],
+    ],
+
     '3.1.18' => [
         'status'   => 'released',
         'released' => '2026-04-29',

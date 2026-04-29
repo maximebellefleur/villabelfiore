@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.19' => [
+        'date'  => '2026-04-29',
+        'title' => 'Fix family needs "Not yet planted" regression',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'CASE WHEN inside correlated subquery caused MySQL to throw on some versions, firing the try-catch and returning a fallback with no plant counts. Reverted to safe COALESCE form.',
+            'Harvest date still excludes null-dated rows (no CURDATE() fallback) and correctly prefers sown_at over planted_at.',
+        ],
+    ],
+
     '3.1.18' => [
         'date'  => '2026-04-29',
         'title' => 'Future-sow opacity in Plant tab + soonest harvest date fix',
