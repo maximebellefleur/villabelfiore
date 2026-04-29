@@ -147,21 +147,6 @@ $needsRestock = !empty($seed['needs_restock']);
         </div>
         <?php endif; ?>
 
-        <!-- Bed rows summary -->
-        <?php if (!empty($bedRows)): ?>
-        <div class="card" style="margin-bottom:var(--spacing-3)">
-            <div class="card-body">
-                <div class="settings-group-title" style="margin-bottom:var(--spacing-2)">Bed Rows (<?= count($bedRows) ?>)</div>
-                <?php foreach (array_slice($bedRows, 0, 5) as $br): ?>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--color-border);font-size:0.85rem">
-                    <span><?= $br['season_year'] ?> · Row <?= $br['row_number'] ?></span>
-                    <span class="text-muted"><?= ucfirst($br['status']) ?></span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- Family needs summary -->
         <?php if (!empty($familyNeeds)): ?>
         <div class="card">

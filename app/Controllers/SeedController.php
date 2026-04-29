@@ -52,23 +52,6 @@ class SeedController
             updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        $db->execute("CREATE TABLE IF NOT EXISTS bed_rows (
-            id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            item_id          INT UNSIGNED NOT NULL,
-            season_year      SMALLINT UNSIGNED NOT NULL,
-            row_number       SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-            seed_id          INT UNSIGNED DEFAULT NULL,
-            plant_count      SMALLINT UNSIGNED DEFAULT NULL,
-            spacing_used_cm  SMALLINT UNSIGNED DEFAULT NULL,
-            sowing_date      DATE DEFAULT NULL,
-            transplant_date  DATE DEFAULT NULL,
-            sowing_type      ENUM('direct','nursery','both') DEFAULT NULL,
-            notes            TEXT DEFAULT NULL,
-            status           ENUM('planned','sown','growing','harvested') NOT NULL DEFAULT 'planned',
-            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
         $db->execute("CREATE TABLE IF NOT EXISTS family_needs (
             id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             vegetable_name   VARCHAR(120) NOT NULL,
@@ -203,16 +186,11 @@ class SeedController
         $seed = $db->fetchOne('SELECT * FROM seeds WHERE id = ?', [$id]);
         if (!$seed) { Response::redirect('/seeds'); }
 
-        $bedRows     = $db->fetchAll(
-            'SELECT br.*, s.name AS seed_name FROM bed_rows br LEFT JOIN seeds s ON s.id = br.seed_id WHERE br.seed_id = ? ORDER BY br.season_year DESC, br.row_number ASC',
-            [$id]
-        );
         $familyNeeds = $db->fetchAll('SELECT * FROM family_needs WHERE seed_id = ? ORDER BY priority ASC', [$id]);
 
         Response::render('seeds/show', [
             'title'       => e($seed['name']),
             'seed'        => $seed,
-            'bedRows'     => $bedRows,
             'familyNeeds' => $familyNeeds,
         ]);
     }
@@ -304,106 +282,6 @@ class SeedController
         Response::redirect('/seeds/' . $id);
     }
 
-    // ── Bed rows ──────────────────────────────────────────────────────────────
-
-    public function bedRows(Request $request, array $params = []): void
-    {
-        $this->requireAuth();
-        $itemId = (int)($params['id'] ?? 0);
-        $db     = DB::getInstance();
-        $this->ensureTables($db);
-
-        $item = $db->fetchOne('SELECT id, name, type FROM items WHERE id = ?', [$itemId]);
-        if (!$item) { Response::redirect('/items'); }
-
-        $rows  = $db->fetchAll(
-            'SELECT br.*, s.name AS seed_name FROM bed_rows br LEFT JOIN seeds s ON s.id = br.seed_id WHERE br.item_id = ? ORDER BY br.season_year DESC, br.row_number ASC',
-            [$itemId]
-        );
-        $seeds = $db->fetchAll('SELECT id, name, variety FROM seeds ORDER BY name ASC');
-
-        Response::render('seeds/bed-rows', [
-            'title' => 'Bed Planner — ' . $item['name'],
-            'item'  => $item,
-            'rows'  => $rows,
-            'seeds' => $seeds,
-        ]);
-    }
-
-    public function storeBedRow(Request $request, array $params = []): void
-    {
-        $this->requireAuth();
-        CSRF::validate($request->post('_token', ''));
-        $itemId = (int)($params['id'] ?? 0);
-        $db     = DB::getInstance();
-        $this->ensureTables($db);
-
-        $db->execute(
-            "INSERT INTO bed_rows (item_id, season_year, row_number, seed_id, plant_count, spacing_used_cm, sowing_date, transplant_date, sowing_type, notes, status)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            [
-                $itemId,
-                (int)$request->post('season_year', date('Y')),
-                (int)$request->post('row_number', 1),
-                ($request->post('seed_id', '') ?: null),
-                ($request->post('plant_count', '') ?: null),
-                ($request->post('spacing_used_cm', '') ?: null),
-                ($request->post('sowing_date', '') ?: null),
-                ($request->post('transplant_date', '') ?: null),
-                ($request->post('sowing_type', '') ?: null),
-                trim($request->post('notes', '')),
-                $request->post('status', 'planned'),
-            ]
-        );
-
-        flash('success', 'Row added.');
-        Response::redirect('/items/' . $itemId . '/rows');
-    }
-
-    public function updateBedRow(Request $request, array $params = []): void
-    {
-        $this->requireAuth();
-        CSRF::validate($request->post('_token', ''));
-        $rowId  = (int)($params['id'] ?? 0);
-        $db     = DB::getInstance();
-        $this->ensureTables($db);
-
-        $row = $db->fetchOne('SELECT item_id FROM bed_rows WHERE id = ?', [$rowId]);
-
-        $db->execute(
-            "UPDATE bed_rows SET season_year=?, row_number=?, seed_id=?, plant_count=?, spacing_used_cm=?, sowing_date=?, transplant_date=?, sowing_type=?, notes=?, status=? WHERE id=?",
-            [
-                (int)$request->post('season_year', date('Y')),
-                (int)$request->post('row_number', 1),
-                ($request->post('seed_id', '') ?: null),
-                ($request->post('plant_count', '') ?: null),
-                ($request->post('spacing_used_cm', '') ?: null),
-                ($request->post('sowing_date', '') ?: null),
-                ($request->post('transplant_date', '') ?: null),
-                ($request->post('sowing_type', '') ?: null),
-                trim($request->post('notes', '')),
-                $request->post('status', 'planned'),
-                $rowId,
-            ]
-        );
-
-        flash('success', 'Row updated.');
-        Response::redirect('/items/' . ($row['item_id'] ?? '') . '/rows');
-    }
-
-    public function trashBedRow(Request $request, array $params = []): void
-    {
-        $this->requireAuth();
-        CSRF::validate($request->post('_token', ''));
-        $rowId = (int)($params['id'] ?? 0);
-        $db    = DB::getInstance();
-        $this->ensureTables($db);
-        $row   = $db->fetchOne('SELECT item_id FROM bed_rows WHERE id = ?', [$rowId]);
-        $db->execute('DELETE FROM bed_rows WHERE id = ?', [$rowId]);
-        flash('success', 'Row removed.');
-        Response::redirect('/items/' . ($row['item_id'] ?? '') . '/rows');
-    }
-
     // ── Family needs ──────────────────────────────────────────────────────────
 
     public function familyNeeds(Request $request, array $params = []): void
@@ -416,23 +294,15 @@ class SeedController
             $needs = $db->fetchAll(
                 "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,
                         COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')), 0)
-                        + COALESCE((SELECT SUM(COALESCE(br.plant_count,1)) FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status IN ('sown','growing')), 0)
                         AS plants_in_ground,
                         COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'), 0)
-                        + COALESCE((SELECT SUM(COALESCE(br.plant_count,1)) FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status = 'planned'), 0)
                         AS plants_planned,
-                        COALESCE(
-                            (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
-                             FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')),
-                            (SELECT MIN(DATE_ADD(COALESCE(br.sowing_date, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY))
-                             FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status IN ('sown','growing'))
-                        ) AS harvest_est_ground,
-                        COALESCE(
-                            (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
-                             FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'),
-                            (SELECT MIN(DATE_ADD(COALESCE(br.sowing_date, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY))
-                             FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status = 'planned')
-                        ) AS harvest_est_planned
+                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                         FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown'))
+                        AS harvest_est_ground,
+                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                         FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned')
+                        AS harvest_est_planned
                  FROM family_needs fn
                  LEFT JOIN seeds s ON s.id = fn.seed_id
                  ORDER BY fn.priority ASC, fn.vegetable_name ASC"

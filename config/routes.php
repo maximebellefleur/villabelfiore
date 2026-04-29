@@ -201,10 +201,6 @@ $router->post('/seeds/{id}/trash',        'SeedController@trash');
 $router->post('/seeds/{id}/stock',        'SeedController@adjustStock');
 $router->post('/seeds/{id}/toggle-restock', 'SeedController@toggleRestock');
 $router->post('/seeds/{id}/mark-bought',    'SeedController@markBought');
-$router->get('/items/{id}/rows',          'SeedController@bedRows');
-$router->post('/items/{id}/rows',         'SeedController@storeBedRow');
-$router->post('/bed-rows/{id}/update',    'SeedController@updateBedRow');
-$router->post('/bed-rows/{id}/trash',     'SeedController@trashBedRow');
 $router->post('/family-needs/{id}/update','SeedController@updateFamilyNeed');
 $router->post('/family-needs/{id}/trash', 'SeedController@trashFamilyNeed');
 

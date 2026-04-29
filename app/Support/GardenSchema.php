@@ -78,6 +78,48 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'color',          "ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL");
         self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
 
+        self::migrateBedRows($db);
+    }
+
+    private static function migrateBedRows(DB $db): void
+    {
+        try {
+            $tables = $db->fetchAll("SHOW TABLES LIKE 'bed_rows'");
+            if (empty($tables)) return;
+
+            $db->execute("
+                INSERT INTO garden_plantings
+                    (item_id, line_number, seed_id, crop_name, plant_count, sown_at, planted_at, status, created_at, updated_at)
+                SELECT
+                    br.item_id,
+                    br.row_number,
+                    br.seed_id,
+                    s.name,
+                    br.plant_count,
+                    br.sowing_date,
+                    br.sowing_date,
+                    CASE br.status
+                        WHEN 'sown'      THEN 'growing'
+                        WHEN 'growing'   THEN 'growing'
+                        WHEN 'harvested' THEN 'harvested'
+                        ELSE 'planned'
+                    END,
+                    br.created_at,
+                    br.updated_at
+                FROM bed_rows br
+                LEFT JOIN seeds s ON s.id = br.seed_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM garden_plantings gp
+                    WHERE gp.item_id = br.item_id
+                      AND gp.line_number = br.row_number
+                      AND gp.seed_id = br.seed_id
+                )
+            ");
+
+            $db->execute("DROP TABLE IF EXISTS bed_rows");
+        } catch (\Throwable $e) {
+            // table missing or already dropped
+        }
     }
 
     private static function ensureColumn(DB $db, string $table, string $column, string $alter): void

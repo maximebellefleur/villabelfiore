@@ -64,23 +64,6 @@ class GardenController
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        $db->execute("CREATE TABLE IF NOT EXISTS bed_rows (
-            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            item_id INT UNSIGNED NOT NULL,
-            season_year SMALLINT UNSIGNED NOT NULL,
-            row_number SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-            seed_id INT UNSIGNED DEFAULT NULL,
-            plant_count SMALLINT UNSIGNED DEFAULT NULL,
-            spacing_used_cm SMALLINT UNSIGNED DEFAULT NULL,
-            sowing_date DATE DEFAULT NULL,
-            transplant_date DATE DEFAULT NULL,
-            sowing_type ENUM('direct','nursery','both') DEFAULT NULL,
-            notes TEXT DEFAULT NULL,
-            status ENUM('planned','sown','growing','harvested') NOT NULL DEFAULT 'planned',
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
         $currentMonth = (int) date('n');
         $currentYear  = (int) date('Y');
 
@@ -113,28 +96,20 @@ class GardenController
                 && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold'];
         }));
 
-        // Family needs: check BOTH garden_plantings (new bed system) AND bed_rows (old system)
+        // Family needs
         try {
             $familyNeeds = $db->fetchAll(
                 "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,
                         COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')), 0)
-                        + COALESCE((SELECT SUM(COALESCE(br.plant_count,1)) FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status IN ('sown','growing')), 0)
                         AS plants_in_ground,
                         COALESCE((SELECT SUM(COALESCE(gp.plant_count,1)) FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'), 0)
-                        + COALESCE((SELECT SUM(COALESCE(br.plant_count,1)) FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status = 'planned'), 0)
                         AS plants_planned,
-                        COALESCE(
-                            (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
-                             FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown')),
-                            (SELECT MIN(DATE_ADD(COALESCE(br.sowing_date, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY))
-                             FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status IN ('sown','growing'))
-                        ) AS harvest_est_ground,
-                        COALESCE(
-                            (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
-                             FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned'),
-                            (SELECT MIN(DATE_ADD(COALESCE(br.sowing_date, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY))
-                             FROM bed_rows br WHERE br.seed_id = fn.seed_id AND br.status = 'planned')
-                        ) AS harvest_est_planned
+                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                         FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status IN ('growing','sown'))
+                        AS harvest_est_ground,
+                        (SELECT MIN(COALESCE(gp.expected_harvest_at, DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)))
+                         FROM garden_plantings gp WHERE gp.seed_id = fn.seed_id AND gp.status = 'planned')
+                        AS harvest_est_planned
                  FROM family_needs fn
                  LEFT JOIN seeds s ON s.id = fn.seed_id
                  ORDER BY fn.priority ASC, fn.vegetable_name ASC"
@@ -146,18 +121,6 @@ class GardenController
                  ORDER BY fn.priority ASC, fn.vegetable_name ASC'
             ) ?: [];
         }
-
-        // Active bed rows this season (not harvested)
-        $activeBedRows = $db->fetchAll(
-            "SELECT br.*, s.name AS seed_name, i.name AS bed_name
-             FROM bed_rows br
-             LEFT JOIN seeds s ON s.id = br.seed_id
-             LEFT JOIN items i ON i.id = br.item_id
-             WHERE br.season_year = ? AND br.status IN ('sown','growing','planned')
-             ORDER BY br.status DESC, br.sowing_date ASC
-             LIMIT 20",
-            [$currentYear]
-        );
 
         // Recent garden/bed activity
         $recentActivity = $db->fetchAll(
@@ -266,7 +229,6 @@ class GardenController
             'harvestMonths'      => $harvestMonths,
             'lowStock'           => $lowStock,
             'familyNeeds'        => $familyNeeds,
-            'activeBedRows'      => $activeBedRows,
             'recentActivity'     => $recentActivity,
             'harvestReminders'   => $harvestReminders,
             'currentMonth'       => $currentMonth,

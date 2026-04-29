@@ -2,8 +2,6 @@
 $monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 $currentMonthName = $monthNames[$currentMonth - 1];
 $typeEmoji = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸','other'=>'🌾'];
-$statusLabel = ['planned'=>'Planned','sown'=>'Sown','growing'=>'Growing','harvested'=>'Harvested'];
-$statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','harvested'=>'#3b82f6'];
 ?>
 <style>
 .garden-hub { max-width: 900px; margin: 0 auto; }
@@ -46,13 +44,6 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 .garden-need-stock--low { color:#dc2626; }
 .garden-need-stock--na  { color:#94a3b8; }
 
-.garden-bedrows-list { display:flex; flex-direction:column; gap:8px; }
-.garden-bedrow { background:var(--color-surface-raised); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:11px 14px; display:flex; align-items:center; gap:10px; }
-.garden-bedrow-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.garden-bedrow-info { flex:1; min-width:0; }
-.garden-bedrow-name { font-weight:600; font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.garden-bedrow-sub  { font-size:.75rem; color:var(--color-text-muted); }
-.garden-bedrow-date { font-size:.75rem; color:var(--color-text-muted); white-space:nowrap; }
 
 .garden-activity-list { display:flex; flex-direction:column; gap:6px; }
 .garden-activity-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; background:var(--color-surface-raised); border-radius:var(--radius); border:1px solid var(--color-border); }
@@ -338,10 +329,6 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
         <div class="garden-stat-label">Harvest Soon</div>
     </div>
     <div class="garden-stat">
-        <div class="garden-stat-num"><?= count($activeBedRows) ?></div>
-        <div class="garden-stat-label">Bed Rows Active</div>
-    </div>
-    <div class="garden-stat">
         <div class="garden-stat-num"><?= count($familyNeeds) ?></div>
         <div class="garden-stat-label">Family Needs</div>
     </div>
@@ -532,39 +519,6 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     </div>
     <?php endif; ?>
 </section>
-
-<!-- Active Bed Rows -->
-<?php if (!empty($activeBedRows)): ?>
-<section class="garden-section">
-    <div class="garden-section-head">
-        <div class="garden-section-title">🛏 Active Beds (<?= $currentYear ?>)</div>
-    </div>
-    <div class="garden-bedrows-list">
-        <?php foreach ($activeBedRows as $br):
-            $sc = $statusColor[$br['status']] ?? '#94a3b8';
-            $sl = $statusLabel[$br['status']] ?? $br['status'];
-        ?>
-        <div class="garden-bedrow">
-            <div class="garden-bedrow-status" style="background:<?= $sc ?>"></div>
-            <div class="garden-bedrow-info">
-                <div class="garden-bedrow-name">
-                    <?= e($br['seed_name'] ?? 'Unknown seed') ?>
-                    <span style="font-weight:400;color:var(--color-text-muted)"> in <?= e($br['bed_name'] ?? 'Bed') ?>, Row <?= $br['row_number'] ?></span>
-                </div>
-                <div class="garden-bedrow-sub">
-                    <span style="color:<?= $sc ?>;font-weight:600"><?= $sl ?></span>
-                    <?php if ($br['plant_count']): ?> · <?= $br['plant_count'] ?> plants<?php endif; ?>
-                    <?php if ($br['spacing_used_cm']): ?> · <?= $br['spacing_used_cm'] ?>cm spacing<?php endif; ?>
-                </div>
-            </div>
-            <?php if ($br['sowing_date']): ?>
-            <div class="garden-bedrow-date">Sown <?= date('d M', strtotime($br['sowing_date'])) ?></div>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
-    </div>
-</section>
-<?php endif; ?>
 
 <!-- Family Needs -->
 <section class="garden-section">

@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.14' => [
+        'date'  => '2026-04-29',
+        'title' => 'Remove legacy bed_rows system, migrate data to garden_plantings',
+        'new' => [],
+        'improved' => [
+            'All planting data now lives exclusively in garden_plantings — single source of truth.',
+            'Family needs query simplified: only checks garden_plantings (bed_rows data migrated on first load).',
+        ],
+        'fixed' => [
+            'Removed the duplicate bed_rows planting system entirely. On first upgrade, GardenSchema::ensure() migrates any bed_rows data into garden_plantings and drops the table.',
+            'Removed /items/{id}/rows routes, SeedController bed row methods, and the bed-rows view.',
+            'Removed "Active Bed Rows" section and stat from Garden homepage.',
+        ],
+    ],
+
     '3.1.13' => [
         'date'  => '2026-04-29',
         'title' => 'Family needs checks both planting systems, seed info name header, lighter green',

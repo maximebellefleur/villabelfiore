@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.14' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Remove legacy bed_rows system',
+        'features' => [
+            ['title' => 'Migrate bed_rows → garden_plantings', 'detail' => 'On first load after upgrade, all data from the old bed_rows table is automatically copied into garden_plantings, then the legacy table is dropped.'],
+            ['title' => 'Single planting system',              'detail' => 'Removed all bed_rows routes, controller methods, view, and queries. One system, no confusion.'],
+        ],
+    ],
+
     '3.1.13' => [
         'status'   => 'released',
         'released' => '2026-04-29',
