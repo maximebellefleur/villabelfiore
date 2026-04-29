@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.22' => [
+        'date'  => '2026-04-29',
+        'title' => 'Fix "Something went wrong" on /garden and /seeds/family-needs',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'GardenSchema::ensure() now adds seed_id, plant_count, and expected_harvest_at columns if missing — older installs where garden_plantings was created before these columns existed will now have them correctly.',
+            'seedGroundStats() wraps its DB query in try-catch so a schema mismatch never crashes the page, returning safe zeros instead.',
+        ],
+    ],
+
     '3.1.21' => [
         'date'  => '2026-04-29',
         'title' => 'Generic seedGroundStats helper — no more correlated subqueries',

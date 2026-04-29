@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.22' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Fix "Something went wrong" crash on garden pages',
+        'features' => [
+            ['title' => 'Schema migration for seed_id / plant_count', 'detail' => 'GardenSchema now ensures seed_id, plant_count, and expected_harvest_at exist on garden_plantings — older installs no longer crash.'],
+            ['title' => 'Defensive try-catch in seedGroundStats', 'detail' => 'Any DB error in the helper returns safe zeros rather than letting the exception bubble to the top-level error handler.'],
+        ],
+    ],
+
     '3.1.21' => [
         'status'   => 'released',
         'released' => '2026-04-29',

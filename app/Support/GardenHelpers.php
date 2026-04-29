@@ -461,12 +461,16 @@ class GardenHelpers
         $empty = ['plants_in_ground'=>0,'plants_planned'=>0,'harvest_est_ground'=>null,'harvest_est_planned'=>null];
         if ($seedId <= 0) return $empty;
         $today = self::todayIso();
-        $rows = $db->fetchAll(
-            "SELECT gp.plant_count, gp.status, gp.expected_harvest_at, gp.sown_at, gp.planted_at, s.days_to_maturity
-             FROM garden_plantings gp LEFT JOIN seeds s ON s.id = gp.seed_id
-             WHERE gp.seed_id = ? AND gp.status IN ('growing','sown','planned')",
-            [$seedId]
-        );
+        try {
+            $rows = $db->fetchAll(
+                "SELECT gp.plant_count, gp.status, gp.expected_harvest_at, gp.sown_at, gp.planted_at, s.days_to_maturity
+                 FROM garden_plantings gp LEFT JOIN seeds s ON s.id = gp.seed_id
+                 WHERE gp.seed_id = ? AND gp.status IN ('growing','sown','planned')",
+                [$seedId]
+            );
+        } catch (\Throwable $e) {
+            return $empty;
+        }
         $inGround = 0; $planned = 0; $groundDates = []; $plannedDates = [];
         foreach ($rows as $r) {
             $count = max(1, (int)($r['plant_count'] ?? 1));
