@@ -60,37 +60,72 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
 <?php if (empty($needs)): ?>
 <p class="text-muted">No family needs defined yet.</p>
 <?php else: ?>
-<div style="display:flex;flex-direction:column;gap:10px">
-<?php foreach ($needs as $need): ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+<?php foreach ($needs as $need):
+    $inGround   = (int)($need['plants_in_ground'] ?? 0);
+    $planned    = (int)($need['plants_planned'] ?? 0);
+    $hasSeed    = !empty($need['seed_id']);
+    $fmtDate    = function(?string $d): ?string {
+        if (!$d) return null;
+        try { return (new DateTime($d))->format('j M'); } catch(\Throwable $e) { return null; }
+    };
+    $hGround  = $fmtDate($need['harvest_est_ground'] ?? null);
+    $hPlanned = $fmtDate($need['harvest_est_planned'] ?? null);
+?>
 <div class="card" id="fn-card-<?= (int)$need['id'] ?>">
     <!-- Read view -->
     <div id="fn-view-<?= (int)$need['id'] ?>" style="padding:14px 16px">
-        <div style="display:flex;align-items:flex-start;gap:12px">
-            <!-- Priority badge -->
-            <span style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:0.82rem;font-weight:700;margin-top:2px"><?= (int)$need['priority'] ?></span>
-            <!-- Content -->
-            <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:1rem;margin-bottom:2px"><?= e($need['vegetable_name']) ?></div>
-                <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.85rem;color:var(--color-text-muted);margin-bottom:<?= !empty($need['notes']) ? '6px' : '0' ?>">
-                    <?php if ($need['yearly_qty'] !== null): ?>
-                    <span><strong style="color:var(--color-text)"><?= number_format((float)$need['yearly_qty'], 1) ?> <?= e($need['yearly_unit'] ?? 'kg') ?></strong> / year</span>
-                    <?php endif; ?>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:0.78rem;font-weight:700"><?= (int)$need['priority'] ?></span>
+                <div style="min-width:0">
+                    <div style="font-weight:700;font-size:.95rem;line-height:1.2"><?= e($need['vegetable_name']) ?></div>
                     <?php if ($need['seed_name']): ?>
-                    <span>🌱 <?= e($need['seed_name']) ?></span>
+                    <div style="font-size:.72rem;color:var(--color-text-muted);margin-top:1px"><?= e($need['emoji'] ?? '🌱') ?> <?= e($need['seed_name']) ?></div>
                     <?php endif; ?>
                 </div>
-                <?php if (!empty($need['notes'])): ?>
-                <div style="font-size:0.82rem;color:var(--color-text-muted);line-height:1.5"><?= nl2br(e($need['notes'])) ?></div>
-                <?php endif; ?>
             </div>
-            <!-- Actions -->
-            <div style="flex-shrink:0;display:flex;gap:6px;align-items:center">
+            <div style="flex-shrink:0;display:flex;gap:4px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="fnEdit(<?= (int)$need['id'] ?>)" title="Edit">✏️</button>
                 <button type="button" class="btn btn-ghost btn-sm fn-del-btn" style="color:#dc3545" data-id="<?= (int)$need['id'] ?>" onclick="fnShowDel(this)" title="Remove">✕</button>
             </div>
         </div>
+
+        <?php if ($need['yearly_qty'] !== null): ?>
+        <div style="font-size:.82rem;color:var(--color-text-muted);margin-bottom:8px">
+            Goal: <strong style="color:var(--color-text)"><?= number_format((float)$need['yearly_qty'], 1) ?> <?= e($need['yearly_unit'] ?? 'kg') ?></strong> / year
+        </div>
+        <?php endif; ?>
+
+        <!-- In-ground & planned pills -->
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= !empty($need['notes']) ? '10px' : '0' ?>">
+            <?php if ($inGround > 0): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
+                <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= $inGround ?> in ground</span>
+                <?php if ($hGround): ?>
+                <span style="font-size:.72rem;color:#15803d;font-weight:700">soonest ~<?= e($hGround) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+            <?php if ($planned > 0): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px">
+                <span style="font-size:.78rem;font-weight:600;color:#d97706">📋 <?= $planned ?> planned</span>
+                <?php if ($hPlanned): ?>
+                <span style="font-size:.72rem;color:#b45309;font-weight:700">soonest ~<?= e($hPlanned) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+            <?php if ($inGround === 0 && $planned === 0): ?>
+            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0"><?= $hasSeed ? 'Not yet planted' : 'No seed linked' ?></div>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($need['notes'])): ?>
+        <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;border-top:1px solid var(--color-border);padding-top:8px"><?= nl2br(e($need['notes'])) ?></div>
+        <?php endif; ?>
+
         <!-- Delete confirm (hidden) -->
-        <div id="fn-del-<?= (int)$need['id'] ?>" style="display:none;margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fcc;display:flex;align-items:center;gap:10px">
+        <div id="fn-del-<?= (int)$need['id'] ?>" style="display:none;margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fcc;align-items:center;gap:10px">
             <span style="font-size:0.9rem;flex:1">Remove <strong><?= e($need['vegetable_name']) ?></strong>?</span>
             <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/trash') ?>" style="display:inline">
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
@@ -132,7 +167,7 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Priority (1=top)</label>
+                    <label class="form-label">Priority</label>
                     <input type="number" name="priority" class="form-input" min="1" max="10" value="<?= (int)$need['priority'] ?>">
                 </div>
             </div>

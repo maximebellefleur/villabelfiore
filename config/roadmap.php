@@ -8,6 +8,22 @@
  */
 return [
 
+    '3.1.6' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Bed interaction UX, wider sidebar, family needs 3-col + split harvest dates',
+        'features' => [
+            ['title' => 'Active line deselection',         'detail' => 'Clicking an already-active bed line now deselects it, letting you browse the palette without planting.'],
+            ['title' => 'Palette tap without active line', 'detail' => 'Tapping a palette chip when no line is selected silently shows crop info instead of showing a warning.'],
+            ['title' => 'Mobile double-tap info only',     'detail' => 'Double-tap on mobile now opens the info modal exclusively and never plants a crop.'],
+            ['title' => 'Wider sidebar + richer info',     'detail' => 'Desktop sidebar widened to 260px; crop card now shows colour swatch, stock, season, spacing, days to maturity.'],
+            ['title' => 'Family needs 3-per-row cards',    'detail' => 'Family needs page redesigned as a 3-column card grid for easier scanning.'],
+            ['title' => 'Family needs split harvest dates','detail' => 'In-ground (green) and planned (amber) shown separately with independent soonest harvest date for each.'],
+            ['title' => 'Soonest harvest, not latest',     'detail' => 'Harvest estimate now shows the earliest upcoming harvest, not the furthest.'],
+            ['title' => 'Nav logo overflow fix',           'detail' => 'Logo overflow changed to overflow-y:hidden only so submenus are never horizontally clipped.'],
+        ],
+    ],
+
     '3.1.5' => [
         'status'   => 'released',
         'released' => '2026-04-28',

@@ -562,34 +562,36 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     <?php else: ?>
     <div class="garden-needs-list">
         <?php foreach (array_slice($familyNeeds, 0, 10) as $fn):
-            $hasSeed       = !empty($fn['seed_id']);
-            $inGround      = (int)($fn['plants_in_ground'] ?? 0);
-            $harvestEst    = $fn['harvest_est'] ?? null;
-            $hasPlants     = $inGround > 0;
-            $dotColor = $hasPlants ? '#22c55e' : ($hasSeed ? '#f59e0b' : '#94a3b8');
-            // Format harvest estimate
-            $harvestLabel = null;
-            if ($harvestEst) {
-                try {
-                    $hd = new DateTime($harvestEst);
-                    $harvestLabel = $hd->format('M j');
-                } catch (\Throwable $e) {}
-            }
+            $hasSeed    = !empty($fn['seed_id']);
+            $inGround   = (int)($fn['plants_in_ground'] ?? 0);
+            $planned    = (int)($fn['plants_planned'] ?? 0);
+            $dotColor   = $inGround > 0 ? '#22c55e' : ($planned > 0 ? '#f59e0b' : ($hasSeed ? '#94a3b8' : '#cbd5e1'));
+            $fmtDate    = function(?string $d): ?string {
+                if (!$d) return null;
+                try { return (new DateTime($d))->format('M j'); } catch(\Throwable $e) { return null; }
+            };
+            $hGround  = $fmtDate($fn['harvest_est_ground'] ?? null);
+            $hPlanned = $fmtDate($fn['harvest_est_planned'] ?? null);
         ?>
         <div class="garden-need-row">
             <div class="garden-need-dot" style="background:<?= $dotColor ?>"></div>
             <div style="flex:1;min-width:0">
                 <div class="garden-need-name"><?= e($fn['vegetable_name']) ?></div>
-                <?php if ($hasPlants): ?>
-                <div class="garden-need-stock garden-need-stock--ok">
-                    🌱 <?= $inGround ?> plant<?= $inGround > 1 ? 's' : '' ?> in ground
-                    <?php if ($harvestLabel): ?> · Harvest ~<?= e($harvestLabel) ?><?php endif; ?>
-                </div>
-                <?php elseif ($hasSeed): ?>
-                <div class="garden-need-stock garden-need-stock--low">Not yet planted</div>
-                <?php else: ?>
-                <div class="garden-need-stock garden-need-stock--na">No seed linked</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+                <?php if ($inGround > 0): ?>
+                    <span style="font-size:.75rem;color:#16a34a;font-weight:600">
+                        🌱 <?= $inGround ?> in&nbsp;ground<?= $hGround ? ' · ~' . e($hGround) : '' ?>
+                    </span>
                 <?php endif; ?>
+                <?php if ($planned > 0): ?>
+                    <span style="font-size:.75rem;color:#d97706;font-weight:600">
+                        📋 <?= $planned ?> planned<?= $hPlanned ? ' · ~' . e($hPlanned) : '' ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($inGround === 0 && $planned === 0): ?>
+                    <span style="font-size:.75rem;color:var(--color-text-muted)"><?= $hasSeed ? 'Not yet planted' : 'No seed linked' ?></span>
+                <?php endif; ?>
+                </div>
             </div>
             <?php if ($fn['yearly_qty']): ?>
             <div class="garden-need-qty">Goal: <?= number_format((float)$fn['yearly_qty'],1) ?> <?= e($fn['yearly_unit']) ?>/yr</div>

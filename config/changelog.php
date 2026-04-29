@@ -8,6 +8,28 @@
  */
 return [
 
+    '3.1.6' => [
+        'date'  => '2026-04-29',
+        'title' => 'Bed interaction UX, sidebar width, family needs 3-col cards + split harvest dates',
+        'new' => [
+            'Bed palette chip: clicking when no line is active now silently selects the crop and shows its info — no warning toast required, just browse freely.',
+            'Bed palette chip: double-tap on mobile now exclusively shows the info modal and never plants (previously the first tap of a double-tap would plant if a line was active).',
+            'Family needs page now shows 3-per-row card grid instead of a flat list.',
+            'Family needs cards split in-ground vs planned with independent soonest harvest dates — in ground shows green with "soonest ~DD Mon", planned shows amber with its own soonest date.',
+            'Family needs shown on the garden hub page now also shows the in-ground / planned split with colour-coded badges and soonest harvest date for each.',
+        ],
+        'improved' => [
+            'Clicking an already-active bed line now deselects it (toggles off), making it easier to browse the seed palette without accidentally planting.',
+            'Desktop bed sidebar widened from 220px to 260px to accommodate the richer crop info card.',
+            'Crop info sidebar now shows a colour swatch, stock quantity, season, spacing, and days to maturity in a clean table layout.',
+            'Mobile seed info modal uses the same rich card layout as the desktop sidebar.',
+            'Nav logo overflow changed to overflow-x:visible / overflow-y:hidden so the text and submenus are never clipped horizontally.',
+        ],
+        'fixed' => [
+            'Family needs harvest estimate now shows the soonest upcoming harvest, not the latest.',
+        ],
+    ],
+
     '3.1.5' => [
         'date'  => '2026-04-28',
         'title' => 'No-reload bed steppers, seed-packet catalog, family needs in-ground tracking',

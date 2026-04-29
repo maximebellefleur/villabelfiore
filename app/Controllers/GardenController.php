@@ -112,16 +112,18 @@ class GardenController
                 && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold'];
         }));
 
-        // Family needs with in-ground plant counts and harvest estimates
+        // Family needs: split in-ground vs planned, each with soonest harvest date
         $familyNeeds = $db->fetchAll(
             'SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,
-                    COALESCE(SUM(gp.plant_count), 0) AS plants_in_ground,
-                    MAX(COALESCE(gp.expected_harvest_at,
-                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)
-                    )) AS harvest_est
+                    COALESCE(SUM(CASE WHEN gp.status IN (\'growing\',\'sown\') THEN gp.plant_count ELSE 0 END), 0) AS plants_in_ground,
+                    COALESCE(SUM(CASE WHEN gp.status = \'planned\' THEN gp.plant_count ELSE 0 END), 0) AS plants_planned,
+                    MIN(CASE WHEN gp.status IN (\'growing\',\'sown\') THEN COALESCE(gp.expected_harvest_at,
+                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_ground,
+                    MIN(CASE WHEN gp.status = \'planned\' THEN COALESCE(gp.expected_harvest_at,
+                        DATE_ADD(COALESCE(gp.planted_at, CURDATE()), INTERVAL COALESCE(s.days_to_maturity, 60) DAY)) END) AS harvest_est_planned
              FROM family_needs fn
              LEFT JOIN seeds s ON s.id = fn.seed_id
-             LEFT JOIN garden_plantings gp ON gp.seed_id = fn.seed_id AND gp.status IN (\'growing\',\'planned\',\'sown\')
+             LEFT JOIN garden_plantings gp ON gp.seed_id = fn.seed_id AND gp.status IN (\'growing\',\'sown\',\'planted\')
              GROUP BY fn.id
              ORDER BY fn.priority ASC, fn.vegetable_name ASC'
         );
