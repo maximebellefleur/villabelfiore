@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.20' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Fix garlic Not yet planted regression',
+        'features' => [
+            ['title' => 'Self-join seeds in harvest subquery', 'detail' => 'Avoids outer alias reference that caused MySQL to throw, reverting to fallback with no plant counts.'],
+        ],
+    ],
+
     '3.1.19' => [
         'status'   => 'released',
         'released' => '2026-04-29',

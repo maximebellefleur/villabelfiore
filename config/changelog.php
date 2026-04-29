@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.20' => [
+        'date'  => '2026-04-29',
+        'title' => 'Fix garlic "Not yet planted" — remove outer alias in harvest subquery',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'Harvest estimate subquery referenced the outer s alias (from LEFT JOIN seeds s) inside a correlated subquery — MySQL rejects this on some versions and throws, firing the try-catch and returning a fallback with no plants_in_ground. Fixed by self-joining seeds as sd directly inside the subquery.',
+        ],
+    ],
+
     '3.1.19' => [
         'date'  => '2026-04-29',
         'title' => 'Fix family needs "Not yet planted" regression',
