@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.7' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Custom nav icons: seed, family, basket',
+        'features' => [
+            ['title' => 'Seed icon',   'detail' => 'All Seeds uses a custom seed-going-into-ground SVG icon.'],
+            ['title' => 'Family icon', 'detail' => 'Family Needs uses a custom 4-person family SVG icon.'],
+            ['title' => 'Basket icon', 'detail' => 'Achats uses a custom grocery basket with wheels SVG icon.'],
+        ],
+    ],
+
     '3.1.6' => [
         'status'   => 'released',
         'released' => '2026-04-29',

@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.7' => [
+        'date'  => '2026-04-29',
+        'title' => 'Custom nav icons: seed, family, basket',
+        'new' => [
+            'All Seeds nav item now uses a custom seed icon (vertical oval above a ground mound).',
+            'Family Needs nav item now uses a custom family icon (2 adults + 2 kids, minimalistic circles with a connecting arc).',
+            'Achats nav item now uses a custom grocery basket with wheels icon.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '3.1.6' => [
         'date'  => '2026-04-29',
         'title' => 'Bed interaction UX, sidebar width, family needs 3-col cards + split harvest dates',

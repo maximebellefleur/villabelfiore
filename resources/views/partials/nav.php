@@ -17,6 +17,9 @@ function _navIcon(string $name): string {
         'logout'    => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
         'plus'      => '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
         'cart'      => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+        'seed'      => '<path d="M12 3C15.5 3 17.5 6 17.5 10C17.5 14.5 15.5 17.5 12 18C8.5 17.5 6.5 14.5 6.5 10C6.5 6 8.5 3 12 3"/><line x1="12" y1="18" x2="12" y2="20"/><path d="M4 22C6.5 19.5 9.5 18.5 12 18.5C14.5 18.5 17.5 19.5 20 22"/>',
+        'family'    => '<circle cx="3.5" cy="12.5" r="1.8"/><circle cx="9" cy="7" r="2.3"/><circle cx="15" cy="7" r="2.3"/><circle cx="20.5" cy="12.5" r="1.8"/><path d="M2 22C5 18 8.5 17.5 12 17.5C15.5 17.5 19 18 22 22"/>',
+        'basket'    => '<path d="M7 10C7 5.5 17 5.5 17 10"/><path d="M4 10v9h16v-9"/><circle cx="8" cy="21.5" r="1.5"/><circle cx="16" cy="21.5" r="1.5"/>',
     ];
     $path = $icons[$name] ?? $icons['items'];
     return '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>';
@@ -27,13 +30,13 @@ $navLinks = [
     ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
     ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
     ['href' => '/garden', 'label' => 'Garden', 'icon' => 'garden', 'children' => [
-        ['href' => '/seeds/create',     'label' => '＋ Seed',       'icon' => 'items'],
-        ['href' => '/seeds',            'label' => 'All Seeds',     'icon' => 'harvest'],
-        ['href' => '/seeds/family-needs','label' => 'Family Needs', 'icon' => 'harvest'],
+        ['href' => '/seeds/create',     'label' => '＋ Seed',       'icon' => 'seed'],
+        ['href' => '/seeds',            'label' => 'All Seeds',     'icon' => 'seed'],
+        ['href' => '/seeds/family-needs','label' => 'Family Needs', 'icon' => 'family'],
         ['href' => '/garden',           'label' => 'Garden Beds',   'icon' => 'garden'],
     ]],
     ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
-        ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'harvest'],
+        ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'basket'],
         ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
         ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
     ]],
