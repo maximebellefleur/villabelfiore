@@ -193,7 +193,32 @@ $bedId = (int)$item['id'];
     </div>
     <div class="rg-palette-row">
       <?php foreach ($catalog as $c): ?>
-      <button type="button" class="rg-palette-chip" draggable="true" data-crop-id="<?= (int)$c['id'] ?>" data-color="<?= e($c['color']) ?>" data-spacing="<?= (int)$c['spacing_cm'] ?>" data-name="<?= e($c['name']) ?>" data-emoji="<?= e($c['emoji']) ?>" data-days="<?= (int)$c['days_to_maturity'] ?>" data-variety="<?= e($c['variety'] ?? '') ?>" data-type="<?= e($c['type'] ?? 'vegetable') ?>" data-family="<?= e($c['family'] ?? 'other') ?>" data-season="<?= e($c['season'] ?? 'any') ?>" data-stock="<?= (float)($c['stock_qty'] ?? 0) ?>" data-stock-unit="<?= e($c['stock_unit'] ?? 'seeds') ?>" data-harvest-months="<?= e($c['harvest_months'] ?? '') ?>" data-notes="<?= e($c['notes'] ?? '') ?>">
+      <button type="button" class="rg-palette-chip" draggable="true"
+        data-crop-id="<?= (int)$c['id'] ?>"
+        data-color="<?= e($c['color']) ?>"
+        data-spacing="<?= (int)$c['spacing_cm'] ?>"
+        data-name="<?= e($c['name']) ?>"
+        data-emoji="<?= e($c['emoji']) ?>"
+        data-days="<?= (int)$c['days_to_maturity'] ?>"
+        data-variety="<?= e($c['variety'] ?? '') ?>"
+        data-botanical-family="<?= e($c['botanical_family'] ?? '') ?>"
+        data-type="<?= e($c['type'] ?? 'vegetable') ?>"
+        data-sowing-type="<?= e($c['sowing_type'] ?? '') ?>"
+        data-days-germ="<?= (int)($c['days_to_germinate'] ?? 0) ?>"
+        data-row-spacing="<?= (int)($c['row_spacing_cm'] ?? 0) ?>"
+        data-sowing-depth="<?= (int)($c['sowing_depth_mm'] ?? 0) ?>"
+        data-sun="<?= e($c['sun_exposure'] ?? '') ?>"
+        data-soil="<?= e($c['soil_notes'] ?? '') ?>"
+        data-frost-hardy="<?= !empty($c['frost_hardy']) ? '1' : '0' ?>"
+        data-family="<?= e($c['family'] ?? 'other') ?>"
+        data-season="<?= e($c['season'] ?? 'any') ?>"
+        data-stock="<?= (float)($c['stock_qty'] ?? 0) ?>"
+        data-stock-unit="<?= e($c['stock_unit'] ?? 'seeds') ?>"
+        data-planting-months="<?= e($c['planting_months'] ?? '') ?>"
+        data-harvest-months="<?= e($c['harvest_months'] ?? '') ?>"
+        data-companions="<?= e($c['companions'] ?? '') ?>"
+        data-antagonists="<?= e($c['antagonists'] ?? '') ?>"
+        data-notes="<?= e($c['notes'] ?? '') ?>">
         <span class="rg-palette-chip-emoji"><?= e($c['emoji']) ?></span>
         <span><?= e($c['name']) ?></span>
         <span class="rg-palette-chip-spacing"><?= (int)$c['spacing_cm'] ?>cm</span>
@@ -203,20 +228,20 @@ $bedId = (int)$item['id'];
   </div>
   <?php endif; ?>
 
-  <!-- Mobile seed info modal (double-tap palette chip) -->
+  <!-- Seed info modal (double-tap palette chip) -->
   <div class="rg-blackout" id="rgSeedInfoModal" style="display:none">
-    <div class="rg-blackout-card" style="max-width:360px">
-      <div class="rg-blackout-head">
+    <div id="rgSeedInfoCard" style="background:#1a2b1c;color:#e8f0e9;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+      <div id="rgSeedInfoHead" style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0">
         <div style="flex:1;display:flex;align-items:center;gap:12px">
           <span id="rgSeedInfoEmoji" style="font-size:2rem;line-height:1"></span>
           <div>
-            <div id="rgSeedInfoName" style="font-weight:800;font-size:1.05rem"></div>
-            <div id="rgSeedInfoVariety" style="font-size:.78rem;color:var(--color-text-muted)"></div>
+            <div id="rgSeedInfoName" style="font-weight:800;font-size:1.05rem;color:#e8f0e9"></div>
+            <div id="rgSeedInfoVariety" style="font-size:.78rem;color:rgba(255,255,255,.5)"></div>
           </div>
         </div>
-        <button type="button" class="rg-blackout-close" id="rgSeedInfoClose">×</button>
+        <button type="button" id="rgSeedInfoClose" style="background:rgba(255,255,255,.1);border:none;color:#e8f0e9;font-size:1.3rem;line-height:1;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
       </div>
-      <div class="rg-blackout-body" id="rgSeedInfoBody"></div>
+      <div id="rgSeedInfoBody" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch"></div>
     </div>
   </div>
 
@@ -310,10 +335,23 @@ $bedId = (int)$item['id'];
       id: id, name: $c.data('name') || '', emoji: $c.data('emoji') || '',
       color: $c.data('color') || '#A66141', spacing: parseInt($c.data('spacing'), 10) || 5,
       days: parseInt($c.data('days'), 10) || 0, variety: $c.data('variety') || '',
-      type: $c.data('type') || 'vegetable', family: $c.data('family') || 'other',
+      botanicalFamily: $c.data('botanical-family') || '',
+      type: $c.data('type') || 'vegetable',
+      sowingType: $c.data('sowing-type') || '',
+      daysGerm: parseInt($c.data('days-germ'), 10) || 0,
+      rowSpacing: parseInt($c.data('row-spacing'), 10) || 0,
+      sowingDepth: parseInt($c.data('sowing-depth'), 10) || 0,
+      sun: $c.data('sun') || '',
+      soil: $c.data('soil') || '',
+      frostHardy: $c.data('frost-hardy') === '1',
+      family: $c.data('family') || 'other',
       season: $c.data('season') || 'any',
       stock: parseFloat($c.data('stock')) || 0, stockUnit: $c.data('stock-unit') || 'seeds',
-      harvestMonths: $c.data('harvest-months') || '', notes: $c.data('notes') || '',
+      plantingMonths: $c.data('planting-months') || '',
+      harvestMonths: $c.data('harvest-months') || '',
+      companions: $c.data('companions') || '',
+      antagonists: $c.data('antagonists') || '',
+      notes: $c.data('notes') || '',
     };
   });
 
@@ -433,33 +471,7 @@ $bedId = (int)$item['id'];
     var bdr  = darkMode ? 'rgba(255,255,255,.08)'  : 'var(--color-border)';
     var mute = darkMode ? 'rgba(255,255,255,.45)'  : 'var(--color-text-muted)';
     var txt  = darkMode ? '#e8f0e9'                : 'var(--color-text)';
-
-    // Harvest months calendar
-    var calHtml = '';
-    if (crop.harvestMonths) {
-      var active = {};
-      String(crop.harvestMonths).replace(/\d+/g, function(m){ active[parseInt(m,10)] = true; });
-      var dots = '';
-      for (var mo = 1; mo <= 12; mo++) {
-        var on = active[mo];
-        dots += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
-          '<div style="width:8px;height:8px;border-radius:50%;background:' + (on ? crop.color || '#A66141' : bdr) + ';opacity:' + (on ? '1' : '.5') + '"></div>' +
-          '<span style="font-size:.5rem;color:' + mute + '">' + MONTH_ABBR[mo-1].slice(0,1) + '</span>' +
-        '</div>';
-      }
-      calHtml = '<div style="padding:10px 16px;border-bottom:1px solid ' + bdr + '">' +
-        '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:8px">Harvest months</div>' +
-        '<div style="display:flex;gap:4px;justify-content:space-between">' + dots + '</div>' +
-      '</div>';
-    }
-
-    // Info rows
-    var famLabel = crop.family ? crop.family.charAt(0).toUpperCase() + crop.family.slice(1) : '';
-    var typeLabel = crop.type  ? crop.type.charAt(0).toUpperCase() + crop.type.slice(1) : '';
-    var seaLabel = crop.season === 'warm' ? '☀️ Warm' : crop.season === 'cool' ? '🌧 Cool' : (crop.season && crop.season !== 'any' ? crop.season : '');
-    var stockOk  = crop.stock > 0;
-    var stockTxt = stockOk ? crop.stock + ' ' + crop.stockUnit : 'Out of stock';
-    var stockColor = stockOk ? '#4ade80' : '#f87171';
+    var green = '#4ade80';
 
     function row(label, val) {
       return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 16px;border-bottom:1px solid ' + bdr + '">' +
@@ -468,35 +480,102 @@ $bedId = (int)$item['id'];
       '</div>';
     }
 
+    function monthCalendar(title, monthStr, activeColor) {
+      if (!monthStr) return '';
+      var active = {};
+      String(monthStr).replace(/\d+/g, function(m){ active[parseInt(m,10)] = true; });
+      var hasAny = false;
+      for (var k in active) { hasAny = true; break; }
+      if (!hasAny) return '';
+      var dots = '';
+      for (var mo = 1; mo <= 12; mo++) {
+        var on = active[mo];
+        dots += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:' + (on ? activeColor : bdr) + ';opacity:' + (on ? '1' : '.4') + '"></div>' +
+          '<span style="font-size:.5rem;color:' + mute + '">' + MONTH_ABBR[mo-1].slice(0,1) + '</span>' +
+        '</div>';
+      }
+      return '<div style="padding:10px 16px;border-bottom:1px solid ' + bdr + '">' +
+        '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:8px">' + title + '</div>' +
+        '<div style="display:flex;gap:4px;justify-content:space-between">' + dots + '</div>' +
+      '</div>';
+    }
+
+    function tagList(jsonStr, color) {
+      if (!jsonStr) return '';
+      var items = [];
+      try { items = JSON.parse(jsonStr); } catch(e) {
+        items = String(jsonStr).replace(/[\[\]"]/g,'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      }
+      if (!items.length) return '';
+      return items.map(function(t) {
+        return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:600;background:' + color + '22;color:' + color + ';margin:2px 2px 0 0">' + String(t).replace(/</g,'&lt;') + '</span>';
+      }).join('');
+    }
+
+    // Core rows
+    var typeLabel = crop.type  ? crop.type.charAt(0).toUpperCase() + crop.type.slice(1) : '';
+    var famLabel  = crop.family ? crop.family.charAt(0).toUpperCase() + crop.family.slice(1) : '';
+    var seaLabel  = crop.season === 'warm' ? '☀️ Warm' : crop.season === 'cool' ? '🌧 Cool' : '';
+    var stockOk   = crop.stock > 0;
+    var stockTxt  = stockOk ? crop.stock + ' ' + crop.stockUnit : 'Out of stock';
+    var stockColor = stockOk ? green : '#f87171';
+
     var rows = '';
-    if (typeLabel && typeLabel !== famLabel) rows += row('Type', typeLabel);
-    if (famLabel)  rows += row('Family', famLabel);
-    if (seaLabel)  rows += row('Season', seaLabel);
-    if (crop.days) rows += row('Days to maturity', crop.days + 'd');
-    if (crop.spacing) rows += row('Spacing', crop.spacing + ' cm');
+    if (typeLabel)       rows += row('Type', typeLabel);
+    if (famLabel)        rows += row('Family', famLabel);
+    if (crop.botanicalFamily) rows += row('Botanical family', crop.botanicalFamily);
+    if (seaLabel)        rows += row('Season', seaLabel);
+    if (crop.frostHardy) rows += row('Frost hardy', '❄️ Yes');
+    if (crop.sowingType) rows += row('Sowing', crop.sowingType.charAt(0).toUpperCase() + crop.sowingType.slice(1));
+    if (crop.daysGerm)   rows += row('Days to germinate', crop.daysGerm + 'd');
+    if (crop.days)       rows += row('Days to maturity', crop.days + 'd');
+    if (crop.spacing)    rows += row('Spacing', crop.spacing + ' cm');
+    if (crop.rowSpacing) rows += row('Row spacing', crop.rowSpacing + ' cm');
+    if (crop.sowingDepth) rows += row('Sowing depth', crop.sowingDepth + ' mm');
+    if (crop.sun)        rows += row('Sun', crop.sun);
     rows += row('Stock', '<span style="color:' + stockColor + '">' + stockTxt + '</span>');
+
+    // Soil notes inline row
+    var soilHtml = '';
+    if (crop.soil) {
+      soilHtml = '<div style="padding:8px 16px;border-bottom:1px solid ' + bdr + '">' +
+        '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:4px">Soil notes</div>' +
+        '<div style="font-size:.76rem;line-height:1.5;color:' + txt + '">' + crop.soil.replace(/</g,'&lt;') + '</div>' +
+      '</div>';
+    }
+
+    // Companions / antagonists
+    var compHtml = '';
+    var compTags = tagList(crop.companions, green);
+    if (compTags) compHtml = '<div style="padding:8px 16px;border-bottom:1px solid ' + bdr + '">' +
+      '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:4px">Companions</div>' +
+      '<div>' + compTags + '</div>' +
+    '</div>';
+    var antHtml = '';
+    var antTags = tagList(crop.antagonists, '#f87171');
+    if (antTags) antHtml = '<div style="padding:8px 16px;border-bottom:1px solid ' + bdr + '">' +
+      '<div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:' + mute + ';margin-bottom:4px">Antagonists</div>' +
+      '<div>' + antTags + '</div>' +
+    '</div>';
 
     // Notes
     var notesHtml = '';
-    if (crop.notes) {
-      notesHtml = '<div style="padding:10px 16px;font-size:.74rem;line-height:1.6;color:' + mute + '">' + crop.notes.replace(/</g,'&lt;') + '</div>';
-    }
+    if (crop.notes) notesHtml = '<div style="padding:10px 16px;font-size:.74rem;line-height:1.6;color:' + mute + '">' + crop.notes.replace(/</g,'&lt;') + '</div>';
 
-    return (
-      // Header
+    // Header (sidebar has its own header, modal has its own — just info card here)
+    var header = darkMode ? '' :
       '<div style="padding:20px 16px 14px;text-align:center;border-bottom:1px solid ' + bdr + '">' +
         '<div style="font-size:3rem;line-height:1;margin-bottom:10px">' + (crop.emoji || '🌱') + '</div>' +
-        '<div style="height:3px;border-radius:999px;margin:0 24px 12px;background:' + (crop.color || '#A66141') + '"></div>' +
+        '<div style="height:3px;border-radius:999px;margin:0 24px 12px;background:' + (crop.color || '#4ade80') + '"></div>' +
         '<div style="font-weight:800;font-size:1.05rem;color:' + txt + ';line-height:1.2">' + (crop.name || '') + '</div>' +
         (crop.variety ? '<div style="font-size:.75rem;color:' + mute + ';margin-top:4px">' + crop.variety + '</div>' : '') +
-      '</div>' +
-      // Rows
-      rows +
-      // Harvest calendar
-      calHtml +
-      // Notes
-      notesHtml
-    );
+      '</div>';
+
+    return header + rows + soilHtml +
+      monthCalendar('Planting months', crop.plantingMonths, '#34d399') +
+      monthCalendar('Harvest months',  crop.harvestMonths,  crop.color || '#A66141') +
+      compHtml + antHtml + notesHtml;
   }
 
   function updateCropSidebar(crop) {
@@ -505,20 +584,15 @@ $bedId = (int)$item['id'];
   }
 
   function showSeedInfoModal(crop) {
-    $('#rgSeedInfoModal').find('.rg-blackout-head').html(
-      '<div style="flex:1;display:flex;align-items:center;gap:12px">' +
-        '<span style="font-size:2.2rem;line-height:1">' + (crop.emoji || '🌱') + '</span>' +
-        '<div>' +
-          '<div style="font-weight:800;font-size:1.05rem">' + (crop.name || '') + '</div>' +
-          (crop.variety ? '<div style="font-size:.78rem;color:var(--color-text-muted)">' + crop.variety + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-      '<button type="button" class="rg-blackout-close" id="rgSeedInfoClose">×</button>'
-    );
-    $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, false));
-    $('#rgSeedInfoModal').css('display', 'flex');
-    // re-bind close since we replaced the DOM node
-    $('#rgSeedInfoClose').on('click', function () { $('#rgSeedInfoModal').hide(); });
+    $('#rgSeedInfoEmoji').text(crop.emoji || '🌱');
+    $('#rgSeedInfoName').text(crop.name || '');
+    $('#rgSeedInfoVariety').text(crop.variety || '');
+    // Color accent bar under emoji in head
+    var bar = $('#rgSeedInfoHead').find('.rg-seed-colorbar');
+    if (!bar.length) bar = $('<div class="rg-seed-colorbar" style="height:3px;border-radius:999px;margin:6px 0 0"></div>').appendTo($('#rgSeedInfoHead'));
+    bar.css('background', crop.color || '#4ade80');
+    $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, true));
+    $('#rgSeedInfoModal').css('display', 'flex').css('align-items', 'flex-end');
   }
   $('#rgSeedInfoClose').on('click', function () { $('#rgSeedInfoModal').hide(); });
 

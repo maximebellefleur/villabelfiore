@@ -384,9 +384,11 @@ class GardenHelpers
      * Compass direction (N/NE/E/SE/S/SW/W/NW) of a bed relative to the centroid of
      * its garden's beds. Returns null if at centroid or no GPS.
      */
-    public static function bedOrientation(array $bed, array $gardenBeds): ?string
+    public static function bedOrientation(array $bed, array $gardenBeds, ?string $lineDir = null): ?string
     {
-        if (empty($bed['gps_lat']) || empty($bed['gps_lng'])) return null;
+        if (empty($bed['gps_lat']) || empty($bed['gps_lng'])) {
+            return ($lineDir && in_array($lineDir, ['NS', 'EW'], true)) ? $lineDir : null;
+        }
         $lats = []; $lngs = [];
         foreach ($gardenBeds as $b) {
             if (!empty($b['gps_lat']) && !empty($b['gps_lng'])) {

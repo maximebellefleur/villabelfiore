@@ -8,6 +8,23 @@
  */
 return [
 
+    '3.1.12' => [
+        'date'  => '2026-04-29',
+        'title' => 'Garlic planted fix, bed orientation fallback, full seed info modal',
+        'new' => [
+            'Seed info modal (double-tap in bed planting) is now dark green (#1a2b1c) with scrollable full content.',
+            'Seed info modal shows ALL fields: type, botanical family, season, frost hardy, sowing type, days to germinate, days to maturity, spacing, row spacing, sowing depth, sun, soil notes, stock, planting months calendar, harvest months calendar, companions, antagonists, notes.',
+        ],
+        'improved' => [
+            'Bed orientation circle now falls back to the line_direction setting (NS/EW) when GPS is not set on a bed.',
+        ],
+        'fixed' => [
+            'Family needs "Not yet planted" for garlic: s.emoji was selected in the complex query; if the emoji column didn\'t exist the try-catch fired and returned the simple fallback (no plant counts). Removed s.emoji from the query — view already has a fallback emoji.',
+            'Family needs GROUP BY now explicit to avoid ONLY_FULL_GROUP_BY mode failures.',
+            'buildHub() beds query now fetches line_direction so the orientation circle can use it as fallback.',
+        ],
+    ],
+
     '3.1.11' => [
         'date'  => '2026-04-29',
         'title' => 'Family needs in-ground fix, merged plant section, plan sow date edit',

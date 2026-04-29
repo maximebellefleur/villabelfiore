@@ -310,12 +310,13 @@ class GardenController
         // Beds with their meta (length/width/rows)
         $beds = $db->fetchAll(
             "SELECT i.id, i.name, i.parent_id, i.gps_lat, i.gps_lng,
-                    MAX(CASE WHEN m.meta_key='bed_length_m' THEN m.meta_value_text END) AS length_m,
-                    MAX(CASE WHEN m.meta_key='bed_width_m'  THEN m.meta_value_text END) AS width_m,
-                    MAX(CASE WHEN m.meta_key='bed_rows'     THEN m.meta_value_text END) AS bed_rows
+                    MAX(CASE WHEN m.meta_key='bed_length_m'   THEN m.meta_value_text END) AS length_m,
+                    MAX(CASE WHEN m.meta_key='bed_width_m'    THEN m.meta_value_text END) AS width_m,
+                    MAX(CASE WHEN m.meta_key='bed_rows'       THEN m.meta_value_text END) AS bed_rows,
+                    MAX(CASE WHEN m.meta_key='line_direction' THEN m.meta_value_text END) AS line_dir
              FROM items i
              LEFT JOIN item_meta m ON m.item_id = i.id
-                AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows')
+                AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
              WHERE i.type='bed' AND i.deleted_at IS NULL AND i.status='active'
              GROUP BY i.id ORDER BY i.parent_id, i.name"
         ) ?: [];
@@ -411,6 +412,7 @@ class GardenController
                 'gardenId'  => $gid,
                 'gps_lat'   => $bed['gps_lat'],
                 'gps_lng'   => $bed['gps_lng'],
+                'line_dir'  => $bed['line_dir'] ?? null,
                 'lengthM'   => $lengthM,
                 'widthM'    => $widthM,
                 'numLines'  => $bedRows,

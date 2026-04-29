@@ -219,15 +219,22 @@ class GardenBedController
     {
         try {
             $rows = $db->fetchAll(
-                "SELECT id, name, variety, type, days_to_maturity, spacing_cm, family, season, emoji, color,
-                        stock_qty, stock_unit, harvest_months, notes
+                "SELECT id, name, variety, botanical_family, type, sowing_type, days_to_germinate,
+                        days_to_maturity, spacing_cm, row_spacing_cm, sowing_depth_mm,
+                        sun_exposure, soil_notes, planting_months, harvest_months,
+                        frost_hardy, companions, antagonists, notes,
+                        family, season, emoji, color, stock_qty, stock_unit
                  FROM seeds
                  WHERE COALESCE(stock_enabled,1) = 1
                  ORDER BY name ASC, variety ASC"
             ) ?: [];
         } catch (\Throwable $e) {
             $rows = $db->fetchAll(
-                "SELECT id, name, variety, days_to_maturity, spacing_cm
+                "SELECT id, name, variety, botanical_family, type, sowing_type, days_to_germinate,
+                        days_to_maturity, spacing_cm, row_spacing_cm, sowing_depth_mm,
+                        sun_exposure, soil_notes, planting_months, harvest_months,
+                        frost_hardy, companions, antagonists, notes,
+                        stock_qty, stock_unit
                  FROM seeds ORDER BY name ASC"
             ) ?: [];
         }

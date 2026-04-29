@@ -142,7 +142,7 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
       <?php foreach ($gBeds as $bed):
         $action = $bed['actions'][0] ?? null;
         $level  = $action ? $action['urgency'] : 'low';
-        $orient = GardenHelpers::bedOrientation($bed, $gBeds);
+        $orient = GardenHelpers::bedOrientation($bed, $gBeds, $bed['line_dir'] ?? null);
       ?>
         <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" class="rg-bedrow rg-bedrow--<?= e($level) ?>">
           <?php if ($orient): ?>

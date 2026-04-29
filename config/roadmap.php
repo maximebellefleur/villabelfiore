@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.12' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Garlic planted fix, bed orientation, full seed info modal',
+        'features' => [
+            ['title' => 'Family needs planted count fix',    'detail' => 'Removed s.emoji from the complex query to prevent try-catch fallback; explicit GROUP BY prevents ONLY_FULL_GROUP_BY failure.'],
+            ['title' => 'Bed orientation line_dir fallback', 'detail' => 'Beds without GPS now show NS/EW circle from their saved line direction setting.'],
+            ['title' => 'Full dark-green seed info modal',   'detail' => 'Double-tap a crop chip to see ALL seed data in a scrollable dark green modal.'],
+        ],
+    ],
+
     '3.1.11' => [
         'status'   => 'released',
         'released' => '2026-04-29',
