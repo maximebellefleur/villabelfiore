@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.13' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Family needs dual-table fix, seed info header, lighter green',
+        'features' => [
+            ['title' => 'Family needs dual-table count', 'detail' => 'Checks both garden_plantings and bed_rows so crops planted via either system are counted correctly.'],
+            ['title' => 'Seed info name header',         'detail' => 'Crop name + type emoji shown prominently at top of sidebar and modal.'],
+            ['title' => 'Lighter forest green',          'detail' => 'Background changed from #1a2b1c to #2c4a30 — more vibrant and readable.'],
+        ],
+    ],
+
     '3.1.12' => [
         'status'   => 'released',
         'released' => '2026-04-29',

@@ -1386,7 +1386,7 @@ fieldset.fieldset {
   position: fixed;
   left: 0; top: var(--nav-height); bottom: 0;
   width: 300px;
-  background: #1a2b1c;
+  background: #2c4a30;
   border-right: 1px solid rgba(255,255,255,.08);
   overflow-y: auto;
   padding: 0;

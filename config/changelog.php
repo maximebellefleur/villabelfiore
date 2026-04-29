@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.1.13' => [
+        'date'  => '2026-04-29',
+        'title' => 'Family needs checks both planting systems, seed info name header, lighter green',
+        'new' => [],
+        'improved' => [
+            'Seed info sidebar/modal now shows the crop name as a big title with type emoji at the top.',
+            'Sidebar and modal background changed from near-black #1a2b1c to medium forest green #2c4a30.',
+        ],
+        'fixed' => [
+            'Family needs "Not yet planted" for garlic: the query only checked garden_plantings (new bed system). Garlic planted via the bed-rows planning system was never found. Query now uses correlated subqueries checking BOTH garden_plantings AND bed_rows, then sums them.',
+            'Removed GROUP BY from the family needs query (no longer needed with correlated subqueries) eliminating ONLY_FULL_GROUP_BY failures.',
+        ],
+    ],
+
     '3.1.12' => [
         'date'  => '2026-04-29',
         'title' => 'Garlic planted fix, bed orientation fallback, full seed info modal',

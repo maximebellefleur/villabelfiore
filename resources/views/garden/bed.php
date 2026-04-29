@@ -230,7 +230,7 @@ $bedId = (int)$item['id'];
 
   <!-- Seed info modal (double-tap palette chip) -->
   <div class="rg-blackout" id="rgSeedInfoModal" style="display:none">
-    <div id="rgSeedInfoCard" style="background:#1a2b1c;color:#e8f0e9;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div id="rgSeedInfoCard" style="background:#2c4a30;color:#e8f0e9;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
       <div id="rgSeedInfoHead" style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0">
         <div style="flex:1;display:flex;align-items:center;gap:12px">
           <span id="rgSeedInfoEmoji" style="font-size:2rem;line-height:1"></span>
@@ -563,12 +563,16 @@ $bedId = (int)$item['id'];
     var notesHtml = '';
     if (crop.notes) notesHtml = '<div style="padding:10px 16px;font-size:.74rem;line-height:1.6;color:' + mute + '">' + crop.notes.replace(/</g,'&lt;') + '</div>';
 
-    // Header (sidebar has its own header, modal has its own — just info card here)
-    var header = darkMode ? '' :
+    // Type emoji per category
+    var typeEmojiMap = { vegetable:'🥦', herb:'🌿', fruit:'🍓', flower:'🌸', other:'🌾' };
+    var tEmoji = typeEmojiMap[crop.type] || crop.emoji || '🌱';
+
+    // Header — shown in both sidebar (darkMode) and light modal
+    var header =
       '<div style="padding:20px 16px 14px;text-align:center;border-bottom:1px solid ' + bdr + '">' +
-        '<div style="font-size:3rem;line-height:1;margin-bottom:10px">' + (crop.emoji || '🌱') + '</div>' +
-        '<div style="height:3px;border-radius:999px;margin:0 24px 12px;background:' + (crop.color || '#4ade80') + '"></div>' +
-        '<div style="font-weight:800;font-size:1.05rem;color:' + txt + ';line-height:1.2">' + (crop.name || '') + '</div>' +
+        '<div style="font-size:2.6rem;line-height:1;margin-bottom:8px">' + tEmoji + '</div>' +
+        '<div style="height:3px;border-radius:999px;margin:0 32px 10px;background:' + (crop.color || '#4ade80') + '"></div>' +
+        '<div style="font-weight:800;font-size:1.15rem;color:' + txt + ';line-height:1.2">' + (crop.name || '') + '</div>' +
         (crop.variety ? '<div style="font-size:.75rem;color:' + mute + ';margin-top:4px">' + crop.variety + '</div>' : '') +
       '</div>';
 
