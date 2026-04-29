@@ -74,8 +74,9 @@ class GardenSchema
 
         self::ensureColumn($db, 'seeds', 'family',        "ALTER TABLE seeds ADD COLUMN family ENUM('root','leaf','fruit','herb','allium','legume','other') NOT NULL DEFAULT 'other'");
         self::ensureColumn($db, 'seeds', 'season',        "ALTER TABLE seeds ADD COLUMN season ENUM('cool','warm','any') NOT NULL DEFAULT 'any'");
-        self::ensureColumn($db, 'seeds', 'emoji',         "ALTER TABLE seeds ADD COLUMN emoji VARCHAR(10) DEFAULT NULL");
-        self::ensureColumn($db, 'seeds', 'color',         "ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL");
+        self::ensureColumn($db, 'seeds', 'emoji',          "ALTER TABLE seeds ADD COLUMN emoji VARCHAR(10) DEFAULT NULL");
+        self::ensureColumn($db, 'seeds', 'color',          "ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL");
+        self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
 
     }
 
