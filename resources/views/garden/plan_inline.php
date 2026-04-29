@@ -149,7 +149,16 @@ $bedId = (int)$item['id'];
             <div class="rg-succ-tile" style="background:<?= e($succCrop['color']) ?>22;border:1.5px solid <?= e($succCrop['color']) ?>66"><?= e($succCrop['emoji']) ?></div>
             <div style="flex:1;min-width:0">
               <div class="rg-succ-name"><?= e($succCrop['name']) ?></div>
-              <div class="rg-succ-dates">sow <?= e(GardenHelpers::fmtDate($succession['startsOn'])) ?> → harvest ~<?= e(GardenHelpers::fmtDate(GardenHelpers::addDays($succession['startsOn'], (int)$succCrop['days_to_maturity']))) ?></div>
+              <div class="rg-succ-dates">
+                sow
+                <span class="rg-succ-sow-display" style="cursor:pointer;border-bottom:1px dashed var(--color-text-muted)" title="Click to edit sow date"><?= e(GardenHelpers::fmtDate($succession['startsOn'])) ?></span>
+                <span class="rg-succ-sow-edit" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="rg-succ-sow-input" value="<?= e($succession['startsOn']) ?>" style="font-size:.72rem;padding:1px 4px;border:1px solid var(--color-border);border-radius:4px;font-family:inherit">
+                  <button type="button" class="btn btn-primary btn-xs rg-succ-sow-save" data-line="<?= (int)$line['lineNumber'] ?>" data-crop-id="<?= (int)$succession['cropId'] ?>" style="padding:1px 6px;font-size:.67rem">✓</button>
+                  <button type="button" class="btn btn-ghost btn-xs rg-succ-sow-cancel" style="padding:1px 6px;font-size:.67rem">✕</button>
+                </span>
+                → harvest ~<span class="rg-succ-harvest-display"><?= e(GardenHelpers::fmtDate(GardenHelpers::addDays($succession['startsOn'], (int)$succCrop['days_to_maturity']))) ?></span>
+            </div>
             </div>
             <button type="button" class="btn btn-ghost btn-sm rg-succ-clear" data-line="<?= (int)$line['lineNumber'] ?>" style="color:var(--color-text-muted)">Remove</button>
             <button type="button" class="btn btn-ghost btn-sm rg-succ-pick" data-line="<?= (int)$line['lineNumber'] ?>">Change</button>
@@ -280,6 +289,33 @@ $bedId = (int)$item['id'];
         $row.find('.rg-harvest-days').text(label);
       })
       .fail(function () { $btn.prop('disabled', false).text('Save'); alert('Network error'); });
+  });
+
+  // ---- succession sow date inline edit ----
+  $page.on('click', '.rg-succ-sow-display', function () {
+    var $dates = $(this).closest('.rg-succ-dates');
+    $dates.find('.rg-succ-sow-display').hide();
+    $dates.find('.rg-succ-sow-edit').css('display', 'inline-flex');
+    $dates.find('.rg-succ-sow-input').focus();
+  });
+  $page.on('click', '.rg-succ-sow-cancel', function () {
+    var $dates = $(this).closest('.rg-succ-dates');
+    $dates.find('.rg-succ-sow-edit').hide();
+    $dates.find('.rg-succ-sow-display').show();
+  });
+  $page.on('keydown', '.rg-succ-sow-input', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $(this).closest('.rg-succ-dates').find('.rg-succ-sow-save').click(); }
+    else if (e.key === 'Escape') { $(this).closest('.rg-succ-dates').find('.rg-succ-sow-cancel').click(); }
+  });
+  $page.on('click', '.rg-succ-sow-save', function () {
+    var line     = parseInt($(this).data('line'), 10);
+    var cropId   = parseInt($(this).data('crop-id'), 10);
+    var $dates   = $(this).closest('.rg-succ-dates');
+    var startsOn = $dates.find('.rg-succ-sow-input').val();
+    var $btn     = $(this); $btn.prop('disabled', true).text('…');
+    $.post('<?= url('/items/' . $bedId . '/lines/succession/set') ?>', { _token: csrf, line_number: line, crop_id: cropId, starts_on: startsOn })
+      .done(function () { window.location.reload(); })
+      .fail(function () { $btn.prop('disabled', false).text('✓'); alert('Network error'); });
   });
 
   // ---- picker open/close ----

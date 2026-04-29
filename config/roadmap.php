@@ -8,6 +8,26 @@
  */
 return [
 
+    '3.1.11' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Family needs in-ground fix, merged plant section, plan sow date edit',
+        'features' => [
+            ['title' => 'Family needs in-ground counts fixed', 'detail' => 'SeedController now calls GardenSchema::ensure() so sown_at exists and plants_in_ground shows actual planted counts.'],
+            ['title' => 'Merged "Plant This Month" section',   'detail' => 'Catalog seeds and climate suggestions combined into one 4-column grid; missing seeds shown greyed with an "Add to catalog" badge.'],
+            ['title' => 'Succession sow date editing',         'detail' => 'In Plan view, tap the dashed sow date on a queued succession crop to change when it starts.'],
+        ],
+    ],
+
+    '3.1.10' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Garden hub crash fix, ensure schema on index',
+        'features' => [
+            ['title' => 'GardenSchema::ensure on garden hub', 'detail' => 'Prevents crash when sown_at or harvest_months columns do not yet exist on a fresh install.'],
+        ],
+    ],
+
     '3.1.9' => [
         'status'   => 'released',
         'released' => '2026-04-29',

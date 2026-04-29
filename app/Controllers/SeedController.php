@@ -6,6 +6,7 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Support\GardenSchema;
 
 class SeedController
 {
@@ -410,6 +411,7 @@ class SeedController
         $this->requireAuth();
         $db    = DB::getInstance();
         $this->ensureTables($db);
+        GardenSchema::ensure($db);
         try {
             $needs = $db->fetchAll(
                 'SELECT fn.*, s.name AS seed_name, s.emoji, s.stock_qty, s.stock_unit, s.days_to_maturity AS seed_dth,

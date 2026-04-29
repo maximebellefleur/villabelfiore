@@ -22,7 +22,8 @@ $statusColor = ['planned'=>'#94a3b8','sown'=>'#f59e0b','growing'=>'#22c55e','har
 .garden-section-link { font-size:.8rem; color:var(--color-primary); text-decoration:none; }
 .garden-section-link:hover { text-decoration:underline; }
 
-.garden-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.garden-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media (max-width:640px) { .garden-cards { grid-template-columns:repeat(2,1fr); } }
 .garden-card { background:var(--color-surface-raised); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:14px; }
 .garden-card-name { font-weight:700; font-size:.93rem; margin-bottom:2px; }
 .garden-card-sub { font-size:.78rem; color:var(--color-text-muted); }
@@ -414,49 +415,43 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
 </div>
 <?php endif; ?>
 
-<!-- Climate Suggestions -->
-<?php if (!empty($climateSuggestions)): ?>
+<!-- Plant This Month (catalog seeds + climate suggestions merged) -->
 <section class="garden-section">
     <div class="garden-section-head">
-        <div class="garden-section-title">🌍 What to Plant This Month
+        <div class="garden-section-title">🌱 Plant in <?= $currentMonthName ?>
+            <?php if (!empty($climateSuggestions)): ?>
             <span style="font-weight:400;font-size:.75rem;color:var(--color-text-muted)"> · <?= e(preg_replace('/_/', ' ', ucwords($climateZone, '_'))) ?></span>
+            <?php endif; ?>
         </div>
-        <a href="<?= url('/settings') ?>" class="garden-section-link">Change zone →</a>
+        <a href="<?= url('/seeds') ?>" class="garden-section-link">All seeds →</a>
     </div>
-    <div class="garden-cards">
-        <?php
-        $typeEmoji2 = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸','other'=>'📋'];
-        foreach ($climateSuggestions as $sug):
-            // Check if user already has this seed
+    <?php
+    $typeEmoji2 = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸','other'=>'📋'];
+    // Climate suggestions not already shown by user's plantNow list
+    $plantNowNamesLower = array_map(fn($s) => strtolower($s['name']), $plantNow);
+    $climateExtras = [];
+    foreach ($climateSuggestions ?? [] as $sug) {
+        $sugLower = strtolower($sug['name']);
+        $inPlantNow = false;
+        foreach ($plantNowNamesLower as $n) {
+            if (strpos($n, $sugLower) !== false || strpos($sugLower, $n) !== false) {
+                $inPlantNow = true; break;
+            }
+        }
+        if (!$inPlantNow) {
             $hasSeed = false;
             foreach ($allSeeds ?? [] as $s) {
                 if (stripos($s['name'], $sug['name']) !== false || stripos($sug['name'], $s['name']) !== false) {
                     $hasSeed = true; break;
                 }
             }
-        ?>
-        <div class="garden-card" style="border-left:3px solid <?= $hasSeed ? 'var(--color-primary)' : 'var(--color-border)' ?>">
-            <div class="garden-card-name"><?= ($typeEmoji2[$sug['type']] ?? '🌱') . ' ' . e($sug['name']) ?></div>
-            <div class="garden-card-sub"><?= e($sug['tip']) ?></div>
-            <?php if ($hasSeed): ?>
-            <span class="garden-card-badge garden-card-badge--green">✓ In catalog</span>
-            <?php else: ?>
-            <a href="<?= url('/seeds/create?name='.urlencode($sug['name'])) ?>" class="garden-card-badge garden-card-badge--blue" style="text-decoration:none;display:inline-block">+ Add seed</a>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
-    </div>
-</section>
-<?php endif; ?>
-
-<!-- Plant This Month -->
-<section class="garden-section">
-    <div class="garden-section-head">
-        <div class="garden-section-title">🌱 Plant in <?= $currentMonthName ?></div>
-        <a href="<?= url('/seeds') ?>" class="garden-section-link">All seeds →</a>
-    </div>
-    <?php if (empty($plantNow)): ?>
-    <div class="garden-empty">No seeds scheduled for planting this month. Check your <a href="<?= url('/seeds') ?>">seed catalog</a> to set planting months.</div>
+            $climateExtras[] = array_merge($sug, ['_has_seed' => $hasSeed]);
+        }
+    }
+    $totalItems = count($plantNow) + count($climateExtras);
+    ?>
+    <?php if ($totalItems === 0): ?>
+    <div class="garden-empty">No planting suggestions for <?= $currentMonthName ?>. Check your <a href="<?= url('/seeds') ?>">seed catalog</a> to set planting months.</div>
     <?php else: ?>
     <div class="garden-cards">
         <?php foreach ($plantNow as $s):
@@ -466,19 +461,39 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
         <div class="garden-card" style="border-left:3px solid var(--color-primary)">
             <div class="garden-card-name"><?= ($typeEmoji[$s['type']] ?? '🌾') . ' ' . e($s['name']) ?></div>
             <?php if ($s['variety']): ?><div class="garden-card-sub"><?= e($s['variety']) ?></div><?php endif; ?>
+            <span class="garden-card-badge garden-card-badge--green">✓ In catalog</span>
             <?php if ($s['sowing_type']): ?>
             <span class="garden-card-badge garden-card-badge--blue"><?= ucfirst($s['sowing_type']) ?></span>
             <?php endif; ?>
             <?php if ($s['days_to_maturity']): ?>
-            <span class="garden-card-badge garden-card-badge--gray"><?= $s['days_to_maturity'] ?>d to harvest</span>
+            <span class="garden-card-badge garden-card-badge--gray"><?= $s['days_to_maturity'] ?>d</span>
             <?php endif; ?>
             <?php if ($s['stock_enabled']): ?>
             <div style="margin-top:6px;font-size:.78rem;color:<?= $low ? '#dc2626' : '#15803d' ?>">
-                Stock: <?= number_format((float)$s['stock_qty'],1) ?> <?= e($s['stock_unit']) ?><?= $low ? ' ⚠️' : '' ?>
+                <?= number_format((float)$s['stock_qty'],1) ?> <?= e($s['stock_unit']) ?><?= $low ? ' ⚠️' : '' ?>
             </div>
             <?php endif; ?>
         </div>
         </a>
+        <?php endforeach; ?>
+        <?php foreach ($climateExtras as $sug): ?>
+        <?php if ($sug['_has_seed']): ?>
+        <a href="<?= url('/seeds') ?>" style="text-decoration:none;color:inherit">
+        <div class="garden-card" style="opacity:.7;border-left:3px solid var(--color-border)">
+            <div class="garden-card-name"><?= ($typeEmoji2[$sug['type']] ?? '🌱') . ' ' . e($sug['name']) ?></div>
+            <div class="garden-card-sub"><?= e($sug['tip']) ?></div>
+            <span class="garden-card-badge garden-card-badge--gray">Set planting months →</span>
+        </div>
+        </a>
+        <?php else: ?>
+        <a href="<?= url('/seeds/create?name='.urlencode($sug['name'])) ?>" style="text-decoration:none;color:inherit">
+        <div class="garden-card" style="opacity:.6;border:1px dashed var(--color-border);border-left:3px dashed var(--color-border)">
+            <div class="garden-card-name" style="color:var(--color-text-muted)"><?= ($typeEmoji2[$sug['type']] ?? '🌱') . ' ' . e($sug['name']) ?></div>
+            <div class="garden-card-sub"><?= e($sug['tip']) ?></div>
+            <span class="garden-card-badge garden-card-badge--blue">＋ Add to catalog</span>
+        </div>
+        </a>
+        <?php endif; ?>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>

@@ -8,6 +8,32 @@
  */
 return [
 
+    '3.1.11' => [
+        'date'  => '2026-04-29',
+        'title' => 'Family needs in-ground fix, merged plant section, plan sow date edit',
+        'new' => [
+            'Plan view: succession sow date is now inline-editable — tap the dashed date to change when the next crop starts.',
+        ],
+        'improved' => [
+            'Garden homepage: "Plant This Month" and "What to Plant This Month" merged into one unified 4-column grid.',
+            'Seeds not in catalog shown greyed with a "+ Add to catalog" badge; seeds in catalog but without planting months flagged separately.',
+        ],
+        'fixed' => [
+            'Family needs page: SeedController now calls GardenSchema::ensure() so gp.sown_at exists and the in-ground/planned counts display correctly instead of always showing "Not yet planted".',
+        ],
+    ],
+
+    '3.1.10' => [
+        'date'  => '2026-04-29',
+        'title' => 'Garden hub crash fix, ensure schema on index',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'GardenController::index() now calls GardenSchema::ensure() to guarantee garden_plantings.sown_at and seeds.harvest_months exist before querying.',
+            'Garden hub family needs widget now shows split in-ground (green) vs planned (amber) counts with independent soonest harvest dates.',
+        ],
+    ],
+
     '3.1.9' => [
         'date'  => '2026-04-29',
         'title' => 'Dark sidebar, full crop info, acorn icon, family-needs crash fix',
