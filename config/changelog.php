@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.45' => [
+        'date'  => '2026-04-30',
+        'title' => 'Done is just a status — explicit Archive button',
+        'fixed' => [
+            'Clicking the status toggle no longer auto-archives done tasks. The cycle (pending → done → error → trigger AI → pending) now works on every click without the row vanishing.',
+        ],
+        'new' => [
+            'Each done task now shows a green 📥 Archive button. Click it to move the task to the archive section. Archive is now a separate flag from status, so you can revisit a done task and change its status before archiving it.',
+        ],
+        'improved' => [
+            'Backward-compat migration: existing done tasks are auto-flagged as archived on first read so the archive section keeps everything that was previously hidden.',
+            'Done badge now has a green pill style to match the success color.',
+        ],
+    ],
+
     '3.1.44' => [
         'date'  => '2026-04-30',
         'title' => 'Status save reliability + Copy AI includes error tasks',

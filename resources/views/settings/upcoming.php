@@ -10,8 +10,8 @@ $statusCfg = [
     'trigger_ai' => ['icon' => '🤖', 'label' => 'Trigger AI', 'color' => '#d97706',                     'bg' => 'rgba(217,119,6,.07)'],
 ];
 
-$activeTasks   = array_values(array_filter($tasks ?? [], fn($t) => ($t['status'] ?? 'empty') !== 'done'));
-$archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status'] ?? 'empty') === 'done'));
+$activeTasks   = array_values(array_filter($tasks ?? [], fn($t) => empty($t['archived'])));
+$archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => !empty($t['archived'])));
 ?>
 <style>
 .ptask-header { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:var(--spacing-5); }
@@ -32,6 +32,10 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 .ptask-toggle { background:none;border:none;padding:0 4px;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-left:auto;user-select:none;align-self:center; }
 .ptask-toggle:focus { outline:none; }
 
+.ptask-archive-btn { display:none;align-items:center;gap:4px;background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.3);color:var(--color-success,#27ae60);padding:4px 10px;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;flex-shrink:0;align-self:center;line-height:1;white-space:nowrap; }
+.ptask-archive-btn:hover { background:rgba(39,174,96,.16); }
+.ptask-row[data-status="done"] .ptask-archive-btn { display:inline-flex; }
+
 .ptask-body { flex:1;min-width:0; }
 .ptask-title { font-weight:700;font-size:.93rem;line-height:1.3;margin-bottom:3px; }
 .ptask-desc { font-size:.8rem;color:var(--color-text-muted);line-height:1.45; }
@@ -40,6 +44,7 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 .ptask-note { font-size:.72rem;color:#d97706;font-style:italic; }
 .ptask-badge { font-size:.68rem;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(217,119,6,.12);color:#d97706; }
 .ptask-badge--error { background:rgba(231,76,60,.12);color:#e74c3c; }
+.ptask-badge--done { background:rgba(39,174,96,.12);color:var(--color-success,#27ae60); }
 .ptask-badge--empty { display:none; }
 
 /* Archive section */
@@ -181,6 +186,8 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
         <?php if (!empty($t['note'])): ?><span class="ptask-note"><?= e($t['note']) ?></span><?php endif; ?>
       </div>
     </div>
+    <button type="button" class="ptask-archive-btn" onclick="ptaskArchive(<?= (int)$t['id'] ?>)"
+            title="Move this done task to the archive section">📥 Archive</button>
     <button type="button" class="ptask-toggle" onclick="ptaskCycle(<?= (int)$t['id'] ?>)"
             title="Click to cycle: pending → done → error → trigger AI → pending"
             style="color:<?= $sc['color'] ?>"><?= $sc['icon'] ?></button>
@@ -248,7 +255,7 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
     var row = rowEl(t.id);
     if (!row) return;
 
-    if (t.status === 'done') {
+    if (t.archived) {
       row.remove();
       var countEl = document.getElementById('ptaskArchiveCount');
       if (countEl) countEl.textContent = parseInt(countEl.textContent || '0', 10) + 1;
@@ -327,6 +334,23 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
       document.execCommand('copy'); document.body.removeChild(t);
       done();
     }
+  };
+
+  window.ptaskArchive = function(id) {
+    fetch(BASE + '/settings/tasks/' + id + '/archive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+      body: '_token=' + encodeURIComponent(CSRF)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (res.success) {
+        applyTask({ id: id, archived: true });
+      } else {
+        showSaveError(res.error || 'Could not archive. Please try again.');
+      }
+    })
+    .catch(function() { showSaveError('Network error — task not archived.'); });
   };
 
   window.ptaskCycle = function(id) {

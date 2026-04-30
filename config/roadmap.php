@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.45' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Done is just a status — explicit Archive button',
+        'features' => [
+            ['title' => 'Status cycle no longer auto-archives', 'detail' => 'Marking a task done used to vanish the row immediately, so you could not cycle past done to error or trigger_ai. Done is now a regular status and the row stays visible.'],
+            ['title' => 'Per-row 📥 Archive button', 'detail' => 'Done tasks display a green Archive button. Click it to move the task into the collapsed archive section. Archive is a separate flag, so you can change a done task back to error/trigger_ai before archiving.'],
+        ],
+    ],
+
     '3.1.44' => [
         'status'   => 'released',
         'released' => '2026-04-30',

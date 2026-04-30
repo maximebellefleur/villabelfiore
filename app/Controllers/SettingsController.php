@@ -253,6 +253,7 @@ class SettingsController
                 'status'      => $t['status'],
                 'note'        => $t['note']        ?? null,
                 'resolved_at' => $t['resolved_at'] ?? null,
+                'archived'    => (bool)($t['archived'] ?? false),
             ];
             break;
         }
@@ -262,6 +263,29 @@ class SettingsController
             'success' => $saved,
             'tasks'   => $tasks,
             'error'   => $saved ? null : 'Status could not be saved — check that storage/ is writable.',
+        ]);
+    }
+
+    // POST /settings/tasks/{id}/archive — flag the task as archived (move to archive section)
+    public function taskArchive(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id = (int)($params['id'] ?? 0);
+
+        $statuses = self::readStatuses();
+        $sid      = (string)$id;
+        $existing = $statuses[$sid] ?? [];
+        $statuses[$sid] = [
+            'status'      => $existing['status']      ?? 'done',
+            'note'        => $existing['note']        ?? null,
+            'resolved_at' => $existing['resolved_at'] ?? date('Y-m-d H:i:s'),
+            'archived'    => true,
+        ];
+        $saved = self::writeStatuses($statuses);
+        Response::json([
+            'success' => $saved,
+            'error'   => $saved ? null : 'Could not archive task — check that storage/ is writable.',
         ]);
     }
 
@@ -290,6 +314,7 @@ class SettingsController
                 'status'      => $t['status'],
                 'note'        => $t['note']        ?? null,
                 'resolved_at' => $t['resolved_at'] ?? null,
+                'archived'    => (bool)($t['archived'] ?? false),
             ];
         }
         unset($t);
@@ -306,7 +331,7 @@ class SettingsController
     {
         $this->requireAuth();
         $tasks = self::loadMergedTasks();
-        $done  = array_filter($tasks, fn($t) => ($t['status'] ?? '') === 'done');
+        $done  = array_filter($tasks, fn($t) => !empty($t['archived']));
         usort($done, fn($a, $b) => strcmp(
             $b['resolved_at'] ?? $b['created_at'] ?? '',
             $a['resolved_at'] ?? $a['created_at'] ?? ''
@@ -378,7 +403,22 @@ class SettingsController
         if (file_exists($path)) {
             $raw = file_get_contents($path);
             $arr = json_decode($raw, true);
-            if (is_array($arr)) return $arr;
+            if (is_array($arr)) {
+                // One-time backward-compat: pre-v3.1.45, "done" tasks were
+                // hidden from the active list automatically. Preserve that
+                // behavior for legacy entries by marking them archived.
+                $changed = false;
+                foreach ($arr as $sid => &$entry) {
+                    if (!is_array($entry)) continue;
+                    if (!array_key_exists('archived', $entry) && (($entry['status'] ?? '') === 'done')) {
+                        $entry['archived'] = true;
+                        $changed = true;
+                    }
+                }
+                unset($entry);
+                if ($changed) self::writeStatuses($arr);
+                return $arr;
+            }
         }
         // First-time bootstrap: migrate from any inline statuses still in
         // platform_tasks.json (so v3.1.39 → v3.1.40 upgrade preserves user data
@@ -392,6 +432,7 @@ class SettingsController
                 'status'      => $st,
                 'note'        => $t['note']        ?? null,
                 'resolved_at' => $t['resolved_at'] ?? null,
+                'archived'    => $st === 'done', // legacy: done == archived
             ];
         }
         self::writeStatuses($migrated);
@@ -422,6 +463,7 @@ class SettingsController
             $t['status']      = $s['status']      ?? ($t['status']      ?? 'empty');
             $t['note']        = $s['note']        ?? ($t['note']        ?? null);
             $t['resolved_at'] = $s['resolved_at'] ?? ($t['resolved_at'] ?? null);
+            $t['archived']    = (bool)($s['archived'] ?? false);
         }
         unset($t);
         return $tasks;

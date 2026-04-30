@@ -1,5 +1,11 @@
 [
   {
+    "id": 23,
+    "title": "Don't auto-archive on done; add explicit Archive button",
+    "description": "Clicking the status toggle ○ → ✅ Done immediately removed the row, so there was no way to keep cycling through error / trigger_ai. Done is now just a status; an explicit 📥 Archive button (visible on done rows only) moves the task to the archive section.",
+    "created_at": "2026-04-30 17:30:00"
+  },
+  {
     "id": 22,
     "title": "Status changes not saved after update",
     "description": "writeStatuses() never checked file_put_contents() return value, so a failed write (bad permissions, missing storage dir) would silently succeed. The UI updated optimistically but statuses reverted on reload. Fixed by returning bool from writeStatuses and propagating the error through the AJAX response.",
