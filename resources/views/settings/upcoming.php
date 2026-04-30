@@ -25,7 +25,6 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 .ptask-list { display:flex;flex-direction:column;gap:8px; }
 
 .ptask-row { display:flex;align-items:flex-start;gap:10px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:12px 14px;transition:opacity .2s; }
-.ptask-row--done { opacity:.45; }
 .ptask-row--trigger_ai { border-color:#d97706;background:rgba(217,119,6,.06); }
 
 .ptask-sel { width:16px;height:16px;margin-top:3px;flex-shrink:0;accent-color:var(--color-primary);cursor:pointer; }
@@ -35,14 +34,11 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 
 .ptask-body { flex:1;min-width:0; }
 .ptask-title { font-weight:700;font-size:.93rem;line-height:1.3;margin-bottom:3px; }
-.ptask-row--done .ptask-title { text-decoration:line-through;color:var(--color-text-muted); }
 .ptask-desc { font-size:.8rem;color:var(--color-text-muted);line-height:1.45; }
-.ptask-row--done .ptask-desc { text-decoration:line-through;color:var(--color-text-muted);opacity:.7; }
 .ptask-meta { display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap; }
 .ptask-date { font-size:.72rem;color:var(--color-text-muted); }
 .ptask-note { font-size:.72rem;color:#d97706;font-style:italic; }
 .ptask-badge { font-size:.68rem;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(217,119,6,.12);color:#d97706; }
-.ptask-badge--done { background:rgba(39,174,96,.12);color:#27ae60; }
 .ptask-badge--error { background:rgba(231,76,60,.12);color:#e74c3c; }
 .ptask-badge--empty { display:none; }
 
@@ -135,12 +131,22 @@ function fstepRowHtml(array $st): string {
 }
 ?>
 
+<?php
+$triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? '') === 'trigger_ai'));
+?>
 <div class="ptask-header">
   <div>
     <h1>Task Log</h1>
     <div class="ptask-subtitle">Every platform request, newest first. Click ○ to cycle status.</div>
   </div>
-  <a href="<?= url('/settings') ?>" class="btn btn-secondary btn-sm">&larr; Settings</a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" class="btn btn-secondary btn-sm" id="ptaskCopyAiBtn" onclick="ptaskCopyAi()"
+            style="display:<?= $triggerAiCount > 0 ? 'inline-flex' : 'none' ?>"
+            title="Copy all 🤖 Trigger AI tasks formatted for pasting into an AI conversation">
+      📋 Copy AI tasks (<span id="ptaskAiCount"><?= $triggerAiCount ?></span>)
+    </button>
+    <a href="<?= url('/settings') ?>" class="btn btn-secondary btn-sm">&larr; Settings</a>
+  </div>
 </div>
 
 <!-- Batch bar -->
@@ -219,6 +225,14 @@ function fstepRowHtml(array $st): string {
 
   function rowEl(id)  { return document.getElementById('ptask' + id); }
 
+  function updateAiCount() {
+    var n   = document.querySelectorAll('.ptask-row[data-status="trigger_ai"]').length;
+    var btn = document.getElementById('ptaskCopyAiBtn');
+    var lbl = document.getElementById('ptaskAiCount');
+    if (lbl) lbl.textContent = n;
+    if (btn) btn.style.display = n > 0 ? 'inline-flex' : 'none';
+  }
+
   function applyTask(t) {
     var row = rowEl(t.id);
     if (!row) return;
@@ -228,6 +242,7 @@ function fstepRowHtml(array $st): string {
       var countEl = document.getElementById('ptaskArchiveCount');
       if (countEl) countEl.textContent = parseInt(countEl.textContent || '0', 10) + 1;
       ptaskSelChanged();
+      updateAiCount();
       return;
     }
 
@@ -259,7 +274,38 @@ function fstepRowHtml(array $st): string {
       }
       noteEl.textContent = t.note;
     }
+    updateAiCount();
   }
+
+  window.ptaskCopyAi = function() {
+    var rows = document.querySelectorAll('.ptask-row[data-status="trigger_ai"]');
+    if (!rows.length) return;
+    var lines = [];
+    rows.forEach(function(row) {
+      var id    = row.dataset.id;
+      var title = (row.querySelector('.ptask-title') || {}).textContent || '';
+      var desc  = (row.querySelector('.ptask-desc')  || {}).textContent || '';
+      lines.push('TRIGGER AI — Task #' + id + ': ' + title.trim());
+      if (desc.trim()) lines.push(desc.trim());
+      lines.push('');
+    });
+    var text = lines.join('\n').trimEnd();
+    var done = function() {
+      var btn = document.getElementById('ptaskCopyAiBtn');
+      if (!btn) return;
+      var orig = btn.innerHTML;
+      btn.innerHTML = '✓ Copied';
+      setTimeout(function(){ btn.innerHTML = orig; }, 1500);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(done);
+    } else {
+      var t = document.createElement('textarea');
+      t.value = text; document.body.appendChild(t); t.select();
+      document.execCommand('copy'); document.body.removeChild(t);
+      done();
+    }
+  };
 
   window.ptaskCycle = function(id) {
     fetch(BASE + '/settings/tasks/' + id + '/status', {

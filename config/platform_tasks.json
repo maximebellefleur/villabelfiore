@@ -1,5 +1,17 @@
 [
   {
+    "id": 18,
+    "title": "Clean up legacy upcoming files and dead code",
+    "description": "Remove stale storage/platform_tasks.json and storage/future_steps.json (replaced by config/platform_tasks.json + storage on live server). Drop dead CSS for done badges/rows since done tasks never appear in the active list.",
+    "created_at": "2026-04-30 15:35:00"
+  },
+  {
+    "id": 17,
+    "title": "Copy AI tasks button on upcoming page",
+    "description": "Add a button to /settings/upcoming that copies all trigger_ai tasks (id, title, description) to clipboard in a paste-ready format. Visible only when trigger_ai count > 0.",
+    "created_at": "2026-04-30 15:30:00"
+  },
+  {
     "id": 16,
     "title": "Future steps section collapsed by default",
     "description": "The Future Steps box on the task log page should be minimized on load. Click the header to expand it. Shows a count badge when collapsed.",

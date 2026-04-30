@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.41' => [
+        'date'  => '2026-04-30',
+        'title' => 'Copy AI tasks button + cleanup',
+        'new' => [
+            '"📋 Copy AI tasks" button on the task log page. Visible only when at least one task is set to 🤖 Trigger AI. Click to copy all trigger_ai tasks formatted for pasting into any AI conversation: ID, title, and full description.',
+        ],
+        'improved' => [
+            'Removed legacy storage/platform_tasks.json and storage/future_steps.json (no longer used since the config/storage split).',
+            'Dropped dead CSS rules for .ptask-row--done / .ptask-badge--done (done tasks live in the archive section now, never rendered as task cards).',
+        ],
+    ],
+
     '3.1.40' => [
         'date'  => '2026-04-30',
         'title' => 'Task statuses moved to storage (upgrade-safe)',

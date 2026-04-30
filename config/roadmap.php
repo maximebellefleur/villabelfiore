@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.41' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Copy AI tasks + cleanup',
+        'features' => [
+            ['title' => 'Copy AI tasks button', 'detail' => 'Header button on the task log page copies all 🤖 Trigger AI tasks (id + title + description) to the clipboard, formatted for pasting into any AI conversation. Auto-hides when no trigger_ai tasks remain.'],
+            ['title' => 'Removed legacy upcoming files', 'detail' => 'Stale storage/platform_tasks.json and storage/future_steps.json deleted from the repo. Dead CSS for done-state rows and badges dropped — done tasks have lived in the archive section since v3.1.39.'],
+        ],
+    ],
+
     '3.1.40' => [
         'status'   => 'released',
         'released' => '2026-04-30',
