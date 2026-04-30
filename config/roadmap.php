@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.43' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Status toggle pinned right',
+        'features' => [
+            ['title' => 'Status toggle at far right', 'detail' => 'Batch select checkbox is left-most, status cycle button (○) is right-most on every task row. Enforced with margin-left:auto so it cannot shift left regardless of content.'],
+        ],
+    ],
+
     '3.1.42' => [
         'status'   => 'released',
         'released' => '2026-04-30',

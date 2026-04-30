@@ -27,9 +27,9 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 .ptask-row { display:flex;align-items:flex-start;gap:10px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:12px 14px;transition:opacity .2s; }
 .ptask-row--trigger_ai { border-color:#d97706;background:rgba(217,119,6,.06); }
 
-.ptask-sel { width:16px;height:16px;margin-top:3px;flex-shrink:0;accent-color:var(--color-primary);cursor:pointer; }
+.ptask-sel { width:16px;height:16px;flex-shrink:0;align-self:center;accent-color:var(--color-primary);cursor:pointer; }
 
-.ptask-toggle { background:none;border:none;padding:0 2px;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-top:1px;user-select:none;align-self:center; }
+.ptask-toggle { background:none;border:none;padding:0 4px;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-left:auto;user-select:none;align-self:center; }
 .ptask-toggle:focus { outline:none; }
 
 .ptask-body { flex:1;min-width:0; }

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.43' => [
+        'date'  => '2026-04-30',
+        'title' => 'Status toggle pinned to far right of task row',
+        'fixed' => [
+            'Status toggle (○) now guaranteed to be at the far right of each task card via margin-left:auto. Batch select checkbox stays left-most.',
+        ],
+    ],
+
     '3.1.42' => [
         'date'  => '2026-04-30',
         'title' => 'Login logo fix + future steps toggle',
