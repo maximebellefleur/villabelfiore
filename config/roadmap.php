@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.37' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Status ownership fix',
+        'features' => [
+            ['title' => 'User owns all task statuses', 'detail' => 'Claude no longer sets done/error on tasks. Status is managed exclusively by the user. Claude only resets trigger_ai to empty after processing.'],
+            ['title' => 'future_steps.json back to storage/', 'detail' => 'Future steps are user data — they live in storage/ and are never overwritten by an upgrade.'],
+        ],
+    ],
+
     '3.1.36' => [
         'status'   => 'released',
         'released' => '2026-04-30',

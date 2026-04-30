@@ -318,7 +318,7 @@ class SettingsController
 
     private static function stepsPath(): string
     {
-        return BASE_PATH . '/config/future_steps.json';
+        return STORAGE_PATH . '/future_steps.json';
     }
 
     public static function readSteps(): array

@@ -15,16 +15,22 @@
    - `id`: next integer (max existing id + 1)
    - `title`: 5–8 words summarising the request
    - `description`: 2 sentences max — what + why
-   - `status`: `"empty"`
+   - `status`: `"empty"` — ALWAYS empty on creation, NEVER set to anything else
    - `note`: `null`
    - `created_at`: current datetime `"YYYY-MM-DD HH:MM:SS"`
    - `resolved_at`: `null`
 2. Tell the user the task ID: e.g. **Task #12 logged.**
-3. Update `status` to `"done"` and set `resolved_at` once the work is committed.
+
+**Status rules — critical**:
+- Claude NEVER changes a task's status except for one case: when a `trigger_ai` task has been processed, set it back to `"empty"` and add a note like `"Triggered to AI on Apr 30 at 12:34"`.
+- All other status changes (empty → done, done, error, trigger_ai) are managed exclusively by the user through the web UI.
+- Never set `status: "done"` when committing work. Leave it `"empty"`.
+
+**Data separation**:
+- `config/platform_tasks.json` — task definitions written by Claude, deployed via upgrade ZIP
+- `storage/future_steps.json` — user-only data, NOT in upgrade ZIP, never touched by Claude
 
 **Do NOT log**: messages without a `(ZONE)` prefix, operational commands ("commit and push"), clarifications, or general conversation.
-
-**Files live in `config/`** (not `storage/`) so they are included in the upgrade ZIP and deployed to the live site on each upgrade.
 
 ## End-of-Session Release Checklist
 

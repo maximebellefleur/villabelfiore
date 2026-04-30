@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.37' => [
+        'date'  => '2026-04-30',
+        'title' => 'Fix status ownership, future_steps back to storage',
+        'fixed' => [
+            'future_steps.json moved back to storage/ — it is user data and must not be overwritten by upgrades. The previous commit incorrectly placed it in config/.',
+            'All task statuses reset to empty — status management belongs to the user only. Claude no longer sets done/error/trigger_ai on any task.',
+        ],
+    ],
+
     '3.1.36' => [
         'date'  => '2026-04-30',
         'title' => 'Task log deployed via upgrade ZIP',
