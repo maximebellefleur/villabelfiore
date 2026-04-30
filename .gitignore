@@ -38,3 +38,7 @@ Thumbs.db
 # Install lock
 storage/installed.lock
 
+# User-only data (never deployed via upgrade ZIP)
+storage/task_statuses.json
+storage/future_steps.json
+

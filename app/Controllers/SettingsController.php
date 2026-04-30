@@ -217,8 +217,8 @@ class SettingsController
     public function upcoming(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $tasks = self::readTasks();
-        usort($tasks, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
+        $tasks = self::loadMergedTasks();
+        usort($tasks, fn($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
         $steps = self::readSteps();
         usort($steps, fn($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
         Response::render('settings/upcoming', ['title' => 'Task Log', 'tasks' => $tasks, 'steps' => $steps]);
@@ -233,24 +233,31 @@ class SettingsController
         $status = $request->post('status', '');
         $note   = trim($request->post('note', ''));
 
-        $tasks  = self::readTasks();
-        $cycle  = ['empty', 'done', 'error', 'trigger_ai'];
+        $tasks    = self::loadMergedTasks();
+        $statuses = self::readStatuses();
+        $cycle    = ['empty', 'done', 'error', 'trigger_ai'];
         foreach ($tasks as &$t) {
             if ((int)$t['id'] !== $id) continue;
             if ($status && in_array($status, $cycle, true)) {
                 $t['status'] = $status;
             } else {
-                $cur = array_search($t['status'], $cycle, true);
+                $cur = array_search($t['status'] ?? 'empty', $cycle, true);
+                if ($cur === false) $cur = 0;
                 $t['status'] = $cycle[($cur + 1) % count($cycle)];
             }
             if ($note !== '') $t['note'] = $note;
             if ($t['status'] === 'done' && empty($t['resolved_at'])) {
                 $t['resolved_at'] = date('Y-m-d H:i:s');
             }
+            $statuses[(string)$id] = [
+                'status'      => $t['status'],
+                'note'        => $t['note']        ?? null,
+                'resolved_at' => $t['resolved_at'] ?? null,
+            ];
             break;
         }
         unset($t);
-        self::writeTasks($tasks);
+        self::writeStatuses($statuses);
         Response::json(['success' => true, 'tasks' => $tasks]);
     }
 
@@ -266,17 +273,23 @@ class SettingsController
         if (!in_array($status, $cycle, true) || empty($ids)) {
             Response::json(['success' => false, 'error' => 'Invalid']); return;
         }
-        $tasks = self::readTasks();
-        $idSet = array_flip(array_map('intval', $ids));
+        $tasks    = self::loadMergedTasks();
+        $statuses = self::readStatuses();
+        $idSet    = array_flip(array_map('intval', $ids));
         foreach ($tasks as &$t) {
             if (!isset($idSet[(int)$t['id']])) continue;
             $t['status'] = $status;
             if ($status === 'done' && empty($t['resolved_at'])) {
                 $t['resolved_at'] = date('Y-m-d H:i:s');
             }
+            $statuses[(string)$t['id']] = [
+                'status'      => $t['status'],
+                'note'        => $t['note']        ?? null,
+                'resolved_at' => $t['resolved_at'] ?? null,
+            ];
         }
         unset($t);
-        self::writeTasks($tasks);
+        self::writeStatuses($statuses);
         Response::json(['success' => true, 'tasks' => $tasks]);
     }
 
@@ -284,7 +297,7 @@ class SettingsController
     public function taskArchiveDownload(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $tasks = self::readTasks();
+        $tasks = self::loadMergedTasks();
         $done  = array_filter($tasks, fn($t) => ($t['status'] ?? '') === 'done');
         usort($done, fn($a, $b) => strcmp(
             $b['resolved_at'] ?? $b['created_at'] ?? '',
@@ -339,12 +352,69 @@ class SettingsController
             'id'          => $maxId + 1,
             'title'       => $title,
             'description' => $description,
-            'status'      => 'empty',
-            'note'        => null,
             'created_at'  => date('Y-m-d H:i:s'),
-            'resolved_at' => null,
         ];
         self::writeTasks($tasks);
+    }
+
+    // ── Task statuses (user-only, never deployed via upgrade ZIP) ────────────
+
+    private static function statusesPath(): string
+    {
+        return STORAGE_PATH . '/task_statuses.json';
+    }
+
+    public static function readStatuses(): array
+    {
+        $path = self::statusesPath();
+        if (file_exists($path)) {
+            $raw = file_get_contents($path);
+            $arr = json_decode($raw, true);
+            if (is_array($arr)) return $arr;
+        }
+        // First-time bootstrap: migrate from any inline statuses still in
+        // platform_tasks.json (so v3.1.39 → v3.1.40 upgrade preserves user data
+        // even before UpgradeController hook runs).
+        $migrated = [];
+        foreach (self::readTasks() as $t) {
+            if (!isset($t['status'])) continue;
+            $st = (string)$t['status'];
+            if ($st === '' || $st === 'empty') continue;
+            $migrated[(string)$t['id']] = [
+                'status'      => $st,
+                'note'        => $t['note']        ?? null,
+                'resolved_at' => $t['resolved_at'] ?? null,
+            ];
+        }
+        self::writeStatuses($migrated);
+        return $migrated;
+    }
+
+    public static function writeStatuses(array $statuses): void
+    {
+        $path = self::statusesPath();
+        $dir  = dirname($path);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        file_put_contents($path, json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
+
+    /**
+     * Read tasks (definitions) and overlay user statuses from storage.
+     * Statuses always win over any inline status field in platform_tasks.json.
+     */
+    public static function loadMergedTasks(): array
+    {
+        $tasks    = self::readTasks();
+        $statuses = self::readStatuses();
+        foreach ($tasks as &$t) {
+            $sid = (string)$t['id'];
+            $s   = $statuses[$sid] ?? [];
+            $t['status']      = $s['status']      ?? ($t['status']      ?? 'empty');
+            $t['note']        = $s['note']        ?? ($t['note']        ?? null);
+            $t['resolved_at'] = $s['resolved_at'] ?? ($t['resolved_at'] ?? null);
+        }
+        unset($t);
+        return $tasks;
     }
 
     // ── Future steps ─────────────────────────────────────────────────────────

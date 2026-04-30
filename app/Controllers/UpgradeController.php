@@ -253,6 +253,11 @@ class UpgradeController
         $defaults       = require BASE_PATH . '/config/defaults.php';
         $currentVersion = $defaults['version'] ?? '1.0.0';
 
+        // Migration: preserve task statuses before platform_tasks.json gets
+        // overwritten. From v3.1.40 onward, statuses live in
+        // storage/task_statuses.json (user data, never in upgrade ZIP).
+        $this->migrateTaskStatuses();
+
         $extracted = [];
         $skipped   = [];
 
@@ -307,6 +312,37 @@ class UpgradeController
         ];
 
         return ['success' => true, 'new_version' => $newVersion, 'extracted' => count($extracted)];
+    }
+
+    /**
+     * One-shot migration: extract any inline task statuses from the live
+     * config/platform_tasks.json and persist them to storage/task_statuses.json
+     * BEFORE the upgrade ZIP overwrites the tasks file. Idempotent.
+     */
+    private function migrateTaskStatuses(): void
+    {
+        $statusesFile = STORAGE_PATH . '/task_statuses.json';
+        if (file_exists($statusesFile)) return; // already migrated
+
+        $tasksFile = BASE_PATH . '/config/platform_tasks.json';
+        if (!file_exists($tasksFile)) return;
+
+        $tasks = json_decode((string)file_get_contents($tasksFile), true) ?: [];
+        $out   = [];
+        foreach ($tasks as $t) {
+            if (!isset($t['id'], $t['status'])) continue;
+            $st = (string)$t['status'];
+            if ($st === '' || $st === 'empty') continue;
+            $out[(string)$t['id']] = [
+                'status'      => $st,
+                'note'        => $t['note']        ?? null,
+                'resolved_at' => $t['resolved_at'] ?? null,
+            ];
+        }
+
+        $dir = dirname($statusesFile);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        @file_put_contents($statusesFile, json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
     }
 
     private function isProtected(string $zipPath): bool

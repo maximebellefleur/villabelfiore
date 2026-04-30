@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.40' => [
+        'date'  => '2026-04-30',
+        'title' => 'Task statuses moved to storage (upgrade-safe)',
+        'fixed' => [
+            'Task statuses are no longer wiped by upgrades. Status/note/resolved_at now live in storage/task_statuses.json (user data, never in upgrade ZIP). config/platform_tasks.json holds only task definitions (id, title, description, created_at) and gets deployed cleanly.',
+        ],
+        'new' => [
+            'One-shot migration on upgrade: existing inline statuses in platform_tasks.json are automatically captured into storage/task_statuses.json before the new file is extracted. No manual re-ticking needed.',
+        ],
+    ],
+
     '3.1.39' => [
         'date'  => '2026-04-30',
         'title' => 'Task log archive + future steps collapse',

@@ -2,33 +2,30 @@
 
 ## Session Start Protocol (ALWAYS do this first)
 
-1. **Read `storage/platform_tasks.json`** and look for any tasks with `"status": "trigger_ai"`.
-2. If any exist, treat them as highest priority — resolve them before the user's current request.
-3. After resolving a trigger_ai task, update its status to `"empty"` in the JSON and set its `"note"` to e.g. `"Triggered to AI on Apr 30 at 12:34"`.
+Task statuses live exclusively in `storage/task_statuses.json` on the user's live server — that file is NOT in the repo and Claude has no access to it. There is no local trigger_ai check to run. Just proceed with the user's current request.
 
 ## Task Logging Protocol
 
 **Rule**: if the user's message starts with `(ZONE)` — e.g. `(GARDEN) fix layout`, `(SEEDS) add notes` — always log it as a task. No judgment, no exceptions. The user controls what gets logged by choosing to use the `(ZONE)` prefix.
 
 **Steps**:
-1. Edit `config/platform_tasks.json` — append a new object with:
+1. Edit `config/platform_tasks.json` — append a new object with **only** these fields:
    - `id`: next integer (max existing id + 1)
    - `title`: 5–8 words summarising the request
    - `description`: 2 sentences max — what + why
-   - `status`: `"empty"` — ALWAYS empty on creation, NEVER set to anything else
-   - `note`: `null`
    - `created_at`: current datetime `"YYYY-MM-DD HH:MM:SS"`
-   - `resolved_at`: `null`
+
+   Do NOT include `status`, `note`, or `resolved_at` — those live in `storage/task_statuses.json` (user data, not in repo).
 2. Tell the user the task ID: e.g. **Task #12 logged.**
 
 **Status rules — critical**:
-- Claude NEVER changes a task's status except for one case: when a `trigger_ai` task has been processed, set it back to `"empty"` and add a note like `"Triggered to AI on Apr 30 at 12:34"`.
-- All other status changes (empty → done, done, error, trigger_ai) are managed exclusively by the user through the web UI.
-- Never set `status: "done"` when committing work. Leave it `"empty"`.
+- Status, note, and resolved_at are owned by the user and live exclusively in `storage/task_statuses.json` on the live server. Claude has no access to that file and never writes status data anywhere.
+- The user manages all status changes (empty → done → error → trigger_ai → empty) via the web UI on `/settings/upcoming`.
 
 **Data separation**:
-- `config/platform_tasks.json` — task definitions written by Claude, deployed via upgrade ZIP
-- `storage/future_steps.json` — user-only data, NOT in upgrade ZIP, never touched by Claude
+- `config/platform_tasks.json` — task definitions only (id/title/description/created_at). Deployed via upgrade ZIP.
+- `storage/task_statuses.json` — user-only status/note/resolved_at keyed by task id. NOT in upgrade ZIP. Never touched by Claude.
+- `storage/future_steps.json` — user-only data, NOT in upgrade ZIP. Never touched by Claude.
 
 **Do NOT log**: messages without a `(ZONE)` prefix, operational commands ("commit and push"), clarifications, or general conversation.
 

@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.40' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Task statuses upgrade-safe',
+        'features' => [
+            ['title' => 'Statuses survive every upgrade', 'detail' => 'Task status/note/resolved_at moved out of config/platform_tasks.json (which gets overwritten on upgrade) and into storage/task_statuses.json (user-only file, never in the upgrade ZIP). The split mirrors how future_steps.json works.'],
+            ['title' => 'Automatic migration on upgrade', 'detail' => 'When v3.1.40 is applied, the UpgradeController captures any inline statuses from the live tasks file into the new storage file before extraction overwrites it. Existing done/error/trigger_ai marks are preserved.'],
+        ],
+    ],
+
     '3.1.39' => [
         'status'   => 'released',
         'released' => '2026-04-30',

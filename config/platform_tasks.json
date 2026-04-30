@@ -3,144 +3,96 @@
     "id": 16,
     "title": "Future steps section collapsed by default",
     "description": "The Future Steps box on the task log page should be minimized on load. Click the header to expand it. Shows a count badge when collapsed.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 15:20:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 15:20:00"
   },
   {
     "id": 15,
     "title": "Task log: right-align status, archive section",
     "description": "Status toggle button moved to far right of each task card. Done tasks removed from main list and moved to a collapsed archive section with a .txt download only.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 15:10:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 15:10:00"
   },
   {
     "id": 14,
     "title": "Harvest tracking per seed per year",
     "description": "When a line is harvested, log the plant count to seed_harvest_log (seed_id, bed_id, plant_count, harvested_on). Family needs shows harvest totals for the current year and 2 previous years.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 14:00:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 14:00:00"
   },
   {
     "id": 13,
     "title": "Seed in-ground count via bed write triggers",
     "description": "Pre-calculated seed_ground_cache table updated on every bed write (plant, trash, harvest, adjust, config change). Family needs reads from cache instead of live query to fix count accuracy.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 14:00:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 14:00:00"
   },
   {
     "id": 12,
     "title": "Future steps must stay in storage, not config",
     "description": "future_steps.json is user-only data and must live in storage/ so upgrades never wipe it. Moving it to config/ caused user's steps to be deleted on upgrade.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 13:05:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 13:05:00"
   },
   {
     "id": 11,
     "title": "Claude must never set task status except trigger_ai",
     "description": "Status (done, error, trigger_ai, empty) is managed exclusively by the user. Claude may only change trigger_ai back to empty after processing. Never auto-set done on commit.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 13:04:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 13:04:00"
   },
   {
     "id": 10,
     "title": "Task log: (ZONE) prefix rule + config deploy fix",
     "description": "Tasks were not appearing on live site because platform_tasks.json was in storage/ (excluded from ZIP). Moved to config/. New rule: any message starting with (ZONE) is always logged.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 12:55:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 12:55:00"
   },
   {
     "id": 9,
     "title": "Future steps: edit button + disable Enter key",
     "description": "Add an Edit button to each future step card that reopens the step in the top textarea. Disable Enter-to-submit (multi-line field only in this section). Cancel button resets the form.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 12:45:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 12:45:00"
   },
   {
     "id": 8,
     "title": "Family needs: phantom line count bug fix",
     "description": "Reducing bed lines (e.g. 3 to 1) left orphan growing records on removed lines that inflated plant counts in family needs. Fixed by filtering seedGroundStats to only count lines within the current bed_rows setting.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 12:35:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 12:35:00"
   },
   {
     "id": 7,
     "title": "Upcoming page: future steps box with zones",
     "description": "Add a separate Future Steps section at the top of Settings Task Log. Supports (ZONE) targeting, multi-line input, drag-to-reorder, copy content, and delete per item.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 12:15:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 12:15:00"
   },
   {
     "id": 6,
     "title": "Family needs: multi-seed linked selection",
     "description": "The Linked Seed field on Add Yearly Need should allow selecting multiple seeds. When you have several carrot varieties, any of them should satisfy the need.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 12:05:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 12:05:00"
   },
   {
     "id": 5,
     "title": "Redesign upcoming page as live task tracker",
     "description": "Replace version-based roadmap with a request-driven task log stored in platform_tasks.json. Status cycles empty to done to error to trigger_ai.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 11:55:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 11:55:00"
   },
   {
     "id": 4,
     "title": "App icon on login page",
     "description": "Add the Rooted app icon above the Sign In heading on the auth login page. Centred with rounded corners and soft shadow.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 11:50:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 11:50:00"
   },
   {
     "id": 3,
     "title": "Garden bed drag-to-reorder within a garden",
     "description": "Add a drag handle to each bed row so beds can be reordered per garden. Order saved via AJAX to items.sort_order and persists across page loads.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 11:30:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 11:30:00"
   },
   {
     "id": 2,
     "title": "Action log reminder INSERT non-fatal",
     "description": "Wrap the reminder INSERT in addAction() with try/catch so a reminder schema failure can never crash the whole log request.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 11:00:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 11:00:00"
   },
   {
     "id": 1,
     "title": "Garden bed reordering + action log fix",
     "description": "Beds within a garden can be drag-reordered via sort_order on items. Action log reminder INSERT wrapped in try/catch so the log always saves even if reminder fails.",
-    "status": "empty",
-    "note": null,
-    "created_at": "2026-04-30 11:35:00",
-    "resolved_at": null
+    "created_at": "2026-04-30 11:35:00"
   }
 ]
