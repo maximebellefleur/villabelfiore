@@ -224,12 +224,14 @@ class SeedController
 
         $data = $this->extractSeedData($request);
 
+        $gardenerNote = trim($request->post('gardener_note', '')) ?: null;
         $db->execute(
             "UPDATE seeds SET name=?, variety=?, botanical_family=?, type=?, sowing_type=?,
              days_to_germinate=?, days_to_maturity=?, spacing_cm=?, row_spacing_cm=?, sowing_depth_mm=?,
              sun_exposure=?, soil_notes=?, planting_months=?, harvest_months=?, frost_hardy=?,
              companions=?, antagonists=?, yield_per_plant_kg=?,
-             stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?, color=?
+             stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?, color=?,
+             gardener_note=?
              WHERE id=?",
             [
                 $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
@@ -240,6 +242,7 @@ class SeedController
                 $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
                 $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
                 $data['stock_enabled'], $data['notes'], $data['color'],
+                $gardenerNote,
                 $id,
             ]
         );
@@ -464,5 +467,22 @@ class SeedController
                 return preg_match('/^#[0-9a-fA-F]{6}$/', $c) ? strtolower($c) : null;
             })(),
         ];
+    }
+
+    /** AJAX: save gardener's personal note for a seed inline. */
+    public function saveGardenerNote(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id   = (int)($params['id'] ?? 0);
+        $note = trim($request->post('note', ''));
+        $db   = DB::getInstance();
+        $this->ensureTables($db);
+        try {
+            $db->execute("UPDATE seeds SET gardener_note = ?, updated_at = NOW() WHERE id = ?", [$note ?: null, $id]);
+            Response::json(['success' => true, 'note' => $note]);
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 }

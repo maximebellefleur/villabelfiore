@@ -98,6 +98,32 @@ $needsRestock = !empty($seed['needs_restock']);
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Gardener's Note — always visible, inline editable -->
+        <div class="card" id="rgGardenerCard">
+            <div class="card-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div class="settings-group-title" style="margin:0">✏️ Gardener's Note</div>
+                    <button type="button" id="rgNoteEditBtn" onclick="rgNoteStartEdit()" style="background:none;border:none;font-size:.78rem;color:var(--color-primary);cursor:pointer;font-weight:600;padding:2px 6px">Edit</button>
+                </div>
+                <!-- Read view -->
+                <div id="rgNoteView">
+                    <?php if (!empty($seed['gardener_note'])): ?>
+                    <p id="rgNoteText" class="text-sm" style="white-space:pre-line;margin:0;color:var(--color-text)"><?= e($seed['gardener_note']) ?></p>
+                    <?php else: ?>
+                    <p id="rgNoteText" class="text-sm" style="margin:0;color:var(--color-text-muted);font-style:italic">Tap <strong>Edit</strong> to add your personal note — variety source, growing tips, observations…</p>
+                    <?php endif; ?>
+                </div>
+                <!-- Edit view -->
+                <div id="rgNoteEdit" style="display:none">
+                    <textarea id="rgNoteInput" rows="4" class="form-input" style="width:100%;font-size:.88rem;resize:vertical;margin-bottom:8px;box-sizing:border-box" placeholder="Your personal observations, seed source, growing tips…"><?= e($seed['gardener_note'] ?? '') ?></textarea>
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <button type="button" onclick="rgNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
+                        <button type="button" id="rgNoteSaveBtn" onclick="rgNoteSave()" class="btn btn-primary btn-sm">Save note</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Right column (moves to top on mobile) -->
@@ -165,6 +191,66 @@ $needsRestock = !empty($seed['needs_restock']);
     </div>
 
 </div>
+
+<!-- ===== Gardener's Note inline edit ===== -->
+<script>
+(function () {
+    var _origNote = <?= json_encode($seed['gardener_note'] ?? '') ?>;
+    function rgNoteStartEdit() {
+        document.getElementById('rgNoteView').style.display = 'none';
+        document.getElementById('rgNoteEditBtn').style.display = 'none';
+        document.getElementById('rgNoteEdit').style.display = 'block';
+        document.getElementById('rgNoteInput').focus();
+    }
+    function rgNoteCancel() {
+        document.getElementById('rgNoteInput').value = _origNote;
+        document.getElementById('rgNoteEdit').style.display = 'none';
+        document.getElementById('rgNoteView').style.display = 'block';
+        document.getElementById('rgNoteEditBtn').style.display = '';
+    }
+    function rgNoteSave() {
+        var note = document.getElementById('rgNoteInput').value;
+        var btn  = document.getElementById('rgNoteSaveBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
+        $.post('<?= url('/seeds/' . (int)$seed['id'] . '/gardener-note') ?>', {
+            _token: '<?= e(\App\Support\CSRF::getToken()) ?>',
+            note: note
+        }).done(function (d) {
+            if (d && d.success) {
+                _origNote = note;
+                var el = document.getElementById('rgNoteText');
+                if (note) {
+                    el.style.fontStyle = 'normal';
+                    el.style.color = 'var(--color-text)';
+                    el.textContent = note;
+                } else {
+                    el.style.fontStyle = 'italic';
+                    el.style.color = 'var(--color-text-muted)';
+                    el.innerHTML = 'Tap <strong>Edit</strong> to add your personal note — variety source, growing tips, observations…';
+                }
+                rgNoteCancel();
+            } else {
+                btn.disabled = false; btn.textContent = 'Save note';
+                alert((d && d.error) ? d.error : 'Could not save — please try again.');
+            }
+        }).fail(function () {
+            btn.disabled = false; btn.textContent = 'Save note';
+            alert('Network error — please try again.');
+        });
+    }
+    // expose so onclick attrs work
+    window.rgNoteStartEdit = rgNoteStartEdit;
+    window.rgNoteCancel    = rgNoteCancel;
+    window.rgNoteSave      = rgNoteSave;
+
+    // Double-tap on note view to start edit (mobile-friendly)
+    var _tapTimer = null;
+    document.getElementById('rgNoteView').addEventListener('click', function () {
+        if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; rgNoteStartEdit(); }
+        else { _tapTimer = setTimeout(function () { _tapTimer = null; }, 300); }
+    });
+}());
+</script>
 
 <!-- ===== Add to Garden Bed modal ===== -->
 <div id="rgAddBedModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);align-items:flex-end;justify-content:center">

@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.29' => [
+        'date'  => '2026-04-30',
+        'title' => 'Gardener\'s Note on seeds, color picker, color backfill',
+        'new' => [
+            'Gardener\'s Note: every seed now has a personal note field — visible on the seed info page, editable inline with a single tap (double-tap on mobile). Also saved through the edit form. Stored in a new gardener_note column, auto-migrated.',
+        ],
+        'improved' => [
+            'Seed color picker: replaced native OS color dialog with a curated 30-color circular swatch panel. Tap the color circle → pick a swatch → done. Custom hex input also available.',
+            'Seed catalog colors: seeds with no saved color now display the same computed color in the list as in the edit form. Schema migration backfills all NULL colors on upgrade.',
+        ],
+        'fixed' => [
+            'Sync sow dates not persisting on older installs: planted_at and updated_at columns ensured before the UPDATE runs; 3-tier column fallback added.',
+        ],
+    ],
+
     '3.1.28' => [
         'date'  => '2026-04-30',
         'title' => 'Color picker swatches, seed color backfill, sync fix',

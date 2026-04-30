@@ -461,6 +461,10 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
     <div class="form-group">
         <textarea name="notes" id="fNotes" class="form-input" rows="4" placeholder="Extra growing tips, provenance, supplier…"><?= e($seed['notes'] ?? '') ?></textarea>
     </div>
+    <div class="form-group" style="margin-top:var(--spacing-3)">
+        <label class="form-label">✏️ Gardener's Note <small class="text-muted" style="font-weight:400">(personal observations, source, tips)</small></label>
+        <textarea name="gardener_note" id="fGardenerNote" class="form-input" rows="3" placeholder="Your own notes — where you got the seeds, personal observations, variety performance…"><?= e($seed['gardener_note'] ?? '') ?></textarea>
+    </div>
 </fieldset>
 
 <!-- ── WAF-safe form submit: normalize Unicode punctuation to ASCII ──────── -->

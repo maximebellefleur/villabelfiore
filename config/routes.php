@@ -202,8 +202,9 @@ $router->get('/seeds/{id}/edit',          'SeedController@edit');
 $router->post('/seeds/{id}/update',       'SeedController@update');
 $router->post('/seeds/{id}/trash',        'SeedController@trash');
 $router->post('/seeds/{id}/stock',        'SeedController@adjustStock');
-$router->post('/seeds/{id}/toggle-restock', 'SeedController@toggleRestock');
-$router->post('/seeds/{id}/mark-bought',    'SeedController@markBought');
+$router->post('/seeds/{id}/toggle-restock',   'SeedController@toggleRestock');
+$router->post('/seeds/{id}/mark-bought',      'SeedController@markBought');
+$router->post('/seeds/{id}/gardener-note',    'SeedController@saveGardenerNote');
 $router->post('/family-needs/{id}/update','SeedController@updateFamilyNeed');
 $router->post('/family-needs/{id}/trash', 'SeedController@trashFamilyNeed');
 

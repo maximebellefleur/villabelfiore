@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.29' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Gardener\'s Note, color picker, seed color fix',
+        'features' => [
+            ['title' => 'Gardener\'s Note on seed info page', 'detail' => 'Personal note field on every seed — shows below the Notes section, always visible. Tap Edit (or double-tap the note area on mobile) to edit inline without leaving the page. Also accessible from the seed edit form. Saved via AJAX, no page reload.'],
+            ['title' => '30-color swatch picker', 'detail' => 'Seed edit form now has a circular color preview button. Tapping opens a slide-up panel with 30 curated earthy/garden colors plus a custom hex input.'],
+            ['title' => 'Seed color consistency fix', 'detail' => 'Catalog list now uses the same computed default as the edit form. Schema migration backfills all NULL color seeds on upgrade.'],
+        ],
+    ],
+
     '3.1.28' => [
         'status'   => 'released',
         'released' => '2026-04-30',
