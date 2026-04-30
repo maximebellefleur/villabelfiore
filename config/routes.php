@@ -146,6 +146,7 @@ $router->post('/settings/future-steps',               'SettingsController@addFut
 $router->post('/settings/future-steps/{id}/update',   'SettingsController@updateFutureStep');
 $router->post('/settings/future-steps/{id}/delete',   'SettingsController@deleteFutureStep');
 $router->post('/settings/future-steps/reorder',       'SettingsController@reorderFutureSteps');
+$router->get('/settings/tasks/archive/download',      'SettingsController@taskArchiveDownload');
 $router->get('/settings/pwa',                  'PwaController@pwa');
 $router->post('/settings/pwa',                 'PwaController@updatePwa');
 $router->post('/settings/pwa/upload-icon',     'PwaController@uploadIcon');

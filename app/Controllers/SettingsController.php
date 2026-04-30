@@ -280,6 +280,39 @@ class SettingsController
         Response::json(['success' => true, 'tasks' => $tasks]);
     }
 
+    // GET /settings/tasks/archive/download
+    public function taskArchiveDownload(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $tasks = self::readTasks();
+        $done  = array_filter($tasks, fn($t) => ($t['status'] ?? '') === 'done');
+        usort($done, fn($a, $b) => strcmp(
+            $b['resolved_at'] ?? $b['created_at'] ?? '',
+            $a['resolved_at'] ?? $a['created_at'] ?? ''
+        ));
+        $lines = [
+            'ROOTED — Archived Tasks',
+            'Generated: ' . date('Y-m-d H:i'),
+            str_repeat('=', 50),
+            '',
+        ];
+        foreach ($done as $t) {
+            $lines[] = '#' . $t['id'] . ' — ' . ($t['title'] ?? '');
+            if (!empty($t['description'])) $lines[] = $t['description'];
+            $lines[] = 'Created:   ' . ($t['created_at'] ?? '');
+            if (!empty($t['resolved_at'])) $lines[] = 'Completed: ' . $t['resolved_at'];
+            if (!empty($t['note'])) $lines[] = 'Note: ' . $t['note'];
+            $lines[] = str_repeat('-', 40);
+            $lines[] = '';
+        }
+        if (empty($done)) $lines[] = 'No archived tasks.';
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Content-Disposition: attachment; filename="rooted-archived-tasks.txt"');
+        header('Cache-Control: no-cache');
+        echo implode("\n", $lines);
+        exit;
+    }
+
     private static function tasksPath(): string
     {
         return BASE_PATH . '/config/platform_tasks.json';

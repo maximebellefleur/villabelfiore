@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.39' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Task log archive + collapsible future steps',
+        'features' => [
+            ['title' => 'Done tasks archived automatically', 'detail' => 'When a task is set to done it disappears from the main list and increments the archive count. The archive section is collapsed by default; open it to download a .txt file of all completed tasks.'],
+            ['title' => 'Future steps collapsed by default', 'detail' => 'The Future Steps section loads minimized. Click the header to expand. A count badge shows how many steps exist without opening the section.'],
+            ['title' => 'Status toggle on far right', 'detail' => 'The ○/✅/❌/🤖 cycle button is now at the right edge of each task card.'],
+        ],
+    ],
+
     '3.1.38' => [
         'status'   => 'released',
         'released' => '2026-04-30',

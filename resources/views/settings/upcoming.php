@@ -9,6 +9,9 @@ $statusCfg = [
     'error'      => ['icon' => '❌', 'label' => 'Error',      'color' => 'var(--color-danger,#e74c3c)',  'bg' => 'rgba(231,76,60,.05)'],
     'trigger_ai' => ['icon' => '🤖', 'label' => 'Trigger AI', 'color' => '#d97706',                     'bg' => 'rgba(217,119,6,.07)'],
 ];
+
+$activeTasks   = array_values(array_filter($tasks ?? [], fn($t) => ($t['status'] ?? 'empty') !== 'done'));
+$archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status'] ?? 'empty') === 'done'));
 ?>
 <style>
 .ptask-header { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:var(--spacing-5); }
@@ -27,7 +30,7 @@ $statusCfg = [
 
 .ptask-sel { width:16px;height:16px;margin-top:3px;flex-shrink:0;accent-color:var(--color-primary);cursor:pointer; }
 
-.ptask-toggle { background:none;border:none;padding:0;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-top:1px;user-select:none; }
+.ptask-toggle { background:none;border:none;padding:0 2px;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-top:1px;user-select:none;align-self:center; }
 .ptask-toggle:focus { outline:none; }
 
 .ptask-body { flex:1;min-width:0; }
@@ -43,10 +46,28 @@ $statusCfg = [
 .ptask-badge--error { background:rgba(231,76,60,.12);color:#e74c3c; }
 .ptask-badge--empty { display:none; }
 
+/* Archive section */
+.ptask-archive { margin-top:20px;border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden; }
+.ptask-archive-header { display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;background:var(--color-surface-raised);user-select:none; }
+.ptask-archive-header:hover { background:var(--color-surface); }
+.ptask-archive-chevron { font-size:.75rem;color:var(--color-text-muted);transition:transform .18s;flex-shrink:0; }
+.ptask-archive-chevron.open { transform:rotate(90deg); }
+.ptask-archive-label { font-size:.82rem;font-weight:700;color:var(--color-text-muted);flex:1; }
+.ptask-archive-count { font-size:.75rem;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border);border-radius:999px;padding:1px 9px; }
+.ptask-archive-body { display:none;padding:16px;border-top:1px solid var(--color-border); }
+.ptask-archive-body.open { display:block; }
+
 /* Future steps */
-.fstep-section { background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;margin-bottom:var(--spacing-5); }
-.fstep-section-title { font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:10px; }
-.fstep-add { display:flex;flex-direction:column;gap:8px;margin-bottom:14px; }
+.fstep-section { background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:var(--spacing-5);overflow:hidden; }
+.fstep-section-header { display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;user-select:none; }
+.fstep-section-header:hover { background:var(--color-surface); }
+.fstep-section-chevron { font-size:.75rem;color:var(--color-text-muted);transition:transform .18s;flex-shrink:0; }
+.fstep-section-chevron.open { transform:rotate(90deg); }
+.fstep-section-title { font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);flex:1; }
+.fstep-section-count { font-size:.75rem;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border);border-radius:999px;padding:1px 9px; }
+.fstep-section-body { display:none;padding:0 16px 16px; }
+.fstep-section-body.open { display:block; }
+.fstep-add { display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding-top:4px; }
 .fstep-textarea { width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:.85rem;line-height:1.5;resize:vertical;min-height:72px;font-family:inherit;background:var(--color-surface);color:var(--color-text) }
 .fstep-textarea:focus { outline:2px solid var(--color-primary);border-color:transparent }
 .fstep-hint { font-size:.72rem;color:var(--color-text-muted) }
@@ -67,25 +88,33 @@ $statusCfg = [
 
 <!-- ── Future Steps ─────────────────────────────────────────────── -->
 <div class="fstep-section">
-  <div class="fstep-section-title">📌 Future Steps</div>
-  <div class="fstep-add">
-    <textarea class="fstep-textarea" id="fstepInput" placeholder="Write a future step… Start with (ZONE) to tag it, e.g. (SEEDS) Add companion planting logic" rows="3"></textarea>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <span class="fstep-hint">Tip: start with <strong>(ZONE)</strong> to tag, e.g. <em>(GARDEN) Fix map display</em></span>
-      <div style="display:flex;gap:6px">
-        <button type="button" class="btn btn-ghost btn-sm" id="fstepCancelBtn" style="display:none" onclick="fstepCancelEdit()">Cancel</button>
-        <button type="button" class="btn btn-primary btn-sm" id="fstepSaveBtn" onclick="fstepSave()">Log future step</button>
+  <div class="fstep-section-header" onclick="fstepToggleSection()">
+    <span class="fstep-section-chevron" id="fstepChevron">▶</span>
+    <span class="fstep-section-title">📌 Future Steps</span>
+    <?php if (!empty($steps)): ?>
+    <span class="fstep-section-count" id="fstepSectionCount"><?= count($steps) ?></span>
+    <?php endif; ?>
+  </div>
+  <div class="fstep-section-body" id="fstepSectionBody">
+    <div class="fstep-add">
+      <textarea class="fstep-textarea" id="fstepInput" placeholder="Write a future step… Start with (ZONE) to tag it, e.g. (SEEDS) Add companion planting logic" rows="3"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <span class="fstep-hint">Tip: start with <strong>(ZONE)</strong> to tag, e.g. <em>(GARDEN) Fix map display</em></span>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn btn-ghost btn-sm" id="fstepCancelBtn" style="display:none" onclick="fstepCancelEdit()">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" id="fstepSaveBtn" onclick="fstepSave()">Log future step</button>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="fstep-list" id="fstepList">
-    <?php if (empty($steps)): ?>
-    <div class="fstep-empty" id="fstepEmpty">No future steps yet.</div>
-    <?php else: ?>
-    <?php foreach ($steps as $st): ?>
-    <?= fstepRowHtml($st) ?>
-    <?php endforeach; ?>
-    <?php endif; ?>
+    <div class="fstep-list" id="fstepList">
+      <?php if (empty($steps)): ?>
+      <div class="fstep-empty" id="fstepEmpty">No future steps yet.</div>
+      <?php else: ?>
+      <?php foreach ($steps as $st): ?>
+      <?= fstepRowHtml($st) ?>
+      <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 
@@ -130,8 +159,9 @@ function fstepRowHtml(array $st): string {
   <label for="ptaskSelAll" style="font-size:.8rem;color:var(--color-text-muted);cursor:pointer;user-select:none">Select all</label>
 </div>
 
+<!-- Active tasks -->
 <div class="ptask-list" id="ptaskList">
-<?php foreach ($tasks as $t):
+<?php foreach ($activeTasks as $t):
     $sc     = $statusCfg[$t['status']] ?? $statusCfg['empty'];
     $rowCls = 'ptask-row ptask-row--' . e($t['status']);
     $created = substr($t['created_at'] ?? '', 0, 16);
@@ -139,9 +169,6 @@ function fstepRowHtml(array $st): string {
 ?>
   <div class="<?= $rowCls ?>" data-id="<?= (int)$t['id'] ?>" data-status="<?= e($t['status']) ?>" id="ptask<?= (int)$t['id'] ?>">
     <input type="checkbox" class="ptask-sel ptask-selbox" onchange="ptaskSelChanged()">
-    <button type="button" class="ptask-toggle" onclick="ptaskCycle(<?= (int)$t['id'] ?>)"
-            title="Click to cycle: pending → done → error → trigger AI → pending"
-            style="color:<?= $sc['color'] ?>"><?= $sc['icon'] ?></button>
     <div class="ptask-body">
       <div class="ptask-title"><?= e($t['title']) ?></div>
       <div class="ptask-desc"><?= nl2br(e($t['description'])) ?></div>
@@ -151,11 +178,33 @@ function fstepRowHtml(array $st): string {
         <?php if (!empty($t['note'])): ?><span class="ptask-note"><?= e($t['note']) ?></span><?php endif; ?>
       </div>
     </div>
+    <button type="button" class="ptask-toggle" onclick="ptaskCycle(<?= (int)$t['id'] ?>)"
+            title="Click to cycle: pending → done → error → trigger AI → pending"
+            style="color:<?= $sc['color'] ?>"><?= $sc['icon'] ?></button>
   </div>
 <?php endforeach; ?>
-<?php if (empty($tasks)): ?>
-  <div style="text-align:center;padding:40px;color:var(--color-text-muted);font-size:.88rem">No tasks logged yet.</div>
+<?php if (empty($activeTasks)): ?>
+  <div style="text-align:center;padding:40px;color:var(--color-text-muted);font-size:.88rem">No active tasks.</div>
 <?php endif; ?>
+</div>
+
+<!-- Archive section -->
+<div class="ptask-archive">
+  <div class="ptask-archive-header" onclick="ptaskToggleArchive()">
+    <span class="ptask-archive-chevron" id="ptaskArchiveChevron">▶</span>
+    <span class="ptask-archive-label">Archived Tasks</span>
+    <span class="ptask-archive-count" id="ptaskArchiveCount"><?= count($archivedTasks) ?></span>
+  </div>
+  <div class="ptask-archive-body" id="ptaskArchiveBody">
+    <?php if (empty($archivedTasks)): ?>
+    <p style="font-size:.82rem;color:var(--color-text-muted);margin:0">No archived tasks yet.</p>
+    <?php else: ?>
+    <p style="font-size:.82rem;color:var(--color-text-muted);margin:0 0 12px">
+      <?= count($archivedTasks) ?> completed task<?= count($archivedTasks) !== 1 ? 's' : '' ?>.
+    </p>
+    <a href="<?= url('/settings/tasks/archive/download') ?>" class="btn btn-secondary btn-sm">⬇ Download archive.txt</a>
+    <?php endif; ?>
+  </div>
 </div>
 
 <script>
@@ -173,6 +222,15 @@ function fstepRowHtml(array $st): string {
   function applyTask(t) {
     var row = rowEl(t.id);
     if (!row) return;
+
+    if (t.status === 'done') {
+      row.remove();
+      var countEl = document.getElementById('ptaskArchiveCount');
+      if (countEl) countEl.textContent = parseInt(countEl.textContent || '0', 10) + 1;
+      ptaskSelChanged();
+      return;
+    }
+
     row.dataset.status = t.status;
     row.className      = 'ptask-row ptask-row--' + t.status;
 
@@ -252,6 +310,13 @@ function fstepRowHtml(array $st): string {
     document.getElementById('ptaskSelAll').checked = false;
     ptaskSelChanged();
   };
+
+  window.ptaskToggleArchive = function() {
+    var body    = document.getElementById('ptaskArchiveBody');
+    var chevron = document.getElementById('ptaskArchiveChevron');
+    var open    = body.classList.toggle('open');
+    chevron.classList.toggle('open', open);
+  };
 }());
 
 // ── Future Steps ──────────────────────────────────────────────────────────
@@ -265,6 +330,13 @@ function fstepRowHtml(array $st): string {
   _stepData[<?= (int)$st['id'] ?>] = <?= json_encode(['zone' => $st['zone'] ?? null, 'content' => $st['content'] ?? '']) ?>;
   <?php endforeach; ?>
 
+  window.fstepToggleSection = function() {
+    var body    = document.getElementById('fstepSectionBody');
+    var chevron = document.getElementById('fstepChevron');
+    var open    = body.classList.toggle('open');
+    chevron.classList.toggle('open', open);
+  };
+
   function post(url, body) {
     return fetch(BASE + url, {
       method: 'POST',
@@ -274,11 +346,9 @@ function fstepRowHtml(array $st): string {
   }
 
   function renderRow(st) {
-    var div = document.createElement('div');
-    div.innerHTML = <?= json_encode('<div></div>') ?>; // temp
-    // build via innerHTML safely
     var zone  = st.zone ? '<span class="fstep-zone">'+escHtml(st.zone)+'</span><br>' : '';
     var body  = nl2brEsc(st.content || '');
+    var div = document.createElement('div');
     div.className = 'fstep-row';
     div.dataset.id = st.id;
     div.id = 'fstep' + st.id;
@@ -306,7 +376,6 @@ function fstepRowHtml(array $st): string {
     if (!val) return;
 
     if (_editingId) {
-      // Update existing step
       post('/settings/future-steps/' + _editingId + '/update', 'content=' + encodeURIComponent(val))
       .then(function(res) {
         if (!res.success) return;
@@ -315,7 +384,6 @@ function fstepRowHtml(array $st): string {
         fstepCancelEdit();
       });
     } else {
-      // Add new step
       post('/settings/future-steps', 'content=' + encodeURIComponent(val))
       .then(function(res) {
         if (!res.success) return;
@@ -324,6 +392,9 @@ function fstepRowHtml(array $st): string {
         if (empty) empty.remove();
         list.appendChild(renderRow(res.step));
         ta.value = '';
+        // update count badge
+        var countEl = document.getElementById('fstepSectionCount');
+        if (countEl) countEl.textContent = parseInt(countEl.textContent || '0', 10) + 1;
       });
     }
   };
@@ -359,6 +430,8 @@ function fstepRowHtml(array $st): string {
         empty.className = 'fstep-empty'; empty.id = 'fstepEmpty'; empty.textContent = 'No future steps yet.';
         document.getElementById('fstepList').appendChild(empty);
       }
+      var countEl = document.getElementById('fstepSectionCount');
+      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent || '0', 10) - 1);
     });
   };
 

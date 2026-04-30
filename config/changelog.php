@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.39' => [
+        'date'  => '2026-04-30',
+        'title' => 'Task log archive + future steps collapse',
+        'new' => [
+            'Done tasks are now removed from the main task list and moved to a collapsed archive section at the bottom.',
+            'Archive section shows a count badge and a single "Download archive.txt" button — no clutter, download only when needed.',
+            'Future Steps section is now collapsed by default — click the header to expand. Shows count badge when collapsed.',
+        ],
+        'improved' => [
+            'Status toggle button moved to the far right of each task card for cleaner layout.',
+        ],
+    ],
+
     '3.1.38' => [
         'date'  => '2026-04-30',
         'title' => 'Seed ground cache + harvest log per year',
