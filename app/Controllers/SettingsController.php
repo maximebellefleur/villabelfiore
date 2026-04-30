@@ -360,6 +360,33 @@ class SettingsController
         Response::json(['success' => true, 'step' => $step]);
     }
 
+    // POST /settings/future-steps/{id}/update
+    public function updateFutureStep(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id      = (int)($params['id'] ?? 0);
+        $content = trim($request->post('content', ''));
+        if ($content === '') { Response::json(['success' => false, 'error' => 'Empty']); return; }
+
+        $steps = self::readSteps();
+        $zone  = null;
+        if (preg_match('/^\(([^)]+)\)\s*/u', $content, $m)) {
+            $zone    = strtoupper(trim($m[1]));
+            $content = trim(substr($content, strlen($m[0])));
+        }
+        foreach ($steps as &$s) {
+            if ((int)$s['id'] !== $id) continue;
+            $s['zone']    = $zone;
+            $s['content'] = $content;
+            break;
+        }
+        unset($s);
+        self::writeSteps($steps);
+        $updated = current(array_filter($steps, fn($s) => (int)$s['id'] === $id));
+        Response::json(['success' => true, 'step' => $updated ?: []]);
+    }
+
     // POST /settings/future-steps/{id}/delete
     public function deleteFutureStep(Request $request, array $params = []): void
     {

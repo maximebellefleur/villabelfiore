@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.35' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Future steps edit mode',
+        'features' => [
+            ['title' => 'Edit future steps inline', 'detail' => 'Each future step card now has an ✏️ Edit button. It loads the content back into the top textarea. Save updates the card; Cancel clears the form without saving. Enter key disabled in this textarea (multi-line field).'],
+        ],
+    ],
+
     '3.1.34' => [
         'status'   => 'released',
         'released' => '2026-04-30',

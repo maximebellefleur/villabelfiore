@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.35' => [
+        'date'  => '2026-04-30',
+        'title' => 'Future steps: edit mode, Enter key disabled',
+        'improved' => [
+            'Future steps now have an Edit (✏️) button. Clicking it loads the step back into the textarea in edit mode. Save updates the card in place; Cancel clears the form.',
+            'Enter key no longer submits in the future steps textarea (it\'s a multi-line field). Use the button to save.',
+        ],
+    ],
+
     '3.1.34' => [
         'date'  => '2026-04-30',
         'title' => 'Fix phantom line count in family needs ground stats',

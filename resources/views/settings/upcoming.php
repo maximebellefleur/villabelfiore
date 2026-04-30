@@ -70,9 +70,12 @@ $statusCfg = [
   <div class="fstep-section-title">📌 Future Steps</div>
   <div class="fstep-add">
     <textarea class="fstep-textarea" id="fstepInput" placeholder="Write a future step… Start with (ZONE) to tag it, e.g. (SEEDS) Add companion planting logic" rows="3"></textarea>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <span class="fstep-hint">Tip: start with <strong>(ZONE)</strong> to tag, e.g. <em>(GARDEN) Fix map display</em></span>
-      <button type="button" class="btn btn-primary btn-sm" onclick="fstepAdd()">Log future step</button>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="btn btn-ghost btn-sm" id="fstepCancelBtn" style="display:none" onclick="fstepCancelEdit()">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="fstepSaveBtn" onclick="fstepSave()">Log future step</button>
+      </div>
     </div>
   </div>
   <div class="fstep-list" id="fstepList">
@@ -95,6 +98,7 @@ function fstepRowHtml(array $st): string {
          .   '<span class="fstep-drag" draggable="false">⠿</span>'
          .   '<div class="fstep-body">'.$zone.'<div class="fstep-content">'.$body.'</div></div>'
          .   '<div class="fstep-actions">'
+         .     '<button type="button" class="fstep-btn" title="Edit" onclick="fstepEdit('.$id.')">✏️</button>'
          .     '<button type="button" class="fstep-btn" title="Copy" onclick="fstepCopy('.$id.')">📋</button>'
          .     '<button type="button" class="fstep-btn" title="Delete" onclick="fstepDelete('.$id.')">✕</button>'
          .   '</div>'
@@ -282,6 +286,7 @@ function fstepRowHtml(array $st): string {
     div.innerHTML = '<span class="fstep-drag" draggable="false">⠿</span>'
       + '<div class="fstep-body">' + zone + '<div class="fstep-content">' + body + '</div></div>'
       + '<div class="fstep-actions">'
+      +   '<button type="button" class="fstep-btn" title="Edit" onclick="fstepEdit(' + st.id + ')">✏️</button>'
       +   '<button type="button" class="fstep-btn" title="Copy" onclick="fstepCopy(' + st.id + ')">📋</button>'
       +   '<button type="button" class="fstep-btn" title="Delete" onclick="fstepDelete(' + st.id + ')">✕</button>'
       + '</div>';
@@ -293,19 +298,53 @@ function fstepRowHtml(array $st): string {
   function escHtml(s) { var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
   function nl2brEsc(s) { return escHtml(s).replace(/\n/g,'<br>'); }
 
-  window.fstepAdd = function() {
-    var ta = document.getElementById('fstepInput');
+  var _editingId = null;
+
+  window.fstepSave = function() {
+    var ta  = document.getElementById('fstepInput');
     var val = ta.value.trim();
     if (!val) return;
-    post('/settings/future-steps', 'content=' + encodeURIComponent(val))
-    .then(function(res) {
-      if (!res.success) return;
-      var list = document.getElementById('fstepList');
-      var empty = document.getElementById('fstepEmpty');
-      if (empty) empty.remove();
-      list.appendChild(renderRow(res.step));
-      ta.value = '';
-    });
+
+    if (_editingId) {
+      // Update existing step
+      post('/settings/future-steps/' + _editingId + '/update', 'content=' + encodeURIComponent(val))
+      .then(function(res) {
+        if (!res.success) return;
+        var old = document.getElementById('fstep' + _editingId);
+        if (old) { var fresh = renderRow(res.step); old.replaceWith(fresh); }
+        fstepCancelEdit();
+      });
+    } else {
+      // Add new step
+      post('/settings/future-steps', 'content=' + encodeURIComponent(val))
+      .then(function(res) {
+        if (!res.success) return;
+        var list = document.getElementById('fstepList');
+        var empty = document.getElementById('fstepEmpty');
+        if (empty) empty.remove();
+        list.appendChild(renderRow(res.step));
+        ta.value = '';
+      });
+    }
+  };
+
+  window.fstepEdit = function(id) {
+    var st = _stepData[id];
+    if (!st) return;
+    var ta = document.getElementById('fstepInput');
+    ta.value = st.zone ? '(' + st.zone + ') ' + st.content : st.content;
+    _editingId = id;
+    document.getElementById('fstepSaveBtn').textContent = 'Save changes';
+    document.getElementById('fstepCancelBtn').style.display = '';
+    ta.focus();
+    ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.fstepCancelEdit = function() {
+    _editingId = null;
+    document.getElementById('fstepInput').value = '';
+    document.getElementById('fstepSaveBtn').textContent = 'Log future step';
+    document.getElementById('fstepCancelBtn').style.display = 'none';
   };
 
   window.fstepDelete = function(id) {
@@ -329,11 +368,6 @@ function fstepRowHtml(array $st): string {
     var text = st.zone ? '(' + st.zone + ') ' + st.content : st.content;
     navigator.clipboard ? navigator.clipboard.writeText(text) : (function(){ var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t); })();
   };
-
-  // Enter key submits (Shift+Enter = newline)
-  document.getElementById('fstepInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fstepAdd(); }
-  });
 
   // Drag-to-reorder
   var _dragSrc = null;

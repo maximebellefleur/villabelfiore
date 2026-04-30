@@ -143,6 +143,7 @@ $router->get('/settings/upcoming',                    'SettingsController@upcomi
 $router->post('/settings/tasks/{id}/status',          'SettingsController@taskStatus');
 $router->post('/settings/tasks/batch',                'SettingsController@taskBatch');
 $router->post('/settings/future-steps',               'SettingsController@addFutureStep');
+$router->post('/settings/future-steps/{id}/update',   'SettingsController@updateFutureStep');
 $router->post('/settings/future-steps/{id}/delete',   'SettingsController@deleteFutureStep');
 $router->post('/settings/future-steps/reorder',       'SettingsController@reorderFutureSteps');
 $router->get('/settings/pwa',                  'PwaController@pwa');
