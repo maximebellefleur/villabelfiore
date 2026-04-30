@@ -6,19 +6,25 @@
 2. If any exist, treat them as highest priority — resolve them before the user's current request.
 3. After resolving a trigger_ai task, update its status to `"empty"` in the JSON and set its `"note"` to e.g. `"Triggered to AI on Apr 30 at 12:34"`.
 
-## Task Logging Protocol (ALWAYS do this on every user message)
+## Task Logging Protocol
 
-When the user sends a request:
-1. **Evaluate**: is this a platform task (something to build, fix, or change in the app)?
-   - **YES — log it**: new features, bug fixes, UI changes, data model changes, page redesigns
-   - **NO — skip**: operational commands ("commit and push", "deploy", "what is X?"), clarifications, approval/confirmation messages, general conversation
-2. **If yes**: add the task directly to `storage/platform_tasks.json`. Use:
-   - `title`: 5–8 words, what it is
-   - `description`: exactly 2 sentences summarising the request and its intent
-3. **If a message contains multiple tasks** (bullet list etc.): decide if they form one unified task or should be split. Split only if they are genuinely independent features.
-4. Log the task as `"status": "empty"` initially, then update to `"done"` once shipped.
+**Rule**: if the user's message starts with `(ZONE)` — e.g. `(GARDEN) fix layout`, `(SEEDS) add notes` — always log it as a task. No judgment, no exceptions. The user controls what gets logged by choosing to use the `(ZONE)` prefix.
 
-**To add a task without PHP**, directly edit `storage/platform_tasks.json` — append an object with the next sequential `id`, `title`, `description`, `status: "empty"`, `note: null`, `created_at` (current datetime), `resolved_at: null`.
+**Steps**:
+1. Edit `config/platform_tasks.json` — append a new object with:
+   - `id`: next integer (max existing id + 1)
+   - `title`: 5–8 words summarising the request
+   - `description`: 2 sentences max — what + why
+   - `status`: `"empty"`
+   - `note`: `null`
+   - `created_at`: current datetime `"YYYY-MM-DD HH:MM:SS"`
+   - `resolved_at`: `null`
+2. Tell the user the task ID: e.g. **Task #12 logged.**
+3. Update `status` to `"done"` and set `resolved_at` once the work is committed.
+
+**Do NOT log**: messages without a `(ZONE)` prefix, operational commands ("commit and push"), clarifications, or general conversation.
+
+**Files live in `config/`** (not `storage/`) so they are included in the upgrade ZIP and deployed to the live site on each upgrade.
 
 ## End-of-Session Release Checklist
 

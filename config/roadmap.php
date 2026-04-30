@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.36' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Task log in upgrade ZIP',
+        'features' => [
+            ['title' => 'Task log now deployed via upgrade', 'detail' => 'platform_tasks.json and future_steps.json moved to config/ so they ship with every upgrade ZIP. All logged tasks are now visible on the live site after applying an upgrade.'],
+        ],
+    ],
+
     '3.1.35' => [
         'status'   => 'released',
         'released' => '2026-04-30',

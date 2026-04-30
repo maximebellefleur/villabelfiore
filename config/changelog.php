@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.36' => [
+        'date'  => '2026-04-30',
+        'title' => 'Task log deployed via upgrade ZIP',
+        'fixed' => [
+            'platform_tasks.json and future_steps.json moved from storage/ to config/ so they are included in the upgrade ZIP and visible on the live site immediately after upgrading.',
+        ],
+        'improved' => [
+            'Task logging rule simplified: any message starting with (ZONE) is always logged. No judgment. Task IDs are shown back in conversation.',
+        ],
+    ],
+
     '3.1.35' => [
         'date'  => '2026-04-30',
         'title' => 'Future steps: edit mode, Enter key disabled',

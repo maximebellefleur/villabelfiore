@@ -282,7 +282,7 @@ class SettingsController
 
     private static function tasksPath(): string
     {
-        return STORAGE_PATH . '/platform_tasks.json';
+        return BASE_PATH . '/config/platform_tasks.json';
     }
 
     public static function readTasks(): array
@@ -318,7 +318,7 @@ class SettingsController
 
     private static function stepsPath(): string
     {
-        return STORAGE_PATH . '/future_steps.json';
+        return BASE_PATH . '/config/future_steps.json';
     }
 
     public static function readSteps(): array
