@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.23' => [
+        'status'   => 'released',
+        'released' => '2026-04-29',
+        'title'    => 'Bulletproof garden + family needs pages',
+        'features' => [
+            ['title' => 'Per-section try-catch in garden index', 'detail' => 'family_needs, activity_log, reminders, biodynamic, and buildHub each wrapped independently — one bad query shows an empty section, not a crash.'],
+            ['title' => 'Same protection on /seeds/family-needs', 'detail' => 'The entire fetch + seedGroundStats loop is now guarded.'],
+        ],
+    ],
+
     '3.1.22' => [
         'status'   => 'released',
         'released' => '2026-04-29',

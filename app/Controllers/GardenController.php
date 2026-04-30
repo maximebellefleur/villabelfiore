@@ -97,38 +97,50 @@ class GardenController
         }));
 
         // Family needs
-        $familyNeeds = $db->fetchAll(
-            "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
-             FROM family_needs fn
-             LEFT JOIN seeds s ON s.id = fn.seed_id
-             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-        ) ?: [];
-        foreach ($familyNeeds as &$need) {
-            $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
-            $need  = array_merge($need, $stats);
-        }
-        unset($need);
+        $familyNeeds = [];
+        try {
+            $familyNeeds = $db->fetchAll(
+                "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
+                 FROM family_needs fn
+                 LEFT JOIN seeds s ON s.id = fn.seed_id
+                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+            ) ?: [];
+            foreach ($familyNeeds as &$need) {
+                $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
+                $need  = array_merge($need, $stats);
+            }
+            unset($need);
+        } catch (\Throwable $e) { $familyNeeds = []; }
 
         // Recent garden/bed activity
-        $recentActivity = $db->fetchAll(
-            "SELECT al.*, i.name AS item_name, i.type AS item_type
-             FROM activity_log al
-             JOIN items i ON i.id = al.item_id
-             WHERE i.type IN ('bed','garden','zone')
-             ORDER BY al.performed_at DESC
-             LIMIT 8"
-        );
+        $recentActivity = [];
+        try {
+            $recentActivity = $db->fetchAll(
+                "SELECT al.*, i.name AS item_name, i.type AS item_type
+                 FROM activity_log al
+                 JOIN items i ON i.id = al.item_id
+                 WHERE i.type IN ('bed','garden','zone')
+                 ORDER BY al.performed_at DESC
+                 LIMIT 8"
+            ) ?: [];
+        } catch (\Throwable $e) { $recentActivity = []; }
 
         // Upcoming harvest reminders
-        $harvestReminders = $db->fetchAll(
-            "SELECT * FROM reminders
-             WHERE status = 'pending' AND LOWER(title) LIKE '%harvest%'
-             ORDER BY due_at ASC LIMIT 5"
-        );
+        $harvestReminders = [];
+        try {
+            $harvestReminders = $db->fetchAll(
+                "SELECT * FROM reminders
+                 WHERE status = 'pending' AND LOWER(title) LIKE '%harvest%'
+                 ORDER BY due_at ASC LIMIT 5"
+            ) ?: [];
+        } catch (\Throwable $e) { $harvestReminders = []; }
 
         // Climate-based planting suggestions
-        $climateRow  = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'garden.climate_zone'");
-        $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
+        $climateZone = 'mediterranean_sicily';
+        try {
+            $climateRow  = $db->fetchOne("SELECT setting_value_text FROM settings WHERE setting_key = 'garden.climate_zone'");
+            $climateZone = $climateRow['setting_value_text'] ?? 'mediterranean_sicily';
+        } catch (\Throwable $e) {}
         $climateSuggestions = $this->getClimateSuggestions($climateZone, $currentMonth);
 
         // Garden bed schematic — beds with dimensions, grouped by parent garden
@@ -200,7 +212,8 @@ class GardenController
         }
 
         // ---- Action-first hub data (Garden Redesign v3) -----------------
-        $hub = $this->buildHub($db);
+        $hub = [];
+        try { $hub = $this->buildHub($db); } catch (\Throwable $e) { $hub = []; }
 
         $allBedsFlat = $db->fetchAll(
             "SELECT id, name, parent_id FROM items WHERE type='bed' AND deleted_at IS NULL AND status='active' ORDER BY name ASC"

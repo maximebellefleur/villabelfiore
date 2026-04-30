@@ -291,17 +291,20 @@ class SeedController
         $db    = DB::getInstance();
         $this->ensureTables($db);
         GardenSchema::ensure($db);
-        $needs = $db->fetchAll(
-            "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
-             FROM family_needs fn
-             LEFT JOIN seeds s ON s.id = fn.seed_id
-             ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-        ) ?: [];
-        foreach ($needs as &$need) {
-            $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
-            $need  = array_merge($need, $stats);
-        }
-        unset($need);
+        $needs = [];
+        try {
+            $needs = $db->fetchAll(
+                "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
+                 FROM family_needs fn
+                 LEFT JOIN seeds s ON s.id = fn.seed_id
+                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+            ) ?: [];
+            foreach ($needs as &$need) {
+                $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
+                $need  = array_merge($need, $stats);
+            }
+            unset($need);
+        } catch (\Throwable $e) { $needs = []; }
         $seeds = $db->fetchAll('SELECT id, name, variety FROM seeds ORDER BY name ASC');
 
         Response::render('seeds/family-needs', [

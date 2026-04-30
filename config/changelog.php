@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.23' => [
+        'date'  => '2026-04-29',
+        'title' => 'Bulletproof garden page — every secondary query individually guarded',
+        'new' => [],
+        'improved' => [],
+        'fixed' => [
+            'GardenController::index() wrapped family_needs, activity_log, reminders, climate/settings, and buildHub() each in their own try-catch — any single broken query now returns an empty section instead of crashing the entire page.',
+            'SeedController::familyNeeds() wrapped the entire needs fetch + seedGroundStats loop in try-catch for the same protection.',
+            'Either page can now load even if secondary tables (activity_log, reminders) have schema differences on older installs.',
+        ],
+    ],
+
     '3.1.22' => [
         'date'  => '2026-04-29',
         'title' => 'Fix "Something went wrong" on /garden and /seeds/family-needs',
