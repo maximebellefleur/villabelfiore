@@ -152,16 +152,16 @@ $bedId = (int)$item['id'];
               <div class="rg-succ-dates">
                 sow
                 <span class="rg-succ-sow-display" style="cursor:pointer;border-bottom:1px dashed var(--color-text-muted)" title="Click to edit sow date"><?= e(GardenHelpers::fmtDate($succession['startsOn'])) ?></span>
-                <span class="rg-succ-sow-edit" style="display:none;align-items:center;gap:4px">
+                <span class="rg-succ-sow-edit" style="display:none;align-items:center;gap:4px;position:relative;z-index:10">
                   <input type="date" class="rg-succ-sow-input" value="<?= e($succession['startsOn']) ?>" style="font-size:.72rem;padding:1px 4px;border:1px solid var(--color-border);border-radius:4px;font-family:inherit">
-                  <button type="button" class="btn btn-primary btn-xs rg-succ-sow-save" data-line="<?= (int)$line['lineNumber'] ?>" data-crop-id="<?= (int)$succession['cropId'] ?>" style="padding:1px 6px;font-size:.67rem">✓</button>
-                  <button type="button" class="btn btn-ghost btn-xs rg-succ-sow-cancel" style="padding:1px 6px;font-size:.67rem">✕</button>
+                  <button type="button" class="btn btn-primary btn-xs rg-succ-sow-save" data-line="<?= (int)$line['lineNumber'] ?>" data-crop-id="<?= (int)$succession['cropId'] ?>" style="padding:1px 6px;font-size:.67rem;position:relative;z-index:11">✓</button>
+                  <button type="button" class="btn btn-ghost btn-xs rg-succ-sow-cancel" style="padding:1px 6px;font-size:.67rem;position:relative;z-index:11">✕</button>
                 </span>
                 → harvest ~<span class="rg-succ-harvest-display"><?= e(GardenHelpers::fmtDate(GardenHelpers::addDays($succession['startsOn'], (int)$succCrop['days_to_maturity']))) ?></span>
             </div>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm rg-succ-clear" data-line="<?= (int)$line['lineNumber'] ?>" style="color:var(--color-text-muted)">Remove</button>
-            <button type="button" class="btn btn-ghost btn-sm rg-succ-pick" data-line="<?= (int)$line['lineNumber'] ?>">Change</button>
+            <button type="button" class="btn btn-ghost btn-sm rg-succ-clear" data-line="<?= (int)$line['lineNumber'] ?>" style="color:var(--color-text-muted);position:relative;z-index:1">Remove</button>
+            <button type="button" class="btn btn-ghost btn-sm rg-succ-pick" data-line="<?= (int)$line['lineNumber'] ?>" style="position:relative;z-index:1">Change</button>
           </div>
         <?php else: ?>
           <button type="button" class="rg-succ-empty-cta rg-succ-pick" data-line="<?= (int)$line['lineNumber'] ?>">＋ Pick what comes next</button>
