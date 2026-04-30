@@ -1305,13 +1305,33 @@ class GardenBedController
         $isFuture = $sowDate > $today;
 
         try {
-            // Update sow + planted date for all currently active (non-harvested) plantings
-            $db->execute(
-                "UPDATE garden_plantings
-                    SET sown_at = ?, planted_at = ?, updated_at = NOW()
-                  WHERE item_id = ? AND status = 'growing'",
-                [$sowDate, $sowDate, $itemId]
-            );
+            // Update sow + planted date for all currently active (non-harvested) plantings.
+            // Some older installs may be missing sown_at or planted_at columns; try both
+            // and fall back gracefully if a column is absent.
+            try {
+                $db->execute(
+                    "UPDATE garden_plantings
+                        SET sown_at = ?, planted_at = ?, updated_at = NOW()
+                      WHERE item_id = ? AND status = 'growing'",
+                    [$sowDate, $sowDate, $itemId]
+                );
+            } catch (\Throwable $colErr) {
+                // Try without sown_at (older schema)
+                try {
+                    $db->execute(
+                        "UPDATE garden_plantings
+                            SET planted_at = ?, updated_at = NOW()
+                          WHERE item_id = ? AND status = 'growing'",
+                        [$sowDate, $itemId]
+                    );
+                } catch (\Throwable $e2) {
+                    // Try without planted_at either (very old schema, at least update updated_at)
+                    $db->execute(
+                        "UPDATE garden_plantings SET updated_at = NOW() WHERE item_id = ? AND status = 'growing'",
+                        [$itemId]
+                    );
+                }
+            }
 
             if ($isFuture) {
                 $item = $db->fetchOne("SELECT name FROM items WHERE id = ?", [$itemId]);
