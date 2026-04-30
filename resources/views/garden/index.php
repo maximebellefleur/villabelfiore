@@ -48,6 +48,12 @@ $typeEmoji = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸
 .garden-need-row { background:var(--color-surface-raised); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:12px 14px; display:flex; align-items:center; gap:12px; }
 .garden-need-name { font-weight:700; font-size:.9rem; flex:1; }
 .garden-need-qty { font-size:.8rem; color:var(--color-text-muted); white-space:nowrap; }
+
+/* Bed drag-to-reorder */
+.rg-bedrow--dragging { opacity:.35; }
+.rg-bedrow--drag-over { box-shadow:0 -2px 0 var(--color-primary); }
+.rg-bed-drag-handle { cursor:grab; color:var(--color-text-muted); font-size:.95rem; padding:0 4px 0 2px; user-select:none; flex-shrink:0; opacity:.35; line-height:1; touch-action:none; }
+.rg-bed-drag-handle:hover,.rg-bed-drag-handle:active { opacity:1; cursor:grab; }
 .garden-need-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .garden-need-stock { font-size:.78rem; margin-top:2px; }
 .garden-need-stock--ok  { color:#15803d; }
@@ -145,7 +151,8 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
         $level  = $action ? $action['urgency'] : 'low';
         $orient = GardenHelpers::bedOrientation($bed, $gBeds, $bed['line_dir'] ?? null);
       ?>
-        <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" class="rg-bedrow rg-bedrow--<?= e($level) ?>">
+        <a href="<?= url('/items/' . (int)$bed['id'] . '/planting') ?>" class="rg-bedrow rg-bedrow--<?= e($level) ?>" data-bed-id="<?= (int)$bed['id'] ?>" draggable="true">
+          <span class="rg-bed-drag-handle" title="Drag to reorder" draggable="false">⠿</span>
           <?php if ($orient): ?>
             <div class="rg-orient" title="<?= e($orient) ?> side"><?= e($orient) ?></div>
           <?php else: ?>
@@ -236,6 +243,65 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     try { localStorage.setItem(STORAGE, JSON.stringify(collapsed)); } catch(e) {}
   });
 })();
+
+// ── Bed drag-to-reorder ───────────────────────────────────────────────────
+(function () {
+  var CSRF = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+  var _dragSrc = null;
+
+  function bedRows(list) {
+    return Array.from(list.querySelectorAll('.rg-bedrow[data-bed-id]'));
+  }
+
+  function saveOrder(list) {
+    var gid  = list.closest('.rg-garden-section').dataset.gardenId;
+    var ids  = bedRows(list).map(function(r){ return r.dataset.bedId; });
+    fetch(window.APP_BASE + '/api/gardens/' + gid + '/reorder-beds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+      body: '_token=' + encodeURIComponent(CSRF) + '&ids=' + encodeURIComponent(JSON.stringify(ids))
+    });
+  }
+
+  function initBedRow(el) {
+    el.addEventListener('dragstart', function(e) {
+      _dragSrc = el;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(function(){ el.classList.add('rg-bedrow--dragging'); }, 0);
+    });
+    el.addEventListener('dragend', function() {
+      el.classList.remove('rg-bedrow--dragging');
+      document.querySelectorAll('.rg-bedrow').forEach(function(r){ r.classList.remove('rg-bedrow--drag-over'); });
+    });
+    el.addEventListener('dragover', function(e) {
+      if (!_dragSrc || _dragSrc === el) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.rg-bedrow').forEach(function(r){ r.classList.remove('rg-bedrow--drag-over'); });
+      el.classList.add('rg-bedrow--drag-over');
+    });
+    el.addEventListener('dragleave', function() { el.classList.remove('rg-bedrow--drag-over'); });
+    el.addEventListener('drop', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      el.classList.remove('rg-bedrow--drag-over');
+      if (!_dragSrc || _dragSrc === el) return;
+      var list = el.closest('.rg-garden-beds');
+      if (!list || !list.contains(_dragSrc)) return; // no cross-garden drag
+      var rows = bedRows(list);
+      var si = rows.indexOf(_dragSrc);
+      var di = rows.indexOf(el);
+      if (si === -1 || di === -1) return;
+      if (si < di) list.insertBefore(_dragSrc, el.nextSibling);
+      else         list.insertBefore(_dragSrc, el);
+      saveOrder(list);
+    });
+    // Prevent link navigation when drag starts
+    el.addEventListener('click', function(e) {
+      if (_dragSrc) { e.preventDefault(); _dragSrc = null; }
+    });
+  }
+
+  document.querySelectorAll('.rg-bedrow[data-bed-id]').forEach(initBedRow);
+}());
 
 // ── Assign Beds Popup ──────────────────────────────────────────────────────
 (function() {

@@ -171,7 +171,7 @@ class GardenController
                  LEFT JOIN item_meta m ON m.item_id = i.id
                    AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
                  WHERE i.type = 'bed' AND i.deleted_at IS NULL AND i.status = 'active'
-                 GROUP BY i.id ORDER BY i.parent_id, i.name"
+                 GROUP BY i.id ORDER BY i.parent_id, i.sort_order ASC, i.name ASC"
             );
 
             $bedIds = array_column($rawBeds, 'id');
@@ -290,7 +290,7 @@ class GardenController
              LEFT JOIN item_meta m ON m.item_id = i.id
                 AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
              WHERE i.type='bed' AND i.deleted_at IS NULL AND i.status='active'
-             GROUP BY i.id ORDER BY i.parent_id, i.name"
+             GROUP BY i.id ORDER BY i.parent_id, i.sort_order ASC, i.name ASC"
         ) ?: [];
 
         // Plantings & line state — load all in one go, group by bed

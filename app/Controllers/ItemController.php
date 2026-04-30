@@ -627,19 +627,21 @@ class ItemController
 
         if ($setReminder && $dueAt && $description) {
             $reminderTitle = mb_substr($description, 0, 160);
-            $db->execute(
-                'INSERT INTO reminders (item_id, type, title, due_at, is_recurring, status, created_at, updated_at)
-                 VALUES (?,?,?,?,0,?,NOW(),NOW())',
-                [$id, 'log_reminder', $reminderTitle, $dueAt, 'pending']
-            );
-            $newReminderId = (int)$db->lastInsertId();
+            try {
+                $db->execute(
+                    'INSERT INTO reminders (item_id, type, title, due_at, is_recurring, status, created_at, updated_at)
+                     VALUES (?,?,?,?,0,?,NOW(),NOW())',
+                    [$id, 'log_reminder', $reminderTitle, $dueAt, 'pending']
+                );
+                $newReminderId = (int)$db->lastInsertId();
 
-            // Auto-push to Google Calendar if connected
-            if ($newReminderId) {
-                try {
-                    (new \App\Controllers\CalendarController())->pushReminderById($db, $newReminderId);
-                } catch (\Throwable $e) { /* non-fatal */ }
-            }
+                // Auto-push to Google Calendar if connected
+                if ($newReminderId) {
+                    try {
+                        (new \App\Controllers\CalendarController())->pushReminderById($db, $newReminderId);
+                    } catch (\Throwable $e) { /* non-fatal */ }
+                }
+            } catch (\Throwable $e) { /* non-fatal — log saved even if reminder fails */ }
         }
 
         if ($request->isAjax()) {

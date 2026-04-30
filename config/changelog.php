@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.1.30' => [
+        'date'  => '2026-04-30',
+        'title' => 'Garden bed reordering, action log reliability fix',
+        'new' => [
+            'Garden beds can now be drag-reordered within each garden. Grab the ⠿ handle on any bed row and drag it up or down — the order saves instantly and persists across page loads.',
+        ],
+        'improved' => [
+            'Beds within a garden are displayed in your custom sort order (falling back to name for unordered beds).',
+        ],
+        'fixed' => [
+            'Action log: reminder INSERT now wrapped in try/catch so a schema issue can never crash the whole log request. The log entry always saves successfully even if the reminder fails.',
+        ],
+    ],
+
     '3.1.29' => [
         'date'  => '2026-04-30',
         'title' => 'Gardener\'s Note on seeds, color picker, color backfill',

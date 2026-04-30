@@ -1070,6 +1070,35 @@ class GardenBedController
         Response::json(['success' => true]);
     }
 
+    /**
+     * POST /api/gardens/{id}/reorder-beds
+     * Accepts ids=JSON_array of bed IDs in new order; saves sort_order to items.
+     */
+    public function reorderBeds(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $gardenId = (int)($params['id'] ?? 0);
+        $ids = $request->post('ids', '');
+        if (is_string($ids)) { $ids = json_decode($ids, true) ?: []; }
+        if (!is_array($ids) || empty($ids)) { Response::json(['success' => false, 'error' => 'No ids']); return; }
+
+        $db = DB::getInstance();
+        try {
+            foreach ($ids as $order => $bedId) {
+                $db->execute(
+                    "UPDATE items SET sort_order = ?, updated_at = NOW()
+                      WHERE id = ? AND parent_id = ? AND type = 'bed'",
+                    [(int)$order + 1, (int)$bedId, $gardenId]
+                );
+            }
+            Response::json(['success' => true]);
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
     public function companions(Request $request, array $params = []): void
     {
         $this->requireAuth();

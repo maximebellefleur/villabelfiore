@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.30' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Garden bed reordering',
+        'features' => [
+            ['title' => 'Drag-to-reorder beds within a garden', 'detail' => 'Each garden now shows a ⠿ drag handle on every bed row. Drag beds up or down to set your preferred display order. The new order saves instantly via AJAX and is remembered between visits.'],
+            ['title' => 'Action log reliability', 'detail' => 'The reminder INSERT on action log is now non-fatal — log entries always save even if reminder creation encounters a schema issue.'],
+        ],
+    ],
+
     '3.1.29' => [
         'status'   => 'released',
         'released' => '2026-04-30',
