@@ -334,3 +334,5 @@ krsort($byYear);
   });
 })();
 </script>
+
+<?php include BASE_PATH . '/resources/views/garden/_ai_plan_prompt.php'; ?>

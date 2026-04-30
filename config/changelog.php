@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.25' => [
+        'date'  => '2026-04-30',
+        'title' => 'AI Plan Help — copy garden context prompt',
+        'new' => [
+            '"✨ AI Plan Help" floating button on Plan and Timeline garden bed views — generates a complete context-rich prompt (full seed stock + current plantings + rotation history) that you copy and paste into any AI (Claude, ChatGPT…) to get a personalised top-10 planting plan with companion and succession advice.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '3.1.24' => [
         'date'  => '2026-04-30',
         'title' => 'Fix seed save 403 and plant count',

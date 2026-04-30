@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.25' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'AI Plan Help — copy garden context prompt',
+        'features' => [
+            ['title' => '"✨ AI Plan Help" floating button', 'detail' => 'Appears on Plan and Timeline views. One tap generates a full prompt: seed stock (qty, companions, planting months), current bed plantings with sow/harvest dates, rotation history, and a structured task asking for top-10 next plantings with succession and companion notes.'],
+            ['title' => 'Copy-to-clipboard flow', 'detail' => 'Prompt opens in a slide-up sheet with a single Copy button. Paste into Claude, ChatGPT, or any AI. Direct AI integration planned for a future release.'],
+        ],
+    ],
+
     '3.1.24' => [
         'status'   => 'released',
         'released' => '2026-04-30',
