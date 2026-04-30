@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.24' => [
+        'date'  => '2026-04-30',
+        'title' => 'Fix seed save 403 and plant count',
+        'new' => [],
+        'improved' => [
+            'seedGroundStats() now has a two-tier query: full query with harvest dates first; if any column is missing on older installs it falls back to a minimal count-only query instead of returning zeros.',
+            'GardenSchema::ensure() now runs a data migration to set plant_count = 1 for any active planting row where it is NULL or 0, so every in-ground entry contributes at least 1 to the family needs count.',
+        ],
+        'fixed' => [
+            'Saving a seed with AI-generated text (curly apostrophes, smart quotes, em-dashes) no longer triggers a server 403 WAF block — a JS normalizer on the seed form converts all Unicode punctuation to plain ASCII before the POST is sent.',
+        ],
+    ],
+
     '3.1.23' => [
         'date'  => '2026-04-29',
         'title' => 'Bulletproof garden page — every secondary query individually guarded',

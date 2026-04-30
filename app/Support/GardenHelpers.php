@@ -469,7 +469,20 @@ class GardenHelpers
                 [$seedId]
             );
         } catch (\Throwable $e) {
-            return $empty;
+            // Optional columns (expected_harvest_at, sown_at) may be missing on older installs
+            // where ALTER TABLE failed silently. Fall back to counting only.
+            try {
+                $rows = $db->fetchAll(
+                    "SELECT plant_count, status FROM garden_plantings WHERE seed_id = ? AND status IN ('growing','planned')",
+                    [$seedId]
+                );
+                foreach ($rows as &$r) {
+                    $r += ['expected_harvest_at' => null, 'sown_at' => null, 'planted_at' => null, 'days_to_maturity' => null];
+                }
+                unset($r);
+            } catch (\Throwable $e2) {
+                return $empty;
+            }
         }
         $inGround = 0; $planned = 0; $groundDates = []; $plannedDates = [];
         foreach ($rows as $r) {

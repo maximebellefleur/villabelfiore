@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.24' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Fix seed save 403 and plant count',
+        'features' => [
+            ['title' => 'WAF-safe seed form', 'detail' => 'JS normalizer converts curly quotes, smart apostrophes, and em-dashes to ASCII before POST — prevents ModSecurity 403 blocks on AI-generated seed names.'],
+            ['title' => 'Reliable plant count in Family Needs', 'detail' => 'seedGroundStats falls back to a minimal query when optional columns are missing, and a schema migration fills NULL plant_count rows so every in-ground planting registers in the count.'],
+        ],
+    ],
+
     '3.1.23' => [
         'status'   => 'released',
         'released' => '2026-04-29',

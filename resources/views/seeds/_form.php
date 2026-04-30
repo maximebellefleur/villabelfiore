@@ -391,6 +391,31 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
     </div>
 </fieldset>
 
+<!-- ── WAF-safe form submit: normalize Unicode punctuation to ASCII ──────── -->
+<script>
+(function () {
+    // Curly quotes and smart punctuation from AI-generated text can trigger
+    // server-level WAF/ModSecurity rules. Normalize before the POST goes out.
+    function normText(s) {
+        return s
+            .replace(/[‘’ʼ′`´]/g, "'") // smart apostrophes → '
+            .replace(/[“”„″«»]/g, '"')  // smart quotes → "
+            .replace(/—|―/g, '--')                          // em dash → --
+            .replace(/–/g, '-')                                  // en dash → -
+            .replace(/…/g, '...')                                 // ellipsis → ...
+            .replace(/ /g, ' ');                                  // non-breaking space
+    }
+    // Capture phase: runs before any other submit handler, including CSRF
+    document.addEventListener('submit', function (ev) {
+        var form = ev.target;
+        if (!form || (form.method || '').toLowerCase() !== 'post') return;
+        form.querySelectorAll('input[type="text"],input[type="search"],input[type="email"],textarea').forEach(function (el) {
+            if (el.value) el.value = normText(el.value);
+        });
+    }, true);
+}());
+</script>
+
 <!-- ── AI identify script ────────────────────────────────────────────────── -->
 <script>
 (function () {

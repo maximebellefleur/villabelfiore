@@ -82,6 +82,23 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
 
         self::migrateBedRows($db);
+        self::fixNullPlantCounts($db);
+    }
+
+    private static function fixNullPlantCounts(DB $db): void
+    {
+        // Set plant_count = 1 for any active planting row that has NULL or 0 count.
+        // This is a data fix — existing rows entered before plant_count was tracked
+        // need a minimum of 1 so seedGroundStats shows a count instead of 0.
+        try {
+            $cols = $db->fetchAll("SHOW COLUMNS FROM garden_plantings LIKE 'plant_count'");
+            if (empty($cols)) return;
+            $db->execute(
+                "UPDATE garden_plantings SET plant_count = 1
+                 WHERE (plant_count IS NULL OR plant_count = 0)
+                   AND status IN ('growing','planned','sown')"
+            );
+        } catch (\Throwable $e) {}
     }
 
     private static function migrateBedRows(DB $db): void
