@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.26' => [
+        'date'  => '2026-04-30',
+        'title' => 'Palette variety labels, sync sow dates, compact mobile widgets',
+        'new' => [
+            'Plant mode palette chips now show a second line with the seed variety in a lighter, smaller font.',
+            '"🗓 Sync sow dates" button on plant mode — sets sown_at and planted_at for all active plantings in the bed; if a future date is chosen, a reminder is created and pushed to Google Calendar.',
+        ],
+        'improved' => [],
+        'fixed' => [],
+    ],
+
     '3.1.25' => [
         'date'  => '2026-04-30',
         'title' => 'AI Plan Help — copy garden context prompt',

@@ -1278,4 +1278,72 @@ class GardenBedController
             'tip'         => null,
         ];
     }
+
+    /**
+     * AJAX: set the same sow/planted date for every active planting in this bed.
+     * If the date is in the future, also creates a reminder (+ Google Calendar push).
+     *
+     * POST: sow_date (YYYY-MM-DD, required), sow_time (HH:MM, optional, only used for future dates)
+     */
+    public function syncDates(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTable($db);
+
+        $itemId  = (int)($params['id'] ?? 0);
+        $sowDate = trim($request->post('sow_date', ''));
+        $sowTime = trim($request->post('sow_time', ''));
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $sowDate)) {
+            Response::json(['success' => false, 'error' => 'Invalid date']);
+            return;
+        }
+
+        $today    = GardenHelpers::todayIso();
+        $isFuture = $sowDate > $today;
+
+        try {
+            // Update sow + planted date for all currently active (non-harvested) plantings
+            $db->execute(
+                "UPDATE garden_plantings
+                    SET sown_at = ?, planted_at = ?, updated_at = NOW()
+                  WHERE item_id = ? AND status = 'growing'",
+                [$sowDate, $sowDate, $itemId]
+            );
+
+            if ($isFuture) {
+                $item = $db->fetchOne("SELECT name FROM items WHERE id = ?", [$itemId]);
+                $bedName = $item['name'] ?? "Bed #$itemId";
+
+                // List the distinct crops being synced for a useful reminder title
+                $rows = $db->fetchAll(
+                    "SELECT DISTINCT crop_name FROM garden_plantings
+                      WHERE item_id = ? AND status = 'growing' AND crop_name IS NOT NULL",
+                    [$itemId]
+                );
+                $cropList = implode(', ', array_filter(array_column($rows, 'crop_name')));
+                $title    = "Sow in $bedName" . ($cropList ? ": $cropList" : '');
+                $timeStr  = ($sowTime && preg_match('/^\d{2}:\d{2}$/', $sowTime)) ? $sowTime : '09:00';
+                $dueAt    = "$sowDate $timeStr:00";
+
+                $db->execute(
+                    "INSERT INTO reminders (item_id, type, title, due_at, is_recurring, status, created_at, updated_at)
+                     VALUES (?, 'garden', ?, ?, 0, 'pending', NOW(), NOW())",
+                    [$itemId, $title, $dueAt]
+                );
+                $reminderId = (int)$db->lastInsertId();
+                if ($reminderId) {
+                    try {
+                        (new \App\Controllers\CalendarController())->pushReminderById($db, $reminderId);
+                    } catch (\Throwable $e) {}
+                }
+            }
+
+            Response::json(['success' => true, 'is_future' => $isFuture]);
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 }

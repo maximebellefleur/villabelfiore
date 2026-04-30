@@ -1151,7 +1151,7 @@ fieldset.fieldset {
 .rg-palette-chip {
   flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 5px 11px 5px 7px;
+  padding: 6px 11px 6px 7px;
   background: #fff; border: 1.5px solid var(--color-border); border-radius: 999px;
   font-size: .72rem; font-weight: 700;
   color: var(--color-text);
@@ -1159,6 +1159,9 @@ fieldset.fieldset {
 }
 .rg-palette-chip.is-active { background: var(--color-primary-soft); border-color: var(--color-primary); color: var(--color-primary); }
 .rg-palette-chip-emoji { font-size: 1rem; }
+.rg-palette-chip-label { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.rg-palette-chip-name  { font-weight: 700; font-size: .72rem; white-space: nowrap; }
+.rg-palette-chip-variety { font-weight: 400; font-size: .59rem; opacity: .68; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; }
 .rg-palette-chip-spacing { font-size: .58rem; opacity: .7; font-family: var(--font-mono); }
 
 /* Succession card */

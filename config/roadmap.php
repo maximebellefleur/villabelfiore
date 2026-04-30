@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.26' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Palette variety labels, sync sow dates, compact mobile widgets',
+        'features' => [
+            ['title' => 'Variety sub-line on palette chips', 'detail' => 'Each plant chip in the bed palette now shows the seed variety below the name in a lighter font — makes it easy to distinguish e.g. "Tomato / San Marzano" from "Tomato / Roma" at a glance.'],
+            ['title' => 'Sync sow dates for a bed', 'detail' => 'New "🗓 Sync sow dates" button on plant mode. Choose a date (past or future). For past dates it silently updates all growing plantings. For future dates it creates a reminder visible in the calendar and pushes to Google Calendar if connected.'],
+        ],
+    ],
+
     '3.1.25' => [
         'status'   => 'released',
         'released' => '2026-04-30',

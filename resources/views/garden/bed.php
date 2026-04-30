@@ -61,6 +61,17 @@ $bedId = (int)$item['id'];
     <div class="rg-week-empty">No lines configured. <a href="<?= url('/items/' . $bedId . '/edit') ?>">Set bed dimensions</a> to add lines.</div>
   <?php else: ?>
 
+  <!-- Lines — header row with sync button -->
+  <div style="display:flex;justify-content:flex-end;margin:0 0 6px">
+    <button type="button" id="rgSyncDatesBtn"
+            style="display:flex;align-items:center;gap:5px;background:transparent;
+                   border:1.5px solid var(--color-border);border-radius:999px;
+                   padding:5px 13px;font-size:.74rem;font-weight:600;
+                   color:var(--color-text-muted);cursor:pointer">
+      🗓 Sync sow dates
+    </button>
+  </div>
+
   <!-- Lines -->
   <?php
   $todayIso = date('Y-m-d');
@@ -242,7 +253,12 @@ $bedId = (int)$item['id'];
         data-antagonists="<?= e($c['antagonists'] ?? '') ?>"
         data-notes="<?= e($c['notes'] ?? '') ?>">
         <span class="rg-palette-chip-emoji"><?= e($c['emoji']) ?></span>
-        <span><?= e($c['name']) ?></span>
+        <span class="rg-palette-chip-label">
+          <span class="rg-palette-chip-name"><?= e($c['name']) ?></span>
+          <?php if (!empty($c['variety'])): ?>
+          <span class="rg-palette-chip-variety"><?= e($c['variety']) ?></span>
+          <?php endif; ?>
+        </span>
         <span class="rg-palette-chip-spacing"><?= (int)$c['spacing_cm'] ?>cm</span>
       </button>
       <?php endforeach; ?>
@@ -307,6 +323,42 @@ $bedId = (int)$item['id'];
     </div>
   </div>
 
+</div>
+
+<!-- Sync sow dates modal -->
+<div class="rg-blackout" id="rgSyncModal" style="display:none">
+  <div class="rg-blackout-card">
+    <div class="rg-blackout-head">
+      <div style="flex:1">
+        <div class="rg-label-tiny">Sync Garden</div>
+        <div style="font-weight:800;font-size:1rem;margin-top:2px"><?= e($bed['name']) ?> — Set Sow Date</div>
+      </div>
+      <button type="button" class="rg-blackout-close" id="rgSyncClose">×</button>
+    </div>
+    <div class="rg-blackout-body">
+      <p style="font-size:.82rem;color:var(--color-text-muted);margin:0 0 14px;line-height:1.5">
+        Sets <strong>sown date</strong> for all active (non-harvested) plantings in this bed to the same day.
+        If the date is in the future a reminder is created and synced to Google Calendar.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Sow Date <span class="required">*</span></label>
+          <input type="date" id="rgSyncDate" class="form-input" value="<?= date('Y-m-d') ?>">
+        </div>
+        <div class="form-group" id="rgSyncHourWrap" style="display:none">
+          <label class="form-label">Time (optional)</label>
+          <input type="time" id="rgSyncTime" class="form-input" value="09:00">
+        </div>
+      </div>
+      <div id="rgSyncFutureNote" style="display:none;padding:9px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:.8rem;color:#1d4ed8;margin-top:6px">
+        🔔 <strong>Future date</strong> — a sowing reminder will be added to your reminders and synced to Google Calendar if enabled.
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 18px 18px">
+      <button type="button" class="btn btn-ghost" id="rgSyncCancel" style="flex:1">Cancel</button>
+      <button type="button" class="btn btn-primary" id="rgSyncSave" style="flex:2">Save sync</button>
+    </div>
+  </div>
 </div>
 
 <!-- Toast notification (fixed above palette) -->
@@ -958,6 +1010,44 @@ $bedId = (int)$item['id'];
       if (d && d.success === false) { closeHarvest(); showToast(d.error || 'Could not save harvest', 'error'); }
       else window.location.reload();
     }).fail(function (xhr) { closeHarvest(); ajaxErr(xhr, 'Could not save harvest'); });
+  });
+
+  // ── Sync sow dates modal ────────────────────────────────────────
+  var TODAY_ISO = '<?= date('Y-m-d') ?>';
+  $('#rgSyncDatesBtn').on('click', function () { $('#rgSyncModal').css('display', 'flex'); });
+  function closeSyncModal() { $('#rgSyncModal').hide(); }
+  $('#rgSyncClose, #rgSyncCancel').on('click', closeSyncModal);
+
+  function checkSyncFuture() {
+    var d = $('#rgSyncDate').val();
+    var isFuture = d && d > TODAY_ISO;
+    $('#rgSyncHourWrap').toggle(!!isFuture);
+    $('#rgSyncFutureNote').toggle(!!isFuture);
+  }
+  $('#rgSyncDate').on('change', checkSyncFuture);
+  checkSyncFuture();
+
+  $('#rgSyncSave').on('click', function () {
+    var d = $('#rgSyncDate').val();
+    if (!d) { showToast('Please choose a date.', 'error'); return; }
+    var $btn = $(this);
+    $btn.prop('disabled', true).text('Saving…');
+    $.post('<?= url('/items/' . $bedId . '/sync-dates') ?>', {
+      _token: csrf,
+      sow_date: d,
+      sow_time: $('#rgSyncTime').val() || ''
+    })
+    .done(function (data) {
+      if (data && data.success === false) {
+        showToast(data.error || 'Could not sync.', 'error');
+        $btn.prop('disabled', false).text('Save sync');
+        return;
+      }
+      closeSyncModal();
+      showToast(data && data.is_future ? '🔔 Sow date synced + reminder created!' : '✅ Sow dates synced.', 'ok');
+      setTimeout(function () { window.location.reload(); }, 1600);
+    })
+    .fail(function (xhr) { ajaxErr(xhr, 'Could not sync.'); $btn.prop('disabled', false).text('Save sync'); });
   });
 })();
 </script>
