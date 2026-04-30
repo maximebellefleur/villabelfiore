@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.31' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'App icon on login page',
+        'features' => [
+            ['title' => 'App icon on login page', 'detail' => 'The Rooted icon now appears above the sign-in form.'],
+        ],
+    ],
+
     '3.1.30' => [
         'status'   => 'released',
         'released' => '2026-04-30',

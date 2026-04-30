@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.31' => [
+        'date'  => '2026-04-30',
+        'title' => 'App icon on login page',
+        'improved' => [
+            'Login page now shows the Rooted app icon above the sign-in form.',
+        ],
+    ],
+
     '3.1.30' => [
         'date'  => '2026-04-30',
         'title' => 'Garden bed reordering, action log reliability fix',

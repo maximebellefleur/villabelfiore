@@ -1,5 +1,8 @@
 <?php $layout = 'auth'; ?>
 <div class="auth-card">
+    <div style="text-align:center;margin-bottom:20px">
+        <img src="<?= url('/assets/images/icon-192.png') ?>" alt="Rooted" style="width:72px;height:72px;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.12)">
+    </div>
     <h1 class="auth-title">Sign In to Rooted</h1>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
     <form method="POST" action="<?= url('/login') ?>" class="form" novalidate>
