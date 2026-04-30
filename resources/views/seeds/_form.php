@@ -245,16 +245,88 @@ $antagonists = !empty($seed['antagonists']) ? implode(', ', json_decode($seed['a
                 $_seedColor = \App\Support\GardenHelpers::defaultCatalogColor($_key);
             }
             ?>
-            <div style="display:flex;align-items:center;gap:8px">
-                <input type="color" name="color" id="fColor" value="<?= e($_seedColor) ?>" style="width:46px;height:36px;padding:0;border:1px solid var(--color-border);border-radius:6px;cursor:pointer;background:transparent">
-                <input type="text" id="fColorHex" value="<?= e($_seedColor) ?>" pattern="^#[0-9a-fA-F]{6}$" maxlength="7" class="form-input" style="font-family:var(--font-mono);max-width:120px" oninput="document.getElementById('fColor').value = this.value;">
-                <span style="font-size:.75rem;color:var(--color-text-muted)">Auto-set on new seeds — change anytime.</span>
+            <!-- Hidden real input for form submit -->
+            <input type="hidden" name="color" id="fColor" value="<?= e($_seedColor) ?>">
+            <!-- Color swatch picker -->
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <button type="button" id="fColorBtn" onclick="rgColorOpen()" style="width:40px;height:40px;border-radius:50%;border:3px solid var(--color-border);cursor:pointer;background:<?= e($_seedColor) ?>;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.15)" title="Pick color"></button>
+                <input type="text" id="fColorHex" value="<?= e($_seedColor) ?>" placeholder="#hex" maxlength="7" class="form-input" style="font-family:var(--font-mono);max-width:94px;font-size:.85rem" oninput="rgColorSetHex(this.value)">
+                <span style="font-size:.73rem;color:var(--color-text-muted)">Tap circle to pick</span>
             </div>
+
+            <!-- Slide-up color swatch panel -->
+            <div id="rgColorPanel" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center">
+              <div style="background:var(--color-bg);border-radius:18px 18px 0 0;padding:18px 16px 32px;width:100%;max-width:460px;box-shadow:0 -4px 24px rgba(0,0,0,.18)">
+                <div style="font-weight:700;font-size:.95rem;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+                  Pick a color
+                  <button type="button" onclick="rgColorClose()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--color-text-muted);line-height:1">×</button>
+                </div>
+                <div id="rgColorSwatches" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+                <?php
+                $swatches = [
+                  // Greens
+                  '#86efac','#4ade80','#22c55e','#15803d','#166534','#14532d',
+                  // Yellow/amber
+                  '#fde047','#fbbf24','#f59e0b','#d97706','#b45309','#92400e',
+                  // Orange/red
+                  '#fdba74','#fb923c','#f97316','#ef4444','#dc2626','#991b1b',
+                  // Purple/lavender
+                  '#d8b4fe','#c084fc','#a855f7','#7c3aed','#6d28d9','#4c1d95',
+                  // Blue/teal
+                  '#93c5fd','#60a5fa','#3b82f6','#22d3ee','#0891b2','#0e7490',
+                  // Earth/neutrals
+                  '#d6b899','#c8a66d','#a66141','#78716c','#57534e','#292524',
+                ];
+                foreach ($swatches as $sw): ?>
+                  <button type="button" class="rg-cswatch" data-color="<?= e($sw) ?>"
+                    onclick="rgColorPick('<?= e($sw) ?>')"
+                    style="width:100%;aspect-ratio:1;border-radius:50%;border:3px solid transparent;cursor:pointer;background:<?= e($sw) ?>;transition:transform .1s,border-color .1s"
+                    title="<?= e($sw) ?>"></button>
+                <?php endforeach; ?>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;border-top:1px solid var(--color-border);padding-top:12px">
+                  <label style="font-size:.78rem;font-weight:600;flex-shrink:0">Custom hex:</label>
+                  <input type="text" id="rgColorCustomHex" maxlength="7" placeholder="#a66141" class="form-input" style="font-family:monospace;max-width:110px;font-size:.85rem" oninput="rgColorSetHex(this.value)">
+                  <button type="button" onclick="rgColorClose()" class="btn btn-primary btn-sm" style="margin-left:auto">Done</button>
+                </div>
+              </div>
+            </div>
+
             <script>
-            (function(){
-                var c = document.getElementById('fColor'), h = document.getElementById('fColorHex');
-                if (c && h) c.addEventListener('input', function(){ h.value = c.value; });
-            })();
+            function rgColorOpen() {
+                var cur = document.getElementById('fColor').value;
+                document.getElementById('rgColorPanel').style.display = 'flex';
+                document.getElementById('rgColorCustomHex').value = cur;
+                document.querySelectorAll('.rg-cswatch').forEach(function(s) {
+                    s.style.borderColor = s.dataset.color === cur ? '#111' : 'transparent';
+                    s.style.transform   = s.dataset.color === cur ? 'scale(1.18)' : '';
+                });
+            }
+            function rgColorClose() {
+                document.getElementById('rgColorPanel').style.display = 'none';
+            }
+            function rgColorPick(hex) {
+                rgColorSetHex(hex);
+                document.querySelectorAll('.rg-cswatch').forEach(function(s) {
+                    s.style.borderColor = s.dataset.color === hex ? '#111' : 'transparent';
+                    s.style.transform   = s.dataset.color === hex ? 'scale(1.18)' : '';
+                });
+                document.getElementById('rgColorCustomHex').value = hex;
+                setTimeout(rgColorClose, 180);
+            }
+            function rgColorSetHex(val) {
+                val = val.trim();
+                if (!val.startsWith('#')) val = '#' + val;
+                document.getElementById('fColor').value    = val;
+                document.getElementById('fColorHex').value = val;
+                document.getElementById('fColorBtn').style.background = val;
+                if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                    document.getElementById('fColorBtn').style.background = val;
+                }
+            }
+            document.getElementById('rgColorPanel').addEventListener('click', function(e) {
+                if (e.target === this) rgColorClose();
+            });
             </script>
         </div>
     </div>

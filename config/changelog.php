@@ -8,6 +8,22 @@
  */
 return [
 
+    '3.1.28' => [
+        'date'  => '2026-04-30',
+        'title' => 'Color picker swatches, seed color backfill, sync fix',
+        'new' => [
+            'Seed color picker replaced with a curated palette of 30 garden-appropriate circular swatches — tap the circle to open, tap a color to select instantly, or type a custom hex. No more navigating the OS color picker.',
+        ],
+        'improved' => [
+            'Seed catalog list now uses the same color computation as the edit form — seeds that had NULL color no longer appear green.',
+            'Schema migration auto-backfills colors for all seeds that have never had one set.',
+            'Sync sow dates: planted_at and updated_at columns are now ensured by the schema migration before the UPDATE runs, fixing silent failures on older installs.',
+        ],
+        'fixed' => [
+            'Sync sow dates not persisting: column-missing fallback tier added (tries sown_at+planted_at, then planted_at alone, then just touches updated_at).',
+        ],
+    ],
+
     '3.1.27' => [
         'date'  => '2026-04-30',
         'title' => 'Compact mobile widgets, Add to Garden Bed, smart irrigation',

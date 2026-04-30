@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.28' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Color picker swatches, seed color backfill, sync fix',
+        'features' => [
+            ['title' => '30-color swatch picker', 'detail' => 'Seed edit form now shows a circular color button. Tapping opens a slide-up panel with 30 curated garden-appropriate colors (greens, ambers, earthy browns, purples, blues). Tap to select and close. Custom hex input at bottom.'],
+            ['title' => 'Seed color consistency', 'detail' => 'Seeds with no saved color now show the same computed default in both the catalog list and the edit form. Schema migration backfills all NULL color seeds automatically on first load after upgrade.'],
+        ],
+    ],
+
     '3.1.27' => [
         'status'   => 'released',
         'released' => '2026-04-30',

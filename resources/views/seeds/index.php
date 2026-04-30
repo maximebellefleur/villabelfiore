@@ -15,7 +15,9 @@ $search= $search ?? '';
 function seedColor(array $seed, array $typeColor): string {
     $c = $seed['color'] ?? null;
     if ($c && preg_match('/^#[0-9a-f]{6}$/i', $c)) return $c;
-    return $typeColor[$seed['type'] ?? 'other'] ?? '#A66141';
+    // Use the same computed default as the edit form so colors match before a re-save
+    $key = (int)($seed['id'] ?? 0) ?: ($seed['name'] ?? 'other');
+    return \App\Support\GardenHelpers::defaultCatalogColor($key);
 }
 ?>
 <div class="page-header">

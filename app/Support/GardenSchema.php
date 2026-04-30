@@ -85,6 +85,7 @@ class GardenSchema
 
         self::migrateBedRows($db);
         self::fixNullPlantCounts($db);
+        self::backfillSeedColors($db);
     }
 
     private static function fixNullPlantCounts(DB $db): void
@@ -142,6 +143,20 @@ class GardenSchema
         } catch (\Throwable $e) {
             // table missing or already dropped
         }
+    }
+
+    private static function backfillSeedColors(DB $db): void
+    {
+        // Seeds created before the color column was introduced have color = NULL.
+        // Backfill them with the same computed default used by the edit form so the
+        // catalog list and the edit form always show the same color.
+        try {
+            $seeds = $db->fetchAll("SELECT id, name FROM seeds WHERE color IS NULL OR color = ''");
+            foreach ($seeds as $s) {
+                $color = GardenHelpers::defaultCatalogColor((int)$s['id']);
+                $db->execute("UPDATE seeds SET color = ? WHERE id = ?", [$color, (int)$s['id']]);
+            }
+        } catch (\Throwable $e) {}
     }
 
     private static function ensureColumn(DB $db, string $table, string $column, string $alter): void
