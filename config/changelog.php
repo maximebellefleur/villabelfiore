@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.44' => [
+        'date'  => '2026-04-30',
+        'title' => 'Status save reliability + Copy AI includes error tasks',
+        'fixed' => [
+            'writeStatuses() now checks file_put_contents() return value and returns bool. A failed write (bad permissions, missing storage dir) no longer silently succeeds — the AJAX call returns success:false and a visible error banner appears in the task log.',
+            'ptaskCycle and ptaskBatch show an inline error banner if the server could not save, preventing the confusing "status reverts on page reload" experience.',
+        ],
+        'improved' => [
+            'Copy AI button now includes both 🤖 Trigger AI and ❌ Error tasks. Trigger AI tasks appear first. The copied block uses [TRIGGER_AI] / [ERROR] prefixes and a header instructing the receiving AI not to re-log tasks.',
+            'Copy AI button count reflects both trigger_ai and error tasks.',
+        ],
+    ],
+
     '3.1.43' => [
         'date'  => '2026-04-30',
         'title' => 'Status toggle pinned to far right of task row',

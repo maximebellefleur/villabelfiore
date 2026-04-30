@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.44' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Status save reliability + Copy AI covers error tasks',
+        'features' => [
+            ['title' => 'Status saves now fail visibly', 'detail' => 'If the server cannot write to storage/task_statuses.json (permissions, missing directory), the AJAX response returns success:false and an inline red banner appears on the task log page. Previously the write failed silently and statuses reverted on reload.'],
+            ['title' => 'Copy AI includes Error tasks', 'detail' => 'The 📋 Copy AI button now captures both 🤖 Trigger AI and ❌ Error tasks. Trigger AI tasks sort first. The clipboard block uses [TRIGGER_AI] / [ERROR] prefixes and includes a header telling the receiving AI not to re-log these as new ZONE tasks.'],
+        ],
+    ],
+
     '3.1.43' => [
         'status'   => 'released',
         'released' => '2026-04-30',

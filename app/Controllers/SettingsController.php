@@ -257,8 +257,12 @@ class SettingsController
             break;
         }
         unset($t);
-        self::writeStatuses($statuses);
-        Response::json(['success' => true, 'tasks' => $tasks]);
+        $saved = self::writeStatuses($statuses);
+        Response::json([
+            'success' => $saved,
+            'tasks'   => $tasks,
+            'error'   => $saved ? null : 'Status could not be saved — check that storage/ is writable.',
+        ]);
     }
 
     // POST /settings/tasks/batch  — set status for multiple IDs
@@ -289,8 +293,12 @@ class SettingsController
             ];
         }
         unset($t);
-        self::writeStatuses($statuses);
-        Response::json(['success' => true, 'tasks' => $tasks]);
+        $saved = self::writeStatuses($statuses);
+        Response::json([
+            'success' => $saved,
+            'tasks'   => $tasks,
+            'error'   => $saved ? null : 'Status could not be saved — check that storage/ is writable.',
+        ]);
     }
 
     // GET /settings/tasks/archive/download
@@ -390,12 +398,14 @@ class SettingsController
         return $migrated;
     }
 
-    public static function writeStatuses(array $statuses): void
+    public static function writeStatuses(array $statuses): bool
     {
         $path = self::statusesPath();
         $dir  = dirname($path);
-        if (!is_dir($dir)) @mkdir($dir, 0775, true);
-        file_put_contents($path, json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            return false;
+        }
+        return file_put_contents($path, json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
     }
 
     /**

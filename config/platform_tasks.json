@@ -1,5 +1,11 @@
 [
   {
+    "id": 22,
+    "title": "Status changes not saved after update",
+    "description": "writeStatuses() never checked file_put_contents() return value, so a failed write (bad permissions, missing storage dir) would silently succeed. The UI updated optimistically but statuses reverted on reload. Fixed by returning bool from writeStatuses and propagating the error through the AJAX response.",
+    "created_at": "2026-04-30 17:00:00"
+  },
+  {
     "id": 21,
     "title": "Status toggle fixed to far right of task row",
     "description": "Batch select checkbox stays left-most, status toggle (○) must be right-most. Added margin-left:auto to guarantee it regardless of browser/version.",

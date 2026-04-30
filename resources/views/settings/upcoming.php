@@ -129,7 +129,7 @@ function fstepRowHtml(array $st): string {
 ?>
 
 <?php
-$triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? '') === 'trigger_ai'));
+$aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] ?? '', ['trigger_ai', 'error'], true)));
 ?>
 <div class="ptask-header">
   <div>
@@ -138,9 +138,9 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <button type="button" class="btn btn-secondary btn-sm" id="ptaskCopyAiBtn" onclick="ptaskCopyAi()"
-            style="display:<?= $triggerAiCount > 0 ? 'inline-flex' : 'none' ?>"
-            title="Copy all 🤖 Trigger AI tasks formatted for pasting into an AI conversation">
-      📋 Copy AI tasks (<span id="ptaskAiCount"><?= $triggerAiCount ?></span>)
+            style="display:<?= $aiTaskCount > 0 ? 'inline-flex' : 'none' ?>"
+            title="Copy trigger_ai and error tasks formatted for pasting into an AI conversation">
+      📋 Copy AI tasks (<span id="ptaskAiCount"><?= $aiTaskCount ?></span>)
     </button>
     <a href="<?= url('/settings') ?>" class="btn btn-secondary btn-sm">&larr; Settings</a>
   </div>
@@ -223,11 +223,25 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
   function rowEl(id)  { return document.getElementById('ptask' + id); }
 
   function updateAiCount() {
-    var n   = document.querySelectorAll('.ptask-row[data-status="trigger_ai"]').length;
+    var n   = document.querySelectorAll('.ptask-row[data-status="trigger_ai"],.ptask-row[data-status="error"]').length;
     var btn = document.getElementById('ptaskCopyAiBtn');
     var lbl = document.getElementById('ptaskAiCount');
     if (lbl) lbl.textContent = n;
     if (btn) btn.style.display = n > 0 ? 'inline-flex' : 'none';
+  }
+
+  function showSaveError(msg) {
+    var el = document.getElementById('ptaskSaveError');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ptaskSaveError';
+      el.style.cssText = 'background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:8px 14px;border-radius:6px;font-size:.82rem;margin-bottom:10px';
+      var list = document.getElementById('ptaskList');
+      list.parentNode.insertBefore(el, list);
+    }
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+    setTimeout(function(){ if (el) el.style.display = 'none'; }, 6000);
   }
 
   function applyTask(t) {
@@ -275,18 +289,29 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
   }
 
   window.ptaskCopyAi = function() {
-    var rows = document.querySelectorAll('.ptask-row[data-status="trigger_ai"]');
+    var rows = Array.from(document.querySelectorAll('.ptask-row[data-status="trigger_ai"],.ptask-row[data-status="error"]'));
     if (!rows.length) return;
-    var lines = [];
+    rows.sort(function(a, b) {
+      return (a.dataset.status === 'trigger_ai' ? 0 : 1) - (b.dataset.status === 'trigger_ai' ? 0 : 1);
+    });
+    var lines = [
+      '=== ROOTED — EXISTING TASKS NEEDING AI ATTENTION ===',
+      'These tasks already exist in config/platform_tasks.json.',
+      'DO NOT log them again as new (ZONE) tasks — work on the existing IDs below.',
+      ''
+    ];
     rows.forEach(function(row) {
-      var id    = row.dataset.id;
-      var title = (row.querySelector('.ptask-title') || {}).textContent || '';
-      var desc  = (row.querySelector('.ptask-desc')  || {}).textContent || '';
-      lines.push('TRIGGER AI — Task #' + id + ': ' + title.trim());
+      var id     = row.dataset.id;
+      var status = row.dataset.status;
+      var title  = (row.querySelector('.ptask-title') || {}).textContent || '';
+      var desc   = (row.querySelector('.ptask-desc')  || {}).textContent || '';
+      var prefix = status === 'trigger_ai' ? '[TRIGGER_AI]' : '[ERROR]';
+      lines.push(prefix + ' Task #' + id + ' — ' + title.trim());
       if (desc.trim()) lines.push(desc.trim());
       lines.push('');
     });
-    var text = lines.join('\n').trimEnd();
+    lines.push('=== END ===');
+    var text = lines.join('\n');
     var done = function() {
       var btn = document.getElementById('ptaskCopyAiBtn');
       if (!btn) return;
@@ -312,8 +337,13 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
     })
     .then(function(r){ return r.json(); })
     .then(function(res) {
-      if (res.success) res.tasks.forEach(applyTask);
-    });
+      if (res.success) {
+        res.tasks.forEach(applyTask);
+      } else {
+        showSaveError(res.error || 'Could not save status. Please try again.');
+      }
+    })
+    .catch(function() { showSaveError('Network error — status not saved.'); });
   };
 
   window.ptaskBatch = function(status) {
@@ -330,8 +360,11 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
       if (res.success) {
         res.tasks.forEach(applyTask);
         ptaskDeselectAll();
+      } else {
+        showSaveError(res.error || 'Could not save status. Please try again.');
       }
-    });
+    })
+    .catch(function() { showSaveError('Network error — status not saved.'); });
   };
 
   window.ptaskSelChanged = function() {
