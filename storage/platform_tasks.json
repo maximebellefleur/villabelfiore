@@ -1,5 +1,14 @@
 [
   {
+    "id": 8,
+    "title": "Family needs: phantom line count bug fix",
+    "description": "Reducing bed lines (e.g. 3→1) left orphan growing records on removed lines that inflated plant counts in family needs. Fixed by filtering seedGroundStats to only count lines within the current bed_rows setting.",
+    "status": "done",
+    "note": null,
+    "created_at": "2026-04-30 12:35:00",
+    "resolved_at": "2026-04-30 12:40:00"
+  },
+  {
     "id": 7,
     "title": "Upcoming page: future steps box with zones",
     "description": "Add a separate 'Future Steps' section at the top of Settings → Task Log. Supports (ZONE) targeting, multi-line input, drag-to-reorder, copy content, and delete per item. Displayed separately from the task list below.",

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.34' => [
+        'date'  => '2026-04-30',
+        'title' => 'Fix phantom line count in family needs ground stats',
+        'fixed' => [
+            'Family needs plant count was wrong when a bed\'s line count was reduced (e.g. 3→1). Plantings on the deleted lines kept being counted. Ground stats now only count plantings on lines within the bed\'s current configuration.',
+        ],
+    ],
+
     '3.1.33' => [
         'date'  => '2026-04-30',
         'title' => 'Future steps box, multi-seed family needs, task log',

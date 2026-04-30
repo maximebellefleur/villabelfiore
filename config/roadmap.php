@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.34' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Phantom line count fix',
+        'features' => [
+            ['title' => 'Ground stats only count active lines', 'detail' => 'Reducing a bed from 3 lines to 1 no longer inflates plant counts. seedGroundStats now joins item_meta to ignore plantings on lines beyond the current bed_rows setting.'],
+        ],
+    ],
+
     '3.1.33' => [
         'status'   => 'released',
         'released' => '2026-04-30',

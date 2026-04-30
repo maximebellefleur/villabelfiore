@@ -462,15 +462,21 @@ class GardenHelpers
         if ($seedId <= 0) return $empty;
         $today = self::todayIso();
         try {
+            // Join item_meta to only count lines within the bed's current bed_rows setting.
+            // Without this, reducing a bed from 3→1 lines leaves phantom growing records on
+            // lines 2 and 3 that inflate the count.
             $rows = $db->fetchAll(
                 "SELECT gp.plant_count, gp.status, gp.expected_harvest_at, gp.sown_at, gp.planted_at, s.days_to_maturity
-                 FROM garden_plantings gp LEFT JOIN seeds s ON s.id = gp.seed_id
-                 WHERE gp.seed_id = ? AND gp.status IN ('growing','sown','planned')",
+                 FROM garden_plantings gp
+                 LEFT JOIN seeds s ON s.id = gp.seed_id
+                 LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
+                 WHERE gp.seed_id = ?
+                   AND gp.status IN ('growing','sown','planned')
+                   AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)",
                 [$seedId]
             );
         } catch (\Throwable $e) {
-            // Optional columns (expected_harvest_at, sown_at) may be missing on older installs
-            // where ALTER TABLE failed silently. Fall back to counting only.
+            // Fallback for older installs missing optional columns
             try {
                 $rows = $db->fetchAll(
                     "SELECT plant_count, status FROM garden_plantings WHERE seed_id = ? AND status IN ('growing','planned')",
