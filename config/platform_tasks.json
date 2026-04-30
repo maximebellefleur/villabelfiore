@@ -1,5 +1,17 @@
 [
   {
+    "id": 20,
+    "title": "Future steps toggle button right-aligned",
+    "description": "Minimize future steps section by default. Header shows title + count only; expand/collapse button sits at the far right. Clicking it toggles ▶/▼ and shows or hides the content.",
+    "created_at": "2026-04-30 16:10:00"
+  },
+  {
+    "id": 19,
+    "title": "Login page: use nav logo, not static icon",
+    "description": "Login page hardcoded icon-192.png. Replace with same priority chain as the nav (logo-icon-light → logo-horizontal-light → logo-nav → icon-192.png fallback).",
+    "created_at": "2026-04-30 16:00:00"
+  },
+  {
     "id": 18,
     "title": "Clean up legacy upcoming files and dead code",
     "description": "Remove stale storage/platform_tasks.json and storage/future_steps.json (replaced by config/platform_tasks.json + storage on live server). Drop dead CSS for done badges/rows since done tasks never appear in the active list.",

@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.42' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Login logo + future steps toggle',
+        'features' => [
+            ['title' => 'Login page uses your custom logo', 'detail' => 'The login page now resolves the same custom logo files as the nav bar (logo-icon-light, logo-horizontal-light, logo-nav) with a fallback to icon-192.png. No more hardcoded asset.'],
+            ['title' => 'Future Steps collapsed by default', 'detail' => 'The Future Steps section on the task log page starts collapsed. A ▶ toggle button at the far right of the header expands it to show the full list and input area.'],
+        ],
+    ],
+
     '3.1.41' => [
         'status'   => 'released',
         'released' => '2026-04-30',

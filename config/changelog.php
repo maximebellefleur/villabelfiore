@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.42' => [
+        'date'  => '2026-04-30',
+        'title' => 'Login logo fix + future steps toggle',
+        'fixed' => [
+            'Login page now shows the same custom logo as the nav bar (logo-icon-light → logo-horizontal-light → logo-nav → icon-192.png fallback). No more hardcoded system icon.',
+        ],
+        'improved' => [
+            'Future Steps section is collapsed by default. A ▶ toggle button sits at the far right of the header — clicking it expands/collapses the section.',
+        ],
+    ],
+
     '3.1.41' => [
         'date'  => '2026-04-30',
         'title' => 'Copy AI tasks button + cleanup',

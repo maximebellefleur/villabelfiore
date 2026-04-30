@@ -1,7 +1,17 @@
-<?php $layout = 'auth'; ?>
+<?php $layout = 'auth';
+// Mirror nav logo priority: logo-icon-light → logo-horizontal-light → logo-nav → icon-192
+$_loginLogo = null;
+foreach (['svg','png','webp','jpg'] as $_e) {
+    foreach (['logo-icon-light','logo-horizontal-light','logo-nav'] as $_n) {
+        $_f = PUBLIC_PATH . '/assets/images/' . $_n . '.' . $_e;
+        if (file_exists($_f)) { $_loginLogo = url('/assets/images/'.$_n.'.'.$_e).'?v='.filemtime($_f); break 2; }
+    }
+}
+if (!$_loginLogo) $_loginLogo = url('/assets/images/icon-192.png');
+?>
 <div class="auth-card">
     <div style="text-align:center;margin-bottom:20px">
-        <img src="<?= url('/assets/images/icon-192.png') ?>" alt="Rooted" style="width:72px;height:72px;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.12)">
+        <img src="<?= $_loginLogo ?>" alt="Rooted" style="width:72px;height:72px;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.12);object-fit:contain">
     </div>
     <h1 class="auth-title">Sign In to Rooted</h1>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>

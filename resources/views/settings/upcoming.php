@@ -55,12 +55,11 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 
 /* Future steps */
 .fstep-section { background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:var(--spacing-5);overflow:hidden; }
-.fstep-section-header { display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;user-select:none; }
-.fstep-section-header:hover { background:var(--color-surface); }
-.fstep-section-chevron { font-size:.75rem;color:var(--color-text-muted);transition:transform .18s;flex-shrink:0; }
-.fstep-section-chevron.open { transform:rotate(90deg); }
+.fstep-section-header { display:flex;align-items:center;gap:8px;padding:10px 14px; }
 .fstep-section-title { font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);flex:1; }
 .fstep-section-count { font-size:.75rem;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border);border-radius:999px;padding:1px 9px; }
+.fstep-section-toggle { background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--color-text-muted);padding:3px 7px;border-radius:var(--radius);line-height:1;user-select:none;flex-shrink:0;transition:background .15s; }
+.fstep-section-toggle:hover { background:var(--color-surface);color:var(--color-text); }
 .fstep-section-body { display:none;padding:0 16px 16px; }
 .fstep-section-body.open { display:block; }
 .fstep-add { display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding-top:4px; }
@@ -84,12 +83,10 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => ($t['status']
 
 <!-- ── Future Steps ─────────────────────────────────────────────── -->
 <div class="fstep-section">
-  <div class="fstep-section-header" onclick="fstepToggleSection()">
-    <span class="fstep-section-chevron" id="fstepChevron">▶</span>
+  <div class="fstep-section-header">
     <span class="fstep-section-title">📌 Future Steps</span>
-    <?php if (!empty($steps)): ?>
-    <span class="fstep-section-count" id="fstepSectionCount"><?= count($steps) ?></span>
-    <?php endif; ?>
+    <span class="fstep-section-count" id="fstepSectionCount" style="<?= empty($steps) ? 'display:none' : '' ?>"><?= count($steps) ?></span>
+    <button type="button" class="fstep-section-toggle" id="fstepToggleBtn" onclick="fstepToggleSection()" title="Expand / collapse">▶</button>
   </div>
   <div class="fstep-section-body" id="fstepSectionBody">
     <div class="fstep-add">
@@ -377,10 +374,10 @@ $triggerAiCount = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? ''
   <?php endforeach; ?>
 
   window.fstepToggleSection = function() {
-    var body    = document.getElementById('fstepSectionBody');
-    var chevron = document.getElementById('fstepChevron');
-    var open    = body.classList.toggle('open');
-    chevron.classList.toggle('open', open);
+    var body = document.getElementById('fstepSectionBody');
+    var btn  = document.getElementById('fstepToggleBtn');
+    var open = body.classList.toggle('open');
+    if (btn) btn.textContent = open ? '▼' : '▶';
   };
 
   function post(url, body) {
