@@ -409,6 +409,8 @@ class GardenBedController
             return;
         }
 
+        GardenHelpers::triggerBedRecalc($db, $itemId, [$cropId]);
+
         Response::json(['success' => true, 'planting_id' => $plantingId, 'plants' => $newPlants, 'is_new' => $isNew]);
     }
 
@@ -530,6 +532,8 @@ class GardenBedController
         if ($widthM > 0)  $db->execute($upsert, [$itemId, 'bed_width_m',  (string)$widthM]);
         if ($lengthM > 0) $db->execute($upsert, [$itemId, 'bed_length_m', (string)$lengthM]);
 
+        GardenHelpers::triggerBedRecalc($db, $itemId);
+
         Response::json(['success' => true]);
     }
 
@@ -611,8 +615,19 @@ class GardenBedController
             return;
         }
 
-        $itemId = (int)$planting['item_id'];
+        $itemId  = (int)$planting['item_id'];
+        $lineNum = (int)$planting['line_number'];
+
+        // Capture seed_ids on this line BEFORE the delete
+        $affected = $db->fetchAll(
+            "SELECT DISTINCT seed_id FROM garden_plantings WHERE item_id = ? AND line_number = ? AND seed_id IS NOT NULL",
+            [$itemId, $lineNum]
+        );
+        $seedIds = array_column($affected, 'seed_id');
+
         $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$id]);
+
+        GardenHelpers::triggerBedRecalc($db, $itemId, $seedIds);
 
         if ($request->post('_ajax') === '1') {
             Response::json(['success' => true]);
@@ -768,6 +783,16 @@ class GardenBedController
             [$id]
         );
 
+        // Log into seed_harvest_log (best-effort)
+        if ($seedId > 0 && (int)($planting['plant_count'] ?? 0) > 0) {
+            try {
+                $db->execute(
+                    "INSERT INTO seed_harvest_log (seed_id, bed_id, plant_count, harvested_on) VALUES (?,?,?,CURDATE())",
+                    [$seedId, $itemId, max(1, (int)$planting['plant_count'])]
+                );
+            } catch (\Throwable $e) {}
+        }
+
         // Log harvest record (best-effort — silent on schema mismatch)
         $qty  = (float)$request->post('qty', 0);
         $unit = trim($request->post('unit', 'items')) ?: 'items';
@@ -783,6 +808,8 @@ class GardenBedController
                 // silent — harvest_entries schema may differ
             }
         }
+
+        GardenHelpers::triggerBedRecalc($db, $itemId, [$seedId]);
 
         Response::json(['success' => true]);
     }
@@ -968,6 +995,12 @@ class GardenBedController
             );
         }
         $row = $db->fetchOne("SELECT plant_count FROM garden_plantings WHERE id = ?", [$id]);
+
+        $row2 = $db->fetchOne("SELECT item_id, seed_id FROM garden_plantings WHERE id = ?", [$id]);
+        if ($row2) {
+            GardenHelpers::triggerBedRecalc($db, (int)$row2['item_id'], [(int)($row2['seed_id'] ?? 0)]);
+        }
+
         Response::json(['success' => true, 'plants' => max(1, (int)($row['plant_count'] ?? 1))]);
     }
 
@@ -978,7 +1011,16 @@ class GardenBedController
         CSRF::validate($request->post('_token', ''));
         $db = DB::getInstance();
         $id = (int)($params['id'] ?? 0);
+
+        // Capture item_id and seed_id BEFORE delete
+        $row = $db->fetchOne("SELECT item_id, seed_id FROM garden_plantings WHERE id = ?", [$id]);
+
         $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$id]);
+
+        if ($row) {
+            GardenHelpers::triggerBedRecalc($db, (int)$row['item_id'], [(int)($row['seed_id'] ?? 0)]);
+        }
+
         Response::json(['success' => true]);
     }
 

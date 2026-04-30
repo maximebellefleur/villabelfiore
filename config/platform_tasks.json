@@ -1,5 +1,23 @@
 [
   {
+    "id": 14,
+    "title": "Harvest tracking per seed per year",
+    "description": "When a line is harvested, log the plant count to seed_harvest_log (seed_id, bed_id, plant_count, harvested_on). Family needs shows harvest totals for the current year and 2 previous years.",
+    "status": "empty",
+    "note": null,
+    "created_at": "2026-04-30 14:00:00",
+    "resolved_at": null
+  },
+  {
+    "id": 13,
+    "title": "Seed in-ground count via bed write triggers",
+    "description": "Pre-calculated seed_ground_cache table updated on every bed write (plant, trash, harvest, adjust, config change). Family needs reads from cache instead of live query to fix count accuracy.",
+    "status": "empty",
+    "note": null,
+    "created_at": "2026-04-30 14:00:00",
+    "resolved_at": null
+  },
+  {
     "id": 12,
     "title": "Future steps must stay in storage, not config",
     "description": "future_steps.json is user-only data and must live in storage/ so upgrades never wipe it. Moving it to config/ caused user's steps to be deleted on upgrade.",

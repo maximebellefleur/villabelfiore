@@ -84,6 +84,29 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
         self::ensureColumn($db, 'seeds', 'gardener_note',  "ALTER TABLE seeds ADD COLUMN gardener_note TEXT DEFAULT NULL");
 
+        try {
+            $db->execute("CREATE TABLE IF NOT EXISTS seed_ground_cache (
+                seed_id    BIGINT UNSIGNED NOT NULL,
+                in_ground  INT NOT NULL DEFAULT 0,
+                planned    INT NOT NULL DEFAULT 0,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (seed_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (\Throwable $e) {}
+
+        try {
+            $db->execute("CREATE TABLE IF NOT EXISTS seed_harvest_log (
+                id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                seed_id      BIGINT UNSIGNED NOT NULL,
+                bed_id       BIGINT UNSIGNED NOT NULL,
+                plant_count  INT NOT NULL DEFAULT 1,
+                harvested_on DATE NOT NULL,
+                created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_shl_seed_year (seed_id, harvested_on)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (\Throwable $e) {}
+
         self::migrateBedRows($db);
         self::fixNullPlantCounts($db);
         self::backfillSeedColors($db);

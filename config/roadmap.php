@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.38' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Seed ground cache + harvest log',
+        'features' => [
+            ['title' => 'seed_ground_cache: accurate in-ground counts', 'detail' => 'A pre-calculated cache table stores in_ground and planned counts per seed. Updated automatically on every bed write (plant, trash, harvest, adjust, config). Family needs reads from cache — fast and always correct even after bed resize.'],
+            ['title' => 'seed_harvest_log: harvest history per seed per year', 'detail' => 'When a line is harvested, the plant count is logged to seed_harvest_log. Family needs page now shows harvest totals per year for the current year and 2 previous years.'],
+        ],
+    ],
+
     '3.1.37' => [
         'status'   => 'released',
         'released' => '2026-04-30',

@@ -82,17 +82,12 @@ $seedsJs = json_encode(array_map(fn($s) => [
 <?php else: ?>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
 <?php foreach ($needs as $need):
-    $inGround   = (int)($need['plants_in_ground'] ?? 0);
-    $planned    = (int)($need['plants_planned'] ?? 0);
-    $linkedIds  = $need['linked_seed_ids'] ?? [];
-    $linkedNames= $need['linked_seed_names'] ?? [];
-    $hasSeed    = !empty($linkedIds);
-    $fmtDate    = function(?string $d): ?string {
-        if (!$d) return null;
-        try { return (new DateTime($d))->format('j M'); } catch(\Throwable $e) { return null; }
-    };
-    $hGround  = $fmtDate($need['harvest_est_ground'] ?? null);
-    $hPlanned = $fmtDate($need['harvest_est_planned'] ?? null);
+    $inGround      = (int)($need['plants_in_ground'] ?? 0);
+    $planned       = (int)($need['plants_planned'] ?? 0);
+    $linkedIds     = $need['linked_seed_ids'] ?? [];
+    $linkedNames   = $need['linked_seed_names'] ?? [];
+    $hasSeed       = !empty($linkedIds);
+    $harvestByYear = $need['harvest_by_year'] ?? [];
 ?>
 <div class="card" id="fn-card-<?= (int)$need['id'] ?>">
     <!-- Read view -->
@@ -123,21 +118,26 @@ $seedsJs = json_encode(array_map(fn($s) => [
         </div>
         <?php endif; ?>
 
-        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= !empty($need['notes']) ? '10px' : '0' ?>">
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= (!empty($need['notes']) || !empty($harvestByYear)) ? '10px' : '0' ?>">
             <?php if ($inGround > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= $inGround ?> in ground</span>
-                <?php if ($hGround): ?><span style="font-size:.72rem;color:#15803d;font-weight:700">soonest ~<?= e($hGround) ?></span><?php endif; ?>
             </div>
             <?php endif; ?>
             <?php if ($planned > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#d97706">📋 <?= $planned ?> planned</span>
-                <?php if ($hPlanned): ?><span style="font-size:.72rem;color:#b45309;font-weight:700">soonest ~<?= e($hPlanned) ?></span><?php endif; ?>
             </div>
             <?php endif; ?>
             <?php if ($inGround === 0 && $planned === 0): ?>
             <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0"><?= $hasSeed ? 'Not yet planted' : 'No seed linked' ?></div>
+            <?php endif; ?>
+            <?php if (!empty($harvestByYear)): ?>
+            <?php foreach ($harvestByYear as $hy): ?>
+            <div style="padding:5px 10px;background:#f5f5f0;border:1px solid #e2e2dc;border-radius:7px">
+                <span style="font-size:.76rem;color:var(--color-text-muted)">🌾 <?= (int)$hy['total'] ?> harvested in <?= (int)$hy['year'] ?></span>
+            </div>
+            <?php endforeach; ?>
             <?php endif; ?>
         </div>
 

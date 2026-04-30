@@ -317,16 +317,71 @@ class SeedController
                 $sRows = $db->fetchAll("SELECT id, name, variety FROM seeds WHERE id IN ($ph)", array_keys($allSeedIds));
                 foreach ($sRows as $s) $seedMap[(int)$s['id']] = $s;
             }
+
+            // Bulk-fetch ground counts from cache (one query for all seeds)
+            $cacheMap = [];
+            if (!empty($allSeedIds)) {
+                try {
+                    $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
+                    $cRows = $db->fetchAll(
+                        "SELECT seed_id, in_ground, planned FROM seed_ground_cache WHERE seed_id IN ($ph)",
+                        array_keys($allSeedIds)
+                    );
+                    foreach ($cRows as $cr) {
+                        $cacheMap[(int)$cr['seed_id']] = [
+                            'in_ground' => (int)$cr['in_ground'],
+                            'planned'   => (int)$cr['planned'],
+                        ];
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // Bulk-fetch harvest totals from log (current year + 2 previous years)
+            $harvestMap = []; // seed_id => [{year, total}, ...]
+            if (!empty($allSeedIds)) {
+                try {
+                    $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
+                    $hRows = $db->fetchAll(
+                        "SELECT seed_id, YEAR(harvested_on) AS yr, SUM(plant_count) AS total
+                         FROM seed_harvest_log
+                         WHERE seed_id IN ($ph)
+                           AND YEAR(harvested_on) >= YEAR(CURDATE()) - 2
+                         GROUP BY seed_id, YEAR(harvested_on)
+                         ORDER BY seed_id, yr DESC",
+                        array_keys($allSeedIds)
+                    );
+                    foreach ($hRows as $hr) {
+                        $harvestMap[(int)$hr['seed_id']][] = [
+                            'year'  => (int)$hr['yr'],
+                            'total' => (int)$hr['total'],
+                        ];
+                    }
+                } catch (\Throwable $e) {}
+            }
+
             foreach ($rows as $need) {
                 $ids = self::parseSeedIds($need);
-                // Aggregate ground stats across all linked seeds
-                $agg = ['plants_in_ground'=>0,'plants_planned'=>0,'harvest_est_ground'=>null,'harvest_est_planned'=>null];
+                // Aggregate ground counts from cache across all linked seeds
+                $agg = ['plants_in_ground' => 0, 'plants_planned' => 0];
                 foreach ($ids as $sid) {
-                    $st = GardenHelpers::seedGroundStats($db, $sid);
-                    $agg['plants_in_ground']  += $st['plants_in_ground'];
-                    $agg['plants_planned']    += $st['plants_planned'];
-                    if ($st['harvest_est_ground']  && (!$agg['harvest_est_ground']  || $st['harvest_est_ground']  < $agg['harvest_est_ground']))  $agg['harvest_est_ground']  = $st['harvest_est_ground'];
-                    if ($st['harvest_est_planned'] && (!$agg['harvest_est_planned'] || $st['harvest_est_planned'] < $agg['harvest_est_planned'])) $agg['harvest_est_planned'] = $st['harvest_est_planned'];
+                    $entry = $cacheMap[$sid] ?? null;
+                    if ($entry) {
+                        $agg['plants_in_ground'] += $entry['in_ground'];
+                        $agg['plants_planned']   += $entry['planned'];
+                    }
+                }
+                // Merge harvest-by-year data across all linked seeds
+                $harvestByYearMerged = [];
+                foreach ($ids as $sid) {
+                    foreach ($harvestMap[$sid] ?? [] as $hy) {
+                        $yr = $hy['year'];
+                        $harvestByYearMerged[$yr] = ($harvestByYearMerged[$yr] ?? 0) + $hy['total'];
+                    }
+                }
+                krsort($harvestByYearMerged);
+                $harvestByYear = [];
+                foreach ($harvestByYearMerged as $yr => $total) {
+                    $harvestByYear[] = ['year' => $yr, 'total' => $total];
                 }
                 // Build display: seed names as array
                 $need['linked_seed_ids']   = $ids;
@@ -340,6 +395,9 @@ class SeedController
                 $need['seed_name'] = $first && isset($seedMap[$first])
                     ? $seedMap[$first]['name'] . ($seedMap[$first]['variety'] ? ' ('.$seedMap[$first]['variety'].')' : '')
                     : null;
+                $need['harvest_by_year']    = $harvestByYear;
+                $need['harvest_est_ground']  = null;
+                $need['harvest_est_planned'] = null;
                 $need = array_merge($need, $agg);
                 $needs[] = $need;
             }

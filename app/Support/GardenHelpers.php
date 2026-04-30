@@ -518,6 +518,71 @@ class GardenHelpers
     }
 
     /**
+     * Recalculate seed_ground_cache for the given seed IDs.
+     * Uses the same bed_rows JOIN as seedGroundStats to exclude phantom lines.
+     * Silent fail — non-critical cache refresh.
+     */
+    public static function recalcSeedGroundCounts(DB $db, array $seedIds): void
+    {
+        if (empty($seedIds)) return;
+        try {
+            $ph   = implode(',', array_fill(0, count($seedIds), '?'));
+            $rows = $db->fetchAll(
+                "SELECT gp.seed_id,
+                        SUM(CASE WHEN gp.status IN ('growing','sown') THEN COALESCE(gp.plant_count,1) ELSE 0 END) AS in_ground,
+                        SUM(CASE WHEN gp.status = 'planned'           THEN COALESCE(gp.plant_count,1) ELSE 0 END) AS planned
+                 FROM garden_plantings gp
+                 LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
+                 WHERE gp.seed_id IN ($ph)
+                   AND gp.status IN ('growing','sown','planned')
+                   AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
+                 GROUP BY gp.seed_id",
+                $seedIds
+            );
+            $resultMap = [];
+            foreach ($rows as $r) {
+                $resultMap[(int)$r['seed_id']] = [
+                    'in_ground' => (int)$r['in_ground'],
+                    'planned'   => (int)$r['planned'],
+                ];
+            }
+            foreach ($seedIds as $sid) {
+                $sid = (int)$sid;
+                if ($sid <= 0) continue;
+                $ig = $resultMap[$sid]['in_ground'] ?? 0;
+                $pl = $resultMap[$sid]['planned']   ?? 0;
+                $db->execute(
+                    "INSERT INTO seed_ground_cache (seed_id, in_ground, planned, updated_at)
+                     VALUES (?,?,?,NOW())
+                     ON DUPLICATE KEY UPDATE in_ground=VALUES(in_ground), planned=VALUES(planned), updated_at=NOW()",
+                    [$sid, $ig, $pl]
+                );
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    /**
+     * Trigger a cache recalculation for all seeds in the given bed, plus any
+     * extra seed IDs (e.g. seeds that were just deleted from the bed).
+     * Silent fail — best-effort.
+     */
+    public static function triggerBedRecalc(DB $db, int $bedId, array $extraSeedIds = []): void
+    {
+        try {
+            $rows = $db->fetchAll(
+                "SELECT DISTINCT seed_id FROM garden_plantings WHERE item_id = ? AND seed_id IS NOT NULL",
+                [$bedId]
+            );
+            $seedIds = array_column($rows, 'seed_id');
+            $merged  = array_values(array_unique(array_merge(
+                array_map('intval', $seedIds),
+                array_filter(array_map('intval', $extraSeedIds))
+            )));
+            self::recalcSeedGroundCounts($db, $merged);
+        } catch (\Throwable $e) {}
+    }
+
+    /**
      * Return all active garden beds (items with type='bed').
      * Each entry: id, name, garden_name, num_lines.
      */
