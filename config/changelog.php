@@ -8,6 +8,33 @@
  */
 return [
 
+    '3.1.33' => [
+        'date'  => '2026-04-30',
+        'title' => 'Future steps box, multi-seed family needs, task log',
+        'new' => [
+            'Future Steps box at the top of Settings → Task Log. Write multi-line notes, tag with (ZONE), log them as cards. Drag to reorder, copy content, delete.',
+            'Family needs: Linked Seed now supports multi-select — pick any combination of seed varieties. Stats are aggregated across all linked seeds.',
+            'Settings → Task Log replaces the version roadmap. Status cycles: pending → done → error → trigger AI. Batch management, newest-first order, done tasks shown strikethrough.',
+        ],
+        'improved' => [
+            'Claude task-logging protocol updated: operational commands (commit, push) are no longer logged as tasks.',
+        ],
+    ],
+
+    '3.1.32' => [
+        'date'  => '2026-04-30',
+        'title' => 'Task log, multi-seed family needs',
+        'new' => [
+            'Settings → Task Log replaces the old version roadmap. Every platform request is logged as a task card (newest first) with cycling status: pending → done → error → trigger AI.',
+            'Family needs: Linked Seed now supports multiple seeds. Pick any combination of varieties — if any is planted, it counts toward the need.',
+            'Batch status management on task log: select multiple tasks and apply a status in one click.',
+        ],
+        'improved' => [
+            'Done tasks show with strikethrough text and pale colour.',
+            'Claude reads platform_tasks.json at session start and prioritises any trigger_ai tasks.',
+        ],
+    ],
+
     '3.1.31' => [
         'date'  => '2026-04-30',
         'title' => 'App icon on login page',

@@ -217,8 +217,178 @@ class SettingsController
     public function upcoming(Request $request, array $params = []): void
     {
         $this->requireAuth();
-        $roadmap = require BASE_PATH . '/config/roadmap.php';
-        Response::render('settings/upcoming', ['title' => 'Upcoming Features', 'roadmap' => $roadmap]);
+        $tasks = self::readTasks();
+        usort($tasks, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
+        $steps = self::readSteps();
+        usort($steps, fn($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
+        Response::render('settings/upcoming', ['title' => 'Task Log', 'tasks' => $tasks, 'steps' => $steps]);
+    }
+
+    // POST /settings/tasks/{id}/status  — cycle or set explicit status
+    public function taskStatus(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id     = (int)($params['id'] ?? 0);
+        $status = $request->post('status', '');
+        $note   = trim($request->post('note', ''));
+
+        $tasks  = self::readTasks();
+        $cycle  = ['empty', 'done', 'error', 'trigger_ai'];
+        foreach ($tasks as &$t) {
+            if ((int)$t['id'] !== $id) continue;
+            if ($status && in_array($status, $cycle, true)) {
+                $t['status'] = $status;
+            } else {
+                $cur = array_search($t['status'], $cycle, true);
+                $t['status'] = $cycle[($cur + 1) % count($cycle)];
+            }
+            if ($note !== '') $t['note'] = $note;
+            if ($t['status'] === 'done' && empty($t['resolved_at'])) {
+                $t['resolved_at'] = date('Y-m-d H:i:s');
+            }
+            break;
+        }
+        unset($t);
+        self::writeTasks($tasks);
+        Response::json(['success' => true, 'tasks' => $tasks]);
+    }
+
+    // POST /settings/tasks/batch  — set status for multiple IDs
+    public function taskBatch(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $ids    = $request->post('ids', '');
+        if (is_string($ids)) $ids = json_decode($ids, true) ?: [];
+        $status = $request->post('status', '');
+        $cycle  = ['empty', 'done', 'error', 'trigger_ai'];
+        if (!in_array($status, $cycle, true) || empty($ids)) {
+            Response::json(['success' => false, 'error' => 'Invalid']); return;
+        }
+        $tasks = self::readTasks();
+        $idSet = array_flip(array_map('intval', $ids));
+        foreach ($tasks as &$t) {
+            if (!isset($idSet[(int)$t['id']])) continue;
+            $t['status'] = $status;
+            if ($status === 'done' && empty($t['resolved_at'])) {
+                $t['resolved_at'] = date('Y-m-d H:i:s');
+            }
+        }
+        unset($t);
+        self::writeTasks($tasks);
+        Response::json(['success' => true, 'tasks' => $tasks]);
+    }
+
+    private static function tasksPath(): string
+    {
+        return STORAGE_PATH . '/platform_tasks.json';
+    }
+
+    public static function readTasks(): array
+    {
+        $path = self::tasksPath();
+        if (!file_exists($path)) return [];
+        $raw = file_get_contents($path);
+        return json_decode($raw, true) ?: [];
+    }
+
+    public static function writeTasks(array $tasks): void
+    {
+        file_put_contents(self::tasksPath(), json_encode($tasks, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
+
+    public static function appendTask(string $title, string $description): void
+    {
+        $tasks = self::readTasks();
+        $maxId = array_reduce($tasks, fn($m, $t) => max($m, (int)$t['id']), 0);
+        $tasks[] = [
+            'id'          => $maxId + 1,
+            'title'       => $title,
+            'description' => $description,
+            'status'      => 'empty',
+            'note'        => null,
+            'created_at'  => date('Y-m-d H:i:s'),
+            'resolved_at' => null,
+        ];
+        self::writeTasks($tasks);
+    }
+
+    // ── Future steps ─────────────────────────────────────────────────────────
+
+    private static function stepsPath(): string
+    {
+        return STORAGE_PATH . '/future_steps.json';
+    }
+
+    public static function readSteps(): array
+    {
+        $path = self::stepsPath();
+        if (!file_exists($path)) return [];
+        return json_decode(file_get_contents($path), true) ?: [];
+    }
+
+    public static function writeSteps(array $steps): void
+    {
+        file_put_contents(self::stepsPath(), json_encode($steps, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
+
+    // POST /settings/future-steps — add new step
+    public function addFutureStep(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $content = trim($request->post('content', ''));
+        if ($content === '') { Response::json(['success' => false, 'error' => 'Empty']); return; }
+
+        $steps  = self::readSteps();
+        $maxId  = array_reduce($steps, fn($m, $s) => max($m, (int)$s['id']), 0);
+        $zone   = null;
+        if (preg_match('/^\(([^)]+)\)\s*/u', $content, $m)) {
+            $zone    = strtoupper(trim($m[1]));
+            $content = trim(substr($content, strlen($m[0])));
+        }
+        $step = [
+            'id'         => $maxId + 1,
+            'zone'       => $zone,
+            'content'    => $content,
+            'sort_order' => count($steps) + 1,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+        $steps[] = $step;
+        self::writeSteps($steps);
+        Response::json(['success' => true, 'step' => $step]);
+    }
+
+    // POST /settings/future-steps/{id}/delete
+    public function deleteFutureStep(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $id    = (int)($params['id'] ?? 0);
+        $steps = array_values(array_filter(self::readSteps(), fn($s) => (int)$s['id'] !== $id));
+        self::writeSteps($steps);
+        Response::json(['success' => true]);
+    }
+
+    // POST /settings/future-steps/reorder
+    public function reorderFutureSteps(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $ids   = $request->post('ids', '');
+        if (is_string($ids)) $ids = json_decode($ids, true) ?: [];
+        $steps = self::readSteps();
+        $map   = [];
+        foreach ($steps as $s) $map[(int)$s['id']] = $s;
+        $ordered = [];
+        foreach ($ids as $i => $id) {
+            if (!isset($map[(int)$id])) continue;
+            $map[(int)$id]['sort_order'] = $i + 1;
+            $ordered[] = $map[(int)$id];
+        }
+        self::writeSteps($ordered);
+        Response::json(['success' => true]);
     }
 
     // ── Weather settings ─────────────────────────────────────────────────────

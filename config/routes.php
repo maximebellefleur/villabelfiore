@@ -139,7 +139,12 @@ $router->post('/settings/weather',             'SettingsController@updateWeather
 $router->get('/settings/upgrade',              'UpgradeController@index');
 $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
 $router->post('/settings/upgrade/github',      'UpgradeController@applyFromGitHub');
-$router->get('/settings/upcoming',             'SettingsController@upcoming');
+$router->get('/settings/upcoming',                    'SettingsController@upcoming');
+$router->post('/settings/tasks/{id}/status',          'SettingsController@taskStatus');
+$router->post('/settings/tasks/batch',                'SettingsController@taskBatch');
+$router->post('/settings/future-steps',               'SettingsController@addFutureStep');
+$router->post('/settings/future-steps/{id}/delete',   'SettingsController@deleteFutureStep');
+$router->post('/settings/future-steps/reorder',       'SettingsController@reorderFutureSteps');
 $router->get('/settings/pwa',                  'PwaController@pwa');
 $router->post('/settings/pwa',                 'PwaController@updatePwa');
 $router->post('/settings/pwa/upload-icon',     'PwaController@uploadIcon');

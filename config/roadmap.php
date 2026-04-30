@@ -8,6 +8,27 @@
  */
 return [
 
+    '3.1.33' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Future steps, multi-seed needs, task log',
+        'features' => [
+            ['title' => 'Future Steps box on task log page', 'detail' => 'Write multi-line ideas tagged with (ZONE) — e.g. (GARDEN) Fix layout. Log as cards, drag to reorder, copy to clipboard, delete.'],
+            ['title' => 'Multi-seed family needs', 'detail' => 'Linked Seed field is now a searchable multi-select. Pick several varieties — all are counted toward ground stats.'],
+            ['title' => 'Task log with cycling status', 'detail' => 'Every platform request is logged. Status cycles: pending → done → error → trigger AI. Batch management, newest-first.'],
+        ],
+    ],
+
+    '3.1.32' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Task log + multi-seed family needs',
+        'features' => [
+            ['title' => 'Task log replaces upcoming roadmap', 'detail' => 'Settings → Task Log shows every platform request as a card. Status cycles: pending → done → error → trigger AI. Newest tasks first. Done tasks: strikethrough + pale colour. Batch management available.'],
+            ['title' => 'Family needs: multi-seed selection', 'detail' => 'Linked Seed field now shows a searchable multi-select with pill chips. Pick any number of seed varieties — stats are aggregated across all linked seeds.'],
+        ],
+    ],
+
     '3.1.31' => [
         'status'   => 'released',
         'released' => '2026-04-30',

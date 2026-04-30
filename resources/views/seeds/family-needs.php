@@ -1,6 +1,31 @@
 <?php
 $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>'bunches','litres'=>'L','jars'=>'jars','other'=>'other'];
+// Build JS seed list for multi-select
+$seedsJs = json_encode(array_map(fn($s) => [
+    'id'    => (int)$s['id'],
+    'label' => $s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : ''),
+], $seeds));
 ?>
+<style>
+/* Multi-seed select component */
+.fn-msel { position:relative; }
+.fn-msel-field { min-height:40px;padding:5px 34px 5px 10px;border:1px solid var(--color-border);border-radius:var(--radius);background:var(--color-surface-raised);cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:4px;position:relative; }
+.fn-msel-field:focus { outline:2px solid var(--color-primary); }
+.fn-msel-placeholder { font-size:.85rem;color:var(--color-text-muted);user-select:none; }
+.fn-msel-chip { display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 8px;background:var(--color-primary);color:#fff;border-radius:999px;font-size:.75rem;font-weight:600;line-height:1.4 }
+.fn-msel-chip-x { cursor:pointer;opacity:.7;font-size:.85rem;line-height:1 }
+.fn-msel-chip-x:hover { opacity:1 }
+.fn-msel-arrow { position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--color-text-muted);font-size:.85rem }
+.fn-msel-panel { display:none;position:absolute;z-index:500;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:0 4px 20px rgba(0,0,0,.12);max-height:260px;overflow:hidden;flex-direction:column }
+.fn-msel-panel.is-open { display:flex }
+.fn-msel-search { padding:8px 10px;border:none;border-bottom:1px solid var(--color-border);outline:none;font-size:.85rem;width:100%;box-sizing:border-box }
+.fn-msel-opts { overflow-y:auto;flex:1 }
+.fn-msel-opt { display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:.85rem }
+.fn-msel-opt:hover { background:var(--color-surface-alt,#f5f5f0) }
+.fn-msel-opt input[type=checkbox] { width:15px;height:15px;accent-color:var(--color-primary);flex-shrink:0;cursor:pointer }
+.fn-msel-empty { padding:12px;text-align:center;color:var(--color-text-muted);font-size:.82rem }
+</style>
+
 <div class="page-header">
     <h1 class="page-title">👨‍👩‍👧 Family Needs</h1>
     <a href="<?= url('/seeds') ?>" class="btn btn-secondary">&larr; Seed Catalog</a>
@@ -20,13 +45,8 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
                     <input type="text" name="vegetable_name" class="form-input" required placeholder="e.g. Tomatoes">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Linked Seed</label>
-                    <select name="seed_id" class="form-input">
-                        <option value="">— none —</option>
-                        <?php foreach ($seeds as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?><?= $s['variety'] ? ' ('.$s['variety'].')' : '' ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label class="form-label">Linked Seeds <span style="font-size:.75rem;color:var(--color-text-muted)">(any variety works)</span></label>
+                    <?php fnMselHtml('fn-msel-add', [], $seeds); ?>
                 </div>
             </div>
             <div class="form-row">
@@ -64,7 +84,9 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
 <?php foreach ($needs as $need):
     $inGround   = (int)($need['plants_in_ground'] ?? 0);
     $planned    = (int)($need['plants_planned'] ?? 0);
-    $hasSeed    = !empty($need['seed_id']);
+    $linkedIds  = $need['linked_seed_ids'] ?? [];
+    $linkedNames= $need['linked_seed_names'] ?? [];
+    $hasSeed    = !empty($linkedIds);
     $fmtDate    = function(?string $d): ?string {
         if (!$d) return null;
         try { return (new DateTime($d))->format('j M'); } catch(\Throwable $e) { return null; }
@@ -80,8 +102,12 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
                 <span style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:0.78rem;font-weight:700"><?= (int)$need['priority'] ?></span>
                 <div style="min-width:0">
                     <div style="font-weight:700;font-size:.95rem;line-height:1.2"><?= e($need['vegetable_name']) ?></div>
-                    <?php if ($need['seed_name']): ?>
-                    <div style="font-size:.72rem;color:var(--color-text-muted);margin-top:1px"><?= e($need['emoji'] ?? '🌱') ?> <?= e($need['seed_name']) ?></div>
+                    <?php if ($linkedNames): ?>
+                    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">
+                        <?php foreach ($linkedNames as $sn): ?>
+                        <span style="font-size:.7rem;padding:1px 7px;border-radius:999px;background:rgba(var(--color-primary-rgb,45,106,79),.1);color:var(--color-primary);white-space:nowrap">🌱 <?= e($sn) ?></span>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -97,22 +123,17 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
         </div>
         <?php endif; ?>
 
-        <!-- In-ground & planned pills -->
         <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= !empty($need['notes']) ? '10px' : '0' ?>">
             <?php if ($inGround > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= $inGround ?> in ground</span>
-                <?php if ($hGround): ?>
-                <span style="font-size:.72rem;color:#15803d;font-weight:700">soonest ~<?= e($hGround) ?></span>
-                <?php endif; ?>
+                <?php if ($hGround): ?><span style="font-size:.72rem;color:#15803d;font-weight:700">soonest ~<?= e($hGround) ?></span><?php endif; ?>
             </div>
             <?php endif; ?>
             <?php if ($planned > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#d97706">📋 <?= $planned ?> planned</span>
-                <?php if ($hPlanned): ?>
-                <span style="font-size:.72rem;color:#b45309;font-weight:700">soonest ~<?= e($hPlanned) ?></span>
-                <?php endif; ?>
+                <?php if ($hPlanned): ?><span style="font-size:.72rem;color:#b45309;font-weight:700">soonest ~<?= e($hPlanned) ?></span><?php endif; ?>
             </div>
             <?php endif; ?>
             <?php if ($inGround === 0 && $planned === 0): ?>
@@ -124,7 +145,6 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
         <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;border-top:1px solid var(--color-border);padding-top:8px"><?= nl2br(e($need['notes'])) ?></div>
         <?php endif; ?>
 
-        <!-- Delete confirm (hidden) -->
         <div id="fn-del-<?= (int)$need['id'] ?>" style="display:none;margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fcc;align-items:center;gap:10px">
             <span style="font-size:0.9rem;flex:1">Remove <strong><?= e($need['vegetable_name']) ?></strong>?</span>
             <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/trash') ?>" style="display:inline">
@@ -134,6 +154,7 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
             <button type="button" class="btn btn-ghost btn-sm" onclick="fnHideDel(<?= (int)$need['id'] ?>)">Cancel</button>
         </div>
     </div>
+
     <!-- Edit form (hidden) -->
     <div id="fn-edit-<?= (int)$need['id'] ?>" style="display:none;padding:14px 16px;border-top:2px solid var(--color-primary);background:var(--color-surface-alt,#f8f9f5)">
         <form method="POST" action="<?= url('/family-needs/' . (int)$need['id'] . '/update') ?>" class="form">
@@ -144,13 +165,8 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
                     <input type="text" name="vegetable_name" class="form-input" required value="<?= e($need['vegetable_name']) ?>">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Linked Seed</label>
-                    <select name="seed_id" class="form-input">
-                        <option value="">— none —</option>
-                        <?php foreach ($seeds as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>" <?= (int)($need['seed_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>><?= e($s['name']) ?><?= $s['variety'] ? ' ('.$s['variety'].')' : '' ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label class="form-label">Linked Seeds</label>
+                    <?php fnMselHtml('fn-msel-' . (int)$need['id'], $linkedIds, $seeds); ?>
                 </div>
             </div>
             <div class="form-row">
@@ -186,22 +202,124 @@ $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>
 </div>
 <?php endif; ?>
 
+<?php
+function fnMselHtml(string $uid, array $selectedIds, array $seeds): void {
+    $chips = '';
+    foreach ($seeds as $s) {
+        if (in_array((int)$s['id'], $selectedIds)) {
+            $label = htmlspecialchars($s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : ''), ENT_QUOTES);
+            $chips .= '<span class="fn-msel-chip" data-id="'.(int)$s['id'].'">'.$label.'<span class="fn-msel-chip-x" onclick="fnMselRemove(event,\''.$uid.'\',' . (int)$s['id'] . ')">×</span></span>';
+        }
+    }
+    $placeholder = $chips ? '' : '<span class="fn-msel-placeholder">Select seeds…</span>';
+    echo '<div class="fn-msel" id="'.$uid.'">';
+    echo   '<div class="fn-msel-field" tabindex="0" onclick="fnMselOpen(event,\''.$uid.'\')">';
+    echo     '<span class="fn-msel-inner">'.$chips.$placeholder.'</span>';
+    echo     '<span class="fn-msel-arrow">▾</span>';
+    echo   '</div>';
+    echo   '<div class="fn-msel-panel" id="'.$uid.'-panel">';
+    echo     '<input type="text" class="fn-msel-search" placeholder="Search seeds…" oninput="fnMselSearch(this,\''.$uid.'\')">';
+    echo     '<div class="fn-msel-opts">';
+    foreach ($seeds as $s) {
+        $label   = htmlspecialchars($s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : ''), ENT_QUOTES);
+        $checked = in_array((int)$s['id'], $selectedIds) ? ' checked' : '';
+        echo '<label class="fn-msel-opt" data-label="'.strtolower($s['name'].' '.$s['variety']).'">';
+        echo   '<input type="checkbox" name="seed_ids[]" value="'.(int)$s['id'].'"'.$checked.' onchange="fnMselChange(\''.$uid.'\',' . (int)$s['id'] . ','.json_encode($label).',this.checked)">';
+        echo   $label;
+        echo '</label>';
+    }
+    if (empty($seeds)) echo '<div class="fn-msel-empty">No seeds in catalog</div>';
+    echo     '</div>';
+    echo   '</div>';
+    echo '</div>';
+}
+?>
+
 <script>
+var FN_SEEDS = <?= $seedsJs ?>;
+
+function fnMselOpen(e, uid) {
+    e.stopPropagation();
+    var panel = document.getElementById(uid + '-panel');
+    var isOpen = panel.classList.contains('is-open');
+    // close all other panels
+    document.querySelectorAll('.fn-msel-panel.is-open').forEach(function(p){ p.classList.remove('is-open'); });
+    if (!isOpen) {
+        panel.classList.add('is-open');
+        panel.querySelector('.fn-msel-search').focus();
+    }
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fn-msel')) {
+        document.querySelectorAll('.fn-msel-panel.is-open').forEach(function(p){ p.classList.remove('is-open'); });
+    }
+});
+
+function fnMselSearch(inp, uid) {
+    var q = inp.value.toLowerCase();
+    document.querySelectorAll('#' + uid + '-panel .fn-msel-opt').forEach(function(opt) {
+        opt.style.display = (!q || opt.dataset.label.includes(q)) ? '' : 'none';
+    });
+}
+
+function fnMselChange(uid, seedId, label, checked) {
+    var inner = document.querySelector('#' + uid + ' .fn-msel-inner');
+    if (checked) {
+        // add chip
+        var chip = document.createElement('span');
+        chip.className = 'fn-msel-chip';
+        chip.dataset.id = seedId;
+        chip.innerHTML = label + '<span class="fn-msel-chip-x" onclick="fnMselRemove(event,\'' + uid + '\',' + seedId + ')">×</span>';
+        var ph = inner.querySelector('.fn-msel-placeholder');
+        if (ph) ph.remove();
+        inner.appendChild(chip);
+    } else {
+        fnMselRemoveChip(uid, seedId);
+    }
+    fnMselSyncPlaceholder(uid);
+}
+
+function fnMselRemove(e, uid, seedId) {
+    e.stopPropagation();
+    fnMselRemoveChip(uid, seedId);
+    // uncheck the checkbox
+    var cb = document.querySelector('#' + uid + '-panel input[value="' + seedId + '"]');
+    if (cb) cb.checked = false;
+    fnMselSyncPlaceholder(uid);
+}
+
+function fnMselRemoveChip(uid, seedId) {
+    var chip = document.querySelector('#' + uid + ' .fn-msel-chip[data-id="' + seedId + '"]');
+    if (chip) chip.remove();
+}
+
+function fnMselSyncPlaceholder(uid) {
+    var inner = document.querySelector('#' + uid + ' .fn-msel-inner');
+    if (!inner.querySelector('.fn-msel-chip')) {
+        if (!inner.querySelector('.fn-msel-placeholder')) {
+            var ph = document.createElement('span');
+            ph.className = 'fn-msel-placeholder';
+            ph.textContent = 'Select seeds…';
+            inner.appendChild(ph);
+        }
+    } else {
+        var ph = inner.querySelector('.fn-msel-placeholder');
+        if (ph) ph.remove();
+    }
+}
+
 function fnEdit(id) {
-    var view = document.getElementById('fn-view-' + id);
     var edit = document.getElementById('fn-edit-' + id);
     var open = edit.style.display !== 'none';
     edit.style.display = open ? 'none' : 'block';
-    // hide delete confirm when toggling edit
     fnHideDel(id);
 }
 
 function fnShowDel(btn) {
     var id = btn.dataset.id;
-    var confirm = document.getElementById('fn-del-' + id);
+    document.getElementById('fn-del-' + id).style.display = 'flex';
     btn.style.display = 'none';
-    confirm.style.display = 'flex';
-    // close edit if open
     document.getElementById('fn-edit-' + id).style.display = 'none';
 }
 

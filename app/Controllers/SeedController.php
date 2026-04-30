@@ -74,6 +74,12 @@ class SeedController
             $db->execute("ALTER TABLE family_needs ADD COLUMN yearly_unit VARCHAR(30) NOT NULL DEFAULT 'kg' AFTER yearly_qty");
         }
 
+        // Migrate: add seed_ids JSON column to family_needs (multi-seed support)
+        $seedIdsCol = $db->fetchAll("SHOW COLUMNS FROM family_needs LIKE 'seed_ids'");
+        if (empty($seedIdsCol)) {
+            try { $db->execute("ALTER TABLE family_needs ADD COLUMN seed_ids TEXT DEFAULT NULL AFTER seed_id"); } catch (\Throwable $e) {}
+        }
+
         // Migrate: add needs_restock column to seeds
         $restockCol = $db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'needs_restock'");
         if (empty($restockCol)) {
@@ -296,17 +302,47 @@ class SeedController
         GardenSchema::ensure($db);
         $needs = [];
         try {
-            $needs = $db->fetchAll(
-                "SELECT fn.*, s.name AS seed_name, s.stock_qty, s.stock_unit
-                 FROM family_needs fn
-                 LEFT JOIN seeds s ON s.id = fn.seed_id
-                 ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+            $rows = $db->fetchAll(
+                "SELECT fn.* FROM family_needs fn ORDER BY fn.priority ASC, fn.vegetable_name ASC"
             ) ?: [];
-            foreach ($needs as &$need) {
-                $stats = GardenHelpers::seedGroundStats($db, (int)($need['seed_id'] ?? 0));
-                $need  = array_merge($need, $stats);
+            // Build a set of all seed IDs we need to fetch
+            $allSeedIds = [];
+            foreach ($rows as $r) {
+                $ids = self::parseSeedIds($r);
+                foreach ($ids as $sid) $allSeedIds[$sid] = true;
             }
-            unset($need);
+            $seedMap = [];
+            if (!empty($allSeedIds)) {
+                $ph   = implode(',', array_fill(0, count($allSeedIds), '?'));
+                $sRows = $db->fetchAll("SELECT id, name, variety FROM seeds WHERE id IN ($ph)", array_keys($allSeedIds));
+                foreach ($sRows as $s) $seedMap[(int)$s['id']] = $s;
+            }
+            foreach ($rows as $need) {
+                $ids = self::parseSeedIds($need);
+                // Aggregate ground stats across all linked seeds
+                $agg = ['plants_in_ground'=>0,'plants_planned'=>0,'harvest_est_ground'=>null,'harvest_est_planned'=>null];
+                foreach ($ids as $sid) {
+                    $st = GardenHelpers::seedGroundStats($db, $sid);
+                    $agg['plants_in_ground']  += $st['plants_in_ground'];
+                    $agg['plants_planned']    += $st['plants_planned'];
+                    if ($st['harvest_est_ground']  && (!$agg['harvest_est_ground']  || $st['harvest_est_ground']  < $agg['harvest_est_ground']))  $agg['harvest_est_ground']  = $st['harvest_est_ground'];
+                    if ($st['harvest_est_planned'] && (!$agg['harvest_est_planned'] || $st['harvest_est_planned'] < $agg['harvest_est_planned'])) $agg['harvest_est_planned'] = $st['harvest_est_planned'];
+                }
+                // Build display: seed names as array
+                $need['linked_seed_ids']   = $ids;
+                $need['linked_seed_names'] = array_values(array_filter(array_map(function($sid) use ($seedMap) {
+                    if (!isset($seedMap[$sid])) return null;
+                    $s = $seedMap[$sid];
+                    return $s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : '');
+                }, $ids)));
+                // Legacy single-seed compat
+                $first = $ids[0] ?? 0;
+                $need['seed_name'] = $first && isset($seedMap[$first])
+                    ? $seedMap[$first]['name'] . ($seedMap[$first]['variety'] ? ' ('.$seedMap[$first]['variety'].')' : '')
+                    : null;
+                $need = array_merge($need, $agg);
+                $needs[] = $need;
+            }
         } catch (\Throwable $e) { $needs = []; }
         $seeds = $db->fetchAll('SELECT id, name, variety FROM seeds ORDER BY name ASC');
 
@@ -317,6 +353,26 @@ class SeedController
         ]);
     }
 
+    private static function parseSeedIds(array $row): array
+    {
+        if (!empty($row['seed_ids'])) {
+            $decoded = json_decode($row['seed_ids'], true);
+            if (is_array($decoded) && !empty($decoded)) {
+                return array_values(array_map('intval', array_filter($decoded)));
+            }
+        }
+        $legacy = (int)($row['seed_id'] ?? 0);
+        return $legacy > 0 ? [$legacy] : [];
+    }
+
+    private static function postSeedIds(Request $request): array
+    {
+        $raw = $request->post('seed_ids', []);
+        if (is_string($raw)) $raw = array_filter(array_map('trim', explode(',', $raw)));
+        if (!is_array($raw)) $raw = [];
+        return array_values(array_unique(array_filter(array_map('intval', $raw))));
+    }
+
     public function storeFamilyNeed(Request $request, array $params = []): void
     {
         $this->requireAuth();
@@ -324,11 +380,15 @@ class SeedController
         $db = DB::getInstance();
         $this->ensureTables($db);
 
+        $seedIds  = self::postSeedIds($request);
+        $firstId  = $seedIds[0] ?? null;
+
         $db->execute(
-            "INSERT INTO family_needs (vegetable_name, seed_id, yearly_qty, yearly_unit, priority, notes) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO family_needs (vegetable_name, seed_id, seed_ids, yearly_qty, yearly_unit, priority, notes) VALUES (?,?,?,?,?,?,?)",
             [
                 trim($request->post('vegetable_name', '')),
-                ($request->post('seed_id', '') ?: null),
+                $firstId,
+                $seedIds ? json_encode($seedIds) : null,
                 ($request->post('yearly_qty', '') ?: null),
                 ($request->post('yearly_unit', 'kg') ?: 'kg'),
                 (int)$request->post('priority', 5),
@@ -348,11 +408,15 @@ class SeedController
         $db     = DB::getInstance();
         $this->ensureTables($db);
 
+        $seedIds  = self::postSeedIds($request);
+        $firstId  = $seedIds[0] ?? null;
+
         $db->execute(
-            "UPDATE family_needs SET vegetable_name=?, seed_id=?, yearly_qty=?, yearly_unit=?, priority=?, notes=? WHERE id=?",
+            "UPDATE family_needs SET vegetable_name=?, seed_id=?, seed_ids=?, yearly_qty=?, yearly_unit=?, priority=?, notes=? WHERE id=?",
             [
                 trim($request->post('vegetable_name', '')),
-                ($request->post('seed_id', '') ?: null),
+                $firstId,
+                $seedIds ? json_encode($seedIds) : null,
                 ($request->post('yearly_qty', '') ?: null),
                 ($request->post('yearly_unit', 'kg') ?: 'kg'),
                 (int)$request->post('priority', 5),
