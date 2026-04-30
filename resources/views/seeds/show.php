@@ -23,6 +23,7 @@ $needsRestock = !empty($seed['needs_restock']);
         <?php if ($seed['variety']): ?><p class="text-muted" style="margin:0"><?= e($seed['variety']) ?><?php if ($seed['botanical_family']): ?> · <em><?= e($seed['botanical_family']) ?></em><?php endif; ?></p><?php endif; ?>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" id="rgAddToBedBtn" class="btn btn-primary" style="background:#111;border-color:#111">🛏 Add to Bed</button>
         <!-- Out-of-seed toggle -->
         <form method="POST" action="<?= url('/seeds/' . (int)$seed['id'] . '/toggle-restock') ?>">
             <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
@@ -164,3 +165,150 @@ $needsRestock = !empty($seed['needs_restock']);
     </div>
 
 </div>
+
+<!-- ===== Add to Garden Bed modal ===== -->
+<div id="rgAddBedModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);align-items:flex-end;justify-content:center">
+  <div style="background:#1a1a1a;color:#f0f0f0;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:20px 16px 32px;max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span id="rgAddBedTitle" style="font-weight:700;font-size:1rem">🛏 Select a Garden Bed</span>
+      <button id="rgAddBedClose" style="background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;line-height:1">×</button>
+    </div>
+    <!-- Step 1: bed list -->
+    <div id="rgAddBedStep1" style="overflow-y:auto;flex:1">
+      <div id="rgAddBedList" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:#888;font-size:.85rem;text-align:center;padding:20px">Loading beds…</div>
+      </div>
+    </div>
+    <!-- Step 2: line list -->
+    <div id="rgAddBedStep2" style="display:none;overflow-y:auto;flex:1">
+      <button id="rgAddBedBack" style="background:none;border:none;color:#8ab4f8;font-size:.85rem;cursor:pointer;padding:0 0 10px;display:flex;align-items:center;gap:4px">← back to beds</button>
+      <div id="rgAddLineList" style="display:flex;flex-direction:column;gap:7px"></div>
+    </div>
+    <!-- Step 3: confirm -->
+    <div id="rgAddBedStep3" style="display:none;text-align:center">
+      <p id="rgAddConfirmText" style="color:#ccc;font-size:.9rem;margin-bottom:14px"></p>
+      <button id="rgAddBedBack2" style="background:none;border:none;color:#8ab4f8;font-size:.85rem;cursor:pointer;margin-right:12px">← pick another line</button>
+      <button id="rgAddBedSave" style="background:#22c55e;border:none;border-radius:999px;color:#fff;font-weight:700;padding:10px 26px;font-size:.95rem;cursor:pointer">Plant here →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    var SEED_ID  = <?= (int)$seed['id'] ?>;
+    var CSRF_TOK = '<?= e(\App\Support\CSRF::getToken()) ?>';
+    var selectedBedId   = null;
+    var selectedLineNum = null;
+    var selectedBedName = '';
+
+    function openModal() {
+        $('#rgAddBedModal').css('display','flex');
+        showStep(1);
+        loadBeds();
+    }
+    function closeModal() {
+        $('#rgAddBedModal').hide();
+        selectedBedId = selectedLineNum = null;
+    }
+    function showStep(n) {
+        $('#rgAddBedStep1,#rgAddBedStep2,#rgAddBedStep3').hide();
+        $('#rgAddBedStep'+n).show();
+    }
+
+    function loadBeds() {
+        $('#rgAddBedList').html('<div style="color:#888;font-size:.85rem;text-align:center;padding:20px">Loading…</div>');
+        $.getJSON('<?= url('/api/garden/beds') ?>').done(function(data) {
+            if (!data.success || !data.beds || !data.beds.length) {
+                $('#rgAddBedList').html('<div style="color:#888;font-size:.85rem;text-align:center;padding:20px">No garden beds found.</div>');
+                return;
+            }
+            var html = '';
+            $.each(data.beds, function(_, b) {
+                html += '<button class="rg-bed-row" data-id="'+b.id+'" data-name="'+encodeURIComponent(b.name)+'" style="background:#2a2a2a;border:1px solid #333;border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;color:#f0f0f0;width:100%">'
+                    + '<div style="font-weight:700;font-size:.9rem">'+escHtml(b.name)+'</div>'
+                    + (b.garden_name ? '<div style="font-size:.75rem;color:#888;margin-top:2px">'+escHtml(b.garden_name)+'</div>' : '')
+                    + '<div style="font-size:.72rem;color:#666;margin-top:2px">'+b.num_lines+' line'+(b.num_lines!==1?'s':'')+'</div>'
+                    + '</button>';
+            });
+            $('#rgAddBedList').html(html);
+            $('.rg-bed-row').on('click', function() {
+                selectedBedId   = $(this).data('id');
+                selectedBedName = decodeURIComponent($(this).data('name'));
+                loadLines(selectedBedId, selectedBedName);
+            });
+        }).fail(function() {
+            $('#rgAddBedList').html('<div style="color:#f87171;text-align:center;padding:20px">Failed to load beds.</div>');
+        });
+    }
+
+    function loadLines(bedId, bedName) {
+        $('#rgAddBedTitle').text('Lines in '+bedName);
+        showStep(2);
+        $('#rgAddLineList').html('<div style="color:#888;font-size:.85rem;text-align:center;padding:20px">Loading lines…</div>');
+        $.getJSON('<?= url('/api/garden/beds') ?>/'+bedId+'/lines').done(function(data) {
+            if (!data.success || !data.lines || !data.lines.length) {
+                $('#rgAddLineList').html('<div style="color:#888;text-align:center;padding:20px">No lines found.</div>');
+                return;
+            }
+            var html = '';
+            $.each(data.lines, function(_, l) {
+                var statusCol = l.status === 'growing' ? '#f59e0b' : (l.status === 'resting' ? '#94a3b8' : '#22c55e');
+                var statusLabel = l.status === 'growing' ? 'Growing' : (l.status === 'resting' ? 'Resting' : 'Empty');
+                var fillBar = '<div style="height:4px;border-radius:2px;background:#333;margin-top:5px"><div style="height:4px;border-radius:2px;background:'+statusCol+';width:'+l.fill_pct+'%"></div></div>';
+                html += '<button class="rg-line-row" data-line="'+l.line_number+'" style="background:#2a2a2a;border:1px solid #333;border-radius:10px;padding:10px 14px;text-align:left;cursor:pointer;color:#f0f0f0;width:100%">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+                    + '<span style="font-weight:700;font-size:.88rem">Line '+l.line_number+'</span>'
+                    + '<span style="font-size:.72rem;background:'+statusCol+'22;color:'+statusCol+';padding:2px 8px;border-radius:999px;font-weight:600">'+statusLabel+' · '+l.fill_pct+'%</span>'
+                    + '</div>'
+                    + (l.plants_summary ? '<div style="font-size:.75rem;color:#aaa;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(l.plants_summary)+'</div>' : '')
+                    + fillBar
+                    + '</button>';
+            });
+            $('#rgAddLineList').html(html);
+            $('.rg-line-row').on('click', function() {
+                selectedLineNum = $(this).data('line');
+                $('#rgAddConfirmText').text('Plant <?= e(addslashes($seed['name'])) ?> in Line '+selectedLineNum+' of '+selectedBedName);
+                $('#rgAddBedTitle').text('Confirm planting');
+                showStep(3);
+            });
+        }).fail(function() {
+            $('#rgAddLineList').html('<div style="color:#f87171;text-align:center;padding:20px">Failed to load lines.</div>');
+        });
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    $('#rgAddToBedBtn').on('click', openModal);
+    $('#rgAddBedClose').on('click', closeModal);
+    $('#rgAddBedModal').on('click', function(e) { if ($(e.target).is('#rgAddBedModal')) closeModal(); });
+    $('#rgAddBedBack').on('click', function() {
+        $('#rgAddBedTitle').text('🛏 Select a Garden Bed');
+        showStep(1);
+    });
+    $('#rgAddBedBack2').on('click', function() {
+        $('#rgAddBedTitle').text('Lines in '+selectedBedName);
+        showStep(2);
+    });
+
+    $('#rgAddBedSave').on('click', function() {
+        if (!selectedBedId || !selectedLineNum) return;
+        var btn = $(this);
+        btn.prop('disabled', true).text('Planting…');
+        $.post('<?= url('/items') ?>/'+selectedBedId+'/plant-tap', {
+            _token: CSRF_TOK, crop_id: SEED_ID, line_number: selectedLineNum, count: 1
+        }).done(function(data) {
+            if (data && data.success) {
+                window.location.href = '<?= url('/items') ?>/'+selectedBedId+'/planting';
+            } else {
+                btn.prop('disabled', false).text('Plant here →');
+                alert((data && data.error) ? data.error : 'Failed to plant. Please try again.');
+            }
+        }).fail(function() {
+            btn.prop('disabled', false).text('Plant here →');
+            alert('Network error. Please try again.');
+        });
+    });
+}());
+</script>

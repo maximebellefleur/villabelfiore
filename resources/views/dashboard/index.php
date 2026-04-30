@@ -334,38 +334,91 @@ unset($schematicTitle, $schematicLink, $schematicLinkLabel);
 ?>
 
 <!-- ============================================================
-     WHAT TO IRRIGATE TODAY
+     CURRENT IRRIGATION
      ============================================================ -->
-<?php if (!empty($todayIrrigation)): ?>
+<?php if (!empty($todayIrrigation)):
+    // Compute human-readable schedule & upcoming dates for each plan
+    $irrIntervalDays = [
+        'twice_daily'=>0,'daily'=>1,'every_2_days'=>2,'every_3_days'=>3,
+        'every_5_days'=>5,'every_10_days'=>10,'every_20_days'=>20,
+        'weekly'=>7,'biweekly'=>14,'monthly'=>30,
+    ];
+    $irrScheduleLabel = function(array $ip) use ($irrIntervalDays): string {
+        $map = [
+            'twice_daily'=>'Twice daily','daily'=>'Every day',
+            'every_2_days'=>'Every 2 days','every_3_days'=>'Every 3 days',
+            'every_5_days'=>'Every 5 days','every_10_days'=>'Every 10 days',
+            'every_20_days'=>'Every 20 days','weekly'=>'Every week',
+            'biweekly'=>'Every 2 weeks','monthly'=>'Every month',
+        ];
+        $sched = $map[$ip['interval_type']] ?? $ip['interval_type'];
+        $timeMap = ['sunrise'=>'🌅 sunrise','midday'=>'☀️ midday','sunset'=>'🌇 sunset','night'=>'🌙 night'];
+        $preset  = $ip['hour_preset'] ?? '';
+        if ($preset && $preset !== 'custom' && isset($timeMap[$preset])) {
+            $sched .= ' · ' . $timeMap[$preset];
+        } elseif ($preset === 'custom' && !empty($ip['custom_hour'])) {
+            $sched .= ' · ' . date('g:ia', strtotime($ip['custom_hour']));
+        }
+        return $sched;
+    };
+    $irrNextDate = function(array $ip) use ($irrIntervalDays): string {
+        $today   = date('Y-m-d');
+        $days    = $irrIntervalDays[$ip['interval_type']] ?? 1;
+        $base    = !empty($ip['last_done_date']) ? $ip['last_done_date'] : ($ip['start_date'] ?? $today);
+        if ($days === 0) return $today;
+        $next    = date('Y-m-d', strtotime($base . " +{$days} days"));
+        return $next < $today ? $today : $next;
+    };
+    $irrFmtDate = function(string $iso): string {
+        $dt = new DateTime($iso);
+        $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        if ($iso === $today)    return 'Today (' . $dt->format('D M j') . ')';
+        if ($iso === $tomorrow) return 'Tomorrow (' . $dt->format('D M j') . ')';
+        $diff = (new DateTime($today))->diff($dt)->days;
+        return "In {$diff} days (" . $dt->format('D M j') . ')';
+    };
+    $irrNextAfterDone = function(array $ip) use ($irrIntervalDays): string {
+        $days = $irrIntervalDays[$ip['interval_type']] ?? 1;
+        if ($days === 0) return date('D M j'); // twice_daily: same day
+        return date('D M j', strtotime("+" . $days . " days"));
+    };
+?>
 <section class="dash-widget" style="margin-bottom:var(--spacing-4)">
     <div class="dash-widget-header">
-        <span>💧 Irrigate Today</span>
+        <span>💧 Current Irrigation</span>
         <a href="<?= url('/irrigation') ?>" class="dash-widget-link">All plans →</a>
     </div>
     <div class="dash-widget-body" style="padding:0">
-        <?php foreach ($todayIrrigation as $ip): ?>
-        <div class="irr-dash-row" id="irrRow<?= $ip['id'] ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--color-border)">
+        <?php foreach ($todayIrrigation as $ip):
+            $sched    = $irrScheduleLabel($ip);
+            $nextDate = $irrNextDate($ip);
+            $nextAfter = $irrNextAfterDone($ip);
+            $today = date('Y-m-d');
+            $isOverdue = $nextDate < $today;
+            $nextLabel = $irrFmtDate($nextDate);
+        ?>
+        <a href="<?= url('/items/' . (int)$ip['item_id']) ?>" class="irr-dash-row" id="irrRow<?= $ip['id'] ?>" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--color-border);text-decoration:none;color:inherit">
             <span style="font-size:1.2rem">💧</span>
             <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:.9rem"><?= e($ip['item_name']) ?></div>
-                <div style="font-size:.75rem;color:var(--color-text-muted)">
-                    <?= e(\App\Controllers\IrrigationController::intervalLabel($ip['interval_type'])) ?>
-                    <?php if (!empty($ip['quantity_liters'])): ?>· <?= (float)$ip['quantity_liters'] ?>L<?php endif; ?>
-                    <?php if (!empty($ip['notes'])): ?>· <?= e(mb_strimwidth($ip['notes'], 0, 40, '…')) ?><?php endif; ?>
+                <div style="font-weight:600;font-size:.9rem"><?= e($ip['item_name']) ?><?= !empty($ip['quantity_liters']) ? ' <span style="font-weight:400;font-size:.78rem;color:var(--color-text-muted)">· '.((float)$ip['quantity_liters']).'L</span>' : '' ?></div>
+                <div style="font-size:.75rem;color:var(--color-text-muted);margin-top:1px"><?= e($sched) ?></div>
+                <div id="irrNext<?= $ip['id'] ?>" style="font-size:.72rem;margin-top:2px;color:<?= $isOverdue ? '#dc2626' : '#16a34a' ?>;font-weight:600">
+                    <?= $isOverdue ? '⚠️ Overdue — ' : '🗓 ' ?><?= e($nextLabel) ?> · next after: <?= e($nextAfter) ?>
                 </div>
             </div>
             <button
                 type="button"
                 class="btn btn-sm"
-                style="background:#16a34a;color:#fff;flex-shrink:0"
-                onclick="irrMarkDone(<?= $ip['id'] ?>, this)"
-            >✓ Done</button>
-        </div>
+                style="background:#16a34a;color:#fff;flex-shrink:0;min-width:80px"
+                onclick="event.preventDefault();irrMarkDone(<?= $ip['id'] ?>, this, '<?= e(date('D M j', strtotime('+' . ($irrIntervalDays[$ip['interval_type']] ?? 1) . ' days'))) ?>')"
+            >✓ Done <?= date('M j') ?></button>
+        </a>
         <?php endforeach; ?>
     </div>
 </section>
 <script>
-function irrMarkDone(id, btn) {
+function irrMarkDone(id, btn, nextDateStr) {
     btn.disabled = true;
     btn.textContent = '…';
     fetch('<?= url('/irrigation/') ?>' + id + '/done', {
@@ -375,16 +428,21 @@ function irrMarkDone(id, btn) {
     }).then(function(r){ return r.json(); }).then(function(d){
         if (d.success) {
             var row = document.getElementById('irrRow' + id);
-            row.style.opacity = '0.4';
+            var nextEl = document.getElementById('irrNext' + id);
+            row.style.opacity = '0.5';
             row.style.pointerEvents = 'none';
-            btn.textContent = '✓';
+            btn.textContent = '✓ Done';
+            if (nextEl && nextDateStr) {
+                nextEl.style.color = '#64748b';
+                nextEl.textContent = '✓ Logged — next: ' + nextDateStr;
+            }
         } else {
             btn.disabled = false;
-            btn.textContent = '✓ Done';
+            btn.textContent = '✓ Done <?= date('M j') ?>';
         }
     }).catch(function(){
         btn.disabled = false;
-        btn.textContent = '✓ Done';
+        btn.textContent = '✓ Done <?= date('M j') ?>';
     });
 }
 </script>

@@ -184,6 +184,8 @@ $router->post('/garden/plantings/{id}/adjust-qty',   'GardenBedController@adjust
 $router->post('/garden/plantings/{id}/remove',       'GardenBedController@removePlanting');
 $router->get('/api/garden/companions',           'GardenBedController@companions');
 $router->get('/api/garden/seed-suggestions',     'GardenBedController@seedSuggestions');
+$router->get('/api/garden/beds',                 'GardenBedController@listBedsJson');
+$router->get('/api/garden/beds/{id}/lines',      'GardenBedController@listBedLinesJson');
 $router->post('/api/gardens/{id}/assign-beds',   'GardenController@assignBeds');
 
 // -------------------------------------------------------------------------

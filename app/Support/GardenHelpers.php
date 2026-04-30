@@ -510,4 +510,103 @@ class GardenHelpers
             'harvest_est_planned' => $up[0]  ?? ($plannedDates[0] ?? null),
         ];
     }
+
+    /**
+     * Return all active garden beds (items with type='bed').
+     * Each entry: id, name, garden_name, num_lines.
+     */
+    public static function getGardenBeds(DB $db): array
+    {
+        try {
+            $beds = $db->fetchAll(
+                "SELECT i.id, i.name, p.name AS garden_name,
+                        COALESCE(m.meta_value_text, '1') AS bed_rows
+                   FROM items i
+                   LEFT JOIN items p ON p.id = i.parent_id
+                   LEFT JOIN item_meta m ON m.item_id = i.id AND m.meta_key = 'bed_rows'
+                  WHERE i.type = 'bed' AND i.deleted_at IS NULL AND i.status = 'active'
+                  ORDER BY p.name ASC, i.name ASC"
+            );
+            foreach ($beds as &$b) {
+                $b['num_lines'] = max(1, (int)$b['bed_rows']);
+                unset($b['bed_rows']);
+            }
+            unset($b);
+            return $beds;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Return line summaries for a bed suitable for the "Add to bed" modal.
+     * Each entry: line_number, status, fill_pct (0–100), plants_summary (string).
+     */
+    public static function getBedLinesForModal(DB $db, int $bedId): array
+    {
+        try {
+            $metaRows = $db->fetchAll(
+                "SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?",
+                [$bedId]
+            );
+            $meta = [];
+            foreach ($metaRows as $r) { $meta[$r['meta_key']] = $r['meta_value_text']; }
+            $bedRows  = max(1, (int)($meta['bed_rows'] ?? 1));
+            $lengthM  = (float)($meta['bed_length_m'] ?? 0);
+            $lengthCm = (int)round($lengthM * 100);
+            if ($lengthCm <= 0) $lengthCm = 400;
+
+            $lineRows = $db->fetchAll(
+                "SELECT line_number, sown_at, empty_since FROM garden_bed_lines WHERE item_id = ? ORDER BY line_number ASC",
+                [$bedId]
+            );
+            $lineMap = [];
+            foreach ($lineRows as $l) { $lineMap[(int)$l['line_number']] = $l; }
+
+            $plantings = $db->fetchAll(
+                "SELECT gp.line_number, gp.plant_count, gp.status, gp.seed_id,
+                        COALESCE(gp.crop_name, s.name) AS crop_name,
+                        COALESCE(s.spacing_cm, 20) AS spacing_cm
+                   FROM garden_plantings gp
+                   LEFT JOIN seeds s ON s.id = gp.seed_id
+                  WHERE gp.item_id = ? AND gp.status IN ('growing','sown','planned')
+                  ORDER BY gp.line_number ASC, gp.id ASC",
+                [$bedId]
+            );
+            $plantMap = [];
+            foreach ($plantings as $p) {
+                $plantMap[(int)$p['line_number']][] = $p;
+            }
+
+            $lines = [];
+            for ($n = 1; $n <= $bedRows; $n++) {
+                $lstate = $lineMap[$n] ?? null;
+                $lPlantings = $plantMap[$n] ?? [];
+                $usedCm = 0;
+                $names  = [];
+                foreach ($lPlantings as $p) {
+                    $cnt = max(1, (int)($p['plant_count'] ?? 1));
+                    $sp  = max(1, (int)($p['spacing_cm'] ?? 20));
+                    $usedCm += $cnt * $sp;
+                    $names[] = trim(($p['crop_name'] ?? '')) . ($cnt > 1 ? " ×{$cnt}" : '');
+                }
+                $fillPct = $lengthCm > 0 ? min(100, (int)round($usedCm / $lengthCm * 100)) : 0;
+
+                $status = 'empty';
+                if (!empty($lPlantings))                $status = 'growing';
+                elseif (!empty($lstate['empty_since'])) $status = 'resting';
+
+                $lines[] = [
+                    'line_number'    => $n,
+                    'status'         => $status,
+                    'fill_pct'       => $fillPct,
+                    'plants_summary' => $names ? implode(', ', $names) : '',
+                    'sow_date'       => $lstate['sown_at'] ?? null,
+                ];
+            }
+            return $lines;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }

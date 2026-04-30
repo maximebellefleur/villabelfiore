@@ -1346,4 +1346,22 @@ class GardenBedController
             Response::json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
+
+    /** AJAX: return all active garden beds for the "Add to bed" modal. */
+    public function listBedsJson(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db = DB::getInstance();
+        Response::json(['success' => true, 'beds' => GardenHelpers::getGardenBeds($db)]);
+    }
+
+    /** AJAX: return line summaries for a bed (fill %, status, plant names). */
+    public function listBedLinesJson(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $db    = DB::getInstance();
+        $bedId = (int)($params['id'] ?? 0);
+        if ($bedId <= 0) { Response::json(['success' => false, 'error' => 'Invalid bed']); return; }
+        Response::json(['success' => true, 'lines' => GardenHelpers::getBedLinesForModal($db, $bedId)]);
+    }
 }

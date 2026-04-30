@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.27' => [
+        'date'  => '2026-04-30',
+        'title' => 'Compact mobile widgets, Add to Garden Bed, smart irrigation',
+        'new' => [
+            '"🛏 Add to Bed" button on seed info page — black slide-up modal lets you pick a garden bed, then a line (with fill % bar and plant summary), and plants the seed directly into that line. Redirects to the bed\'s plant view on success.',
+            'Harvest window and "What to plant" widgets on the garden homepage are now compact single-row lists on mobile — one item per row with tighter padding and varieties inline.',
+        ],
+        'improved' => [
+            'Irrigation widget on dashboard renamed to "Current Irrigation" and now shows human-readable schedule (e.g. "Every 2 days · sunset"), the exact due date (overdue in red, upcoming in green), and the next date after marking done. Done button shows today\'s date. Clicking the row navigates to the item.',
+        ],
+        'fixed' => [],
+    ],
+
     '3.1.26' => [
         'date'  => '2026-04-30',
         'title' => 'Palette variety labels, sync sow dates, compact mobile widgets',

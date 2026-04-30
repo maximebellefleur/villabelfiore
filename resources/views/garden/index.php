@@ -25,6 +25,16 @@ $typeEmoji = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸
 .garden-card { background:var(--color-surface-raised); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:14px; }
 .garden-card-name { font-weight:700; font-size:.93rem; margin-bottom:2px; }
 .garden-card-sub { font-size:.78rem; color:var(--color-text-muted); }
+
+/* compact list style — 1 per row on mobile */
+@media (max-width:640px) {
+  .garden-cards--compact { grid-template-columns:1fr; gap:5px; }
+  .garden-cards--compact .garden-card { padding:7px 10px; display:flex; flex-direction:row; align-items:center; gap:8px; flex-wrap:nowrap; }
+  .garden-cards--compact .garden-card-name { margin-bottom:0; font-size:.85rem; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .garden-cards--compact .garden-card-sub { display:none; }
+  .garden-cards--compact .garden-card-badge { margin-top:0; flex-shrink:0; }
+  .garden-cards--compact .garden-card-stock { display:none; }
+}
 .garden-card-badge { display:inline-block; font-size:.7rem; padding:2px 8px; border-radius:999px; margin-top:6px; font-weight:600; }
 .garden-card-badge--green  { background:rgba(34,197,94,.15); color:#15803d; }
 .garden-card-badge--orange { background:rgba(234,179,8,.15); color:#92400e; }
@@ -440,15 +450,13 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     <?php if ($totalItems === 0): ?>
     <div class="garden-empty">No planting suggestions for <?= $currentMonthName ?>. Check your <a href="<?= url('/seeds') ?>">seed catalog</a> to set planting months.</div>
     <?php else: ?>
-    <div class="garden-cards">
+    <div class="garden-cards garden-cards--compact">
         <?php foreach ($plantNow as $s):
             $low = $s['stock_enabled'] && $s['stock_low_threshold'] !== null && (float)$s['stock_qty'] <= (float)$s['stock_low_threshold'];
         ?>
         <a href="<?= url('/seeds/' . $s['id']) ?>" style="text-decoration:none;color:inherit">
         <div class="garden-card" style="border-left:3px solid var(--color-primary)">
-            <div class="garden-card-name"><?= ($typeEmoji[$s['type']] ?? '🌾') . ' ' . e($s['name']) ?></div>
-            <?php if ($s['variety']): ?><div class="garden-card-sub"><?= e($s['variety']) ?></div><?php endif; ?>
-            <span class="garden-card-badge garden-card-badge--green">✓ In catalog</span>
+            <div class="garden-card-name"><?= ($typeEmoji[$s['type']] ?? '🌾') . ' ' . e($s['name']) ?><?= $s['variety'] ? ' <small style="font-weight:400;opacity:.7">· ' . e($s['variety']) . '</small>' : '' ?></div>
             <?php if ($s['sowing_type']): ?>
             <span class="garden-card-badge garden-card-badge--blue"><?= ucfirst($s['sowing_type']) ?></span>
             <?php endif; ?>
@@ -456,7 +464,7 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
             <span class="garden-card-badge garden-card-badge--gray"><?= $s['days_to_maturity'] ?>d</span>
             <?php endif; ?>
             <?php if ($s['stock_enabled']): ?>
-            <div style="margin-top:6px;font-size:.78rem;color:<?= $low ? '#dc2626' : '#15803d' ?>">
+            <div class="garden-card-stock" style="font-size:.78rem;color:<?= $low ? '#dc2626' : '#15803d' ?>">
                 <?= number_format((float)$s['stock_qty'],1) ?> <?= e($s['stock_unit']) ?><?= $low ? ' ⚠️' : '' ?>
             </div>
             <?php endif; ?>
@@ -498,20 +506,19 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     <?php if (empty($harvestSoon)): ?>
     <div class="garden-empty">No harvests coming up in the next 3 months.</div>
     <?php else: ?>
-    <div class="garden-cards">
+    <div class="garden-cards garden-cards--compact">
         <?php foreach ($harvestSoon as $s):
             $seedMonths = $s['harvest_months'] ? json_decode($s['harvest_months'], true) : [];
             $thisMonthHarvest = in_array($currentMonth, $seedMonths ?? []);
         ?>
         <a href="<?= url('/seeds/' . $s['id']) ?>" style="text-decoration:none;color:inherit">
         <div class="garden-card" style="border-left:3px solid <?= $thisMonthHarvest ? '#22c55e' : '#f59e0b' ?>">
-            <div class="garden-card-name"><?= ($typeEmoji[$s['type']] ?? '🌾') . ' ' . e($s['name']) ?></div>
-            <?php if ($s['variety']): ?><div class="garden-card-sub"><?= e($s['variety']) ?></div><?php endif; ?>
+            <div class="garden-card-name"><?= ($typeEmoji[$s['type']] ?? '🌾') . ' ' . e($s['name']) ?><?= $s['variety'] ? ' <small style="font-weight:400;opacity:.7">· ' . e($s['variety']) . '</small>' : '' ?></div>
             <span class="garden-card-badge <?= $thisMonthHarvest ? 'garden-card-badge--green' : 'garden-card-badge--orange' ?>">
-                <?= $thisMonthHarvest ? 'Harvest now' : 'Coming soon' ?>
+                <?= $thisMonthHarvest ? 'Now' : 'Soon' ?>
             </span>
             <?php if ($s['yield_per_plant_kg']): ?>
-            <div style="margin-top:6px;font-size:.78rem;color:var(--color-text-muted)">~<?= $s['yield_per_plant_kg'] ?> kg/plant</div>
+            <div class="garden-card-stock" style="font-size:.78rem;color:var(--color-text-muted)">~<?= $s['yield_per_plant_kg'] ?> kg/plant</div>
             <?php endif; ?>
         </div>
         </a>

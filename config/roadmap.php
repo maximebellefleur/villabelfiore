@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.27' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Compact mobile widgets, Add to Garden Bed, smart irrigation',
+        'features' => [
+            ['title' => 'Add to Garden Bed from seed page', 'detail' => 'Black slide-up modal on seed info page: pick a bed, then a line showing fill % bar and plant summary. Uses reusable GardenHelpers::getGardenBeds() and GardenHelpers::getBedLinesForModal(). Redirects to bed plant view.'],
+            ['title' => 'Compact mobile garden widgets', 'detail' => 'Harvest window and plant-this-month widgets on the garden home are now single-column list rows on mobile — far less padding, one per row, variety shown inline.'],
+            ['title' => 'Smart irrigation widget', 'detail' => 'Dashboard irrigation widget shows schedule (every N days at sunset/morning), exact due date (overdue in red), and the next date after Done. Done button shows today\'s date. Row is clickable to navigate to the irrigated item.'],
+        ],
+    ],
+
     '3.1.26' => [
         'status'   => 'released',
         'released' => '2026-04-30',
