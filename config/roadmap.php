@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.48' => [
+        'status'   => 'released',
+        'released' => '2026-05-01',
+        'title'    => 'Hotfix: restore nav logo',
+        'features' => [
+            ['title' => 'Nav logo restored', 'detail' => 'v3.1.47 broke the logo by searching for dark file variants before light ones. Reverted to the original search order (logo-icon-light → logo-horizontal-light → logo-nav).'],
+        ],
+    ],
+
     '3.1.47' => [
         'status'   => 'released',
         'released' => '2026-05-01',

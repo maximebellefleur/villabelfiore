@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.48' => [
+        'date'  => '2026-05-01',
+        'title' => 'Hotfix: restore nav logo',
+        'fixed' => [
+            'v3.1.47 changed the logo search order to check dark variants first, which broke the logo display for sites using the standard logo-icon-light / logo-horizontal-light files. Reverted to the original light-first search order.',
+            'Nav icon styling simplified (no circular bubble overflow) is kept.',
+        ],
+    ],
+
     '3.1.47' => [
         'date'  => '2026-05-01',
         'title' => 'Nav logo: dark variant first, no bubble styling',

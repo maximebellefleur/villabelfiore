@@ -1,8 +1,8 @@
 <?php $layout = 'auth';
-// Mirror nav logo priority: dark variants first, then light, then legacy, then fallback icon
+// Mirror nav logo priority: logo-icon-light → logo-horizontal-light → logo-nav → icon-192 fallback
 $_loginLogo = null;
 foreach (['svg','png','webp','jpg'] as $_e) {
-    foreach (['logo-icon-dark','logo-icon-light','logo-horizontal-dark','logo-horizontal-light','logo-nav'] as $_n) {
+    foreach (['logo-icon-light','logo-horizontal-light','logo-nav'] as $_n) {
         $_f = PUBLIC_PATH . '/assets/images/' . $_n . '.' . $_e;
         if (file_exists($_f)) { $_loginLogo = url('/assets/images/'.$_n.'.'.$_e).'?v='.filemtime($_f); break 2; }
     }

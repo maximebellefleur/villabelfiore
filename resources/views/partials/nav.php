@@ -47,21 +47,17 @@ $navLinks = [
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
-// Custom logo check — prefer dark variants first (user request), then light, then legacy logo-nav
+// Custom logo check — prefer horizontal-light for top nav, fall back to icon-light, then legacy logo-nav
 $_navLogoUrl  = null;
 $_navIconUrl  = null;
 foreach (['svg','png','webp','jpg'] as $_navExt) {
     if (!$_navLogoUrl) {
-        foreach (['logo-horizontal-dark','logo-horizontal-light'] as $_navHorizName) {
-            $_navHorizFile = PUBLIC_PATH . '/assets/images/' . $_navHorizName . '.' . $_navExt;
-            if (file_exists($_navHorizFile)) { $_navLogoUrl = url('/assets/images/'.$_navHorizName.'.'.$_navExt).'?v='.filemtime($_navHorizFile); break; }
-        }
+        $_navHorizFile = PUBLIC_PATH . '/assets/images/logo-horizontal-light.' . $_navExt;
+        if (file_exists($_navHorizFile)) { $_navLogoUrl = url('/assets/images/logo-horizontal-light.'.$_navExt).'?v='.filemtime($_navHorizFile); }
     }
     if (!$_navIconUrl) {
-        foreach (['logo-icon-dark','logo-icon-light'] as $_navIconName) {
-            $_navIconFile = PUBLIC_PATH . '/assets/images/' . $_navIconName . '.' . $_navExt;
-            if (file_exists($_navIconFile)) { $_navIconUrl = url('/assets/images/'.$_navIconName.'.'.$_navExt).'?v='.filemtime($_navIconFile); break; }
-        }
+        $_navIconFile = PUBLIC_PATH . '/assets/images/logo-icon-light.' . $_navExt;
+        if (file_exists($_navIconFile)) { $_navIconUrl = url('/assets/images/logo-icon-light.'.$_navExt).'?v='.filemtime($_navIconFile); }
     }
 }
 if (!$_navLogoUrl && !$_navIconUrl) {
