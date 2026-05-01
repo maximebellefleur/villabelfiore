@@ -141,7 +141,7 @@ $router->post('/settings/upgrade/upload',      'UpgradeController@upload');
 $router->post('/settings/upgrade/github',      'UpgradeController@applyFromGitHub');
 $router->get('/settings/upcoming',                    'SettingsController@upcoming');
 $router->post('/settings/tasks/{id}/status',          'SettingsController@taskStatus');
-$router->post('/settings/tasks/{id}/archive',         'SettingsController@taskArchive');
+$router->post('/settings/tasks/archive-done',         'SettingsController@taskArchiveDone');
 $router->post('/settings/tasks/batch',                'SettingsController@taskBatch');
 $router->post('/settings/future-steps',               'SettingsController@addFutureStep');
 $router->post('/settings/future-steps/{id}/update',   'SettingsController@updateFutureStep');

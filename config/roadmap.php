@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.46' => [
+        'status'   => 'released',
+        'released' => '2026-04-30',
+        'title'    => 'Archive all done — one button in the header',
+        'features' => [
+            ['title' => 'Single Archive all done button', 'detail' => 'The per-row Archive button is replaced by a single 📥 Archive done (N) button in the task log header. It archives all done tasks at once. The button disappears when there are no done tasks.'],
+        ],
+    ],
+
     '3.1.45' => [
         'status'   => 'released',
         'released' => '2026-04-30',

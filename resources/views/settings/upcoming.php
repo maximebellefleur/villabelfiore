@@ -32,9 +32,6 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => !empty($t['ar
 .ptask-toggle { background:none;border:none;padding:0 4px;cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;margin-left:auto;user-select:none;align-self:center; }
 .ptask-toggle:focus { outline:none; }
 
-.ptask-archive-btn { display:none;align-items:center;gap:4px;background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.3);color:var(--color-success,#27ae60);padding:4px 10px;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;flex-shrink:0;align-self:center;line-height:1;white-space:nowrap; }
-.ptask-archive-btn:hover { background:rgba(39,174,96,.16); }
-.ptask-row[data-status="done"] .ptask-archive-btn { display:inline-flex; }
 
 .ptask-body { flex:1;min-width:0; }
 .ptask-title { font-weight:700;font-size:.93rem;line-height:1.3;margin-bottom:3px; }
@@ -134,7 +131,8 @@ function fstepRowHtml(array $st): string {
 ?>
 
 <?php
-$aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] ?? '', ['trigger_ai', 'error'], true)));
+$aiTaskCount  = count(array_filter($activeTasks, fn($t) => in_array($t['status'] ?? '', ['trigger_ai', 'error'], true)));
+$doneCount    = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? '') === 'done'));
 ?>
 <div class="ptask-header">
   <div>
@@ -142,6 +140,11 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
     <div class="ptask-subtitle">Every platform request, newest first. Click ○ to cycle status.</div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" class="btn btn-secondary btn-sm" id="ptaskArchiveAllBtn" onclick="ptaskArchiveAll()"
+            style="display:<?= $doneCount > 0 ? 'inline-flex' : 'none' ?>"
+            title="Move all done tasks to the archive section">
+      📥 Archive done (<span id="ptaskDoneCount"><?= $doneCount ?></span>)
+    </button>
     <button type="button" class="btn btn-secondary btn-sm" id="ptaskCopyAiBtn" onclick="ptaskCopyAi()"
             style="display:<?= $aiTaskCount > 0 ? 'inline-flex' : 'none' ?>"
             title="Copy trigger_ai and error tasks formatted for pasting into an AI conversation">
@@ -186,8 +189,6 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
         <?php if (!empty($t['note'])): ?><span class="ptask-note"><?= e($t['note']) ?></span><?php endif; ?>
       </div>
     </div>
-    <button type="button" class="ptask-archive-btn" onclick="ptaskArchive(<?= (int)$t['id'] ?>)"
-            title="Move this done task to the archive section">📥 Archive</button>
     <button type="button" class="ptask-toggle" onclick="ptaskCycle(<?= (int)$t['id'] ?>)"
             title="Click to cycle: pending → done → error → trigger AI → pending"
             style="color:<?= $sc['color'] ?>"><?= $sc['icon'] ?></button>
@@ -237,6 +238,14 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
     if (btn) btn.style.display = n > 0 ? 'inline-flex' : 'none';
   }
 
+  function updateDoneCount() {
+    var n   = document.querySelectorAll('.ptask-row[data-status="done"]').length;
+    var btn = document.getElementById('ptaskArchiveAllBtn');
+    var lbl = document.getElementById('ptaskDoneCount');
+    if (lbl) lbl.textContent = n;
+    if (btn) btn.style.display = n > 0 ? 'inline-flex' : 'none';
+  }
+
   function showSaveError(msg) {
     var el = document.getElementById('ptaskSaveError');
     if (!el) {
@@ -261,6 +270,7 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
       if (countEl) countEl.textContent = parseInt(countEl.textContent || '0', 10) + 1;
       ptaskSelChanged();
       updateAiCount();
+      updateDoneCount();
       return;
     }
 
@@ -293,6 +303,7 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
       noteEl.textContent = t.note;
     }
     updateAiCount();
+    updateDoneCount();
   }
 
   window.ptaskCopyAi = function() {
@@ -336,8 +347,8 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
     }
   };
 
-  window.ptaskArchive = function(id) {
-    fetch(BASE + '/settings/tasks/' + id + '/archive', {
+  window.ptaskArchiveAll = function() {
+    fetch(BASE + '/settings/tasks/archive-done', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
       body: '_token=' + encodeURIComponent(CSRF)
@@ -345,12 +356,12 @@ $aiTaskCount = count(array_filter($activeTasks, fn($t) => in_array($t['status'] 
     .then(function(r){ return r.json(); })
     .then(function(res) {
       if (res.success) {
-        applyTask({ id: id, archived: true });
+        (res.archived || []).forEach(function(id) { applyTask({ id: id, archived: true }); });
       } else {
         showSaveError(res.error || 'Could not archive. Please try again.');
       }
     })
-    .catch(function() { showSaveError('Network error — task not archived.'); });
+    .catch(function() { showSaveError('Network error — tasks not archived.'); });
   };
 
   window.ptaskCycle = function(id) {

@@ -266,26 +266,31 @@ class SettingsController
         ]);
     }
 
-    // POST /settings/tasks/{id}/archive — flag the task as archived (move to archive section)
-    public function taskArchive(Request $request, array $params = []): void
+    // POST /settings/tasks/archive-done — archive all tasks currently at status=done
+    public function taskArchiveDone(Request $request, array $params = []): void
     {
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
-        $id = (int)($params['id'] ?? 0);
 
+        $tasks    = self::loadMergedTasks();
         $statuses = self::readStatuses();
-        $sid      = (string)$id;
-        $existing = $statuses[$sid] ?? [];
-        $statuses[$sid] = [
-            'status'      => $existing['status']      ?? 'done',
-            'note'        => $existing['note']        ?? null,
-            'resolved_at' => $existing['resolved_at'] ?? date('Y-m-d H:i:s'),
-            'archived'    => true,
-        ];
+        $archived = [];
+        foreach ($tasks as $t) {
+            if (($t['status'] ?? '') !== 'done' || !empty($t['archived'])) continue;
+            $sid = (string)$t['id'];
+            $statuses[$sid] = [
+                'status'      => 'done',
+                'note'        => $t['note']        ?? null,
+                'resolved_at' => $t['resolved_at'] ?? date('Y-m-d H:i:s'),
+                'archived'    => true,
+            ];
+            $archived[] = $t['id'];
+        }
         $saved = self::writeStatuses($statuses);
         Response::json([
-            'success' => $saved,
-            'error'   => $saved ? null : 'Could not archive task — check that storage/ is writable.',
+            'success'  => $saved,
+            'archived' => $archived,
+            'error'    => $saved ? null : 'Could not archive tasks — check that storage/ is writable.',
         ]);
     }
 
