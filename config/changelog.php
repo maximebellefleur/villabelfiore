@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.47' => [
+        'date'  => '2026-05-01',
+        'title' => 'Nav logo: dark variant first, no bubble styling',
+        'improved' => [
+            'Logo resolution now checks logo-icon-dark / logo-horizontal-dark before the light variants. Upload a -dark file to use it in the nav and on the login page.',
+            'Nav icon no longer uses the large circular bubble that overflowed the nav bar. Icon now renders flat at 34×34px with a subtle rounded corner.',
+            'Login page logo box-shadow removed to match the clean nav style.',
+        ],
+    ],
+
     '3.1.46' => [
         'date'  => '2026-04-30',
         'title' => 'Archive all done — one button in the header',

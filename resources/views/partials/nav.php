@@ -47,17 +47,21 @@ $navLinks = [
 ];
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
-// Custom logo check — prefer horizontal-light for top nav, fall back to icon-light, then legacy logo-nav
+// Custom logo check — prefer dark variants first (user request), then light, then legacy logo-nav
 $_navLogoUrl  = null;
 $_navIconUrl  = null;
 foreach (['svg','png','webp','jpg'] as $_navExt) {
     if (!$_navLogoUrl) {
-        $_navHorizFile = PUBLIC_PATH . '/assets/images/logo-horizontal-light.' . $_navExt;
-        if (file_exists($_navHorizFile)) { $_navLogoUrl = url('/assets/images/logo-horizontal-light.'.$_navExt).'?v='.filemtime($_navHorizFile); }
+        foreach (['logo-horizontal-dark','logo-horizontal-light'] as $_navHorizName) {
+            $_navHorizFile = PUBLIC_PATH . '/assets/images/' . $_navHorizName . '.' . $_navExt;
+            if (file_exists($_navHorizFile)) { $_navLogoUrl = url('/assets/images/'.$_navHorizName.'.'.$_navExt).'?v='.filemtime($_navHorizFile); break; }
+        }
     }
     if (!$_navIconUrl) {
-        $_navIconFile = PUBLIC_PATH . '/assets/images/logo-icon-light.' . $_navExt;
-        if (file_exists($_navIconFile)) { $_navIconUrl = url('/assets/images/logo-icon-light.'.$_navExt).'?v='.filemtime($_navIconFile); }
+        foreach (['logo-icon-dark','logo-icon-light'] as $_navIconName) {
+            $_navIconFile = PUBLIC_PATH . '/assets/images/' . $_navIconName . '.' . $_navExt;
+            if (file_exists($_navIconFile)) { $_navIconUrl = url('/assets/images/'.$_navIconName.'.'.$_navExt).'?v='.filemtime($_navIconFile); break; }
+        }
     }
 }
 if (!$_navLogoUrl && !$_navIconUrl) {
@@ -73,10 +77,10 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 <nav class="nav" id="mainNav" style="overflow:visible">
     <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px;overflow-x:visible;overflow-y:hidden;align-self:stretch">
         <?php if ($_navIconUrl && $_navLogoUrl): ?>
-            <img src="<?= $_navIconUrl ?>" alt="" style="height:84px;width:84px;object-fit:cover;flex-shrink:0;padding:4px;border-radius:100px;margin:-12px -7px 0 -30px;align-self:flex-start">
+            <img src="<?= $_navIconUrl ?>" alt="" style="height:34px;width:34px;object-fit:contain;flex-shrink:0;border-radius:6px">
             <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:26px;max-width:120px;object-fit:contain">
         <?php elseif ($_navEffective): ?>
-            <img src="<?= $_navEffective ?>" alt="Logo" style="height:44px;width:44px;object-fit:cover;flex-shrink:0;background:#2b552d;padding:4px;border-radius:100px;border:3px solid #fff;margin:0 3px 0 -15px">
+            <img src="<?= $_navEffective ?>" alt="Logo" style="height:34px;max-width:150px;object-fit:contain;flex-shrink:0;border-radius:6px">
         <?php else: ?>🌿 Rooted<?php endif; ?>
     </a>
 

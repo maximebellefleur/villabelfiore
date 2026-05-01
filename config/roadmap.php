@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.47' => [
+        'status'   => 'released',
+        'released' => '2026-05-01',
+        'title'    => 'Nav logo dark variant + clean styling',
+        'features' => [
+            ['title' => 'Dark logo variant priority', 'detail' => 'Logo resolution now checks logo-icon-dark and logo-horizontal-dark before the light equivalents. Upload a dark-variant file via PWA settings to have it used automatically.'],
+            ['title' => 'No more bubble overflow on nav icon', 'detail' => 'The large 84px circular icon that overflowed the nav bar is replaced with a clean 34px flat icon. Box-shadow on the login logo also removed.'],
+        ],
+    ],
+
     '3.1.46' => [
         'status'   => 'released',
         'released' => '2026-04-30',
