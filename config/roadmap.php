@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.50' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'Drag to reorder gardens',
+        'features' => [
+            ['title' => 'Garden drag-to-reorder', 'detail' => 'A ⠿ drag handle appears inside each garden\'s collapse toggle. Grab it to drag the entire garden section to a new position. Order is saved immediately via POST /api/gardens/reorder.'],
+        ],
+    ],
+
     '3.1.49' => [
         'status'   => 'released',
         'released' => '2026-05-01',

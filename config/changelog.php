@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.50' => [
+        'date'  => '2026-05-02',
+        'title' => 'Drag to reorder gardens',
+        'new' => [
+            'Gardens can now be dragged and reordered on the garden page. Grab the ⠿ handle that appears inside the collapse toggle button and drag any garden to a new position. The order is persisted immediately via the API.',
+        ],
+    ],
+
     '3.1.49' => [
         'date'  => '2026-05-01',
         'title' => 'Login page uses dark logo variants',

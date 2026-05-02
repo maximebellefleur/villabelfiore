@@ -54,6 +54,11 @@ $typeEmoji = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸
 .rg-bedrow--drag-over { box-shadow:0 -2px 0 var(--color-primary); }
 .rg-bed-drag-handle { cursor:grab; color:var(--color-text-muted); font-size:.95rem; padding:0 4px 0 2px; user-select:none; flex-shrink:0; opacity:.35; line-height:1; touch-action:none; }
 .rg-bed-drag-handle:hover,.rg-bed-drag-handle:active { opacity:1; cursor:grab; }
+/* Garden drag-to-reorder */
+.rg-garden-section--dragging { opacity:.35; }
+.rg-garden-section--drag-over { box-shadow:0 -2px 0 var(--color-primary); }
+.rg-garden-drag-handle { cursor:grab; color:var(--color-text-muted); font-size:.95rem; padding:0 6px 0 0; user-select:none; flex-shrink:0; opacity:.35; line-height:1; touch-action:none; }
+.rg-garden-drag-handle:hover,.rg-garden-drag-handle:active { opacity:1; cursor:grab; }
 .garden-need-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .garden-need-stock { font-size:.78rem; margin-top:2px; }
 .garden-need-stock--ok  { color:#15803d; }
@@ -136,8 +141,9 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     if ($b['status'] === 'empty')   $gEmpty++;
   }
 ?>
-  <div class="rg-garden-section is-open" data-garden-id="<?= $gid ?>">
+  <div class="rg-garden-section is-open" data-garden-id="<?= $gid ?>" draggable="true">
     <button type="button" class="rg-garden-toggle">
+      <span class="rg-garden-drag-handle" title="Drag to reorder gardens" draggable="false">⠿</span>
       <span style="font-size:1.1rem">🌿</span>
       <div style="flex:1;min-width:0">
         <div class="rg-garden-name"><?= e($g['name']) ?></div>
@@ -301,6 +307,70 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
   }
 
   document.querySelectorAll('.rg-bedrow[data-bed-id]').forEach(initBedRow);
+}());
+
+// ── Garden drag-to-reorder ────────────────────────────────────────────────
+(function () {
+  var CSRF = <?= json_encode(\App\Support\CSRF::getToken()) ?>;
+  var _dragSrc   = null;
+  var _fromHandle = false;
+
+  function sections() {
+    return Array.from(document.querySelectorAll('.rg-garden-section[data-garden-id]'));
+  }
+
+  function saveOrder() {
+    var ids = sections().map(function(s){ return s.dataset.gardenId; });
+    fetch(window.APP_BASE + '/api/gardens/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+      body: '_token=' + encodeURIComponent(CSRF) + '&ids=' + encodeURIComponent(JSON.stringify(ids))
+    });
+  }
+
+  sections().forEach(function(sec) {
+    var handle = sec.querySelector('.rg-garden-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', function() { _fromHandle = true; });
+      // prevent the mousedown on the handle from toggling the garden
+      handle.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
+
+    sec.addEventListener('dragstart', function(e) {
+      if (!_fromHandle) { e.preventDefault(); return; }
+      _fromHandle = false;
+      _dragSrc = sec;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(function(){ sec.classList.add('rg-garden-section--dragging'); }, 0);
+    });
+    sec.addEventListener('dragend', function() {
+      _fromHandle = false;
+      sec.classList.remove('rg-garden-section--dragging');
+      sections().forEach(function(s){ s.classList.remove('rg-garden-section--drag-over'); });
+      _dragSrc = null;
+    });
+    sec.addEventListener('dragover', function(e) {
+      if (!_dragSrc || _dragSrc === sec) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      sections().forEach(function(s){ s.classList.remove('rg-garden-section--drag-over'); });
+      sec.classList.add('rg-garden-section--drag-over');
+    });
+    sec.addEventListener('dragleave', function(e) {
+      if (!sec.contains(e.relatedTarget)) sec.classList.remove('rg-garden-section--drag-over');
+    });
+    sec.addEventListener('drop', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      sec.classList.remove('rg-garden-section--drag-over');
+      if (!_dragSrc || _dragSrc === sec) return;
+      var all = sections();
+      var si  = all.indexOf(_dragSrc);
+      var di  = all.indexOf(sec);
+      if (si === -1 || di === -1) return;
+      if (si < di) sec.parentNode.insertBefore(_dragSrc, sec.nextSibling);
+      else         sec.parentNode.insertBefore(_dragSrc, sec);
+      saveOrder();
+    });
+  });
 }());
 
 // ── Assign Beds Popup ──────────────────────────────────────────────────────

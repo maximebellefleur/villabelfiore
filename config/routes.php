@@ -196,6 +196,7 @@ $router->get('/api/garden/beds',                 'GardenBedController@listBedsJs
 $router->get('/api/garden/beds/{id}/lines',      'GardenBedController@listBedLinesJson');
 $router->post('/api/gardens/{id}/assign-beds',   'GardenController@assignBeds');
 $router->post('/api/gardens/{id}/reorder-beds',  'GardenBedController@reorderBeds');
+$router->post('/api/gardens/reorder',            'GardenController@reorderGardens');
 
 // -------------------------------------------------------------------------
 // Seeds

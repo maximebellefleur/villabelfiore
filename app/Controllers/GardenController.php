@@ -496,4 +496,29 @@ class GardenController
         echo json_encode(['success' => true, 'assigned' => count($bedIds)]);
         exit;
     }
+
+    // POST /api/gardens/reorder
+    // Accepts ids=JSON_array of garden IDs in new order; saves sort_order to items.
+    public function reorderGardens(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        \App\Support\CSRF::validate($request->post('_token', ''));
+
+        $ids = $request->post('ids', '');
+        if (is_string($ids)) { $ids = json_decode($ids, true) ?: []; }
+        if (!is_array($ids) || empty($ids)) { Response::json(['success' => false, 'error' => 'No ids']); return; }
+
+        $db = DB::getInstance();
+        try {
+            foreach ($ids as $order => $gardenId) {
+                $db->execute(
+                    "UPDATE items SET sort_order = ?, updated_at = NOW() WHERE id = ? AND type = 'garden'",
+                    [(int)$order + 1, (int)$gardenId]
+                );
+            }
+            Response::json(['success' => true]);
+        } catch (\Throwable $e) {
+            Response::json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 }
