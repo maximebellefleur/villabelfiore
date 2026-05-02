@@ -350,7 +350,10 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
       }
       _active = false; _over = null;
     }
-    handle.addEventListener('touchend', finishTouch);
+    handle.addEventListener('touchend', function(e) {
+      e.preventDefault(); // suppress synthetic click → would navigate the <a> bed row and cancel the fetch
+      finishTouch();
+    }, { passive: false });
     handle.addEventListener('touchcancel', finishTouch);
   }
 
@@ -418,7 +421,10 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
         }
         _tActive = false; _tOver = null;
       }
-      handle.addEventListener('touchend', finishGardenTouch);
+      handle.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        finishGardenTouch();
+      }, { passive: false });
       handle.addEventListener('touchcancel', finishGardenTouch);
     }
 

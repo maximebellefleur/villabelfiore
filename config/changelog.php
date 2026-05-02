@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.54' => [
+        'date'  => '2026-05-02',
+        'title' => 'Fix touch drag save on mobile',
+        'fixed' => [
+            'After a touch drag on mobile, the browser fired a synthetic click event at the finger\'s release position — which landed on the <a> bed row underneath, triggering navigation. The navigation cancelled the in-flight fetch before the save completed, so the new order was lost on reload. Fixed by calling e.preventDefault() on touchend (passive: false), which suppresses the synthetic click entirely.',
+        ],
+    ],
+
     '3.1.53' => [
         'date'  => '2026-05-02',
         'title' => 'Mobile touch drag for beds and gardens',

@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.54' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'Fix touch drag save on mobile',
+        'features' => [
+            ['title' => 'Bed reorder now persists after touch drag', 'detail' => 'On mobile, touchend was generating a synthetic click on whichever bed row was under the finger. That click navigated away, cancelling the save fetch. Added e.preventDefault() on touchend to suppress the synthetic click.'],
+        ],
+    ],
+
     '3.1.53' => [
         'status'   => 'released',
         'released' => '2026-05-02',
