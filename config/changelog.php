@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.51' => [
+        'date'  => '2026-05-02',
+        'title' => 'Per-task copy button for trigger_ai tasks',
+        'new' => [
+            'Each trigger_ai task row now shows a 📋 copy button. Clicking it copies that single task to clipboard with instructions for AI to update the existing entry rather than create a new one.',
+        ],
+        'improved' => [
+            'The copy format includes a reminder to add one summary line of new info to the task description after working on it, keeping the task log up to date.',
+        ],
+    ],
+
     '3.1.50' => [
         'date'  => '2026-05-02',
         'title' => 'Drag to reorder gardens',

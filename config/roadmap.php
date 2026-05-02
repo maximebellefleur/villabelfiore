@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.51' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'Per-task copy for trigger_ai',
+        'features' => [
+            ['title' => '📋 Copy button on each trigger_ai row', 'detail' => 'Trigger_ai task rows show a small copy button. It copies that single task formatted for AI with instructions to update the existing entry, not create a new one. The "Copy AI tasks" header button for all tasks is unchanged.'],
+        ],
+    ],
+
     '3.1.50' => [
         'status'   => 'released',
         'released' => '2026-05-02',

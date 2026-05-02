@@ -44,6 +44,10 @@ $archivedTasks = array_values(array_filter($tasks ?? [], fn($t) => !empty($t['ar
 .ptask-badge--done { background:rgba(39,174,96,.12);color:var(--color-success,#27ae60); }
 .ptask-badge--empty { display:none; }
 
+.ptask-copy-single { background:none;border:none;padding:2px 5px;cursor:pointer;font-size:.85rem;line-height:1;flex-shrink:0;align-self:center;color:var(--color-text-muted);border-radius:4px;display:none;margin-left:2px; }
+.ptask-copy-single:hover { background:rgba(217,119,6,.12);color:#d97706; }
+.ptask-row--trigger_ai .ptask-copy-single { display:inline-flex; }
+
 /* Archive section */
 .ptask-archive { margin-top:20px;border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden; }
 .ptask-archive-header { display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;background:var(--color-surface-raised);user-select:none; }
@@ -189,6 +193,8 @@ $doneCount    = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? '') 
         <?php if (!empty($t['note'])): ?><span class="ptask-note"><?= e($t['note']) ?></span><?php endif; ?>
       </div>
     </div>
+    <button type="button" class="ptask-copy-single" onclick="ptaskCopySingle(<?= (int)$t['id'] ?>)"
+            title="Copy this task for AI">📋</button>
     <button type="button" class="ptask-toggle" onclick="ptaskCycle(<?= (int)$t['id'] ?>)"
             title="Click to cycle: pending → done → error → trigger AI → pending"
             style="color:<?= $sc['color'] ?>"><?= $sc['icon'] ?></button>
@@ -302,9 +308,45 @@ $doneCount    = count(array_filter($activeTasks, fn($t) => ($t['status'] ?? '') 
       }
       noteEl.textContent = t.note;
     }
+    var copyBtn = row.querySelector('.ptask-copy-single');
+    if (copyBtn) copyBtn.style.display = t.status === 'trigger_ai' ? 'inline-flex' : '';
+
     updateAiCount();
     updateDoneCount();
   }
+
+  window.ptaskCopySingle = function(id) {
+    var row = rowEl(id);
+    if (!row) return;
+    var title = (row.querySelector('.ptask-title') || {}).textContent || '';
+    var desc  = (row.querySelector('.ptask-desc')  || {}).textContent || '';
+    var lines = [
+      '=== ROOTED — EXISTING TASK NEEDING AI ATTENTION ===',
+      'This task already exists in config/platform_tasks.json.',
+      'DO NOT log it again as a new (ZONE) task — work on the existing ID below.',
+      'After working on it, you may update the task description by adding one summary line of new info.',
+      '',
+      '[TRIGGER_AI] Task #' + id + ' — ' + title.trim(),
+    ];
+    if (desc.trim()) lines.push(desc.trim());
+    lines.push('', '=== END ===');
+    var text = lines.join('\n');
+    var done = function() {
+      var btn = row.querySelector('.ptask-copy-single');
+      if (!btn) return;
+      var orig = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(function(){ btn.textContent = orig; }, 1500);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(done);
+    } else {
+      var t = document.createElement('textarea');
+      t.value = text; document.body.appendChild(t); t.select();
+      document.execCommand('copy'); document.body.removeChild(t);
+      done();
+    }
+  };
 
   window.ptaskCopyAi = function() {
     var rows = Array.from(document.querySelectorAll('.ptask-row[data-status="trigger_ai"],.ptask-row[data-status="error"]'));
