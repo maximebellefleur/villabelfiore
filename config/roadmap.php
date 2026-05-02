@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.49' => [
+        'status'   => 'released',
+        'released' => '2026-05-01',
+        'title'    => 'Login page dark logo',
+        'features' => [
+            ['title' => 'Login shows dark logo variants', 'detail' => 'The login page has a white background so it now picks logo-horizontal-dark and logo-icon-dark first. When both exist the icon sits above the horizontal text logo. Falls back to light variants then icon-192.png.'],
+        ],
+    ],
+
     '3.1.48' => [
         'status'   => 'released',
         'released' => '2026-05-01',

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.49' => [
+        'date'  => '2026-05-01',
+        'title' => 'Login page uses dark logo variants',
+        'improved' => [
+            'Login page now checks logo-horizontal-dark and logo-icon-dark first (light background). If both are uploaded, the icon appears above the horizontal text logo. Falls back to light variants then icon-192.png.',
+        ],
+    ],
+
     '3.1.48' => [
         'date'  => '2026-05-01',
         'title' => 'Hotfix: restore nav logo',
