@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.52' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'Login logo centered + spacing fix',
+        'features' => [
+            ['title' => 'Logo centred on login page', 'detail' => 'The horizontal logo was left-aligned when shown with the icon. Both images are now centred. Added top margin between the logo block and the Sign In heading.'],
+        ],
+    ],
+
     '3.1.51' => [
         'status'   => 'released',
         'released' => '2026-05-02',

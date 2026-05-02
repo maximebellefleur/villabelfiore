@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.52' => [
+        'date'  => '2026-05-02',
+        'title' => 'Login logo centered + spacing fix',
+        'fixed' => [
+            'Horizontal logo on the login page was left-aligned when displayed alongside the icon. Both the icon and horizontal logo are now centred.',
+            'Added top margin between the logo block and the Sign In heading so icons and text are visually separated.',
+        ],
+    ],
+
     '3.1.51' => [
         'date'  => '2026-05-02',
         'title' => 'Per-task copy button for trigger_ai tasks',

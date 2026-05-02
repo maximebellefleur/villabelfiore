@@ -22,7 +22,7 @@ foreach (['svg','png','webp','jpg'] as $_e) {
     <div style="text-align:center;margin-bottom:24px">
         <?php if ($_loginIconUrl && $_loginHorizUrl): ?>
             <img src="<?= $_loginIconUrl ?>" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:14px;display:block;margin:0 auto 10px">
-            <img src="<?= $_loginHorizUrl ?>" alt="Rooted" style="max-height:28px;max-width:180px;object-fit:contain">
+            <img src="<?= $_loginHorizUrl ?>" alt="Rooted" style="max-height:28px;max-width:180px;object-fit:contain;display:block;margin:0 auto">
         <?php elseif ($_loginHorizUrl): ?>
             <img src="<?= $_loginHorizUrl ?>" alt="Rooted" style="max-height:44px;max-width:200px;object-fit:contain">
         <?php elseif ($_loginIconUrl): ?>
@@ -31,7 +31,7 @@ foreach (['svg','png','webp','jpg'] as $_e) {
             <img src="<?= url('/assets/images/icon-192.png') ?>" alt="Rooted" style="width:64px;height:64px;object-fit:contain;border-radius:14px">
         <?php endif; ?>
     </div>
-    <h1 class="auth-title">Sign In to Rooted</h1>
+    <h1 class="auth-title" style="margin-top:24px">Sign In to Rooted</h1>
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
     <form method="POST" action="<?= url('/login') ?>" class="form" novalidate>
         <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
