@@ -807,4 +807,77 @@ class SettingsController
         flash('success', 'Favicon removed.');
         Response::redirect('/settings#favicon');
     }
+
+    public function menus(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        Response::render('settings/menus', ['title' => 'Menu Editor']);
+    }
+
+    public function saveMenus(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+
+        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!CSRF::validateToken($token)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token']);
+            exit;
+        }
+
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true);
+
+        if (!is_array($data)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'Invalid JSON']);
+            exit;
+        }
+
+        // Sanitise: keep only known keys per item, limit to 2 levels
+        $sanitise = function(array $items, int $depth = 0) use (&$sanitise): array {
+            $out = [];
+            foreach ($items as $item) {
+                if (!is_array($item)) continue;
+                $clean = [
+                    'id'        => preg_replace('/[^a-zA-Z0-9_-]/', '', (string)($item['id'] ?? '')),
+                    'type'      => in_array($item['type'] ?? '', ['route','custom']) ? $item['type'] : 'custom',
+                    'route_key' => preg_replace('/[^a-zA-Z0-9_.-]/', '', (string)($item['route_key'] ?? '')),
+                    'url'       => filter_var($item['url'] ?? '', FILTER_SANITIZE_URL),
+                    'label'     => htmlspecialchars_decode(strip_tags((string)($item['label'] ?? '')), ENT_QUOTES),
+                    'icon'      => preg_replace('/[^a-zA-Z0-9_-]/', '', (string)($item['icon'] ?? '')),
+                    'icon_svg'  => !empty($item['icon_svg']) ? strip_tags((string)$item['icon_svg']) : null,
+                    'children'  => [],
+                ];
+                if ($clean['label'] === '') continue;
+                if ($depth === 0 && !empty($item['children']) && is_array($item['children'])) {
+                    $clean['children'] = $sanitise($item['children'], 1);
+                }
+                $out[] = $clean;
+            }
+            return $out;
+        };
+
+        $menus = [
+            'main'   => $sanitise($data['main']   ?? []),
+            'footer' => $sanitise($data['footer'] ?? []),
+        ];
+
+        $storagePath = defined('STORAGE_PATH') ? STORAGE_PATH : BASE_PATH . '/storage';
+        if (!is_dir($storagePath)) { @mkdir($storagePath, 0755, true); }
+        $file = $storagePath . '/menus.json';
+
+        if (file_put_contents($file, json_encode($menus, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'Could not write menus.json — check storage/ permissions']);
+            exit;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true]);
+        exit;
+    }
 }

@@ -44,6 +44,7 @@
     <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
     <?= $content ?>
 </main>
+<?php include BASE_PATH . '/resources/views/partials/footer.php'; ?>
 <?php if (!empty($mapEnabled) || !empty($miniMapEnabled)): ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 <?php endif; ?>

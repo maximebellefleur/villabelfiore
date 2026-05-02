@@ -8,6 +8,25 @@
  */
 return [
 
+    '3.1.55' => [
+        'date'  => '2026-05-02',
+        'title' => 'WordPress-style menu editor',
+        'new' => [
+            'Settings → Menus tab: two-panel editor for Main and Footer menus.',
+            'Left panel lists all built-in app pages grouped by section, plus a custom link form.',
+            'Right panel shows the live menu with drag-to-reorder and per-item expand to edit label and icon.',
+            'Icon selector shows all icons from config/menu_icons.php with inline SVG preview, plus a "custom…" option for pasting any SVG path.',
+            'Sub-items supported (2 levels max); parent assignment via dropdown in the edit panel.',
+            'Menu data saved to storage/menus.json; defaults fall back to config/menu_defaults.php.',
+        ],
+        'improved' => [
+            'Nav now loads from storage/menus.json if present, so user menus survive upgrades.',
+            'All icon SVG paths extracted to config/menu_icons.php (upgrade-safe; add new icons without touching nav.php).',
+            'Route URLs for built-in pages stored as route_key references and resolved at render time from config/menu_routes.php — URL changes only need one edit.',
+            'Footer menu rendered via new resources/views/partials/footer.php, included from main layout.',
+        ],
+    ],
+
     '3.1.54' => [
         'date'  => '2026-05-02',
         'title' => 'Fix touch drag save on mobile',

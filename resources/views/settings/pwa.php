@@ -28,6 +28,7 @@ $hasFav  = file_exists($iconDir . 'favicon-32.png');
         <a href="<?= url('/settings/weather') ?>"       class="settings-tab" role="tab">🌤️ Weather</a>
         <a href="<?= url('/settings/calendar') ?>"      class="settings-tab" role="tab">📅 Calendar</a>
         <a href="<?= url('/settings/pwa') ?>"           class="settings-tab settings-tab--active" role="tab">📱 PWA</a>
+        <a href="<?= url('/settings/menus') ?>"         class="settings-tab" role="tab">☰ Menus</a>
         <a href="<?= url('/logs/errors') ?>"            class="settings-tab" role="tab">Error Logs</a>
         <a href="<?= url('/settings/upcoming') ?>"      class="settings-tab" role="tab">🗺 Roadmap</a>
         <a href="<?= url('/settings/upgrade') ?>"       class="settings-tab" role="tab">⬆️ Upgrade</a>

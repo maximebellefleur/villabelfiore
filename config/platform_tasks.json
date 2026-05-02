@@ -1,5 +1,11 @@
 [
   {
+    "id": 25,
+    "title": "WordPress-style menu editor in Settings",
+    "description": "Add a Menus tab to Settings with a two-panel WordPress-style editor: left panel lists all app pages (grouped) and a custom link form; right panel shows the live draggable menu for Main or Footer. Items expand to edit label and icon. Changes save to storage/menus.json.",
+    "created_at": "2026-05-02 12:00:00"
+  },
+  {
     "id": 24,
     "title": "Copy single trigger_ai task with update note",
     "description": "Each trigger_ai task row needs its own Copy button. Clicking it copies that one task's id/title/description to clipboard, with a note that Claude should update the existing task (not create a new one) and add a one-line summary of new info.",

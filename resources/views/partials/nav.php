@@ -1,50 +1,42 @@
 <?php
-// ── SVG icon definitions (Lucide-style, 24×24 viewBox, stroke only) ─────────
-function _navIcon(string $name): string {
-    $icons = [
-        'dashboard' => '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-        'map'       => '<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>',
-        'items'     => '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
-        'garden'    => '<path d="m5 11 4-7"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8c.9 0 1.8-.7 2-1.6L20.5 11"/><path d="m9 11 1 9"/><path d="M4.5 15.5h15"/><path d="m15 11-1 9"/>',
-        'tasks'     => '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-        'reminders' => '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
-        'finance'   => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h.01M10 15h4"/>',
-        'activity'  => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
-        'settings'  => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
-        'harvest'    => '<path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94z"/>',
-        'irrigation' => '<path d="M12 2c0 6-6 8-6 13a6 6 0 0 0 12 0c0-5-6-7-6-13z"/><path d="M12 22v-4"/><path d="M9 17h6"/>',
-        'photos'    => '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
-        'logout'    => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
-        'plus'      => '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
-        'cart'      => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
-        'seed'      => '<line x1="12" y1="3" x2="12" y2="6"/><path d="M7 8C7 6 17 6 17 8C17 10 7 10 7 8Z"/><path d="M8 10Q8 19 12 19Q16 19 16 10"/><line x1="10" y1="14" x2="14" y2="14"/>',
-        'family'    => '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="10.5" r="1.8"/><path d="M1 22v-1a5 5 0 0 1 5-5h.8"/><path d="M23 22v-1a5 5 0 0 0-5-5h-.8"/><path d="M9 22v-.5a3 3 0 0 1 6 0V22"/>',
-        'basket'    => '<path d="M7 10C7 5.5 17 5.5 17 10"/><path d="M4 10v9h16v-9"/><circle cx="8" cy="21.5" r="1.5"/><circle cx="16" cy="21.5" r="1.5"/>',
-    ];
-    $path = $icons[$name] ?? $icons['items'];
+// ── Icon helper — loads from config/menu_icons.php ──────────────────────────
+function _navIcon(string $name, ?string $customSvg = null): string {
+    static $icons = null;
+    if ($icons === null) { $icons = require BASE_PATH . '/config/menu_icons.php'; }
+    $path = $customSvg ?: ($icons[$name] ?? $icons['items'] ?? '');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>';
 }
 
-$navLinks = [
-    ['href' => '/dashboard',     'label' => 'Dashboard', 'icon' => 'dashboard'],
-    ['href' => '/dashboard/map', 'label' => 'Map',       'icon' => 'map'],
-    ['href' => '/items',         'label' => 'Items',     'icon' => 'items'],
-    ['href' => '/garden', 'label' => 'Garden', 'icon' => 'garden', 'children' => [
-        ['href' => '/seeds/create',     'label' => '＋ Seed',       'icon' => 'seed'],
-        ['href' => '/seeds',            'label' => 'All Seeds',     'icon' => 'seed'],
-        ['href' => '/seeds/family-needs','label' => 'Family Needs', 'icon' => 'family'],
-        ['href' => '/garden',           'label' => 'Garden Beds',   'icon' => 'garden'],
-    ]],
-    ['href' => '/tasks', 'label' => 'Tasks', 'icon' => 'tasks', 'children' => [
-        ['href' => '/tasks?tab=achats',     'label' => 'Achats',     'icon' => 'basket'],
-        ['href' => '/tasks?tab=irrigation', 'label' => 'Irrigation', 'icon' => 'irrigation'],
-        ['href' => '/tasks?tab=reminders',  'label' => 'Reminders',  'icon' => 'reminders'],
-    ]],
-    ['href' => '/harvest/quick', 'label' => 'Harvest',  'icon' => 'harvest'],
-    ['href' => '/finance',       'label' => 'Finance',  'icon' => 'finance'],
-    ['href' => '/activity-log',  'label' => 'Activity', 'icon' => 'activity'],
-    ['href' => '/settings',      'label' => 'Settings', 'icon' => 'settings'],
-];
+// ── Menu loader — resolves route keys to URLs ────────────────────────────────
+function _resolveMenuItems(array $items): array {
+    static $routes = null;
+    if ($routes === null) { $routes = require BASE_PATH . '/config/menu_routes.php'; }
+    foreach ($items as &$item) {
+        if (($item['type'] ?? 'custom') === 'route' && !empty($item['route_key'])) {
+            $item['href'] = $routes[$item['route_key']]['url'] ?? ($item['url'] ?? '/');
+        } else {
+            $item['href'] = $item['url'] ?? '/';
+        }
+        if (!empty($item['children'])) {
+            $item['children'] = _resolveMenuItems($item['children']);
+        }
+    }
+    return $items;
+}
+
+function _loadNavMenu(): array {
+    $path = defined('STORAGE_PATH') ? STORAGE_PATH . '/menus.json' : null;
+    if ($path && file_exists($path)) {
+        $data = json_decode(file_get_contents($path), true);
+        if (is_array($data) && !empty($data['main'])) {
+            return _resolveMenuItems($data['main']);
+        }
+    }
+    $defaults = require BASE_PATH . '/config/menu_defaults.php';
+    return _resolveMenuItems($defaults['main']);
+}
+
+$navLinks   = _loadNavMenu();
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
 // Custom logo check — prefer horizontal-light for top nav, fall back to icon-light, then legacy logo-nav
@@ -90,8 +82,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <?php if ($hasChildren): ?>
         <li class="nav-has-dropdown">
             <a href="<?= url($nl['href']) ?>" class="nav-link<?= $active ?>">
-                <?= _navIcon($nl['icon']) ?>
-                <span class="nav-link-text"><?= $nl['label'] ?></span>
+                <?= _navIcon($nl['icon'] ?? '', $nl['icon_svg'] ?? null) ?>
+                <span class="nav-link-text"><?= e($nl['label']) ?></span>
                 <svg class="nav-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </a>
             <ul class="nav-dropdown">
@@ -100,8 +92,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
                 ?>
                 <li>
                     <a href="<?= url($child['href']) ?>" class="nav-link<?= $childActive ?>">
-                        <?= _navIcon($child['icon']) ?>
-                        <span class="nav-link-text"><?= $child['label'] ?></span>
+                        <?= _navIcon($child['icon'] ?? '', $child['icon_svg'] ?? null) ?>
+                        <span class="nav-link-text"><?= e($child['label']) ?></span>
                     </a>
                 </li>
                 <?php endforeach; ?>
@@ -110,8 +102,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         <?php else: ?>
         <li>
             <a href="<?= url($nl['href']) ?>" class="nav-link<?= $active ?>">
-                <?= _navIcon($nl['icon']) ?>
-                <span class="nav-link-text"><?= $nl['label'] ?></span>
+                <?= _navIcon($nl['icon'] ?? '', $nl['icon_svg'] ?? null) ?>
+                <span class="nav-link-text"><?= e($nl['label']) ?></span>
             </a>
         </li>
         <?php endif; ?>
@@ -155,8 +147,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         ?>
         <li>
             <a href="<?= url($nl['href']) ?>"<?= $active ?>>
-                <span class="nav-drawer-icon"><?= _navIcon($nl['icon']) ?></span>
-                <?= $nl['label'] ?>
+                <span class="nav-drawer-icon"><?= _navIcon($nl['icon'] ?? '', $nl['icon_svg'] ?? null) ?></span>
+                <?= e($nl['label']) ?>
             </a>
         </li>
         <?php foreach ($nl['children'] ?? [] as $child):
@@ -164,8 +156,8 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
         ?>
         <li style="padding-left:18px">
             <a href="<?= url($child['href']) ?>"<?= $childActive ?>>
-                <span class="nav-drawer-icon"><?= _navIcon($child['icon']) ?></span>
-                <?= $child['label'] ?>
+                <span class="nav-drawer-icon"><?= _navIcon($child['icon'] ?? '', $child['icon_svg'] ?? null) ?></span>
+                <?= e($child['label']) ?>
             </a>
         </li>
         <?php endforeach; ?>
@@ -185,7 +177,7 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 <!-- Dark backdrop -->
 <div class="nav-overlay" id="navOverlay"></div>
 
-<!-- ─── Bottom nav ───────────────────────────────────────────────── -->
+<!-- ─── Bottom nav (hardcoded — not menu-editor managed) ─────────── -->
 <nav class="bottom-nav" aria-label="Main navigation">
     <a href="<?= url('/dashboard') ?>" class="bottom-nav-item" data-bnav="home">
         <span class="bottom-nav-icon"><?= _navIcon('dashboard') ?></span>
@@ -285,7 +277,6 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
     document.querySelectorAll('.bottom-nav-item[data-bnav]').forEach(function (el) {
         var href = el.getAttribute('href');
         var bnav = el.getAttribute('data-bnav');
-        // Home: exact match only (avoid matching /dashboard/map, etc.)
         var isActive = bnav === 'home'
             ? (path === href || path === href + '/')
             : href && (path === href || (href.length > 1 && path.startsWith(href)));

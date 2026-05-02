@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.55' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'WordPress-style menu editor',
+        'features' => [
+            ['title' => 'Menu editor (Settings → Menus)', 'detail' => 'Two-panel WordPress-style editor. Left: grouped app pages + custom link form. Right: live draggable menu (Main or Footer). Expand any item to edit label, icon, and parent. Icons from config/menu_icons.php with SVG preview. Custom SVG path supported. Save to storage/menus.json.'],
+            ['title' => 'URL stability via route keys', 'detail' => 'Built-in pages stored as route_key (e.g. "garden") and resolved to URLs at render time from config/menu_routes.php. Changing a URL only requires editing one config file.'],
+            ['title' => 'Footer menu', 'detail' => 'Footer menu rendered via the new footer.php partial. Loads from storage/menus.json or defaults from config/menu_defaults.php.'],
+        ],
+    ],
+
     '3.1.54' => [
         'status'   => 'released',
         'released' => '2026-05-02',
