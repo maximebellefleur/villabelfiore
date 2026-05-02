@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.53' => [
+        'date'  => '2026-05-02',
+        'title' => 'Mobile touch drag for beds and gardens',
+        'fixed' => [
+            'Drag-to-reorder did not work on mobile because the HTML5 Drag and Drop API is not supported on iOS/Android. Added touchstart/touchmove/touchend listeners on both bed and garden drag handles. Uses elementFromPoint to detect the drop target during the touch move.',
+            'Drag handles now have larger touch targets (10×12px padding) on mobile to make them easier to grab.',
+        ],
+    ],
+
     '3.1.52' => [
         'date'  => '2026-05-02',
         'title' => 'Login logo centered + spacing fix',

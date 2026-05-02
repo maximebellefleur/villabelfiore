@@ -59,6 +59,10 @@ $typeEmoji = ['vegetable'=>'🥦','herb'=>'🌿','fruit'=>'🍓','flower'=>'🌸
 .rg-garden-section--drag-over { box-shadow:0 -2px 0 var(--color-primary); }
 .rg-garden-drag-handle { cursor:grab; color:var(--color-text-muted); font-size:.95rem; padding:0 6px 0 0; user-select:none; flex-shrink:0; opacity:.35; line-height:1; touch-action:none; }
 .rg-garden-drag-handle:hover,.rg-garden-drag-handle:active { opacity:1; cursor:grab; }
+/* Bigger touch targets on mobile */
+@media (max-width:768px) {
+  .rg-bed-drag-handle, .rg-garden-drag-handle { padding:10px 12px; opacity:.5; font-size:1.1rem; }
+}
 .garden-need-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .garden-need-stock { font-size:.78rem; margin-top:2px; }
 .garden-need-stock--ok  { color:#15803d; }
@@ -306,7 +310,54 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     });
   }
 
-  document.querySelectorAll('.rg-bedrow[data-bed-id]').forEach(initBedRow);
+  function initBedRowTouch(el) {
+    var handle = el.querySelector('.rg-bed-drag-handle');
+    if (!handle) return;
+    var _active = false, _over = null;
+    // prevent tapping the handle from navigating the link
+    handle.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
+    handle.addEventListener('touchstart', function() {
+      _active = true;
+      setTimeout(function(){ el.classList.add('rg-bedrow--dragging'); }, 0);
+    }, { passive: true });
+    handle.addEventListener('touchmove', function(e) {
+      if (!_active) return;
+      e.preventDefault();
+      var t = e.touches[0];
+      el.style.visibility = 'hidden';
+      var hit = document.elementFromPoint(t.clientX, t.clientY);
+      el.style.visibility = '';
+      var row = hit;
+      while (row && !row.classList.contains('rg-bedrow')) row = row.parentElement;
+      document.querySelectorAll('.rg-bedrow').forEach(function(r){ r.classList.remove('rg-bedrow--drag-over'); });
+      if (row && row !== el && row.dataset.bedId) { row.classList.add('rg-bedrow--drag-over'); _over = row; }
+      else _over = null;
+    }, { passive: false });
+    function finishTouch() {
+      el.classList.remove('rg-bedrow--dragging');
+      document.querySelectorAll('.rg-bedrow').forEach(function(r){ r.classList.remove('rg-bedrow--drag-over'); });
+      if (_active && _over) {
+        var list = el.closest('.rg-garden-beds');
+        if (list && list.contains(_over)) {
+          var rows = bedRows(list);
+          var si = rows.indexOf(el), di = rows.indexOf(_over);
+          if (si !== -1 && di !== -1) {
+            if (si < di) list.insertBefore(el, _over.nextSibling);
+            else         list.insertBefore(el, _over);
+            saveOrder(list);
+          }
+        }
+      }
+      _active = false; _over = null;
+    }
+    handle.addEventListener('touchend', finishTouch);
+    handle.addEventListener('touchcancel', finishTouch);
+  }
+
+  document.querySelectorAll('.rg-bedrow[data-bed-id]').forEach(function(el) {
+    initBedRow(el);
+    initBedRowTouch(el);
+  });
 }());
 
 // ── Garden drag-to-reorder ────────────────────────────────────────────────
@@ -332,8 +383,43 @@ if (($_summary['thin']    ?? 0) > 0) $_weekItems[] = ['icon'=>'✂','label'=>'Th
     var handle = sec.querySelector('.rg-garden-drag-handle');
     if (handle) {
       handle.addEventListener('mousedown', function() { _fromHandle = true; });
-      // prevent the mousedown on the handle from toggling the garden
       handle.addEventListener('click', function(e) { e.stopPropagation(); });
+      // Touch drag
+      var _tActive = false, _tOver = null;
+      handle.addEventListener('touchstart', function(e) {
+        _tActive = true;
+        e.stopPropagation();
+        setTimeout(function(){ sec.classList.add('rg-garden-section--dragging'); }, 0);
+      }, { passive: true });
+      handle.addEventListener('touchmove', function(e) {
+        if (!_tActive) return;
+        e.preventDefault();
+        var t = e.touches[0];
+        sec.style.visibility = 'hidden';
+        var hit = document.elementFromPoint(t.clientX, t.clientY);
+        sec.style.visibility = '';
+        var s = hit;
+        while (s && !s.classList.contains('rg-garden-section')) s = s.parentElement;
+        sections().forEach(function(x){ x.classList.remove('rg-garden-section--drag-over'); });
+        if (s && s !== sec) { s.classList.add('rg-garden-section--drag-over'); _tOver = s; }
+        else _tOver = null;
+      }, { passive: false });
+      function finishGardenTouch() {
+        sec.classList.remove('rg-garden-section--dragging');
+        sections().forEach(function(x){ x.classList.remove('rg-garden-section--drag-over'); });
+        if (_tActive && _tOver) {
+          var all = sections();
+          var si = all.indexOf(sec), di = all.indexOf(_tOver);
+          if (si !== -1 && di !== -1) {
+            if (si < di) sec.parentNode.insertBefore(sec, _tOver.nextSibling);
+            else         sec.parentNode.insertBefore(sec, _tOver);
+            saveOrder();
+          }
+        }
+        _tActive = false; _tOver = null;
+      }
+      handle.addEventListener('touchend', finishGardenTouch);
+      handle.addEventListener('touchcancel', finishGardenTouch);
     }
 
     sec.addEventListener('dragstart', function(e) {

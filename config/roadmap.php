@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.53' => [
+        'status'   => 'released',
+        'released' => '2026-05-02',
+        'title'    => 'Mobile touch drag for beds and gardens',
+        'features' => [
+            ['title' => 'Touch drag on mobile', 'detail' => 'Bed and garden drag-to-reorder now works on iOS and Android. Touch the ⠿ handle and drag to a new position. Uses touchstart/touchmove/touchend with elementFromPoint — no external library required.'],
+        ],
+    ],
+
     '3.1.52' => [
         'status'   => 'released',
         'released' => '2026-05-02',

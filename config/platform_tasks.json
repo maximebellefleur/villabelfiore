@@ -140,7 +140,7 @@
   {
     "id": 1,
     "title": "Garden bed reordering + action log fix",
-    "description": "Beds within a garden can be drag-reordered via sort_order on items. Action log reminder INSERT wrapped in try/catch so the log always saves even if reminder fails.",
+    "description": "Beds within a garden can be drag-reordered via sort_order on items. Action log reminder INSERT wrapped in try/catch so the log always saves even if reminder fails. Mobile fix (2026-05-02): HTML5 drag API not supported on mobile; added touchstart/touchmove/touchend handlers on both bed and garden drag handles using elementFromPoint for drop-target detection.",
     "created_at": "2026-04-30 11:35:00"
   }
 ]
