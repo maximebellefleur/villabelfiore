@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.58' => [
+        'status'   => 'released',
+        'released' => '2026-05-04',
+        'title'    => 'Annual survey: 4-stage redesign + upload fix',
+        'features' => [
+            ['title' => 'Compass stage with background upload', 'detail' => '2×2 grid for S/E/N/W photos. Clicking Continue immediately starts uploading those 4 photos in the background and advances to the next stage — no waiting.'],
+            ['title' => 'Budding, Fruits, Health stages with notes', 'detail' => 'Each stage has a photo grid, a text area for observations (logged to activity_log), and an Upload & Continue button. Budding has an additional 1–10 intensity scale for olive and almond trees.'],
+            ['title' => 'Upload fix', 'detail' => 'Survey was sending file field as "attachment"; controller expected "file". And notes were POSTed to a non-existent /activity endpoint instead of /actions. Both corrected.'],
+        ],
+    ],
+
     '3.1.57' => [
         'status'   => 'released',
         'released' => '2026-05-04',

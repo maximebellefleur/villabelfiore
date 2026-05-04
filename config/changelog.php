@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.58' => [
+        'date'  => '2026-05-04',
+        'title' => 'Annual survey: 4-stage redesign + upload fix',
+        'new' => [
+            'Stage 1 — Compass: 2×2 grid (South / East / North / West). Take all 4 photos, then Continue — photos upload in the background while you move to the next stage.',
+            'Stage 2 — Budding: 3 photos + intensity scale 1–10 (olive/almond only) + notes text area, logged to activity.',
+            'Stage 3 — Fruits: 3 photos + notes text area, logged to activity.',
+            'Stage 4 — Health Check: 2 photos + notes text area, logged to activity.',
+        ],
+        'fixed' => [
+            'Survey was posting files under field name "attachment" but AttachmentController expected "file" — all uploads silently failed. Fixed to use "file".',
+            'Budding scale was posted to /items/{id}/activity which does not exist; correct endpoint is /items/{id}/actions. Notes were never saved.',
+        ],
+    ],
+
     '3.1.57' => [
         'date'  => '2026-05-04',
         'title' => 'Annual survey button fix',

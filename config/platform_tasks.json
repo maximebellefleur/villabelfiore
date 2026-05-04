@@ -1,5 +1,11 @@
 [
   {
+    "id": 28,
+    "title": "Survey upload fails + redesign 4-stage flow",
+    "description": "Survey upload was failing because survey.php posted the file as 'attachment' but AttachmentController reads 'file'. Also budding notes posted to wrong URL (/activity vs /actions). Redesigned survey: Stage 1 = compass S/E/N/W (background upload on continue), Stage 2 = Budding (photos + scale + notes), Stage 3 = Fruits (photos + notes), Stage 4 = Health (photos + notes). Notes logged to activity_log at each stage.",
+    "created_at": "2026-05-04 01:00:00"
+  },
+  {
     "id": 27,
     "title": "Annual survey button led to 4-photo compass only",
     "description": "Clicking Survey on the item detail page opened an inline compass modal (4 directional photos only) instead of the full multi-stage survey (General → Budding → Health). Fixed by replacing the button with a link to /items/{id}/survey and removing the orphaned compass modal, CSS, and JS.",
