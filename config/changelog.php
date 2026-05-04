@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.57' => [
+        'date'  => '2026-05-04',
+        'title' => 'Annual survey button fix',
+        'fixed' => [
+            'Clicking "🧭 Survey" on the item detail page opened a compass-only modal (4 directional photos, S/E/N/W) instead of the full multi-stage annual survey (General 4 photos → Budding 3 photos + scale → Health 2 photos). The button is now a direct link to /items/{id}/survey. The orphaned compass modal HTML, CSS (~130 lines) and JS (~220 lines) have been removed from the item detail page.',
+        ],
+    ],
+
     '3.1.56' => [
         'date'  => '2026-05-04',
         'title' => 'Nav icon logo enlarged',

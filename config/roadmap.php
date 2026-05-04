@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.57' => [
+        'status'   => 'released',
+        'released' => '2026-05-04',
+        'title'    => 'Annual survey button fix',
+        'features' => [
+            ['title' => 'Survey button now leads to full survey', 'detail' => '"🧭 Survey" on the item detail page was opening an inline compass modal (4 directional photos only). It now links to /items/{id}/survey — the full multi-stage survey: General (4 photos) → Budding (3 photos + 1–10 scale slider, olive/almond only) → Health (2 photos). The orphaned compass modal and its 350 lines of CSS/JS have been removed.'],
+        ],
+    ],
+
     '3.1.56' => [
         'status'   => 'released',
         'released' => '2026-05-04',

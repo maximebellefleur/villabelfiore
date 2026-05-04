@@ -1,5 +1,11 @@
 [
   {
+    "id": 27,
+    "title": "Annual survey button led to 4-photo compass only",
+    "description": "Clicking Survey on the item detail page opened an inline compass modal (4 directional photos only) instead of the full multi-stage survey (General → Budding → Health). Fixed by replacing the button with a link to /items/{id}/survey and removing the orphaned compass modal, CSS, and JS.",
+    "created_at": "2026-05-04 00:30:00"
+  },
+  {
     "id": 26,
     "title": "Nav header icon logo larger with negative margin",
     "description": "Scale the icon logo in the top nav from 34×34px to 80×80px with object-fit:contain and a negative left margin (-30px) so it bleeds into the nav edge for a bolder visual. Horizontal logo unchanged.",
