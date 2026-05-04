@@ -65,7 +65,7 @@ $_navEffective = $_navLogoUrl ?: $_navIconUrl;
 <nav class="nav" id="mainNav" style="overflow:visible">
     <a href="<?= url('/dashboard') ?>" class="nav-logo" style="display:flex;align-items:center;gap:8px;overflow-x:visible;overflow-y:hidden;align-self:stretch">
         <?php if ($_navIconUrl && $_navLogoUrl): ?>
-            <img src="<?= $_navIconUrl ?>" alt="" style="height:34px;width:34px;object-fit:contain;flex-shrink:0;border-radius:6px">
+            <img src="<?= $_navIconUrl ?>" alt="" style="height:80px;width:80px;object-fit:contain;flex-shrink:0;border-radius:6px;margin:0 -6px 0 -30px">
             <img src="<?= $_navLogoUrl ?>" alt="Logo" style="height:26px;max-width:120px;object-fit:contain">
         <?php elseif ($_navEffective): ?>
             <img src="<?= $_navEffective ?>" alt="Logo" style="height:34px;max-width:150px;object-fit:contain;flex-shrink:0;border-radius:6px">

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.56' => [
+        'date'  => '2026-05-04',
+        'title' => 'Nav icon logo enlarged',
+        'improved' => [
+            'Top-nav icon logo scaled from 34×34px to 80×80px with a −30px left margin so it bleeds into the nav edge. Horizontal wordmark unchanged.',
+        ],
+    ],
+
     '3.1.55' => [
         'date'  => '2026-05-02',
         'title' => 'WordPress-style menu editor',

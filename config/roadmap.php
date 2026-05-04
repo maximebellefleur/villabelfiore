@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.56' => [
+        'status'   => 'released',
+        'released' => '2026-05-04',
+        'title'    => 'Nav icon logo enlarged',
+        'features' => [
+            ['title' => 'Larger nav icon logo', 'detail' => 'Icon logo in the top nav bar scaled to 80×80px with a negative left margin (−30px) so it visually bleeds into the edge. The horizontal wordmark stays at 26px height.'],
+        ],
+    ],
+
     '3.1.55' => [
         'status'   => 'released',
         'released' => '2026-05-02',
