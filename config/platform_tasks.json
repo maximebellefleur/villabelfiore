@@ -1,5 +1,17 @@
 [
   {
+    "id": 30,
+    "title": "Auto-suffix duplicate item names on create",
+    "description": "When creating an item whose name already exists, the new item automatically gets the first free 3-digit suffix (e.g. Almond → Almond 001, Almond 002…). The original item is left unchanged. Applies to both the form and map quick-add.",
+    "created_at": "2026-05-05 15:40:00"
+  },
+  {
+    "id": 29,
+    "title": "Survey DB: dedicated table, temp uploads, bar widget",
+    "description": "Survey data moved to a dedicated item_surveys table (stage, scale, notes, completed_at) with survey_id and survey_direction columns on attachments. Temp-upload pattern: photos upload immediately on select as survey_temp and are confirmed on submit. Survey bar widget on item page shows one thumbnail per stage with click-to-carousel and notes as captions. AI prompt gains an ANNUAL SURVEYS section with full absolute photo URLs.",
+    "created_at": "2026-05-05 08:35:00"
+  },
+  {
     "id": 28,
     "title": "Survey upload fails + redesign 4-stage flow",
     "description": "Survey UX overhaul: (1) uploads only happen on button press, never pre-upload; (2) once-per-year locking — each stage tracked via activity_log, completed stages show as locked cards, all 4 done shows year-complete screen; (3) Fruits stage gets a scale 1-10 same as Budding; (4) footer Privacy Policy hidden on survey page; (5) footer styled properly in admin.css.",
