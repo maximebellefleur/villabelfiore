@@ -266,6 +266,30 @@ class ItemController
             $irrigationPlans = $db->fetchAll('SELECT * FROM irrigation_plans WHERE item_id = ? ORDER BY start_date ASC', [$id]);
         } catch (\Throwable $e) { /* table created on first use */ }
 
+        // Load current-year survey stages + first photo per stage
+        $surveyYear   = (int) date('Y');
+        $surveyStages = [];
+        try {
+            $db->execute("SELECT 1 FROM item_surveys LIMIT 0"); // check table exists
+            $surveyRows = $db->fetchAll(
+                "SELECT s.stage, s.scale_value, s.notes, s.completed_at, MIN(a.id) AS att_id
+                 FROM item_surveys s
+                 LEFT JOIN attachments a ON a.survey_id = s.id AND a.status = 'active'
+                 WHERE s.item_id = ? AND s.survey_year = ?
+                 GROUP BY s.id, s.stage, s.scale_value, s.notes, s.completed_at",
+                [$id, $surveyYear]
+            );
+            foreach ($surveyRows as $row) {
+                $surveyStages[$row['stage']] = [
+                    'stage'        => $row['stage'],
+                    'scale_value'  => $row['scale_value'],
+                    'notes'        => $row['notes'],
+                    'completed_at' => $row['completed_at'],
+                    'att_id'       => $row['att_id'] ? (int)$row['att_id'] : null,
+                ];
+            }
+        } catch (\Throwable $e) { /* item_surveys not yet created */ }
+
         Response::render('items/show', [
             'title'          => e($item['name']),
             'item'           => $item,
@@ -278,6 +302,8 @@ class ItemController
             'miniMapEnabled' => !empty($item['gps_lat']) && !empty($item['gps_lng']),
             'boundaryGeojson'=> $boundaryGeojson,
             'irrigationPlans' => $irrigationPlans,
+            'surveyStages'   => $surveyStages,
+            'surveyYear'     => $surveyYear,
         ]);
     }
 
@@ -403,6 +429,55 @@ class ItemController
                 $line   = '[' . $status . '] ' . $date . ' — ' . ($r['title'] ?? '');
                 if (!empty($r['description'])) $line .= ' — ' . $r['description'];
                 $lines[] = $line;
+            }
+        }
+
+        // Annual surveys
+        $lines[] = '';
+        $lines[] = '=== ANNUAL SURVEYS ===';
+        $surveyYears = [];
+        try {
+            $db->execute("SELECT 1 FROM item_surveys LIMIT 0");
+            $surveyYears = $db->fetchAll(
+                "SELECT DISTINCT survey_year FROM item_surveys WHERE item_id=? ORDER BY survey_year DESC",
+                [$id]
+            );
+        } catch (\Throwable $e) {}
+
+        if (empty($surveyYears)) {
+            $lines[] = 'No survey data recorded.';
+        } else {
+            foreach ($surveyYears as $yr) {
+                $syear = (int)$yr['survey_year'];
+                $lines[] = '';
+                $lines[] = '-- Year ' . $syear . ' --';
+                $stageRows = $db->fetchAll(
+                    "SELECT s.stage, s.scale_value, s.notes, s.completed_at, a.id AS att_id
+                     FROM item_surveys s
+                     LEFT JOIN attachments a ON a.survey_id = s.id AND a.status = 'active'
+                     WHERE s.item_id = ? AND s.survey_year = ?
+                     ORDER BY FIELD(s.stage,'compass','budding','fruits','health'), a.id ASC",
+                    [$id, $syear]
+                );
+                $byStage = [];
+                foreach ($stageRows as $sr) {
+                    $st = $sr['stage'];
+                    if (!isset($byStage[$st])) {
+                        $byStage[$st] = ['scale_value' => $sr['scale_value'], 'notes' => $sr['notes'], 'completed_at' => $sr['completed_at'], 'att_ids' => []];
+                    }
+                    if ($sr['att_id']) $byStage[$st]['att_ids'][] = (int)$sr['att_id'];
+                }
+                foreach (['compass','budding','fruits','health'] as $stage) {
+                    if (!isset($byStage[$stage])) continue;
+                    $sd   = $byStage[$stage];
+                    $line = ucfirst($stage) . ' (' . date('M j', strtotime($sd['completed_at'])) . ')';
+                    if ($sd['scale_value'] !== null) $line .= ' | Scale: ' . $sd['scale_value'] . '/10';
+                    if (!empty($sd['notes']))        $line .= ' | ' . $sd['notes'];
+                    $lines[] = $line;
+                    foreach ($sd['att_ids'] as $attId) {
+                        $lines[] = '  Photo: ' . $baseUrl . '/attachments/' . $attId . '/download';
+                    }
+                }
             }
         }
 

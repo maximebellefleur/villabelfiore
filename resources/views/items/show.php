@@ -146,6 +146,139 @@ $recentReminders = array_slice($reminders, 0, 3);
     </a>
 </div>
 
+<?php if (!empty($surveyStages)):
+    $svEmojis  = ['compass'=>'🧭','budding'=>'🌸','fruits'=>'🍋','health'=>'🏥'];
+    $svLabels  = ['compass'=>'Compass','budding'=>'Budding','fruits'=>'Fruits','health'=>'Health'];
+    $svOrder   = ['compass','budding','fruits','health'];
+    $svBarJson = [];
+    foreach ($svOrder as $_st) {
+        $sd = $surveyStages[$_st] ?? null;
+        $svBarJson[] = [
+            'stage'  => $_st,
+            'label'  => $svLabels[$_st],
+            'emoji'  => $svEmojis[$_st],
+            'att_id' => $sd ? $sd['att_id'] : null,
+            'notes'  => $sd ? ($sd['notes'] ?? '') : '',
+            'date'   => $sd ? date('M j', strtotime($sd['completed_at'])) : '',
+            'done'   => $sd !== null,
+        ];
+    }
+    $svCount = count($surveyStages);
+?>
+<style>
+.sv-bar{background:var(--color-surface);border:1px solid var(--color-border);border-radius:14px;padding:12px 14px;margin-bottom:16px;}
+.sv-bar-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.sv-bar-title{font-size:.82rem;font-weight:700;flex:1;}
+.sv-bar-count{font-size:.72rem;font-weight:700;color:var(--color-primary);background:var(--color-primary-soft);padding:2px 8px;border-radius:999px;}
+.sv-bar-link{font-size:.75rem;color:var(--color-text-muted);text-decoration:none;}
+.sv-bar-link:hover{color:var(--color-primary);}
+.sv-bar-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.sv-bar-slot{border-radius:10px;overflow:hidden;position:relative;aspect-ratio:1;background:var(--color-bg);border:1.5px solid var(--color-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:default;}
+.sv-bar-slot--done{border-color:var(--color-primary);cursor:pointer;}
+.sv-bar-thumb{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.sv-bar-emoji{font-size:1.6rem;}
+.sv-bar-lbl{font-size:.58rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.04em;position:relative;z-index:1;}
+.sv-bar-slot--done .sv-bar-lbl{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+.sv-bar-check{position:absolute;top:4px;right:5px;font-size:.7rem;z-index:2;}
+/* Carousel modal */
+.sv-carousel{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;}
+.sv-carousel-inner{background:var(--color-surface);border-radius:16px;max-width:460px;width:100%;overflow:hidden;}
+.sv-carousel-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--color-bg);}
+.sv-carousel-nophoto{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:4rem;background:var(--color-bg);}
+.sv-carousel-body{padding:14px 16px;}
+.sv-carousel-stage{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);}
+.sv-carousel-date{font-size:.72rem;color:var(--color-primary);font-weight:600;}
+.sv-carousel-notes{font-size:.88rem;color:var(--color-text);margin-top:6px;line-height:1.5;}
+.sv-carousel-nav{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 14px;}
+.sv-carousel-nav button{background:none;border:1.5px solid var(--color-border);border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.85rem;color:var(--color-text);}
+.sv-carousel-nav button:disabled{opacity:.3;cursor:default;}
+.sv-carousel-close{position:absolute;top:12px;right:14px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:#fff;}
+</style>
+
+<div class="sv-bar">
+    <div class="sv-bar-hdr">
+        <span class="sv-bar-title">📋 Annual Survey <?= $surveyYear ?></span>
+        <span class="sv-bar-count"><?= $svCount ?>/4</span>
+        <a href="<?= url('/items/' . (int)$item['id'] . '/survey') ?>" class="sv-bar-link">
+            <?= $svCount < 4 ? 'Continue →' : 'View →' ?>
+        </a>
+    </div>
+    <div class="sv-bar-stages">
+        <?php foreach ($svOrder as $_st):
+            $sd    = $surveyStages[$_st] ?? null;
+            $attId = $sd ? $sd['att_id'] : null;
+            $idx   = array_search($_st, $svOrder);
+        ?>
+        <div class="sv-bar-slot <?= $sd ? 'sv-bar-slot--done' : 'sv-bar-slot--empty' ?>"
+             <?= $sd ? 'onclick="svCarouselOpen(' . $idx . ')"' : '' ?>>
+            <?php if ($attId): ?>
+            <img src="<?= url('/attachments/' . (int)$attId . '/download') ?>" alt="" class="sv-bar-thumb">
+            <?php else: ?>
+            <span class="sv-bar-emoji"><?= $svEmojis[$_st] ?></span>
+            <?php endif; ?>
+            <span class="sv-bar-lbl"><?= e($svLabels[$_st]) ?></span>
+            <?php if ($sd): ?><span class="sv-bar-check">✅</span><?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Survey carousel modal -->
+<div class="sv-carousel" id="svCarousel" style="display:none" onclick="if(event.target===this)svCarouselClose()">
+    <button class="sv-carousel-close" onclick="svCarouselClose()">✕</button>
+    <div class="sv-carousel-inner">
+        <div id="svCarouselMedia"></div>
+        <div class="sv-carousel-body">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span class="sv-carousel-stage" id="svCarouselStage"></span>
+                <span class="sv-carousel-date"  id="svCarouselDate"></span>
+            </div>
+            <div class="sv-carousel-notes" id="svCarouselNotes"></div>
+        </div>
+        <div class="sv-carousel-nav">
+            <button id="svCarouselPrev" onclick="svCarouselNav(-1)">← Prev</button>
+            <span id="svCarouselDots" style="font-size:.75rem;color:var(--color-text-muted)"></span>
+            <button id="svCarouselNext" onclick="svCarouselNav(1)">Next →</button>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    var DATA = <?= json_encode($svBarJson) ?>;
+    var cur  = 0;
+    function render(idx) {
+        cur = idx;
+        var d = DATA[idx];
+        var media = document.getElementById('svCarouselMedia');
+        if (d.att_id) {
+            media.innerHTML = '<img class="sv-carousel-img" src="<?= url('/attachments/') ?>' + d.att_id + '/download" alt="">';
+        } else {
+            media.innerHTML = '<div class="sv-carousel-nophoto">' + d.emoji + '</div>';
+        }
+        document.getElementById('svCarouselStage').textContent = d.label;
+        document.getElementById('svCarouselDate').textContent  = d.date;
+        document.getElementById('svCarouselNotes').textContent = d.notes || '';
+        document.getElementById('svCarouselDots').textContent  = (idx + 1) + ' / ' + DATA.length;
+        document.getElementById('svCarouselPrev').disabled = (idx === 0);
+        document.getElementById('svCarouselNext').disabled = (idx === DATA.length - 1);
+    }
+    window.svCarouselOpen = function(idx) {
+        render(idx);
+        document.getElementById('svCarousel').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+    window.svCarouselClose = function() {
+        document.getElementById('svCarousel').style.display = 'none';
+        document.body.style.overflow = '';
+    };
+    window.svCarouselNav = function(dir) {
+        var next = cur + dir;
+        if (next >= 0 && next < DATA.length) render(next);
+    };
+})();
+</script>
+<?php endif; ?>
+
 <!-- =========================================================
      REMINDERS — TOP SECTION
      ========================================================= -->

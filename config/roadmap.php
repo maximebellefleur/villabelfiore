@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.60' => [
+        'status'   => 'released',
+        'released' => '2026-05-05',
+        'title'    => 'Survey DB: item_surveys table, temp uploads, survey bar widget',
+        'features' => [
+            ['title' => 'Dedicated item_surveys table', 'detail' => 'All survey stage results (scale, notes, completion date) stored in a proper DB table with a UNIQUE constraint per item/year/stage. Lazy-created on first use.'],
+            ['title' => 'survey_id + survey_direction on attachments', 'detail' => 'Each survey photo is permanently linked to its survey row via survey_id. Compass photos also store their direction (north/south/east/west).'],
+            ['title' => 'Temp-upload + confirm pattern', 'detail' => 'Photos upload to the server immediately on selection (status=survey_temp). The "Upload & Continue" button POSTs temp IDs to /survey/stage which confirms them as active. Abandoned sessions are cleaned up after 6 hours.'],
+            ['title' => 'Survey bar widget on item page', 'detail' => 'Below the quick actions, a 4-slot strip shows one thumbnail (or emoji placeholder) per survey stage with a completion counter. Click any done stage to open a carousel with the photo and notes as caption.'],
+            ['title' => 'Annual surveys in AI prompt', 'detail' => 'The AI prompt now includes all historical survey data grouped by year, with scale ratings, notes, and full absolute photo URLs so the AI can retrieve images directly.'],
+        ],
+    ],
+
     '3.1.59' => [
         'status'   => 'released',
         'released' => '2026-05-04',

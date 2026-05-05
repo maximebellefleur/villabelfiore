@@ -76,6 +76,8 @@ $router->post('/items/{id}/restore',      'ItemController@restore');
 $router->post('/items/{id}/archive',      'ItemController@archive');
 $router->get('/items/{id}/photos',        'ItemController@photos');
 $router->get('/items/{id}/survey',        'AttachmentController@survey');
+$router->post('/items/{id}/survey/temp',  'AttachmentController@surveyTempUpload');
+$router->post('/items/{id}/survey/stage', 'AttachmentController@surveySaveStage');
 $router->get('/items/{id}/ai-prompt',     'ItemController@aiPrompt');
 $router->get('/items/{id}/actions',       'ItemController@actions');
 $router->post('/items/{id}/actions',      'ItemController@addAction');

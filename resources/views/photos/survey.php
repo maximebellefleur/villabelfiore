@@ -363,14 +363,14 @@ foreach ($stages as $i => $s) {
 
 <script>
 (function() {
-    var CSRF        = <?= json_encode($csrfToken) ?>;
-    var ITEM_ID     = <?= $itemId ?>;
-    var BASE        = window.APP_BASE || '';
-    var UPLOAD_URL  = BASE + '/items/' + ITEM_ID + '/attachments';
-    var ACTIONS_URL = BASE + '/items/' + ITEM_ID + '/actions';
+    var CSRF       = <?= json_encode($csrfToken) ?>;
+    var ITEM_ID    = <?= $itemId ?>;
+    var YEAR       = <?= $year ?>;
+    var BASE       = window.APP_BASE || '';
+    var TEMP_URL   = BASE + '/items/' + ITEM_ID + '/survey/temp';
+    var STAGE_URL  = BASE + '/items/' + ITEM_ID + '/survey/stage';
 
-    var STAGES      = <?= json_encode(array_values($stages)) ?>;
-    var TOTAL       = STAGES.length;
+    var STAGES     = <?= json_encode(array_values($stages)) ?>;
 
     var SCALE_DESC = {
         1:'Almost no buds / fruit',2:'Very sparse',3:'Low density',4:'Below average',
@@ -378,10 +378,17 @@ foreach ($stages as $i => $s) {
         9:'Excellent',10:'Exceptional!'
     };
 
-    // State
-    var compassPhotos = { south:null, east:null, north:null, west:null };
-    var stagePhotos   = {};
-    STAGES.forEach(function(s){ if (s.type === 'photo_text') stagePhotos[s.id] = []; });
+    // State: compassPhotos for preview, compassTempPromises for upload tracking
+    var compassPhotos       = { south:null, east:null, north:null, west:null };
+    var compassTempPromises = { south:null, east:null, north:null, west:null };
+    var stagePhotos         = {}; // for preview slot tracking
+    var stageTempPromises   = {}; // stage id → array of Promise<tempId>
+    STAGES.forEach(function(s) {
+        if (s.type === 'photo_text') {
+            stagePhotos[s.id]       = [];
+            stageTempPromises[s.id] = [];
+        }
+    });
 
     var _pendingDir  = null;
     var _pendingSlot = null;
@@ -396,26 +403,43 @@ foreach ($stages as $i => $s) {
     }
     window.svUpdateScale = svUpdateScale;
 
+    // ── Temp upload ───────────────────────────────────────────────────────────
+    function uploadTemp(file) {
+        return new Promise(function(resolve, reject) {
+            compress(file, function(blob) {
+                var fd = new FormData();
+                fd.append('_token', CSRF);
+                fd.append('file',   blob, file.name);
+                fetch(TEMP_URL, { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) { d.ok ? resolve(d.temp_id) : reject(new Error(d.error || 'Temp upload failed')); })
+                    .catch(reject);
+            });
+        });
+    }
+
     // ── File input routing ────────────────────────────────────────────────────
     if (fileInput) {
         fileInput.addEventListener('change', function() {
             if (!this.files || !this.files[0]) return;
             var file = this.files[0];
             if (_pendingDir !== null) {
-                var dir  = _pendingDir; _pendingDir = null;
+                var dir = _pendingDir; _pendingDir = null;
                 compassPhotos[dir] = file;
                 renderDirSlot(dir, file);
                 updateCompassCounter();
+                compassTempPromises[dir] = uploadTemp(file);
             } else if (_pendingSlot !== null) {
                 var info = _pendingSlot; _pendingSlot = null;
                 stagePhotos[info.id][info.idx] = file;
                 var slot = document.getElementById('svSlot_' + info.id + '_' + info.idx);
                 if (slot) {
-                    var url = URL.createObjectURL(file);
-                    slot.innerHTML = '<img src="' + url + '" alt=""><button class="sv-slot-remove" onclick="svRemovePhoto(\'' + info.id + '\',' + info.idx + ',event)">✕</button>';
+                    var objUrl = URL.createObjectURL(file);
+                    slot.innerHTML = '<img src="' + objUrl + '" alt=""><button class="sv-slot-remove" onclick="svRemovePhoto(\'' + info.id + '\',' + info.idx + ',event)">✕</button>';
                     slot.classList.add('sv-filled');
                     slot.onclick = null;
                 }
+                stageTempPromises[info.id][info.idx] = uploadTemp(file);
                 updatePhotoCounter(info.id);
             }
             this.value = '';
@@ -449,7 +473,8 @@ foreach ($stages as $i => $s) {
 
     function svRemoveDir(dir, e) {
         e.stopPropagation();
-        compassPhotos[dir] = null;
+        compassPhotos[dir]       = null;
+        compassTempPromises[dir] = null;
         var m    = DIR_META[dir];
         var slot = document.getElementById('svDir_' + dir);
         if (!slot) return;
@@ -475,24 +500,36 @@ foreach ($stages as $i => $s) {
     function svSubmitCompass(stageIdx) {
         var btn  = document.getElementById('svCompassBtn');
         var prog = document.getElementById('svProg_compass');
-        if (btn) btn.disabled = true;
+        if (btn)  btn.disabled = true;
         if (prog) prog.style.display = 'block';
 
         var DIRS = ['south','east','north','west'];
-        var CATS = {south:'yearly_refresh_south',east:'yearly_refresh_east',north:'yearly_refresh_north',west:'yearly_refresh_west'};
-        var queue = DIRS.filter(function(d){ return compassPhotos[d]; });
-        var promises = queue.map(function(dir) {
-            return uploadFile(compassPhotos[dir], CATS[dir], 'compass ' + dir);
-        });
-        // Also log completion to mark stage done for the year
-        promises.push(postAction('survey_compass', 'Survey — Compass', 'Compass survey completed: ' + queue.join(', ') + ' photos uploaded.'));
+        var promisePairs = DIRS
+            .filter(function(d) { return compassTempPromises[d]; })
+            .map(function(d) {
+                return compassTempPromises[d].then(function(tempId) {
+                    return tempId ? { temp_id: tempId, direction: d } : null;
+                }).catch(function() { return null; });
+            });
 
-        Promise.all(promises)
-            .then(function(){ svAdvance(stageIdx); })
-            .catch(function(){
+        Promise.all(promisePairs)
+            .then(function(pairs) {
+                var photos = pairs.filter(Boolean);
+                return fetch(STAGE_URL, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+                    body:    JSON.stringify({ stage: 'compass', year: YEAR, photos: photos, notes: '', scale_value: null })
+                });
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.ok) svAdvance(stageIdx);
+                else throw new Error(d.error || 'Save failed');
+            })
+            .catch(function(err) {
                 if (prog) prog.style.display = 'none';
-                if (btn) btn.disabled = false;
-                alert('Upload error. Please try again.');
+                if (btn)  btn.disabled = false;
+                alert('Upload error: ' + (err.message || err));
             });
     }
     window.svSubmitCompass = svSubmitCompass;
@@ -506,7 +543,8 @@ foreach ($stages as $i => $s) {
 
     function svRemovePhoto(id, idx, e) {
         e.stopPropagation();
-        stagePhotos[id][idx] = null;
+        stagePhotos[id][idx]       = null;
+        stageTempPromises[id][idx] = null;
         var slot = document.getElementById('svSlot_' + id + '_' + idx);
         if (slot) {
             slot.innerHTML = '<span class="sv-slot-plus">+</span>';
@@ -520,46 +558,54 @@ foreach ($stages as $i => $s) {
     function updatePhotoCounter(id) {
         var stage = STAGES.find(function(s){ return s.id === id; });
         var files = (stagePhotos[id] || []).filter(Boolean);
-        var el = document.getElementById('svCounter_' + id);
+        var el    = document.getElementById('svCounter_' + id);
         if (el && stage) el.textContent = files.length + ' / ' + stage.count + ' photos';
     }
 
     function svSubmitStage(id, required, stageIdx, cat, actionType, hasScale, isLast) {
-        var files = (stagePhotos[id] || []).filter(Boolean);
-        var notes = (document.getElementById('svNotes_' + id) || {}).value || '';
+        var tempPromises = (stageTempPromises[id] || []).filter(Boolean);
+        var notes   = (document.getElementById('svNotes_' + id) || {}).value || '';
         var stageEl = document.getElementById('svStage_' + id);
         var prog    = document.getElementById('svProg_' + id);
         var btn     = stageEl ? stageEl.querySelector('.btn-primary') : null;
 
-        if (files.length === 0 && !notes.trim()) {
+        if (tempPromises.length === 0 && !notes.trim()) {
             if (!confirm('No photos or notes for this stage. Submit it as completed anyway?')) return;
         }
 
         if (prog) prog.style.display = 'block';
         if (btn)  btn.disabled = true;
 
-        var promises = files.map(function(file, i) {
-            return uploadFile(file, cat, id + ' photo ' + (i + 1));
-        });
-
-        // Build note text
-        var noteText = '';
+        var scaleValue = null;
         if (hasScale) {
-            var scaleEl  = document.getElementById('svScale_' + id);
-            var scaleVal = scaleEl ? scaleEl.value : '5';
-            noteText = 'Scale: ' + scaleVal + '/10 — ' + (SCALE_DESC[scaleVal] || '');
-            if (notes.trim()) noteText += '\n' + notes.trim();
-        } else {
-            noteText = notes.trim() || 'No observations.';
+            var scaleEl = document.getElementById('svScale_' + id);
+            scaleValue  = scaleEl ? parseInt(scaleEl.value, 10) : 5;
         }
-        promises.push(postAction(actionType, actionType.replace('survey_','Survey — ').replace(/^\w/,function(c){return c.toUpperCase();}), noteText));
 
-        Promise.all(promises)
-            .then(function(){ svAdvance(stageIdx); })
-            .catch(function(){
+        Promise.all(tempPromises.map(function(p) { return p.catch(function(){ return null; }); }))
+            .then(function(tempIds) {
+                var photos = tempIds.filter(Boolean).map(function(tid) { return { temp_id: tid }; });
+                return fetch(STAGE_URL, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+                    body:    JSON.stringify({
+                        stage:       actionType.replace('survey_', ''),
+                        year:        YEAR,
+                        photos:      photos,
+                        scale_value: scaleValue,
+                        notes:       notes.trim() || ''
+                    })
+                });
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.ok) svAdvance(stageIdx);
+                else throw new Error(d.error || 'Save failed');
+            })
+            .catch(function(err) {
                 if (prog) prog.style.display = 'none';
-                if (btn)  { btn.disabled = false; btn.textContent = '📤 Upload & ' + (isLast ? 'Finish' : 'Continue'); }
-                alert('Upload error. Please try again.');
+                if (btn)  btn.disabled = false;
+                alert('Error: ' + (err.message || err));
             });
     }
     window.svSubmitStage = svSubmitStage;
@@ -571,7 +617,6 @@ foreach ($stages as $i => $s) {
         var cur = document.getElementById('svStage_' + STAGES[stageIdx].id);
         if (cur) cur.classList.remove('sv-active');
 
-        // Find next undone stage
         var next = null;
         for (var i = stageIdx + 1; i < STAGES.length; i++) {
             var nextEl = document.getElementById('svStage_' + STAGES[i].id);
@@ -579,7 +624,6 @@ foreach ($stages as $i => $s) {
         }
 
         if (!next) {
-            // All done
             var compl = document.getElementById('svCompletionScreen');
             if (compl) compl.style.display = 'block';
             return;
@@ -591,44 +635,14 @@ foreach ($stages as $i => $s) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ── Upload helpers ────────────────────────────────────────────────────────
-    function uploadFile(file, category, caption) {
-        return new Promise(function(resolve, reject) {
-            compress(file, function(blob) {
-                var fd = new FormData();
-                fd.append('_token',   CSRF);
-                fd.append('file',     blob, file.name);
-                fd.append('category', category);
-                fd.append('caption',  caption);
-                fd.append('_ajax',    '1');
-                fetch(UPLOAD_URL, { method:'POST', body:fd })
-                    .then(function(r){ return r.json(); })
-                    .then(function(d){ d.success ? resolve() : reject(d.error || 'Upload failed'); })
-                    .catch(reject);
-            });
-        });
-    }
-
-    function postAction(actionType, actionLabel, description) {
-        var body = new URLSearchParams();
-        body.set('_token',              CSRF);
-        body.set('action_type',         actionType);
-        body.set('custom_action_label', actionLabel);
-        body.set('description',         description || '');
-        return fetch(ACTIONS_URL, {
-            method:  'POST',
-            headers: {'Content-Type':'application/x-www-form-urlencoded'},
-            body:    body.toString()
-        }).then(function(r){ return r.ok ? r.json() : Promise.reject('Log failed'); });
-    }
-
+    // ── Compress ──────────────────────────────────────────────────────────────
     function compress(file, cb) {
         var reader = new FileReader();
         reader.onload = function(e) {
             var img = new Image();
             img.onload = function() {
                 var MAX = 1600, Q = 0.80;
-                var ratio = Math.min(1, MAX / Math.max(img.width, img.height));
+                var ratio  = Math.min(1, MAX / Math.max(img.width, img.height));
                 var canvas = document.createElement('canvas');
                 canvas.width  = Math.round(img.width  * ratio);
                 canvas.height = Math.round(img.height * ratio);

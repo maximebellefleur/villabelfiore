@@ -8,6 +8,21 @@
  */
 return [
 
+    '3.1.60' => [
+        'date'  => '2026-05-05',
+        'title' => 'Survey DB: item_surveys table, temp uploads, survey bar widget',
+        'new' => [
+            'Dedicated item_surveys database table stores all survey data (stage, scale, notes, completed_at) with a UNIQUE key per item/year/stage. Lazy-created on first survey submission.',
+            'Attachments gain survey_id and survey_direction columns, linking photos directly to their survey stage and compass direction.',
+            'Temp-upload flow: photos upload immediately on selection (status=survey_temp). Pressing "Upload & Continue" POSTs to /survey/stage which confirms temp files as active and saves the survey row. Abandoned temp files older than 6 hours are auto-cleaned.',
+            'Survey bar widget on the item detail page: 4-slot strip below quick actions showing one thumbnail (or emoji) per stage, completion counter, and a click-to-carousel for notes review.',
+            'AI prompt now includes an ANNUAL SURVEYS section with all survey years, scale values, notes, and full absolute photo URLs so an AI assistant can access the images directly.',
+        ],
+        'improved' => [
+            'survey() controller now reads from item_surveys with a transparent fallback to activity_log for installs that haven\'t run the new flow yet.',
+        ],
+    ],
+
     '3.1.59' => [
         'date'  => '2026-05-04',
         'title' => 'Annual survey: once-per-year locking + UX fixes',
