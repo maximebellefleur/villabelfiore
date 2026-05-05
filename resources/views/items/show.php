@@ -1,6 +1,27 @@
 <?php
 $miniMapEnabled = !empty($item['gps_lat']) && !empty($item['gps_lng']);
 
+$irrigIntervals  = [
+    'twice_daily'   => 'Twice daily',
+    'daily'         => 'Daily',
+    'every_2_days'  => 'Every 2 days',
+    'every_3_days'  => 'Every 3 days',
+    'every_5_days'  => 'Every 5 days',
+    'every_10_days' => 'Every 10 days',
+    'every_20_days' => 'Every 20 days',
+    'weekly'        => 'Weekly',
+    'biweekly'      => 'Every 2 weeks',
+    'monthly'       => 'Monthly',
+];
+$irrigHourPresets = [
+    ''        => 'All-day (no time)',
+    'sunrise' => 'Sunrise (~6:00 AM)',
+    'midday'  => 'Midday (12:00 PM)',
+    'sunset'  => 'Sunset (~7:00 PM)',
+    'night'   => 'Night (9:00 PM)',
+    'custom'  => 'Custom hour…',
+];
+
 $typeEmoji = [
     'olive_tree'  => '🫒', 'tree' => '🌳', 'vine' => '🍇',
     'almond_tree' => '🌰', 'garden' => '🌿', 'zone' => '🛖',
@@ -28,9 +49,9 @@ foreach ($attachments as $att) {
     }
 }
 
-// Photo preview: all image attachments, newest first, max 4
+// Photo preview: all image attachments, newest first, max 8
 $imageAttachments = array_values(array_filter($attachments, fn($a) => str_starts_with($a['mime_type'] ?? '', 'image/')));
-$previewPhotos    = array_slice($imageAttachments, 0, 4);
+$previewPhotos    = array_slice($imageAttachments, 0, 8);
 $totalPhotos      = count($imageAttachments);
 
 // Gallery: find which index in $imageAttachments corresponds to $idPhoto
@@ -40,12 +61,6 @@ if ($idPhoto) {
         if ((int)$_a['id'] === (int)$idPhoto['id']) { $idPhotoGalleryIndex = $_k; break; }
     }
 }
-
-// Recent activity: last 3 log entries
-$recentLog = array_slice($activityLog, 0, 3);
-
-// Pending reminders: first 3 (already sorted by due_at)
-$recentReminders = array_slice($reminders, 0, 3);
 ?>
 
 <!-- =========================================================
@@ -146,137 +161,204 @@ $recentReminders = array_slice($reminders, 0, 3);
     </a>
 </div>
 
-<?php if (!empty($surveyStages)):
-    $svEmojis  = ['compass'=>'🧭','budding'=>'🌸','fruits'=>'🍋','health'=>'🏥'];
-    $svLabels  = ['compass'=>'Compass','budding'=>'Budding','fruits'=>'Fruits','health'=>'Health'];
-    $svOrder   = ['compass','budding','fruits','health'];
-    $svBarJson = [];
-    foreach ($svOrder as $_st) {
-        $sd = $surveyStages[$_st] ?? null;
-        $svBarJson[] = [
-            'stage'  => $_st,
-            'label'  => $svLabels[$_st],
-            'emoji'  => $svEmojis[$_st],
-            'att_id' => $sd ? $sd['att_id'] : null,
-            'notes'  => $sd ? ($sd['notes'] ?? '') : '',
-            'date'   => $sd ? date('M j', strtotime($sd['completed_at'])) : '',
-            'done'   => $sd !== null,
-        ];
+<?php
+// ── Status bar chips ─────────────────────────────────────────────────────────
+$_stChips = [];
+if (!empty($harvests)) {
+    $h = $harvests[0];
+    $qty = (float)$h['quantity'];
+    $qtyFmt = ($qty == floor($qty)) ? (string)(int)$qty : number_format($qty, 1);
+    $_stChips[] = ['🌾', $qtyFmt . ' ' . $h['unit'], 'Harvest · ' . date('d M Y', strtotime($h['recorded_at']))];
+}
+$_svStatDefs   = ['budding'=>['🌸','Budding'],'fruits'=>['🍋','Fruits'],'health'=>['🏥','Health']];
+$_surveyLatest = $surveyLatest ?? [];
+foreach ($_svStatDefs as $_st => [$_ico, $_lb]) {
+    if (!empty($_surveyLatest[$_st])) {
+        $sd = $_surveyLatest[$_st];
+        $_val = $sd['scale_value'] !== null ? $sd['scale_value'] . '/10' : date('M j', strtotime($sd['completed_at']));
+        $_stChips[] = [$_ico, $_val, $_lb . ' · ' . date('d M Y', strtotime($sd['completed_at']))];
     }
-    $svCount = count($surveyStages);
+}
+// ── Survey row data ───────────────────────────────────────────────────────────
+$_svOrder   = ['compass','budding','fruits','health'];
+$_svEmojis  = ['compass'=>'🧭','budding'=>'🌸','fruits'=>'🍋','health'=>'🏥'];
+$_svLabels  = ['compass'=>'Compass','budding'=>'Budding','fruits'=>'Fruits','health'=>'Health'];
+$_svCount   = count($surveyStages ?? []);
+$_svAllDone = ($_svCount === 4);
+$_svData    = [];
+foreach ($_svOrder as $_idx => $_st) {
+    $sd = ($surveyStages ?? [])[$_st] ?? null;
+    $_svData[] = [
+        'idx'   => $_idx,  'stage' => $_st,
+        'label' => $_svLabels[$_st], 'emoji' => $_svEmojis[$_st],
+        'done'  => $sd !== null,
+        'att_id'=> $sd ? $sd['att_id'] : null,
+        'notes' => $sd ? ($sd['notes'] ?? '') : '',
+        'scale' => $sd ? $sd['scale_value'] : null,
+        'date'  => $sd ? date('M j, Y', strtotime($sd['completed_at'])) : '',
+    ];
+}
 ?>
 <style>
-.sv-bar{background:var(--color-surface);border:1px solid var(--color-border);border-radius:14px;padding:12px 14px;margin-bottom:16px;}
-.sv-bar-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.sv-bar-title{font-size:.82rem;font-weight:700;flex:1;}
-.sv-bar-count{font-size:.72rem;font-weight:700;color:var(--color-primary);background:var(--color-primary-soft);padding:2px 8px;border-radius:999px;}
-.sv-bar-link{font-size:.75rem;color:var(--color-text-muted);text-decoration:none;}
-.sv-bar-link:hover{color:var(--color-primary);}
-.sv-bar-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.sv-bar-slot{border-radius:10px;overflow:hidden;position:relative;aspect-ratio:1;background:var(--color-bg);border:1.5px solid var(--color-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:default;}
-.sv-bar-slot--done{border-color:var(--color-primary);cursor:pointer;}
-.sv-bar-thumb{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
-.sv-bar-emoji{font-size:1.6rem;}
-.sv-bar-lbl{font-size:.58rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.04em;position:relative;z-index:1;}
-.sv-bar-slot--done .sv-bar-lbl{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);}
-.sv-bar-check{position:absolute;top:4px;right:5px;font-size:.7rem;z-index:2;}
-/* Carousel modal */
-.sv-carousel{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;}
-.sv-carousel-inner{background:var(--color-surface);border-radius:16px;max-width:460px;width:100%;overflow:hidden;}
-.sv-carousel-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--color-bg);}
-.sv-carousel-nophoto{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:4rem;background:var(--color-bg);}
-.sv-carousel-body{padding:14px 16px;}
-.sv-carousel-stage{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);}
-.sv-carousel-date{font-size:.72rem;color:var(--color-primary);font-weight:600;}
-.sv-carousel-notes{font-size:.88rem;color:var(--color-text);margin-top:6px;line-height:1.5;}
-.sv-carousel-nav{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 14px;}
-.sv-carousel-nav button{background:none;border:1.5px solid var(--color-border);border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.85rem;color:var(--color-text);}
-.sv-carousel-nav button:disabled{opacity:.3;cursor:default;}
-.sv-carousel-close{position:absolute;top:12px;right:14px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:#fff;}
+/* ── Status bar ──────────────────────────────────────────────────────────── */
+.si-statusbar{display:flex;gap:8px;overflow-x:auto;padding:0 0 4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.si-statusbar::-webkit-scrollbar{display:none;}
+.si-chip{display:flex;align-items:center;gap:7px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:7px 12px;white-space:nowrap;flex-shrink:0;}
+.si-chip-ico{font-size:1.2rem;}
+.si-chip-text{display:flex;flex-direction:column;gap:1px;}
+.si-chip-val{font-size:.82rem;font-weight:700;color:var(--color-text);}
+.si-chip-lbl{font-size:.68rem;color:var(--color-text-muted);}
+/* ── Survey row ──────────────────────────────────────────────────────────── */
+.svr{margin-bottom:16px;}
+.svr-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.svr-hdr-title{font-size:.83rem;font-weight:700;flex:1;}
+.svr-hdr-count{font-size:.72rem;font-weight:700;color:var(--color-primary);background:var(--color-primary-soft);padding:2px 9px;border-radius:999px;}
+.svr-hdr-link{font-size:.75rem;color:var(--color-text-muted);text-decoration:none;}
+.svr-hdr-link:hover{color:var(--color-primary);}
+.svr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.svr-slot{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;cursor:pointer;background:var(--color-bg);border:2px dashed var(--color-border);display:flex;align-items:center;justify-content:center;}
+.svr-slot--done{border:2px solid var(--color-primary);}
+.svr-slot--active{outline:3px solid var(--color-accent);outline-offset:-1px;}
+.svr-slot img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.svr-slot-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:5px 7px;background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 60%);}
+.svr-slot--missing .svr-slot-ov{background:rgba(0,0,0,.28);justify-content:center;align-items:center;gap:2px;}
+.svr-slot-lbl{font-size:.58rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;}
+.svr-slot-date{font-size:.55rem;color:rgba(255,255,255,.8);margin-top:1px;}
+.svr-slot-check{position:absolute;top:5px;right:6px;font-size:.72rem;}
+.svr-slot-emoji{font-size:1.9rem;position:relative;z-index:1;}
+/* Detail panel */
+.svr-detail{border:1px solid var(--color-border);border-radius:14px;overflow:hidden;margin-top:10px;display:flex;min-height:160px;}
+.svr-detail-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;min-width:0;}
+.svr-detail-stage-lbl{font-size:.7rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;}
+.svr-detail-date{font-size:.8rem;color:var(--color-primary);font-weight:600;margin-top:2px;}
+.svr-detail-scale{font-size:1rem;font-weight:800;margin-top:8px;color:var(--color-text);}
+.svr-detail-notes{font-size:.85rem;color:var(--color-text-muted);margin-top:6px;line-height:1.5;flex:1;}
+.svr-detail-nav{display:flex;gap:6px;margin-top:12px;}
+.svr-detail-nav button{flex:1;border:1.5px solid var(--color-border);background:none;border-radius:8px;padding:7px;cursor:pointer;font-size:.8rem;color:var(--color-text);}
+.svr-detail-nav button:disabled{opacity:.3;cursor:default;}
+.svr-detail-img{width:40%;flex-shrink:0;}
+.svr-detail-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.svr-detail-nophoto{width:40%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--color-bg);}
+@media(max-width:480px){.svr-detail{flex-direction:column-reverse;}.svr-detail-img,.svr-detail-nophoto{width:100%;height:160px;}}
 </style>
 
-<div class="sv-bar">
-    <div class="sv-bar-hdr">
-        <span class="sv-bar-title">📋 Annual Survey <?= $surveyYear ?></span>
-        <span class="sv-bar-count"><?= $svCount ?>/4</span>
-        <a href="<?= url('/items/' . (int)$item['id'] . '/survey') ?>" class="sv-bar-link">
-            <?= $svCount < 4 ? 'Continue →' : 'View →' ?>
+<?php if (!empty($_stChips)): ?>
+<div class="si-statusbar">
+    <?php foreach ($_stChips as [$_ico, $_val, $_lbl]): ?>
+    <div class="si-chip">
+        <span class="si-chip-ico"><?= $_ico ?></span>
+        <div class="si-chip-text">
+            <span class="si-chip-val"><?= e($_val) ?></span>
+            <span class="si-chip-lbl"><?= e($_lbl) ?></span>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<!-- =========================================================
+     SURVEY ROW
+     ========================================================= -->
+<div class="svr">
+    <div class="svr-hdr">
+        <span class="svr-hdr-title">📋 Annual Survey <?= $surveyYear ?></span>
+        <?php if ($_svCount > 0): ?>
+        <span class="svr-hdr-count"><?= $_svCount ?>/4</span>
+        <?php endif; ?>
+        <a href="<?= url('/items/' . (int)$item['id'] . '/survey') ?>" class="svr-hdr-link">
+            <?= $_svAllDone ? 'View →' : ($_svCount > 0 ? 'Continue →' : 'Start →') ?>
         </a>
     </div>
-    <div class="sv-bar-stages">
-        <?php foreach ($svOrder as $_st):
-            $sd    = $surveyStages[$_st] ?? null;
-            $attId = $sd ? $sd['att_id'] : null;
-            $idx   = array_search($_st, $svOrder);
-        ?>
-        <div class="sv-bar-slot <?= $sd ? 'sv-bar-slot--done' : 'sv-bar-slot--empty' ?>"
-             <?= $sd ? 'onclick="svCarouselOpen(' . $idx . ')"' : '' ?>>
-            <?php if ($attId): ?>
-            <img src="<?= url('/attachments/' . (int)$attId . '/download') ?>" alt="" class="sv-bar-thumb">
+    <div class="svr-grid">
+        <?php foreach ($_svData as $sd): ?>
+        <div class="svr-slot <?= $sd['done'] ? 'svr-slot--done' : 'svr-slot--missing' ?>"
+             id="svrSlot_<?= $sd['stage'] ?>"
+             onclick="<?= $sd['done'] ? 'svrOpenDetail(' . $sd['idx'] . ')' : 'location.href=\'' . url('/items/' . (int)$item['id'] . '/survey') . '\'' ?>">
+            <?php if ($sd['att_id']): ?>
+            <img src="<?= url('/attachments/' . (int)$sd['att_id'] . '/download') ?>" alt="">
             <?php else: ?>
-            <span class="sv-bar-emoji"><?= $svEmojis[$_st] ?></span>
+            <span class="svr-slot-emoji"><?= $sd['emoji'] ?></span>
             <?php endif; ?>
-            <span class="sv-bar-lbl"><?= e($svLabels[$_st]) ?></span>
-            <?php if ($sd): ?><span class="sv-bar-check">✅</span><?php endif; ?>
+            <div class="svr-slot-ov">
+                <?php if ($sd['done']): ?>
+                <span class="svr-slot-lbl"><?= e($sd['label']) ?></span>
+                <span class="svr-slot-date"><?= e($sd['date']) ?></span>
+                <?php else: ?>
+                <span class="svr-slot-lbl" style="color:rgba(255,255,255,.6)"><?= e($sd['label']) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php if ($sd['done']): ?><span class="svr-slot-check">✅</span><?php endif; ?>
         </div>
         <?php endforeach; ?>
     </div>
-</div>
 
-<!-- Survey carousel modal -->
-<div class="sv-carousel" id="svCarousel" style="display:none" onclick="if(event.target===this)svCarouselClose()">
-    <button class="sv-carousel-close" onclick="svCarouselClose()">✕</button>
-    <div class="sv-carousel-inner">
-        <div id="svCarouselMedia"></div>
-        <div class="sv-carousel-body">
-            <div style="display:flex;justify-content:space-between;align-items:baseline">
-                <span class="sv-carousel-stage" id="svCarouselStage"></span>
-                <span class="sv-carousel-date"  id="svCarouselDate"></span>
+    <div id="svrDetail" class="svr-detail" <?= $_svAllDone ? '' : 'style="display:none"' ?>>
+        <div class="svr-detail-body">
+            <span class="svr-detail-stage-lbl" id="svrDetailStage"></span>
+            <span class="svr-detail-date"       id="svrDetailDate"></span>
+            <div  class="svr-detail-scale"       id="svrDetailScale"></div>
+            <div  class="svr-detail-notes"       id="svrDetailNotes"></div>
+            <div class="svr-detail-nav">
+                <button id="svrPrev" onclick="svrDetailNav(-1)">&#8592; Prev</button>
+                <button id="svrNext" onclick="svrDetailNav(1)">Next &#8594;</button>
             </div>
-            <div class="sv-carousel-notes" id="svCarouselNotes"></div>
         </div>
-        <div class="sv-carousel-nav">
-            <button id="svCarouselPrev" onclick="svCarouselNav(-1)">← Prev</button>
-            <span id="svCarouselDots" style="font-size:.75rem;color:var(--color-text-muted)"></span>
-            <button id="svCarouselNext" onclick="svCarouselNav(1)">Next →</button>
-        </div>
+        <div id="svrDetailMedia" class="svr-detail-nophoto"></div>
     </div>
 </div>
 <script>
 (function(){
-    var DATA = <?= json_encode($svBarJson) ?>;
-    var cur  = 0;
+    var DATA  = <?= json_encode($_svData) ?>;
+    var BASE  = window.APP_BASE || '';
+    var cur   = 0;
+    var SCALE = {1:'Almost none',2:'Very sparse',3:'Low',4:'Below avg',5:'Moderate',
+                 6:'Above avg',7:'Good',8:'Very good',9:'Excellent',10:'Exceptional'};
     function render(idx) {
         cur = idx;
-        var d = DATA[idx];
-        var media = document.getElementById('svCarouselMedia');
-        if (d.att_id) {
-            media.innerHTML = '<img class="sv-carousel-img" src="<?= url('/attachments/') ?>' + d.att_id + '/download" alt="">';
-        } else {
-            media.innerHTML = '<div class="sv-carousel-nophoto">' + d.emoji + '</div>';
+        var d = DATA[idx]; if (!d || !d.done) return;
+        var g = function(id){ return document.getElementById(id); };
+        if (g('svrDetailStage')) g('svrDetailStage').textContent = d.label;
+        if (g('svrDetailDate'))  g('svrDetailDate').textContent  = d.date;
+        if (g('svrDetailScale')) g('svrDetailScale').textContent = d.scale ? 'Scale ' + d.scale + '/10 — ' + (SCALE[d.scale]||'') : '';
+        if (g('svrDetailNotes')) g('svrDetailNotes').textContent = d.notes || '';
+        var media = g('svrDetailMedia');
+        if (media) {
+            if (d.att_id) {
+                media.className = 'svr-detail-img';
+                media.innerHTML = '<img src="' + BASE + '/attachments/' + d.att_id + '/download" alt="">';
+            } else {
+                media.className = 'svr-detail-nophoto';
+                media.innerHTML = d.emoji;
+            }
         }
-        document.getElementById('svCarouselStage').textContent = d.label;
-        document.getElementById('svCarouselDate').textContent  = d.date;
-        document.getElementById('svCarouselNotes').textContent = d.notes || '';
-        document.getElementById('svCarouselDots').textContent  = (idx + 1) + ' / ' + DATA.length;
-        document.getElementById('svCarouselPrev').disabled = (idx === 0);
-        document.getElementById('svCarouselNext').disabled = (idx === DATA.length - 1);
+        DATA.forEach(function(s,i){
+            var slot = document.getElementById('svrSlot_' + s.stage);
+            if (slot) slot.classList.toggle('svr-slot--active', i === idx);
+        });
+        var prev = g('svrPrev'), next = g('svrNext');
+        var pi = -1, ni = -1;
+        for (var i = idx-1; i >= 0; i--)              { if (DATA[i].done){pi=i;break;} }
+        for (var i = idx+1; i < DATA.length; i++)     { if (DATA[i].done){ni=i;break;} }
+        if (prev){ prev.disabled=(pi<0); prev._t=pi; }
+        if (next){ next.disabled=(ni<0); next._t=ni; }
     }
-    window.svCarouselOpen = function(idx) {
+    window.svrOpenDetail = function(idx) {
+        var p = document.getElementById('svrDetail');
+        if (!p) return;
+        p.style.display = 'flex';
         render(idx);
-        document.getElementById('svCarousel').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        setTimeout(function(){ p.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 50);
     };
-    window.svCarouselClose = function() {
-        document.getElementById('svCarousel').style.display = 'none';
-        document.body.style.overflow = '';
+    window.svrDetailNav = function(dir) {
+        var btn = document.getElementById(dir < 0 ? 'svrPrev' : 'svrNext');
+        if (btn && btn._t >= 0) render(btn._t);
     };
-    window.svCarouselNav = function(dir) {
-        var next = cur + dir;
-        if (next >= 0 && next < DATA.length) render(next);
-    };
+    <?php if ($_svAllDone): ?>
+    (function(){ var f = DATA.findIndex(function(d){return d.done;}); if (f>=0) render(f); })();
+    <?php endif; ?>
 })();
 </script>
+
 <?php endif; ?>
 
 <!-- =========================================================
@@ -372,6 +454,50 @@ function iremAction(id, action, token) {
 </style>
 <?php endif; ?>
 
+<?php
+/* Active irrigation: plan where today is within [start_date, end_date] (or no end_date) */
+$_activeIrr = null;
+$_today = date('Y-m-d');
+foreach (($irrigationPlans ?? []) as $_ip) {
+    if ($_ip['start_date'] <= $_today && (empty($_ip['end_date']) || $_ip['end_date'] >= $_today)) {
+        $_activeIrr = $_ip;
+        break;
+    }
+}
+?>
+<?php if ($_activeIrr): ?>
+<style>
+.irr-snip{display:flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;}
+.irr-snip-icon{font-size:1.3rem;flex-shrink:0;}
+.irr-snip-body{flex:1;min-width:0;}
+.irr-snip-label{font-weight:700;color:var(--color-text);}
+.irr-snip-sub{color:var(--color-text-muted);font-size:.76rem;margin-top:1px;}
+.irr-snip-btn{font-size:.75rem;font-weight:600;color:var(--color-primary);text-decoration:none;white-space:nowrap;border:1px solid var(--color-primary);border-radius:8px;padding:4px 10px;}
+.irr-snip-btn:hover{background:var(--color-primary);color:#fff;}
+</style>
+<div class="irr-snip">
+    <span class="irr-snip-icon">💧</span>
+    <div class="irr-snip-body">
+        <div class="irr-snip-label">
+            <?= e($irrigIntervals[$_activeIrr['interval_type']] ?? $_activeIrr['interval_type']) ?>
+            <?php if (!empty($_activeIrr['quantity_liters'])): ?>
+            · <?= (float)$_activeIrr['quantity_liters'] ?>L
+            <?php endif; ?>
+            <?php if (!empty($_activeIrr['hour_preset'])): ?>
+            · <?= e($irrigHourPresets[$_activeIrr['hour_preset']] ?? $_activeIrr['hour_preset']) ?>
+            <?php endif; ?>
+        </div>
+        <div class="irr-snip-sub">
+            Active from <?= e(date('d M Y', strtotime($_activeIrr['start_date']))) ?>
+            <?php if (!empty($_activeIrr['end_date'])): ?>
+            → <?= e(date('d M Y', strtotime($_activeIrr['end_date']))) ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <a href="#irrigation-section" class="irr-snip-btn">Irrigation plan →</a>
+</div>
+<?php endif; ?>
+
 <!-- =========================================================
      PHOTO PREVIEW STRIP
      ========================================================= -->
@@ -383,14 +509,15 @@ function iremAction(id, action, token) {
             <?= $totalPhotos ?> photo<?= $totalPhotos !== 1 ? 's' : '' ?> — See all →
         </a>
     </div>
-    <div class="show-photo-grid show-photo-grid--<?= min(count($previewPhotos), 4) ?>">
+    <?php $_pgCls = count($previewPhotos) >= 5 ? 'dense' : min(count($previewPhotos), 4); ?>
+    <div class="show-photo-grid show-photo-grid--<?= $_pgCls ?>">
         <?php foreach ($previewPhotos as $i => $att): ?>
         <div class="show-photo-thumb" onclick="openGallery(<?= $i ?>)" role="button" tabindex="0"
              onkeydown="if(event.key==='Enter'||event.key===' ')openGallery(<?= $i ?>)">
             <img src="<?= att_url((int)$att['id']) ?>"
                  alt="" loading="lazy">
-            <?php if ($i === 3 && $totalPhotos > 4): ?>
-            <div class="show-photo-more">+<?= $totalPhotos - 4 ?></div>
+            <?php if ($i === 7 && $totalPhotos > 8): ?>
+            <div class="show-photo-more">+<?= $totalPhotos - 8 ?></div>
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
@@ -398,53 +525,6 @@ function iremAction(id, action, token) {
 </div>
 <?php endif; ?>
 
-<!-- =========================================================
-     RECENT ACTIVITY + REMINDERS
-     ========================================================= -->
-<?php if (!empty($recentLog) || !empty($recentReminders)): ?>
-<div class="show-section">
-    <div class="show-section-head">
-        <span class="show-section-title">📋 Recent Activity</span>
-        <a href="#full-log" class="show-section-link" onclick="expandSection('log-section')">See all →</a>
-    </div>
-    <div class="show-activity-feed">
-        <?php foreach ($recentReminders as $r):
-            $overdue = strtotime($r['due_at']) < time();
-        ?>
-        <div class="show-feed-item show-feed-item--reminder <?= $overdue ? 'show-feed-item--overdue' : '' ?>">
-            <span class="show-feed-icon">🔔</span>
-            <div class="show-feed-body">
-                <div class="show-feed-text"><?= e($r['title']) ?></div>
-                <div class="show-feed-date"><?= $overdue ? '⚠️ Overdue · ' : '' ?><?= e(date('d M Y', strtotime($r['due_at']))) ?></div>
-            </div>
-            <form method="POST" action="<?= url('/reminders/' . (int)$r['id'] . '/complete') ?>" class="show-feed-action">
-                <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
-                <button type="submit" class="show-feed-done" title="Mark done">✓</button>
-            </form>
-        </div>
-        <?php endforeach; ?>
-        <?php foreach ($recentLog as $a): ?>
-        <div class="show-feed-item">
-            <span class="show-feed-icon">
-                <?php
-                $actionIcons = ['note'=>'📝','pruning'=>'✂️','treatment'=>'💊','amendment'=>'🌿','harvest'=>'🌾','maintenance'=>'🔧'];
-                echo $actionIcons[$a['action_label'] ?? ''] ?? '📋';
-                ?>
-            </span>
-            <div class="show-feed-body">
-                <div class="show-feed-text"><?= e($a['description']) ?></div>
-                <div class="show-feed-date"><?= e($a['action_label']) ?> · <?= e(date('d M Y', strtotime($a['performed_at']))) ?><?= !empty($a['att_id']) ? ' · 📷' : '' ?></div>
-            </div>
-            <?php if (!empty($a['att_id'])): ?>
-            <a href="<?= att_url((int)$a['att_id']) ?>" target="_blank" class="show-feed-thumb-link">
-                <img src="<?= att_url((int)$a['att_id']) ?>" class="show-feed-thumb" alt="">
-            </a>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
-    </div>
-</div>
-<?php endif; ?>
 
 <!-- =========================================================
      DETAILS
@@ -657,26 +737,6 @@ window.MINI_MAP_READONLY = true;
      ========================================================= -->
 <?php
 $irrigationTypes = ['tree','olive_tree','almond_tree','vine','garden','bed'];
-$irrigIntervals  = [
-    'twice_daily'   => 'Twice daily',
-    'daily'         => 'Daily',
-    'every_2_days'  => 'Every 2 days',
-    'every_3_days'  => 'Every 3 days',
-    'every_5_days'  => 'Every 5 days',
-    'every_10_days' => 'Every 10 days',
-    'every_20_days' => 'Every 20 days',
-    'weekly'        => 'Weekly',
-    'biweekly'      => 'Every 2 weeks',
-    'monthly'       => 'Monthly',
-];
-$irrigHourPresets = [
-    ''        => 'All-day (no time)',
-    'sunrise' => 'Sunrise (~6:00 AM)',
-    'midday'  => 'Midday (12:00 PM)',
-    'sunset'  => 'Sunset (~7:00 PM)',
-    'night'   => 'Night (9:00 PM)',
-    'custom'  => 'Custom hour…',
-];
 ?>
 <?php if (in_array($item['type'], $irrigationTypes)): ?>
 <div class="show-section" id="irrigation-section">
@@ -1636,6 +1696,7 @@ function preCheckReminder() {
 .show-photo-grid--3{grid-template-columns:repeat(2,1fr);grid-template-rows:auto auto;}
 .show-photo-grid--3 .show-photo-thumb:first-child{grid-column:1/-1;}
 .show-photo-grid--4{grid-template-columns:repeat(2,1fr);}
+.show-photo-grid--dense{grid-template-columns:repeat(4,1fr);}
 .show-photo-thumb {
     position:relative;aspect-ratio:1;overflow:hidden;display:block;
     background:var(--color-surface);

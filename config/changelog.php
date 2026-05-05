@@ -8,6 +8,23 @@
  */
 return [
 
+    '3.1.62' => [
+        'date'  => '2026-05-05',
+        'title' => 'Item detail redesign + garden reorder fix',
+        'new' => [
+            'Item detail page now shows a compact irrigation summary row above the photo gallery when an active plan exists, with a scroll-to-plan button.',
+            'Survey row on item detail page: 4-slot grid (compass south / budding / fruits / health) with overlay effect showing completion status. When all 4 stages are complete, an inline detail panel shows stage description, scale, notes, and photo with left/right navigation.',
+            'Status bar near the top of the item detail page shows chips for last harvest quantity, budding level, fruits level, and health date pulled from the latest cross-year survey data.',
+        ],
+        'improved' => [
+            'Photo gallery on item detail page now previews up to 8 images in a denser 4-column grid (was 4 in a 2-column grid).',
+        ],
+        'fixed' => [
+            'Garden reordering (dragging gardens on the garden index page) now persists after page refresh. The garden list query was ordering by name instead of sort_order.',
+            'Removed "Recent Activity" section from item detail page — the full activity log at the bottom already covers this.',
+        ],
+    ],
+
     '3.1.61' => [
         'date'  => '2026-05-05',
         'title' => 'Auto-suffix duplicate item names on create',

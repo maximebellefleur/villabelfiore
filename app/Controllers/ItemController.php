@@ -268,13 +268,14 @@ class ItemController
             $irrigationPlans = $db->fetchAll('SELECT * FROM irrigation_plans WHERE item_id = ? ORDER BY start_date ASC', [$id]);
         } catch (\Throwable $e) { /* table created on first use */ }
 
-        // Load current-year survey stages + first photo per stage
+        // Load current-year survey stages (prefer south photo for compass) + cross-year latest
         $surveyYear   = (int) date('Y');
         $surveyStages = [];
+        $surveyLatest = [];
         try {
-            $db->execute("SELECT 1 FROM item_surveys LIMIT 0"); // check table exists
+            $db->execute("SELECT 1 FROM item_surveys LIMIT 0");
             $surveyRows = $db->fetchAll(
-                "SELECT s.stage, s.scale_value, s.notes, s.completed_at, MIN(a.id) AS att_id
+                "SELECT s.stage, s.scale_value, s.notes, s.completed_at, s.id AS sid, MIN(a.id) AS att_id
                  FROM item_surveys s
                  LEFT JOIN attachments a ON a.survey_id = s.id AND a.status = 'active'
                  WHERE s.item_id = ? AND s.survey_year = ?
@@ -282,13 +283,29 @@ class ItemController
                 [$id, $surveyYear]
             );
             foreach ($surveyRows as $row) {
+                $attId = $row['att_id'] ? (int)$row['att_id'] : null;
+                if ($row['stage'] === 'compass' && $row['sid']) {
+                    $south = $db->fetchOne(
+                        "SELECT id FROM attachments WHERE survey_id=? AND status='active' AND survey_direction='south' LIMIT 1",
+                        [(int)$row['sid']]
+                    );
+                    if ($south) $attId = (int)$south['id'];
+                }
                 $surveyStages[$row['stage']] = [
                     'stage'        => $row['stage'],
                     'scale_value'  => $row['scale_value'],
                     'notes'        => $row['notes'],
                     'completed_at' => $row['completed_at'],
-                    'att_id'       => $row['att_id'] ? (int)$row['att_id'] : null,
+                    'att_id'       => $attId,
                 ];
+            }
+            $latestRows = $db->fetchAll(
+                "SELECT stage, scale_value, notes, completed_at FROM item_surveys
+                 WHERE item_id = ? ORDER BY completed_at DESC",
+                [$id]
+            );
+            foreach ($latestRows as $row) {
+                if (!isset($surveyLatest[$row['stage']])) $surveyLatest[$row['stage']] = $row;
             }
         } catch (\Throwable $e) { /* item_surveys not yet created */ }
 
@@ -306,6 +323,7 @@ class ItemController
             'irrigationPlans' => $irrigationPlans,
             'surveyStages'   => $surveyStages,
             'surveyYear'     => $surveyYear,
+            'surveyLatest'   => $surveyLatest,
         ]);
     }
 

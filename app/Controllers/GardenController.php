@@ -276,7 +276,7 @@ class GardenController
         $gardens = $db->fetchAll(
             "SELECT id, name, gps_lat, gps_lng FROM items
              WHERE type='garden' AND deleted_at IS NULL AND status='active'
-             ORDER BY name ASC"
+             ORDER BY ISNULL(sort_order), sort_order ASC, name ASC"
         ) ?: [];
 
         // Beds with their meta (length/width/rows)

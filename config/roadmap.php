@@ -8,6 +8,19 @@
  */
 return [
 
+    '3.1.62' => [
+        'status'   => 'released',
+        'released' => '2026-05-05',
+        'title'    => 'Item detail redesign + garden reorder fix',
+        'features' => [
+            ['title' => 'Irrigation summary above photo gallery', 'detail' => 'If an active irrigation plan exists for the item, a compact summary row appears above the photo gallery showing interval, quantity, and date range, with a scroll-to-plan button.'],
+            ['title' => 'Survey row with overlay effect', 'detail' => '4-slot grid (compass south / budding / fruits / health) shows completion status at a glance. Done slots show the photo thumbnail with an overlay; missing slots show the stage emoji. Clicking opens an inline detail panel with text + photo and left/right stage navigation.'],
+            ['title' => 'Current status chips bar', 'detail' => 'Horizontal scrollable strip near the top of the item page showing last harvest quantity, budding level, fruits level, and health date from the most recent survey data across all years.'],
+            ['title' => 'Denser 8-photo gallery preview', 'detail' => 'Photo preview strip now shows up to 8 images in a 4-column grid instead of 4 images in 2 columns.'],
+            ['title' => 'Garden sort order persists on reload', 'detail' => 'The garden index query now sorts by sort_order (with name as tiebreaker) so drag-to-reorder gardens persist after page refresh.'],
+        ],
+    ],
+
     '3.1.61' => [
         'status'   => 'released',
         'released' => '2026-05-05',

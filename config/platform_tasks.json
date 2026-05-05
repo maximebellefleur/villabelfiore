@@ -1,5 +1,11 @@
 [
   {
+    "id": 31,
+    "title": "Item detail page: visual redesign + survey row",
+    "description": "Redesign items/show.php: smaller denser image gallery; active irrigation summary above gallery with scroll-to link; survey row showing one image per stage (compass/budding/fruits/health) with overlay effect and full-detail carousel when complete; current-status bar near top (last harvest, bud date, levels); remove recent activity section, keep logs at bottom.",
+    "created_at": "2026-05-05 16:00:00"
+  },
+  {
     "id": 30,
     "title": "Auto-suffix duplicate item names on create",
     "description": "When creating an item whose name already exists, the new item automatically gets the first free 3-digit suffix (e.g. Almond → Almond 001, Almond 002…). The original item is left unchanged. Applies to both the form and map quick-add.",
