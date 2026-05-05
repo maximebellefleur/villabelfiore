@@ -1,4 +1,9 @@
 <?php
+/* Suppress footer on the survey page — too much visual clutter mid-flow */
+if (isset($_SERVER['REQUEST_URI']) && preg_match('#/survey$#', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))) {
+    return;
+}
+
 function _loadFooterMenu(): array {
     $path = defined('STORAGE_PATH') ? STORAGE_PATH . '/menus.json' : null;
     if ($path && file_exists($path)) {

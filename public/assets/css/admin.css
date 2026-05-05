@@ -964,3 +964,18 @@ select.form-input--touch { padding-top: 12px; padding-bottom: 12px; }
 }
 .settings-toggle input:checked + .settings-toggle-track           { background: var(--color-primary); }
 .settings-toggle input:checked + .settings-toggle-track::after    { transform: translateX(20px); }
+
+/* ── Site footer ──────────────────────────────────── */
+.site-footer {
+    margin-top: 40px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+.site-footer__nav { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.site-footer__link {
+    font-size: .78rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+}
+.site-footer__link:hover { color: var(--color-primary); text-decoration: underline; }

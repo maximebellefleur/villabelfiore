@@ -260,14 +260,29 @@ class AttachmentController
         $item = $db->fetchOne('SELECT * FROM items WHERE id=? AND deleted_at IS NULL', [$id]);
         if (!$item) { http_response_code(404); echo '<h1>Not found</h1>'; return; }
 
-        // Determine which stages apply to this item type
-        $budgingTypes = ['olive_tree', 'almond_tree'];
-        $hasBudding   = in_array($item['type'], $budgingTypes);
+        $hasBudding = in_array($item['type'], ['olive_tree', 'almond_tree']);
+        $year       = (int) date('Y');
+
+        // Check which stages are completed for this year (keyed by stage id)
+        $doneMap = [];
+        foreach (['compass', 'budding', 'fruits', 'health'] as $stage) {
+            $row = $db->fetchOne(
+                "SELECT performed_at FROM activity_log
+                 WHERE item_id = ? AND action_type = ? AND YEAR(performed_at) = ?
+                 ORDER BY performed_at DESC LIMIT 1",
+                [$id, 'survey_' . $stage, $year]
+            );
+            $doneMap[$stage] = $row ? date('M j', strtotime($row['performed_at'])) : null;
+        }
+        $allDone = !in_array(null, $doneMap, true);
 
         Response::render('photos/survey', [
             'title'      => 'Survey — ' . e($item['name']),
             'item'       => $item,
             'hasBudding' => $hasBudding,
+            'doneMap'    => $doneMap,
+            'allDone'    => $allDone,
+            'year'       => $year,
         ]);
     }
 

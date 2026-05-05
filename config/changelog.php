@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.1.59' => [
+        'date'  => '2026-05-04',
+        'title' => 'Annual survey: once-per-year locking + UX fixes',
+        'new' => [
+            'Once-per-year locking: each stage (Compass, Budding, Fruits, Health) is tracked in activity_log. Completed stages show as locked "✅ Done — [date]" cards. When all 4 are done, the survey shows "Survey complete for [year] — see you next year!" and is fully locked until next year.',
+            'Fruits stage now has a 1–10 intensity scale, matching the Budding stage.',
+        ],
+        'fixed' => [
+            'Photos were pre-uploaded as soon as selected (bad UX — abandoning the survey would still save photos). All uploads now happen only when the "Upload & Continue / Finish" button is pressed.',
+            'Footer Privacy Policy link appeared unstyled and floating on the survey page. Footer is now hidden on the survey page and styled correctly elsewhere.',
+            'Progress bar dots CSS was broken on the completion screen.',
+        ],
+    ],
+
     '3.1.58' => [
         'date'  => '2026-05-04',
         'title' => 'Annual survey: 4-stage redesign + upload fix',

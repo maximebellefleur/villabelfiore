@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.59' => [
+        'status'   => 'released',
+        'released' => '2026-05-04',
+        'title'    => 'Annual survey: once-per-year locking + UX fixes',
+        'features' => [
+            ['title' => 'Once-per-year survey locking', 'detail' => 'Each of the 4 stages is locked after submission. Completed stages show as a green card with the date. Re-opening the survey resumes from the first incomplete stage. When all 4 are done, a year-complete screen is shown and the survey is read-only until Jan 1.'],
+            ['title' => 'Uploads on button press only', 'detail' => 'Photos are held in memory until the user presses Upload & Continue. Abandoning the survey mid-flow saves nothing.'],
+            ['title' => 'Fruits scale 1–10', 'detail' => 'Fruits stage now has the same intensity scale as Budding.'],
+            ['title' => 'Footer fix', 'detail' => 'Footer hidden on survey page; footer links styled correctly (centred, small text, no floating).'],
+        ],
+    ],
+
     '3.1.58' => [
         'status'   => 'released',
         'released' => '2026-05-04',
