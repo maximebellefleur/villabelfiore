@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.61' => [
+        'status'   => 'released',
+        'released' => '2026-05-05',
+        'title'    => 'Auto-suffix duplicate item names on create',
+        'features' => [
+            ['title' => 'Duplicate-name auto-suffix', 'detail' => 'When a new item is created with a name that already exists, the name gets a 3-digit suffix (001, 002, …) automatically. The first free slot is used. The original item is untouched. Applies to both the create form and map quick-add.'],
+        ],
+    ],
+
     '3.1.60' => [
         'status'   => 'released',
         'released' => '2026-05-05',

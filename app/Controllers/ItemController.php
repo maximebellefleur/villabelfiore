@@ -168,6 +168,8 @@ class ItemController
         }
 
         $db   = DB::getInstance();
+        $data['name'] = $this->uniqueItemName($db, trim($data['name'] ?? ''));
+
         $uuid = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
@@ -183,7 +185,7 @@ class ItemController
                 $uuid,
                 $data['type'] ?? '',
                 $data['subtype'] ?? null,
-                $data['name'] ?? '',
+                $data['name'],
                 !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
                 'active',
                 !empty($data['gps_lat'])  ? (float)$data['gps_lat']  : null,
@@ -774,6 +776,8 @@ class ItemController
         }
 
         $db   = DB::getInstance();
+        $data['name'] = $this->uniqueItemName($db, trim($data['name'] ?? ''));
+
         $uuid = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
@@ -789,7 +793,7 @@ class ItemController
                 $uuid,
                 $data['type'] ?? '',
                 $data['subtype'] ?? null,
-                $data['name'] ?? '',
+                $data['name'],
                 !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
                 'active',
                 !empty($data['gps_lat'])      ? (float)$data['gps_lat']      : null,
@@ -866,5 +870,33 @@ class ItemController
         if (empty($data['type']))  { $errors['type']  = 'Item type is required.'; }
         if (empty($data['name']))  { $errors['name']  = 'Item name is required.'; }
         return $errors;
+    }
+
+    /** Return $name unchanged if unique, otherwise "Name 001", "Name 002", … first free slot. */
+    private function uniqueItemName(DB $db, string $name): string
+    {
+        $cnt = $db->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM items WHERE name = ? AND deleted_at IS NULL",
+            [$name]
+        );
+        if (($cnt['cnt'] ?? 0) == 0) {
+            return $name;
+        }
+        $rows = $db->fetchAll(
+            "SELECT name FROM items WHERE name LIKE ? AND deleted_at IS NULL",
+            [$name . ' %']
+        );
+        $used = [];
+        foreach ($rows as $row) {
+            if (preg_match('/^' . preg_quote($name, '/') . ' (\d{3})$/', $row['name'], $m)) {
+                $used[] = (int)$m[1];
+            }
+        }
+        for ($n = 1; $n <= 999; $n++) {
+            if (!in_array($n, $used, true)) {
+                return $name . ' ' . sprintf('%03d', $n);
+            }
+        }
+        return $name . ' ' . sprintf('%03d', count($used) + 1);
     }
 }

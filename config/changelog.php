@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.61' => [
+        'date'  => '2026-05-05',
+        'title' => 'Auto-suffix duplicate item names on create',
+        'new' => [
+            'Creating an item whose name already exists automatically appends a 3-digit suffix to the new item: "Almond" → "Almond 001", then "Almond 002", etc. The original item is left unchanged. Works for both the standard create form and the map quick-add.',
+        ],
+    ],
+
     '3.1.60' => [
         'date'  => '2026-05-05',
         'title' => 'Survey DB: item_surveys table, temp uploads, survey bar widget',
