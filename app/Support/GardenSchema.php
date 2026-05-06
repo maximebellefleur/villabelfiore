@@ -231,11 +231,17 @@ class GardenSchema
     {
         try {
             $rows = $db->fetchAll("SHOW COLUMNS FROM {$table} LIKE ?", [$column]);
-            if (empty($rows)) {
-                $db->execute($alter);
-            }
         } catch (\Throwable $e) {
-            // table missing — ignore; CREATE TABLE earlier in ensure() should have created it
+            // table missing — CREATE TABLE earlier in ensure() should have created it
+            return;
+        }
+        if (!empty($rows)) return;
+        try {
+            $db->execute($alter);
+        } catch (\Throwable $e) {
+            // ALTER failed — log so we can diagnose. Silently swallowing this is what
+            // caused v3.1.74's "missing column" bug to manifest as a blank Family Needs page.
+            \App\Support\Logger::error("GardenSchema: failed to add {$table}.{$column} — " . $e->getMessage());
         }
     }
 }

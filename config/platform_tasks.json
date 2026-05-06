@@ -1,5 +1,11 @@
 [
   {
+    "id": 43,
+    "title": "Family Needs: list disappeared after v3.1.74",
+    "description": "Family Needs page rendered empty because the SELECT in SeedController referenced new v3.1.74 columns (projected_seed_prod_count, harvested_seed_prod_count) without a fallback, and the entire body was wrapped in a single catch that wiped the needs list on any error. Rewrote the controller so the family_needs SELECT always runs and each enrichment query has its own try/catch with a fallback. Also fixed GardenSchema::ensureColumn to log ALTER failures instead of swallowing them silently — that was the upstream cause of the missing columns.",
+    "created_at": "2026-05-06 16:00:00"
+  },
+  {
     "id": 42,
     "title": "Menu links: full https URLs used as-is",
     "description": "Menu items with a full https:// URL were being double-prefixed by the url() helper. Fixed by making url() detect and pass through absolute URLs unchanged.",

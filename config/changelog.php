@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.83' => [
+        'date'  => '2026-05-06',
+        'title' => 'Family Needs: list always renders + schema errors logged (FAM NEEDS bug)',
+        'fixed' => [
+            'Family Needs page no longer disappears when a downstream enrichment query fails. Previously the entire familyNeeds() body was wrapped in a single catch that wiped $needs to [] on any error — including v3.1.74\'s new seeds.projected_seed_prod_count column not existing yet on a given install. Now the family_needs SELECT runs unconditionally and each enrichment step has its own try/catch with a fallback.',
+            'GardenSchema::ensureColumn no longer swallows ALTER failures silently. SHOW COLUMNS errors (table missing) still return quietly, but a failed ALTER now logs to the error log via Logger::error so the root cause is diagnosable in Settings → Error Logs.',
+        ],
+        'improved' => [
+            'Seed enrichment falls back to a basic SELECT (without the v3.1.74 columns) if the full query fails, so seed names still appear on the page even on a partially-migrated database.',
+        ],
+    ],
+
     '3.1.82' => [
         'date'  => '2026-05-06',
         'title' => 'Cron: PHP CLI script with dynamic path in admin panel (Task #13)',

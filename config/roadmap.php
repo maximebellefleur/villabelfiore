@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.83' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Family Needs: list always renders + schema errors logged',
+        'features' => [
+            ['title' => 'Resilient Family Needs controller', 'detail' => 'familyNeeds() rewritten so the family_needs SELECT runs outside any wide try/catch and each enrichment step (seeds, planned-future, harvest log) has its own scoped try/catch with logging. The list now always renders if the table has rows.'],
+            ['title' => 'Schema migrations log on failure', 'detail' => 'GardenSchema::ensureColumn() no longer swallows ALTER errors. A failed column add now writes to the error log so missing-column bugs are diagnosable instead of silent.'],
+        ],
+    ],
+
     '3.1.82' => [
         'status'   => 'released',
         'released' => '2026-05-06',

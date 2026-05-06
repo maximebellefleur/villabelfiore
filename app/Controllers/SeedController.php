@@ -299,116 +299,144 @@ class SeedController
         $this->requireAuth();
         $db    = DB::getInstance();
         $this->ensureTables($db);
-        GardenSchema::ensure($db);
-        $needs = [];
-        try {
-            $rows = $db->fetchAll(
-                "SELECT fn.* FROM family_needs fn ORDER BY fn.priority ASC, fn.vegetable_name ASC"
-            ) ?: [];
-            // Build a set of all seed IDs we need to fetch
-            $allSeedIds = [];
-            foreach ($rows as $r) {
-                $ids = self::parseSeedIds($r);
-                foreach ($ids as $sid) $allSeedIds[$sid] = true;
-            }
-            $seedMap = [];
-            if (!empty($allSeedIds)) {
-                $ph   = implode(',', array_fill(0, count($allSeedIds), '?'));
+        try { GardenSchema::ensure($db); }
+        catch (\Throwable $e) { \App\Support\Logger::error('Family needs: GardenSchema::ensure failed — ' . $e->getMessage()); }
+
+        // 1. Load the user's needs. This is the data they care about — it MUST always render
+        //    even if downstream enrichment fails. Do NOT wrap this in a wider try/catch
+        //    that could blank the list on an unrelated error.
+        $rows = $db->fetchAll(
+            "SELECT fn.* FROM family_needs fn ORDER BY fn.priority ASC, fn.vegetable_name ASC"
+        ) ?: [];
+
+        // Build set of all seed IDs referenced
+        $allSeedIds = [];
+        foreach ($rows as $r) {
+            foreach (self::parseSeedIds($r) as $sid) $allSeedIds[$sid] = true;
+        }
+
+        // 2. Enrich with seed data. Wrapped so the list still renders if columns
+        //    are missing (e.g. v3.1.74 schema migration didn't fire on this server)
+        //    or any other DB error. A fallback query without the v3.1.74 columns
+        //    keeps the seed names visible at minimum.
+        $seedMap = [];
+        if (!empty($allSeedIds)) {
+            $ph     = implode(',', array_fill(0, count($allSeedIds), '?'));
+            $params = array_keys($allSeedIds);
+            try {
                 $sRows = $db->fetchAll(
                     "SELECT id, name, variety, projected_seed_prod_count, harvested_seed_prod_count
                      FROM seeds WHERE id IN ($ph)",
-                    array_keys($allSeedIds)
+                    $params
                 );
                 foreach ($sRows as $s) $seedMap[(int)$s['id']] = $s;
-            }
-
-            // Future-planned (status='planned' AND planted_at > today) — live query, rarely shown
-            $plannedFuture = [];
-            if (!empty($allSeedIds)) {
+            } catch (\Throwable $e) {
+                \App\Support\Logger::error('Family needs: seed enrichment query failed (likely missing v3.1.74 columns) — ' . $e->getMessage());
                 try {
-                    $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
-                    $pfRows = $db->fetchAll(
-                        "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count,1)) AS total
-                         FROM garden_plantings gp
-                         LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
-                         WHERE gp.seed_id IN ($ph)
-                           AND gp.status = 'planned'
-                           AND (gp.planted_at IS NULL OR gp.planted_at > CURDATE())
-                           AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
-                         GROUP BY gp.seed_id",
-                        array_keys($allSeedIds)
+                    $sRows = $db->fetchAll(
+                        "SELECT id, name, variety FROM seeds WHERE id IN ($ph)",
+                        $params
                     );
-                    foreach ($pfRows as $pr) $plannedFuture[(int)$pr['seed_id']] = (int)$pr['total'];
-                } catch (\Throwable $e) {}
+                    foreach ($sRows as $s) {
+                        $s['projected_seed_prod_count'] = 0;
+                        $s['harvested_seed_prod_count'] = 0;
+                        $seedMap[(int)$s['id']] = $s;
+                    }
+                } catch (\Throwable $e2) {
+                    \App\Support\Logger::error('Family needs: fallback seed query also failed — ' . $e2->getMessage());
+                }
             }
+        }
 
-            // Bulk-fetch harvest totals from log (current year + 2 previous years)
-            $harvestMap = []; // seed_id => [{year, total}, ...]
-            if (!empty($allSeedIds)) {
-                try {
-                    $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
-                    $hRows = $db->fetchAll(
-                        "SELECT seed_id, YEAR(harvested_on) AS yr, SUM(plant_count) AS total
-                         FROM seed_harvest_log
-                         WHERE seed_id IN ($ph)
-                           AND YEAR(harvested_on) >= YEAR(CURDATE()) - 2
-                         GROUP BY seed_id, YEAR(harvested_on)
-                         ORDER BY seed_id, yr DESC",
-                        array_keys($allSeedIds)
-                    );
-                    foreach ($hRows as $hr) {
-                        $harvestMap[(int)$hr['seed_id']][] = [
-                            'year'  => (int)$hr['yr'],
-                            'total' => (int)$hr['total'],
-                        ];
-                    }
-                } catch (\Throwable $e) {}
+        // 3. Future-planned plants (status='planned' AND planted_at > today). Optional.
+        $plannedFuture = [];
+        if (!empty($allSeedIds)) {
+            try {
+                $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
+                $pfRows = $db->fetchAll(
+                    "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count,1)) AS total
+                     FROM garden_plantings gp
+                     LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
+                     WHERE gp.seed_id IN ($ph)
+                       AND gp.status = 'planned'
+                       AND (gp.planted_at IS NULL OR gp.planted_at > CURDATE())
+                       AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
+                     GROUP BY gp.seed_id",
+                    array_keys($allSeedIds)
+                );
+                foreach ($pfRows as $pr) $plannedFuture[(int)$pr['seed_id']] = (int)$pr['total'];
+            } catch (\Throwable $e) {
+                \App\Support\Logger::error('Family needs: plannedFuture query failed — ' . $e->getMessage());
             }
+        }
 
-            foreach ($rows as $need) {
-                $ids = self::parseSeedIds($need);
-                // Aggregate counts directly from seeds table columns (v3.1.74)
-                $agg = ['plants_in_ground' => 0, 'plants_planned' => 0];
-                foreach ($ids as $sid) {
-                    $s = $seedMap[$sid] ?? null;
-                    if ($s) {
-                        $agg['plants_in_ground'] += (int)($s['projected_seed_prod_count'] ?? 0);
-                    }
-                    $agg['plants_planned'] += $plannedFuture[$sid] ?? 0;
+        // 4. Bulk-fetch harvest totals from log (current year + 2 previous). Optional.
+        $harvestMap = [];
+        if (!empty($allSeedIds)) {
+            try {
+                $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
+                $hRows = $db->fetchAll(
+                    "SELECT seed_id, YEAR(harvested_on) AS yr, SUM(plant_count) AS total
+                     FROM seed_harvest_log
+                     WHERE seed_id IN ($ph)
+                       AND YEAR(harvested_on) >= YEAR(CURDATE()) - 2
+                     GROUP BY seed_id, YEAR(harvested_on)
+                     ORDER BY seed_id, yr DESC",
+                    array_keys($allSeedIds)
+                );
+                foreach ($hRows as $hr) {
+                    $harvestMap[(int)$hr['seed_id']][] = [
+                        'year'  => (int)$hr['yr'],
+                        'total' => (int)$hr['total'],
+                    ];
                 }
-                // Merge harvest-by-year data across all linked seeds
-                $harvestByYearMerged = [];
-                foreach ($ids as $sid) {
-                    foreach ($harvestMap[$sid] ?? [] as $hy) {
-                        $yr = $hy['year'];
-                        $harvestByYearMerged[$yr] = ($harvestByYearMerged[$yr] ?? 0) + $hy['total'];
-                    }
-                }
-                krsort($harvestByYearMerged);
-                $harvestByYear = [];
-                foreach ($harvestByYearMerged as $yr => $total) {
-                    $harvestByYear[] = ['year' => $yr, 'total' => $total];
-                }
-                // Build display: seed names as array
-                $need['linked_seed_ids']   = $ids;
-                $need['linked_seed_names'] = array_values(array_filter(array_map(function($sid) use ($seedMap) {
-                    if (!isset($seedMap[$sid])) return null;
-                    $s = $seedMap[$sid];
-                    return $s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : '');
-                }, $ids)));
-                // Legacy single-seed compat
-                $first = $ids[0] ?? 0;
-                $need['seed_name'] = $first && isset($seedMap[$first])
-                    ? $seedMap[$first]['name'] . ($seedMap[$first]['variety'] ? ' ('.$seedMap[$first]['variety'].')' : '')
-                    : null;
-                $need['harvest_by_year']    = $harvestByYear;
-                $need['harvest_est_ground']  = null;
-                $need['harvest_est_planned'] = null;
-                $need = array_merge($need, $agg);
-                $needs[] = $need;
+            } catch (\Throwable $e) {
+                \App\Support\Logger::error('Family needs: harvest-log query failed — ' . $e->getMessage());
             }
-        } catch (\Throwable $e) { $needs = []; }
-        $seeds = $db->fetchAll('SELECT id, name, variety FROM seeds ORDER BY name ASC');
+        }
+
+        // 5. Assemble the final needs list. Each row is independently safe.
+        $needs = [];
+        foreach ($rows as $need) {
+            $ids = self::parseSeedIds($need);
+            $agg = ['plants_in_ground' => 0, 'plants_planned' => 0];
+            foreach ($ids as $sid) {
+                $s = $seedMap[$sid] ?? null;
+                if ($s) {
+                    $agg['plants_in_ground'] += (int)($s['projected_seed_prod_count'] ?? 0);
+                }
+                $agg['plants_planned'] += $plannedFuture[$sid] ?? 0;
+            }
+            $harvestByYearMerged = [];
+            foreach ($ids as $sid) {
+                foreach ($harvestMap[$sid] ?? [] as $hy) {
+                    $yr = $hy['year'];
+                    $harvestByYearMerged[$yr] = ($harvestByYearMerged[$yr] ?? 0) + $hy['total'];
+                }
+            }
+            krsort($harvestByYearMerged);
+            $harvestByYear = [];
+            foreach ($harvestByYearMerged as $yr => $total) {
+                $harvestByYear[] = ['year' => $yr, 'total' => $total];
+            }
+            $need['linked_seed_ids']   = $ids;
+            $need['linked_seed_names'] = array_values(array_filter(array_map(function($sid) use ($seedMap) {
+                if (!isset($seedMap[$sid])) return null;
+                $s = $seedMap[$sid];
+                return $s['name'] . ($s['variety'] ? ' ('.$s['variety'].')' : '');
+            }, $ids)));
+            $first = $ids[0] ?? 0;
+            $need['seed_name'] = $first && isset($seedMap[$first])
+                ? $seedMap[$first]['name'] . ($seedMap[$first]['variety'] ? ' ('.$seedMap[$first]['variety'].')' : '')
+                : null;
+            $need['harvest_by_year']     = $harvestByYear;
+            $need['harvest_est_ground']  = null;
+            $need['harvest_est_planned'] = null;
+            $need = array_merge($need, $agg);
+            $needs[] = $need;
+        }
+
+        $seeds = $db->fetchAll('SELECT id, name, variety FROM seeds ORDER BY name ASC') ?: [];
 
         Response::render('seeds/family-needs', [
             'title' => 'Family Needs',
