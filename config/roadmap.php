@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.64' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Instant distance sort from cached GPS',
+        'features' => [
+            ['title' => 'Cached GPS for instant distance sort', 'detail' => 'Last known GPS coordinates are persisted in localStorage. The items listing uses the cached position immediately on load — no waiting for the GPS chip to warm up. Fresh coordinates re-sort the list silently in background.'],
+        ],
+    ],
+
     '3.1.63' => [
         'status'   => 'released',
         'released' => '2026-05-06',

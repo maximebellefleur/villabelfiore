@@ -1,5 +1,11 @@
 [
   {
+    "id": 32,
+    "title": "Items list: instant distance sort from cached GPS",
+    "description": "Save last known GPS coordinates to localStorage on every fix. On items listing load, use the cached position immediately for distance sorting — no spinner if location was seen before. Fresh GPS re-sorts silently in background.",
+    "created_at": "2026-05-06 10:45:00"
+  },
+  {
     "id": 31,
     "title": "Item detail page: visual redesign + survey row",
     "description": "Redesign items/show.php: smaller denser image gallery; active irrigation summary above gallery with scroll-to link; survey row showing one image per stage (compass/budding/fruits/health) with overlay effect and full-detail carousel when complete; current-status bar near top (last harvest, bud date, levels); remove recent activity section, keep logs at bottom.",

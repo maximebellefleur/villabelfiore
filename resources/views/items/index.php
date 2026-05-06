@@ -314,12 +314,27 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
         return;
     }
     distBtn.classList.add('active'); if (nameBtn) nameBtn.classList.remove('active');
-    distBtn.textContent = '⏳ Locating…'; _distSortActive = true;
+    _distSortActive = true;
+
+    // Use last known position immediately — no spinner if we have cached coords
+    var cached = RootedGPS.last();
+    if (cached) {
+        _pos = cached;
+        doDistanceSort(cached);
+        distBtn.textContent = '📍 Distance';
+    } else {
+        distBtn.textContent = '⏳ Locating…';
+    }
+
+    // Still fetch fresh GPS and re-sort silently when it arrives
     RootedGPS.get(function(pos) {
         distBtn.textContent = '📍 Distance';
-        if (!pos) { distBtn.classList.remove('active'); if (nameBtn) nameBtn.classList.add('active'); _distSortActive=false; return; }
+        if (!pos) {
+            if (!cached) { distBtn.classList.remove('active'); if (nameBtn) nameBtn.classList.add('active'); _distSortActive=false; }
+            return;
+        }
         _pos = pos; doDistanceSort(pos);
-    }, 5000);
+    }, 30000);
 }());
 
 RootedGPS.onAccuracyImprove(function(pos) { _pos=pos; if (_distSortActive) doDistanceSort(pos); });

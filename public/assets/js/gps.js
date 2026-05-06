@@ -8,12 +8,19 @@
 window.RootedGPS = (function () {
     'use strict';
 
+    var LS_KEY             = 'rooted.gps.last';
     var _pos              = null;      // { lat, lng, accuracy, timestamp }
     var _watchId          = null;
     var _pending          = [];        // waiting callbacks (first-fix)
     var _accuracyWatchers = [];        // callbacks that fire when accuracy improves
     var _subscribers      = [];        // continuous subscribers — fire on every update
     var _bestAccuracy     = Infinity;  // best accuracy seen so far (m)
+
+    // Boot with last known position from localStorage so callers get instant data
+    try {
+        var _cached = JSON.parse(localStorage.getItem(LS_KEY));
+        if (_cached && _cached.lat && _cached.lng) { _pos = _cached; }
+    } catch (e) {}
 
     function _store(pos) {
         var newAcc = pos.coords.accuracy;
@@ -23,6 +30,8 @@ window.RootedGPS = (function () {
             accuracy:  newAcc,
             timestamp: Date.now(),
         };
+        // Persist to localStorage so the next page load has instant location
+        try { localStorage.setItem(LS_KEY, JSON.stringify(_pos)); } catch (e) {}
         // Flush first-fix waiters
         if (_pending.length) {
             var cbs = _pending.slice(); _pending = [];

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.64' => [
+        'date'  => '2026-05-06',
+        'title' => 'Instant distance sort from cached GPS',
+        'improved' => [
+            'GPS coordinates are now saved to localStorage on every fix. The items listing instantly sorts by distance using the last known location — no spinner on repeat visits. Fresh GPS re-sorts silently in the background as accuracy improves.',
+        ],
+    ],
+
     '3.1.63' => [
         'date'  => '2026-05-06',
         'title' => 'Fix item detail page crash',
