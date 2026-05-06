@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.69' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Items list: sort by date newest first',
+        'features' => [
+            ['title' => 'Date sort on items list', 'detail' => '"🕐 Newest" button sorts items by creation date descending. Selection persists in localStorage alongside Name and Distance.'],
+        ],
+    ],
+
     '3.1.68' => [
         'status'   => 'released',
         'released' => '2026-05-06',

@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.69' => [
+        'date'  => '2026-05-06',
+        'title' => 'Items list: sort by date newest first',
+        'new' => [
+            'New "🕐 Newest" sort button on the items list — sorts all items by date added, newest at the top. Sort preference is remembered across page loads.',
+        ],
+    ],
+
     '3.1.68' => [
         'date'  => '2026-05-06',
         'title' => 'Fix custom item type save',

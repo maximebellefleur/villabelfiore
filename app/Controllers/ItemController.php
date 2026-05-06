@@ -113,8 +113,9 @@ class ItemController
                     'hasGps'  => !empty($item['gps_lat']) && !empty($item['gps_lng']),
                     'lat'     => $item['gps_lat'] ?? null,
                     'lng'     => $item['gps_lng'] ?? null,
-                    'status'  => $item['status'],
-                    'photoId' => $photoMap[(int)$item['id']] ?? null,
+                    'status'    => $item['status'],
+                    'photoId'   => $photoMap[(int)$item['id']] ?? null,
+                    'createdAt' => $item['created_at'] ?? '',
                 ];
             }
             Response::json(['items' => $rows, 'page' => $page, 'lastPage' => $lastPage, 'total' => $total]);

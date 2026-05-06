@@ -62,6 +62,7 @@ $typeColor = [
     <div class="items-sort-bar">
         <span class="items-sort-label">Sort by:</span>
         <button type="button" class="items-sort-btn active" data-sort="default">Name</button>
+        <button type="button" class="items-sort-btn" data-sort="date" id="sortByDate">🕐 Newest</button>
         <button type="button" class="items-sort-btn" data-sort="distance" id="sortByDist">📍 Distance</button>
     </div>
 </form>
@@ -178,9 +179,10 @@ function buildRow(item, idx) {
         ? '<span class="item-row-status">'+esc(item.status)+'</span>' : '';
     var el = document.createElement('div');
     el.className = 'item-row item-row--animate' + inactive;
-    el.dataset.id  = item.id;
-    el.dataset.lat = item.lat  || '';
-    el.dataset.lng = item.lng  || '';
+    el.dataset.id        = item.id;
+    el.dataset.lat       = item.lat  || '';
+    el.dataset.lng       = item.lng  || '';
+    el.dataset.created   = item.createdAt || '';
     el.dataset.origIndex = idx;
     el.style.animationDelay = (idx * 40) + 'ms';
     el.innerHTML =
@@ -279,6 +281,19 @@ function doDistanceSort(pos) {
 
 var SORT_KEY = 'rooted.items.sort';
 
+function doDateSort() {
+    var list = document.getElementById('itemsList');
+    if (!list) return;
+    var rows = Array.from(list.querySelectorAll('.item-row'));
+    rows.sort(function(a, b) {
+        return (b.dataset.created || '').localeCompare(a.dataset.created || '');
+    });
+    rows.forEach(function(row) {
+        list.querySelectorAll('.item-row-dist').forEach(function(el){ el.style.display='none'; });
+        list.appendChild(row);
+    });
+}
+
 document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.items-sort-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -289,6 +304,11 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
             var list = document.getElementById('itemsList');
             Array.from(list.children).sort(function(a,b){ return a.dataset.origIndex - b.dataset.origIndex; }).forEach(function(r){ list.appendChild(r); });
             list.querySelectorAll('.item-row-dist').forEach(function(el){ el.style.display='none'; });
+            return;
+        }
+        if (btn.dataset.sort === 'date') {
+            _distSortActive = false;
+            doDateSort();
             return;
         }
         _distSortActive = true;
@@ -303,14 +323,20 @@ document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
 
 (function() {
     var distBtn = document.getElementById('sortByDist');
+    var dateBtn = document.getElementById('sortByDate');
     var nameBtn = document.querySelector('[data-sort="default"]');
     if (!distBtn || typeof RootedGPS === 'undefined') return;
     var saved = null;
     try { saved = localStorage.getItem(SORT_KEY); } catch (e) {}
-    // Default to distance unless user previously chose Name
     if (saved === 'default') {
         if (nameBtn) nameBtn.classList.add('active');
         distBtn.classList.remove('active');
+        return;
+    }
+    if (saved === 'date') {
+        if (dateBtn) { dateBtn.classList.add('active'); if (nameBtn) nameBtn.classList.remove('active'); }
+        // Wait for items to load then sort
+        setTimeout(doDateSort, 300);
         return;
     }
     distBtn.classList.add('active'); if (nameBtn) nameBtn.classList.remove('active');
