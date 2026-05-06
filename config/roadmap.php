@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.79' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Menu links: full https:// URLs used as-is',
+        'features' => [
+            ['title' => 'Absolute URL passthrough in url() helper', 'detail' => 'url() now detects http:// / https:// prefixes and returns the path unchanged, so external URLs in the menu (and anywhere else url() is called) are no longer double-prefixed with the app base.'],
+        ],
+    ],
+
     '3.1.78' => [
         'status'   => 'released',
         'released' => '2026-05-06',

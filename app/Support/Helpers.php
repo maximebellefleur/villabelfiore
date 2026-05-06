@@ -26,6 +26,9 @@ if (!function_exists('url')) {
      */
     function url(string $path = ''): string
     {
+        if ($path !== '' && (str_starts_with($path, 'http://') || str_starts_with($path, 'https://'))) {
+            return $path;
+        }
         $base = defined('APP_BASE') ? APP_BASE : rtrim((string) Env::get('APP_URL', ''), '/');
         return $base . '/' . ltrim($path, '/');
     }

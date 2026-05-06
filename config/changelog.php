@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.79' => [
+        'date'  => '2026-05-06',
+        'title' => 'Menu links: full https:// URLs used as-is (Task #42)',
+        'fixed' => [
+            'Menu items with a full https:// URL (e.g. an external link) were being double-prefixed with the app base URL, producing a broken link. The url() helper now passes absolute URLs through unchanged.',
+        ],
+    ],
+
     '3.1.78' => [
         'date'  => '2026-05-06',
         'title' => 'Survey skip guards temp uploads with confirm dialog (Task #41)',

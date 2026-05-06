@@ -1,5 +1,11 @@
 [
   {
+    "id": 42,
+    "title": "Menu links: full https URLs used as-is",
+    "description": "Menu items with a full https:// URL were being double-prefixed by the url() helper. Fixed by making url() detect and pass through absolute URLs unchanged.",
+    "created_at": "2026-05-06 15:15:00"
+  },
+  {
     "id": 41,
     "title": "Survey skip flow with temp upload guard",
     "description": "Fixed the survey skip button to detect when a photo has been selected (uploaded as survey_temp) for the current step and show a confirmation dialog before discarding it. If no photo is selected, skip proceeds immediately without any prompt.",
