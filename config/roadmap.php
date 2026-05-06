@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.72' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Survey: skip button on all steps',
+        'features' => [
+            ['title' => 'Survey skip on all steps', 'detail' => '"Skip this for now" added to every survey stage — upcoming photo stages previously had no skip button.'],
+        ],
+    ],
+
     '3.1.71' => [
         'status'   => 'released',
         'released' => '2026-05-06',

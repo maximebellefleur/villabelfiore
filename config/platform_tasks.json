@@ -1,5 +1,11 @@
 [
   {
+    "id": 37,
+    "title": "Survey: skip button on all steps",
+    "description": "Skip this for now button was missing from the upcoming photo_text stage in the survey flow. Added skip button so every step — active or upcoming, compass or photo — can be skipped.",
+    "created_at": "2026-05-06 14:15:00"
+  },
+  {
     "id": 36,
     "title": "Items list: batch change item type with log",
     "description": "Select multiple items and reassign their type in one action. Each affected item gets an individual activity log entry recording the type change.",

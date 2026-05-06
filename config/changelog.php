@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.72' => [
+        'date'  => '2026-05-06',
+        'title' => 'Survey: skip button on all steps',
+        'fixed' => [
+            '"Skip this for now" button is now present on every survey step — active and upcoming, compass and photo stages.',
+        ],
+    ],
+
     '3.1.71' => [
         'date'  => '2026-05-06',
         'title' => 'Bed overview respects garden sort order',
