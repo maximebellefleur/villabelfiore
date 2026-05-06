@@ -2,7 +2,7 @@
   {
     "id": 38,
     "title": "Planting palette: A-Z scroller and search",
-    "description": "Add a compact search field and alphabetical A-Z index bar to the seed palette on the garden bed planting page. Clicking a letter filters to seeds starting with that letter; typing in the search filters by name/variety. Works on mobile and desktop.",
+    "description": "Add a compact search field and alphabetical A-Z index bar to the seed palette on the garden bed planting page. Clicking a letter filters to seeds starting with that letter; typing in the search filters by name/variety. Works on mobile and desktop. Fix (2026-05-06): the two filters are now mutually exclusive — typing clears any active letter, clicking a letter clears the search field.",
     "created_at": "2026-05-06 14:20:00"
   },
   {

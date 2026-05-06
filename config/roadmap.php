@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.75' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Planting palette: search/letter mutually exclusive',
+        'features' => [
+            ['title' => 'Mutually exclusive filters', 'detail' => 'Typing in the search clears any active letter, clicking a letter clears the search — both filters are visible but only one is ever active.'],
+        ],
+    ],
+
     '3.1.74' => [
         'status'   => 'released',
         'released' => '2026-05-06',

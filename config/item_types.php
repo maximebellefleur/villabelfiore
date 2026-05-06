@@ -4,6 +4,8 @@ return [
 
     'tree' => [
         'label'                => 'Tree',
+        'emoji'                => '🌳',
+        'color'                => '#166534',
         'allowed_parents'      => ['orchard', null],
         'allowed_children'     => [],
         'required_meta'        => ['tree_type'],
@@ -26,6 +28,8 @@ return [
 
     'olive_tree' => [
         'label'                => 'Olive Tree',
+        'emoji'                => '🫒',
+        'color'                => '#2d6a4f',
         'allowed_parents'      => ['orchard', null],
         'allowed_children'     => [],
         'required_meta'        => ['variety'],
@@ -41,6 +45,8 @@ return [
 
     'almond_tree' => [
         'label'                => 'Almond Tree',
+        'emoji'                => '🌰',
+        'color'                => '#92400e',
         'allowed_parents'      => ['orchard', null],
         'allowed_children'     => [],
         'required_meta'        => ['variety'],
@@ -56,6 +62,8 @@ return [
 
     'vine' => [
         'label'                => 'Vine',
+        'emoji'                => '🍇',
+        'color'                => '#6d28d9',
         'allowed_parents'      => ['orchard', null],
         'allowed_children'     => [],
         'required_meta'        => ['variety'],
@@ -71,6 +79,8 @@ return [
 
     'garden' => [
         'label'                => 'Garden',
+        'emoji'                => '🌿',
+        'color'                => '#0369a1',
         'hidden_from_create'   => true,
         'allowed_parents'      => [null],
         'allowed_children'     => ['bed'],
@@ -86,6 +96,8 @@ return [
 
     'bed' => [
         'label'                => 'Garden Bed',
+        'emoji'                => '🌱',
+        'color'                => '#0369a1',
         'allowed_parents'      => ['garden', null],
         'allowed_children'     => ['line'],
         'required_meta'        => [],
@@ -101,6 +113,8 @@ return [
 
     'line' => [
         'label'                => 'Line',
+        'emoji'                => '〰️',
+        'color'                => '#1d4ed8',
         'hidden_from_create'   => true,
         'allowed_parents'      => ['bed'],
         'allowed_children'     => [],
@@ -116,6 +130,8 @@ return [
 
     'prep_zone' => [
         'label'                => 'Prep Zone',
+        'emoji'                => '🟫',
+        'color'                => '#b45309',
         'allowed_parents'      => [null],
         'allowed_children'     => [],
         'required_meta'        => [],
@@ -130,6 +146,8 @@ return [
 
     'mobile_coop' => [
         'label'                => 'Mobile Coop',
+        'emoji'                => '🐓',
+        'color'                => '#991b1b',
         'allowed_parents'      => [null],
         'allowed_children'     => [],
         'required_meta'        => [],
@@ -144,6 +162,8 @@ return [
 
     'building' => [
         'label'                => 'Building',
+        'emoji'                => '🏠',
+        'color'                => '#374151',
         'allowed_parents'      => [null],
         'allowed_children'     => [],
         'required_meta'        => [],
@@ -158,6 +178,8 @@ return [
 
     'water_point' => [
         'label'                => 'Water Point',
+        'emoji'                => '💧',
+        'color'                => '#0284c7',
         'allowed_parents'      => [null],
         'allowed_children'     => [],
         'required_meta'        => [],

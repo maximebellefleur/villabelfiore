@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.75' => [
+        'date'  => '2026-05-06',
+        'title' => 'Planting palette: search/letter mutually exclusive (Task #38 fix)',
+        'fixed' => [
+            'Typing in the seed search box now clears any active letter filter (and vice versa) so the two never combine to hide everything.',
+        ],
+    ],
+
     '3.1.74' => [
         'date'  => '2026-05-06',
         'title' => 'Seed projection: cron + lifetime harvest column (Task #13 redesign)',

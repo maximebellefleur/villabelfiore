@@ -512,7 +512,14 @@ $bedId = (int)$item['id'];
     $('#rgPaletteSearchClear').toggle(q.length > 0);
   }
 
-  $('#rgPaletteSearch').on('input', _applyPaletteFilter);
+  $('#rgPaletteSearch').on('input', function () {
+    // Typing clears any active letter — the two filters are mutually exclusive
+    if (($(this).val() || '').length > 0 && _alphaActive) {
+      _alphaActive = '';
+      $('#rgAlphaBar .rg-alpha-btn').removeClass('is-active');
+    }
+    _applyPaletteFilter();
+  });
 
   $('#rgPaletteSearchClear').on('click', function () {
     $('#rgPaletteSearch').val('').trigger('input').focus();
@@ -520,6 +527,8 @@ $bedId = (int)$item['id'];
 
   $('#rgAlphaBar').on('click', '.rg-alpha-btn', function () {
     var letter = $(this).data('letter');
+    // Clicking a letter clears the search box — mutually exclusive
+    $('#rgPaletteSearch').val('');
     if (_alphaActive === letter) {
       _alphaActive = '';
       $(this).removeClass('is-active');
