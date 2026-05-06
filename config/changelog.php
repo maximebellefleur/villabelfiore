@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.67' => [
+        'date'  => '2026-05-06',
+        'title' => 'Proximity warning + item type duplicate check',
+        'new' => [
+            'When placing a GPS pin on the create item form, if an existing item is within 3m a yellow warning banner appears with the item name and a "View item" link — prevents accidental duplicates.',
+        ],
+        'fixed' => [
+            'Adding a custom item type that already exists (same name or key) now shows an error instead of silently creating a duplicate with a suffixed key.',
+        ],
+    ],
+
     '3.1.66' => [
         'date'  => '2026-05-06',
         'title' => 'Settings: Item Types tab',

@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.67' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Proximity warning + item type duplicate check',
+        'features' => [
+            ['title' => 'Proximity warning on item create', 'detail' => 'GPS pin placement checks for existing items within 3m via /api/items/nearby. A yellow banner warns you with the item name and a View link before you save.'],
+            ['title' => 'Custom item type duplicate rejection', 'detail' => 'Adding a custom type with an existing name or key now shows an error flash instead of creating a suffixed duplicate.'],
+        ],
+    ],
+
     '3.1.66' => [
         'status'   => 'released',
         'released' => '2026-05-06',

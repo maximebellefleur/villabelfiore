@@ -93,6 +93,7 @@
     function setCoords(lat, lng) {
         latInput.value = lat.toFixed(7);
         lngInput.value = lng.toFixed(7);
+        window.dispatchEvent(new CustomEvent('minimap:coordsUpdated', { detail: { lat: lat, lng: lng } }));
     }
 
     // Expose for other scripts on the same page (e.g. boundary walk in edit.php)

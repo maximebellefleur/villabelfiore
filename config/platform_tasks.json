@@ -1,5 +1,11 @@
 [
   {
+    "id": 34,
+    "title": "New item: proximity warning for nearby existing items",
+    "description": "When GPS or map pin is set on the create item form, check /api/items/nearby within 3m. If an existing item is found, show a warning banner with its name and a link before saving.",
+    "created_at": "2026-05-06 12:00:00"
+  },
+  {
     "id": 33,
     "title": "Settings: Item Types tab with custom type add",
     "description": "New Item Types tab in Settings shows all 13 built-in types (read-only) and lets admins add custom types by name and emoji. Custom types stored in DB (item_types.custom setting) and merged into all item type dropdowns automatically.",

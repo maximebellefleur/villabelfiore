@@ -20,6 +20,7 @@
         </div>
         <div id="miniMap" class="item-form-map"></div>
         <div id="gpsStatus" class="item-form-gps-status" style="display:none"></div>
+        <div id="proximityWarning" style="display:none;margin-top:8px;padding:10px 14px;background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;font-size:.85rem;line-height:1.5;"></div>
     </div>
 
     <!-- ② Core fields -->
@@ -195,6 +196,26 @@ function applyGpsPosition(pos) {
     if (window.miniMapLeaflet) {
         window.miniMapLeaflet.setView([pos.lat, pos.lng], GPS_DETECT_ZOOM);
     }
+    checkProximity(pos.lat, pos.lng);
+}
+
+function checkProximity(lat, lng) {
+    var warn = document.getElementById('proximityWarning');
+    if (!warn) return;
+    warn.style.display = 'none';
+    fetch(window.APP_BASE + '/api/items/nearby?lat=' + lat + '&lng=' + lng + '&radius=0.003')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.success || !d.data || !d.data.length) return;
+            var nearby = d.data[0];
+            var dist   = Math.round((nearby.distance_km || 0) * 1000);
+            warn.innerHTML =
+                '⚠️ <strong>You\'re about ' + dist + 'm away from an existing item:</strong> ' +
+                '<em>' + nearby.name + '</em>' +
+                ' <a href="<?= url('/items/') ?>' + nearby.id + '" target="_blank" style="color:var(--color-primary);font-weight:700;">View item →</a>';
+            warn.style.display = 'block';
+        })
+        .catch(function() {});
 }
 
 $('#detectGps').on('click', function() {
@@ -213,6 +234,11 @@ $('#detectGps').on('click', function() {
         }
         applyGpsPosition(pos);
     }, 20000); // accept up to 20s old (GPS has been warming since page load)
+});
+
+// Proximity check when map pin is placed/dragged
+window.addEventListener('minimap:coordsUpdated', function(e) {
+    checkProximity(e.detail.lat, e.detail.lng);
 });
 
 function wireCustomTreeType() {
