@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.82' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Cron: PHP CLI script with dynamic path',
+        'features' => [
+            ['title' => 'cron-seed-counts.php standalone CLI script', 'detail' => 'New PHP CLI script at rooted-files/cron-seed-counts.php boots the app without HTTP and runs the seed recompute directly. Settings → Cron shows the exact command with the dynamically derived absolute path, ready to paste into cPanel.'],
+        ],
+    ],
+
     '3.1.81' => [
         'status'   => 'released',
         'released' => '2026-05-06',

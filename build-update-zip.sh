@@ -30,6 +30,9 @@ for dir in app bootstrap config docs resources; do
     fi
 done
 
+# Standalone CLI cron scripts
+cp "$PROJECT_DIR/cron-seed-counts.php" "$TMP/rooted-files/"
+
 # Build ZIP preserving structure
 cd "$TMP"
 zip -r "$OUTPUT" rooted rooted-files -x "*.DS_Store"

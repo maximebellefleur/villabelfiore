@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.82' => [
+        'date'  => '2026-05-06',
+        'title' => 'Cron: PHP CLI script with dynamic path in admin panel (Task #13)',
+        'new' => [
+            'Added cron-seed-counts.php — a standalone PHP CLI script that runs the seed recompute without needing curl or an HTTP request. Ideal for cPanel cron jobs.',
+            'Settings → Cron now shows the full PHP CLI command with the correct absolute path derived from the server, ready to paste into cPanel → Cron Jobs.',
+        ],
+    ],
+
     '3.1.81' => [
         'date'  => '2026-05-06',
         'title' => 'Item map zooms to max-2 on show page',

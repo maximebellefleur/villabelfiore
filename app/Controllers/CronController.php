@@ -80,13 +80,15 @@ class CronController
             Response::redirect('/login');
             return;
         }
-        $key = $this->readOrCreateKey();
-        $base = rtrim(url('/'), '/');
-        $url  = $base . '/cron/seed-counts?key=' . $key;
+        $key     = $this->readOrCreateKey();
+        $base    = rtrim(url('/'), '/');
+        $url     = $base . '/cron/seed-counts?key=' . $key;
+        $cliPath = BASE_PATH . '/cron-seed-counts.php';
         Response::render('settings/cron_info', [
             'title'    => 'Cron Setup',
             'cronUrl'  => $url,
             'cronKey'  => $key,
+            'cliPath'  => $cliPath,
         ]);
     }
 }
