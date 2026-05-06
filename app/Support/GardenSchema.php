@@ -84,15 +84,36 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
         self::ensureColumn($db, 'seeds', 'gardener_note',  "ALTER TABLE seeds ADD COLUMN gardener_note TEXT DEFAULT NULL");
 
-        // ── New columns for harvest projection system (v3.1.74) ─────────
-        // projected_seed_prod_count = currently growing/sown + planned-with-past-date,
-        //   recomputed by daily cron and on every bed write.
-        // harvested_seed_prod_count = lifetime harvested plant_count (incremented on harvest).
-        self::ensureColumn($db, 'seeds', 'harvested_seed_prod_count', "ALTER TABLE seeds ADD COLUMN harvested_seed_prod_count INT NOT NULL DEFAULT 0");
-        self::ensureColumn($db, 'seeds', 'projected_seed_prod_count', "ALTER TABLE seeds ADD COLUMN projected_seed_prod_count INT NOT NULL DEFAULT 0");
+        // ── Harvest projection columns (v3.1.74, extended v3.1.85) ─────────
+        // projected_seed_prod_count = SUM(plants_in_ground × yield_per_plant_kg), recomputed by cron.
+        // harvested_seed_prod_count = lifetime cumulative kg harvested (incremented on each harvest event).
+        self::ensureColumn($db, 'seeds', 'harvested_seed_prod_count', "ALTER TABLE seeds ADD COLUMN harvested_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
+        self::ensureColumn($db, 'seeds', 'projected_seed_prod_count', "ALTER TABLE seeds ADD COLUMN projected_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
 
         // Drop the old seed_ground_cache (replaced by the two columns above).
         try { $db->execute("DROP TABLE IF EXISTS seed_ground_cache"); } catch (\Throwable $e) {}
+
+        // v3.1.85 migration: old INT columns stored plant counts; change to DECIMAL and reset
+        // to 0 so the cron (or manual sync) rebuilds them as yield in kg. Guarded by flag.
+        try {
+            $flagRow = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = 'seeds.yield_kg.migrated' LIMIT 1");
+            if (!$flagRow) {
+                $col = $db->fetchOne("SHOW COLUMNS FROM seeds LIKE 'projected_seed_prod_count'");
+                if ($col && stripos((string)($col['Type'] ?? ''), 'int') !== false) {
+                    $db->execute("ALTER TABLE seeds MODIFY COLUMN projected_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
+                    $db->execute("ALTER TABLE seeds MODIFY COLUMN harvested_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
+                }
+                // Old values were plant counts, not kg — wipe and let cron/sync rebuild projected.
+                $db->execute("UPDATE seeds SET projected_seed_prod_count = 0, harvested_seed_prod_count = 0");
+                $db->execute(
+                    "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+                     VALUES ('seeds.yield_kg.migrated', '1', 'text', 0, NOW())
+                     ON DUPLICATE KEY UPDATE setting_value_text = '1', updated_at = NOW()"
+                );
+            }
+        } catch (\Throwable $e) {
+            \App\Support\Logger::error('GardenSchema: yield_kg migration failed — ' . $e->getMessage());
+        }
 
         // One-time backfill — guarded by a settings flag.
         try {

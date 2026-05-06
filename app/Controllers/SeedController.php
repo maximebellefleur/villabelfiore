@@ -399,14 +399,16 @@ class SeedController
         $needs = [];
         foreach ($rows as $need) {
             $ids = self::parseSeedIds($need);
-            $agg = ['plants_in_ground' => 0, 'plants_planned' => 0];
+            $agg = ['projected_yield_kg' => 0.0, 'harvested_yield_kg' => 0.0, 'plants_planned' => 0];
             foreach ($ids as $sid) {
                 $s = $seedMap[$sid] ?? null;
                 if ($s) {
-                    $agg['plants_in_ground'] += (int)($s['projected_seed_prod_count'] ?? 0);
+                    $agg['projected_yield_kg'] += (float)($s['projected_seed_prod_count'] ?? 0);
+                    $agg['harvested_yield_kg'] += (float)($s['harvested_seed_prod_count'] ?? 0);
                 }
                 $agg['plants_planned'] += $plannedFuture[$sid] ?? 0;
             }
+            $agg['total_yield_kg'] = $agg['projected_yield_kg'] + $agg['harvested_yield_kg'];
             $harvestByYearMerged = [];
             foreach ($ids as $sid) {
                 foreach ($harvestMap[$sid] ?? [] as $hy) {

@@ -531,9 +531,13 @@ class GardenHelpers
         if (empty($seedIds)) return;
         try {
             $ph   = implode(',', array_fill(0, count($seedIds), '?'));
+            // Projected = SUM(plants_in_ground × yield_per_plant_kg).
+            // Seeds with no yield_per_plant_kg set contribute 0 — nothing can be estimated.
             $rows = $db->fetchAll(
-                "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count, 1)) AS total
+                "SELECT gp.seed_id,
+                        SUM(COALESCE(gp.plant_count, 1) * COALESCE(s.yield_per_plant_kg, 0)) AS total
                  FROM garden_plantings gp
+                 LEFT JOIN seeds s ON s.id = gp.seed_id
                  LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
                  WHERE gp.seed_id IN ($ph)
                    AND (gp.status IN ('growing','sown')
@@ -543,11 +547,11 @@ class GardenHelpers
                 $seedIds
             );
             $totals = [];
-            foreach ($rows as $r) $totals[(int)$r['seed_id']] = (int)$r['total'];
+            foreach ($rows as $r) $totals[(int)$r['seed_id']] = round((float)$r['total'], 3);
             foreach ($seedIds as $sid) {
                 $db->execute(
                     "UPDATE seeds SET projected_seed_prod_count = ? WHERE id = ?",
-                    [$totals[$sid] ?? 0, $sid]
+                    [$totals[$sid] ?? 0.0, $sid]
                 );
             }
         } catch (\Throwable $e) {}
@@ -568,16 +572,21 @@ class GardenHelpers
     }
 
     /**
-     * Increment seeds.harvested_seed_prod_count by $count (lifetime cumulative).
+     * Increment seeds.harvested_seed_prod_count by plantCount × yield_per_plant_kg (lifetime cumulative kg).
      * Called from the harvest flow alongside the seed_harvest_log INSERT.
+     * Seeds with no yield_per_plant_kg set are silently skipped — nothing to add.
      */
-    public static function addToSeedHarvested(DB $db, int $seedId, int $count): void
+    public static function addToSeedHarvested(DB $db, int $seedId, int $plantCount): void
     {
-        if ($seedId <= 0 || $count <= 0) return;
+        if ($seedId <= 0 || $plantCount <= 0) return;
         try {
+            $seed   = $db->fetchOne("SELECT yield_per_plant_kg FROM seeds WHERE id = ?", [$seedId]);
+            $yieldKg = ($seed && $seed['yield_per_plant_kg'] !== null) ? (float)$seed['yield_per_plant_kg'] : 0.0;
+            $amount  = round($plantCount * $yieldKg, 3);
+            if ($amount <= 0) return;
             $db->execute(
                 "UPDATE seeds SET harvested_seed_prod_count = harvested_seed_prod_count + ? WHERE id = ?",
-                [$count, $seedId]
+                [$amount, $seedId]
             );
         } catch (\Throwable $e) {}
     }

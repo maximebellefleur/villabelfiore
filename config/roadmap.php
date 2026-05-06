@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.85' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Family Needs: yield-based projection',
+        'features' => [
+            ['title' => 'Projected yield in kg', 'detail' => 'projected_seed_prod_count = SUM(plants_in_ground × yield_per_plant_kg). Cron and manual Sync button both use this formula. Seeds without yield_per_plant_kg set contribute 0.'],
+            ['title' => 'Harvested yield in kg', 'detail' => 'harvested_seed_prod_count now accumulates plant_count × yield_per_plant_kg at each harvest event. Total coverage = projected + harvested.'],
+            ['title' => 'Family Needs card redesign', 'detail' => 'Cards show 🌱 X kg projected, ✅ X kg harvested, and = X kg total coverage instead of a raw plant count.'],
+        ],
+    ],
+
     '3.1.84' => [
         'status'   => 'released',
         'released' => '2026-05-06',

@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.85' => [
+        'date'  => '2026-05-06',
+        'title' => 'Family Needs: yield-based projection (FAM NEEDS)',
+        'improved' => [
+            'projected_seed_prod_count now stores plants-in-ground × yield_per_plant_kg (in kg) instead of a raw plant count. The cron job and Sync button both compute this correctly.',
+            'harvested_seed_prod_count now accumulates kg at each harvest event (plant_count × yield_per_plant_kg) instead of a plant count. Seeds with no yield_per_plant_kg set contribute 0.',
+            'Family Needs cards show "🌱 X kg projected (in ground)", "✅ X kg harvested (total)", and "= X kg total coverage" instead of a unitless plant count.',
+            'Schema migration (guarded by settings flag) converts the INT columns to DECIMAL(10,3) and resets old plant-count values so the cron/sync builds correct kg figures from scratch.',
+        ],
+    ],
+
     '3.1.84' => [
         'date'  => '2026-05-06',
         'title' => 'Family Needs: Sync to ground button (FAM NEEDS)',

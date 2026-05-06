@@ -1,5 +1,11 @@
 <?php
 $unitLabels = ['kg'=>'kg','g'=>'g','units'=>'units','heads'=>'heads','bunches'=>'bunches','litres'=>'L','jars'=>'jars','other'=>'other'];
+function fmtKg(float $v): string {
+    if ($v <= 0) return '0';
+    if ($v < 0.1) return number_format($v * 1000, 0) . ' g';
+    if ($v < 1)   return number_format($v * 1000, 0) . ' g';
+    return number_format($v, $v == floor($v) ? 0 : 1) . ' kg';
+}
 // Build JS seed list for multi-select
 $seedsJs = json_encode(array_map(fn($s) => [
     'id'    => (int)$s['id'],
@@ -88,14 +94,14 @@ $seedsJs = json_encode(array_map(fn($s) => [
 <?php else: ?>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
 <?php foreach ($needs as $need):
-    $inGround      = (int)($need['plants_in_ground'] ?? 0);
+    $projectedKg   = (float)($need['projected_yield_kg'] ?? 0);
+    $harvestedKg   = (float)($need['harvested_yield_kg'] ?? 0);
+    $totalKg       = (float)($need['total_yield_kg'] ?? 0);
     $planned       = (int)($need['plants_planned'] ?? 0);
     $linkedIds     = $need['linked_seed_ids'] ?? [];
     $linkedNames   = $need['linked_seed_names'] ?? [];
     $hasSeed       = !empty($linkedIds);
-    $harvestByYear = $need['harvest_by_year'] ?? [];
-    $harvestedTotal = 0;
-    foreach ($harvestByYear as $hy) $harvestedTotal += (int)$hy['total'];
+    $hasYield      = $totalKg > 0;
 ?>
 <div class="card" id="fn-card-<?= (int)$need['id'] ?>">
     <!-- Read view -->
@@ -126,26 +132,30 @@ $seedsJs = json_encode(array_map(fn($s) => [
         </div>
         <?php endif; ?>
 
-        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= (!empty($need['notes']) || !empty($harvestByYear)) ? '10px' : '0' ?>">
-            <?php if ($inGround > 0): ?>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:<?= !empty($need['notes']) ? '10px' : '0' ?>">
+            <?php if ($projectedKg > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
-                <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= $inGround ?> in ground</span>
+                <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= fmtKg($projectedKg) ?> projected (in ground)</span>
             </div>
+            <?php endif; ?>
+            <?php if ($harvestedKg > 0): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px">
+                <span style="font-size:.78rem;font-weight:600;color:#1d4ed8">✅ <?= fmtKg($harvestedKg) ?> harvested (total)</span>
+            </div>
+            <?php endif; ?>
+            <?php if ($hasYield): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:7px">
+                <span style="font-size:.78rem;font-weight:600;color:#7c3aed">= <?= fmtKg($totalKg) ?> total coverage</span>
+            </div>
+            <?php elseif ($hasSeed): ?>
+            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0">No yield data — set kg/plant on linked seed(s)</div>
+            <?php else: ?>
+            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0">No seed linked</div>
             <?php endif; ?>
             <?php if ($planned > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px">
-                <span style="font-size:.78rem;font-weight:600;color:#d97706">📋 <?= $planned ?> planned</span>
+                <span style="font-size:.78rem;font-weight:600;color:#d97706">📋 <?= $planned ?> plants planned</span>
             </div>
-            <?php endif; ?>
-            <?php if ($inGround === 0 && $planned === 0): ?>
-            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0"><?= $hasSeed ? 'Not yet planted' : 'No seed linked' ?></div>
-            <?php endif; ?>
-            <?php if (!empty($harvestByYear)): ?>
-            <?php foreach ($harvestByYear as $hy): ?>
-            <div style="padding:5px 10px;background:#f5f5f0;border:1px solid #e2e2dc;border-radius:7px">
-                <span style="font-size:.76rem;color:var(--color-text-muted)">🌾 <?= (int)$hy['total'] ?> harvested in <?= (int)$hy['year'] ?></span>
-            </div>
-            <?php endforeach; ?>
             <?php endif; ?>
         </div>
 
