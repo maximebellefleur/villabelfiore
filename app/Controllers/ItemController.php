@@ -6,6 +6,7 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Controllers\SettingsController;
 
 class ItemController
 {
@@ -77,7 +78,7 @@ class ItemController
         $binds[] = $offset;
         $items = $db->fetchAll("SELECT * FROM items {$whereStr} ORDER BY sort_order ASC, name ASC LIMIT ? OFFSET ?", $binds);
 
-        $itemTypes = require BASE_PATH . '/config/item_types.php';
+        $itemTypes = SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
 
         // Load identification photo IDs for all items on this page in one query
         $photoMap = [];
@@ -137,7 +138,7 @@ class ItemController
     {
         $this->requireAuth();
         $db          = DB::getInstance();
-        $itemTypes   = require BASE_PATH . '/config/item_types.php';
+        $itemTypes   = SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
         $row         = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
         $customTypes = ($row && !empty($row['setting_value_json']))
             ? (json_decode($row['setting_value_json'], true) ?: [])
@@ -518,7 +519,7 @@ class ItemController
         $metaMap = [];
         foreach ($meta as $m) { $metaMap[$m['meta_key']] = $m['meta_value_text']; }
 
-        $itemTypes   = require BASE_PATH . '/config/item_types.php';
+        $itemTypes   = SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
         $row         = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'tree_types.custom' LIMIT 1");
         $customTypes = ($row && !empty($row['setting_value_json']))
             ? (json_decode($row['setting_value_json'], true) ?: [])
@@ -567,7 +568,7 @@ class ItemController
         }
 
         $currentItem  = $db->fetchOne('SELECT type FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
-        $allowedTypes = array_diff(array_keys(require BASE_PATH . '/config/item_types.php'), ['line']);
+        $allowedTypes = array_diff(array_keys(SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php')), ['line']);
         $newType      = (!empty($data['type']) && in_array($data['type'], $allowedTypes))
             ? $data['type']
             : ($currentItem['type'] ?? 'tree');

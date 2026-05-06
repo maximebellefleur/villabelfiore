@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.66' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Settings: Item Types tab',
+        'features' => [
+            ['title' => 'Item Types settings tab', 'detail' => 'All 13 built-in item types displayed in a read-only grid. Admins can add custom types with a name and emoji — stored in the DB and merged into all item dropdowns automatically.'],
+        ],
+    ],
+
     '3.1.65' => [
         'status'   => 'released',
         'released' => '2026-05-06',

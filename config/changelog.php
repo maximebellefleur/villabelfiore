@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.66' => [
+        'date'  => '2026-05-06',
+        'title' => 'Settings: Item Types tab',
+        'new' => [
+            'New "Item Types" tab in Settings shows all 13 built-in types in a read-only grid with emoji and key.',
+            'Add custom item types from the admin: enter a name and optional emoji, click Add. The type key is auto-generated and the type immediately appears in all item type dropdowns.',
+            'Custom types are stored in the database and can be deleted from the same tab.',
+        ],
+    ],
+
     '3.1.65' => [
         'date'  => '2026-05-06',
         'title' => 'Survey: skip stage + done for now',

@@ -214,6 +214,107 @@ class SettingsController
         Response::redirect('/settings/action-types');
     }
 
+    // ── Item Types ────────────────────────────────────────────────────────────
+
+    public function itemTypes(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        $builtIn = require BASE_PATH . '/config/item_types.php';
+        $custom  = self::loadCustomItemTypes();
+        Response::render('settings/item-types', [
+            'title'   => 'Item Types',
+            'builtIn' => $builtIn,
+            'custom'  => $custom,
+        ]);
+    }
+
+    public function addItemType(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+
+        $label = trim($request->post('label', ''));
+        $emoji = trim($request->post('emoji', ''));
+        if ($label === '') { flash('error', 'Name is required.'); Response::redirect('/settings/item-types'); return; }
+
+        $key = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $label));
+        $key = trim($key, '_');
+
+        $builtIn = require BASE_PATH . '/config/item_types.php';
+        $custom  = self::loadCustomItemTypes();
+        $allKeys = array_merge(array_keys($builtIn), array_column($custom, 'key'));
+        if (in_array($key, $allKeys, true)) {
+            $base = $key; $n = 2;
+            while (in_array($key, $allKeys, true)) { $key = $base . '_' . $n++; }
+        }
+
+        $custom[] = ['key' => $key, 'label' => $label, 'emoji' => $emoji ?: '📦'];
+        self::saveCustomItemTypes($custom);
+        flash('success', '"' . $label . '" added.');
+        Response::redirect('/settings/item-types');
+    }
+
+    public function deleteItemType(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $key    = $params['key'] ?? '';
+        $custom = self::loadCustomItemTypes();
+        $custom = array_values(array_filter($custom, fn($t) => $t['key'] !== $key));
+        self::saveCustomItemTypes($custom);
+        flash('success', 'Item type removed.');
+        Response::redirect('/settings/item-types');
+    }
+
+    public static function loadCustomItemTypes(): array
+    {
+        try {
+            $db  = DB::getInstance();
+            $row = $db->fetchOne("SELECT setting_value_json FROM settings WHERE setting_key = 'item_types.custom' LIMIT 1");
+            if ($row && !empty($row['setting_value_json'])) {
+                return json_decode($row['setting_value_json'], true) ?: [];
+            }
+        } catch (\Throwable $e) {}
+        return [];
+    }
+
+    private static function saveCustomItemTypes(array $types): void
+    {
+        $db  = DB::getInstance();
+        $json = json_encode(array_values($types));
+        $exists = $db->fetchOne("SELECT id FROM settings WHERE setting_key = 'item_types.custom' LIMIT 1");
+        if ($exists) {
+            $db->execute("UPDATE settings SET setting_value_json = ?, updated_at = NOW() WHERE setting_key = 'item_types.custom'", [$json]);
+        } else {
+            $db->execute("INSERT INTO settings (setting_key, setting_value_json, setting_type, is_public, created_at, updated_at) VALUES ('item_types.custom', ?, 'json', 0, NOW(), NOW())", [$json]);
+        }
+    }
+
+    public static function mergeCustomItemTypes(array $builtIn): array
+    {
+        $custom = self::loadCustomItemTypes();
+        foreach ($custom as $t) {
+            if (isset($builtIn[$t['key']])) continue;
+            $builtIn[$t['key']] = [
+                'label'                => $t['label'],
+                'emoji'                => $t['emoji'] ?? '📦',
+                'custom'               => true,
+                'allowed_parents'      => [null],
+                'allowed_children'     => [],
+                'required_meta'        => [],
+                'optional_meta'        => ['variety', 'latin_name', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type'],
+                'harvest_enabled'      => true,
+                'harvest_max_per_year' => 1,
+                'finance_enabled'      => false,
+                'mobile_asset'         => false,
+                'action_types'         => ['pruning', 'treatment', 'amendment', 'harvest', 'note'],
+                'attachment_categories'=> ['identification_photo', 'general_attachment', 'harvest_photo'],
+                'reminder_presets'     => [],
+            ];
+        }
+        return $builtIn;
+    }
+
     public function upcoming(Request $request, array $params = []): void
     {
         $this->requireAuth();

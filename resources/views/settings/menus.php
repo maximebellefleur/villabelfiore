@@ -8,6 +8,7 @@
     <a href="<?= url('/settings/harvest') ?>"       class="settings-tab" role="tab">🌾 Harvest</a>
     <a href="<?= url('/settings/storage') ?>"       class="settings-tab" role="tab">Storage</a>
     <a href="<?= url('/settings/action-types') ?>"  class="settings-tab" role="tab">Action Types</a>
+    <a href="<?= url('/settings/item-types') ?>"    class="settings-tab" role="tab">🌿 Item Types</a>
     <a href="<?= url('/settings/weather') ?>"       class="settings-tab" role="tab">🌤️ Weather</a>
     <a href="<?= url('/settings/calendar') ?>"      class="settings-tab" role="tab">📅 Calendar</a>
     <a href="<?= url('/settings/pwa') ?>"           class="settings-tab" role="tab">📱 PWA</a>
