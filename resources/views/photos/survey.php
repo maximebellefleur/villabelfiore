@@ -644,7 +644,7 @@ foreach ($stages as $i => $s) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    window.svSkip = function(stageIdx) {
+    function _doSkip(stageIdx) {
         var dot = document.getElementById('svDot_' + STAGES[stageIdx].id);
         if (dot) { dot.classList.remove('sv-active'); }
         var cur = document.getElementById('svStage_' + STAGES[stageIdx].id);
@@ -665,6 +665,21 @@ foreach ($stages as $i => $s) {
         var nextDot = document.getElementById('svDot_' + next.stage.id);
         if (nextDot) { nextDot.classList.remove('sv-done'); nextDot.classList.add('sv-active'); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.svSkip = function(stageIdx) {
+        var stage = STAGES[stageIdx];
+        var hasTempUploads = false;
+        if (stage.type === 'compass') {
+            hasTempUploads = Object.values(compassTempPromises).some(function(p) { return p !== null; });
+        } else {
+            var stPromises = stageTempPromises[stage.id] || [];
+            hasTempUploads = stPromises.some(function(p) { return p !== null; });
+        }
+        if (hasTempUploads) {
+            if (!confirm('You have a photo selected for this step. Skip anyway without saving it?')) return;
+        }
+        _doSkip(stageIdx);
     };
 
     // ── Compress ──────────────────────────────────────────────────────────────

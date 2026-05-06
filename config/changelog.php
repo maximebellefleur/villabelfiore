@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.78' => [
+        'date'  => '2026-05-06',
+        'title' => 'Survey skip guards temp uploads with confirm dialog (Task #41)',
+        'fixed' => [
+            'Tapping "Skip this for now" while a photo is selected during a survey step now shows a confirmation dialog — previously it silently discarded the selected image without warning. Skipping with no photo selected still works instantly with no dialog.',
+        ],
+    ],
+
     '3.1.77' => [
         'date'  => '2026-05-06',
         'title' => 'Single item view: gallery shows all attachments (Task #40)',

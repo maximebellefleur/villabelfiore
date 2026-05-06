@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.78' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Survey skip guards temp uploads with confirm dialog',
+        'features' => [
+            ['title' => 'Skip-with-photo confirmation', 'detail' => 'When a photo has been selected during a survey step, tapping "Skip this for now" prompts the user to confirm before discarding the upload. If no photo is selected, skip proceeds immediately with no dialog.'],
+        ],
+    ],
+
     '3.1.77' => [
         'status'   => 'released',
         'released' => '2026-05-06',
