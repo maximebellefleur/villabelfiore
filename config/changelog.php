@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.73' => [
+        'date'  => '2026-05-06',
+        'title' => 'Planting palette: A-Z scroller and search',
+        'new' => [
+            'Search field and A-Z alphabet bar added to the seed palette on the planting page. Type to filter by name/variety; tap a letter to jump to that initial. Works on mobile and desktop.',
+        ],
+    ],
+
     '3.1.72' => [
         'date'  => '2026-05-06',
         'title' => 'Survey: skip button on all steps',

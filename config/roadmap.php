@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.73' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Planting palette: A-Z scroller and search',
+        'features' => [
+            ['title' => 'Seed palette search + A-Z filter', 'detail' => 'Search field filters seeds by name/variety in real time. Alphabet bar lets you jump to a letter instantly. Unavailable letters are dimmed.'],
+        ],
+    ],
+
     '3.1.72' => [
         'status'   => 'released',
         'released' => '2026-05-06',

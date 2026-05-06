@@ -221,9 +221,22 @@ $bedId = (int)$item['id'];
   <?php if ($parentGarden && !empty($bed['lines'])): ?>
   <!-- Fixed crop palette -->
   <div class="rg-palette" id="rgPalette">
-    <div id="rgPaletteLabel" style="font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:6px">
-      Tap a line to select it, then tap a crop to plant
+    <div class="rg-palette-toolbar">
+      <div id="rgPaletteLabel" style="font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-text-muted);white-space:nowrap">
+        Tap a line to select it, then tap a crop to plant
+      </div>
+      <div class="rg-palette-search-wrap">
+        <svg class="rg-palette-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="rgPaletteSearch" class="rg-palette-search" placeholder="Search seeds…" autocomplete="off">
+        <button type="button" id="rgPaletteSearchClear" class="rg-palette-search-clear" style="display:none">✕</button>
+      </div>
     </div>
+    <div class="rg-alpha-bar" id="rgAlphaBar">
+      <?php foreach (range('A','Z') as $letter): ?>
+      <button type="button" class="rg-alpha-btn" data-letter="<?= $letter ?>"><?= $letter ?></button>
+      <?php endforeach; ?>
+    </div>
+    <div id="rgPaletteEmpty" class="rg-palette-empty" style="display:none">No seeds match</div>
     <div class="rg-palette-row">
       <?php foreach ($catalog as $c): ?>
       <button type="button" class="rg-palette-chip" draggable="true"
@@ -380,6 +393,44 @@ $bedId = (int)$item['id'];
 </style>
 
 <style>
+/* Palette toolbar (label + search) */
+.rg-palette-toolbar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.rg-palette-search-wrap {
+  position: relative; display: flex; align-items: center; flex: 1; min-width: 120px;
+}
+.rg-palette-search-icon {
+  position: absolute; left: 8px; color: var(--color-text-muted); pointer-events: none; flex-shrink: 0;
+}
+.rg-palette-search {
+  width: 100%; padding: 5px 26px 5px 26px;
+  border: 1.5px solid var(--color-border); border-radius: 999px;
+  font-size: .78rem; font-family: inherit; background: var(--color-surface);
+  color: var(--color-text); outline: none;
+}
+.rg-palette-search:focus { border-color: var(--color-primary); }
+.rg-palette-search-clear {
+  position: absolute; right: 6px; background: none; border: none; cursor: pointer;
+  font-size: .72rem; color: var(--color-text-muted); padding: 2px 4px; line-height: 1;
+}
+/* Alphabet bar */
+.rg-alpha-bar {
+  display: flex; gap: 1px; margin-bottom: 6px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.rg-alpha-bar::-webkit-scrollbar { display: none; }
+.rg-alpha-btn {
+  flex-shrink: 0; padding: 3px 5px; min-width: 20px;
+  border: none; border-radius: 5px; background: transparent;
+  font-size: .65rem; font-weight: 700; color: var(--color-text-muted);
+  cursor: pointer; font-family: inherit; transition: background .1s, color .1s;
+}
+.rg-alpha-btn:hover { background: var(--color-primary-soft); color: var(--color-primary); }
+.rg-alpha-btn.is-active { background: var(--color-primary); color: #fff; }
+.rg-alpha-btn.is-empty { opacity: .28; pointer-events: none; }
+.rg-palette-empty { padding: 8px 0; font-size: .8rem; color: var(--color-text-muted); text-align: center; }
+
 /* Drag-and-drop states */
 .rg-palette-chip[draggable] { cursor: grab; }
 .rg-palette-chip.is-dragging { opacity: .45; cursor: grabbing; transform: scale(.96); }
@@ -427,6 +478,57 @@ $bedId = (int)$item['id'];
       antagonists: $c.data('antagonists') || '',
       notes: $c.data('notes') || '',
     };
+  });
+
+  // ── Palette search + alphabet filter ─────────────────────────────
+  var _alphaActive = '';
+
+  // Mark letters that have no matching seeds as disabled
+  (function () {
+    var letters = {};
+    $('#rgPalette .rg-palette-chip').each(function () {
+      var first = ($(this).data('name') || '').charAt(0).toUpperCase();
+      if (first) letters[first] = true;
+    });
+    $('#rgAlphaBar .rg-alpha-btn').each(function () {
+      if (!letters[$(this).data('letter')]) $(this).addClass('is-empty');
+    });
+  }());
+
+  function _applyPaletteFilter() {
+    var q    = ($('#rgPaletteSearch').val() || '').toLowerCase().trim();
+    var alph = _alphaActive;
+    var anyVisible = false;
+    $('#rgPalette .rg-palette-chip').each(function () {
+      var name    = ($(this).data('name')    || '').toLowerCase();
+      var variety = ($(this).data('variety') || '').toLowerCase();
+      var matchQ  = !q    || name.indexOf(q) !== -1 || variety.indexOf(q) !== -1;
+      var matchA  = !alph || name.charAt(0).toUpperCase() === alph;
+      var show    = matchQ && matchA;
+      $(this).toggle(show);
+      if (show) anyVisible = true;
+    });
+    $('#rgPaletteEmpty').toggle(!anyVisible);
+    $('#rgPaletteSearchClear').toggle(q.length > 0);
+  }
+
+  $('#rgPaletteSearch').on('input', _applyPaletteFilter);
+
+  $('#rgPaletteSearchClear').on('click', function () {
+    $('#rgPaletteSearch').val('').trigger('input').focus();
+  });
+
+  $('#rgAlphaBar').on('click', '.rg-alpha-btn', function () {
+    var letter = $(this).data('letter');
+    if (_alphaActive === letter) {
+      _alphaActive = '';
+      $(this).removeClass('is-active');
+    } else {
+      _alphaActive = letter;
+      $('#rgAlphaBar .rg-alpha-btn').removeClass('is-active');
+      $(this).addClass('is-active');
+    }
+    _applyPaletteFilter();
   });
 
   // ── Toast ───────────────────────────────────────────────────────

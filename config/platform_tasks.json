@@ -1,5 +1,11 @@
 [
   {
+    "id": 38,
+    "title": "Planting palette: A-Z scroller and search",
+    "description": "Add a compact search field and alphabetical A-Z index bar to the seed palette on the garden bed planting page. Clicking a letter filters to seeds starting with that letter; typing in the search filters by name/variety. Works on mobile and desktop.",
+    "created_at": "2026-05-06 14:20:00"
+  },
+  {
     "id": 37,
     "title": "Survey: skip button on all steps",
     "description": "Skip this for now button was missing from the upcoming photo_text stage in the survey flow. Added skip button so every step — active or upcoming, compass or photo — can be skipped.",
