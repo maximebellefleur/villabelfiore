@@ -94,7 +94,7 @@ class GardenSchema
         try { $db->execute("DROP TABLE IF EXISTS seed_ground_cache"); } catch (\Throwable $e) {}
 
         // v3.1.85 migration: old INT columns stored plant counts; change to DECIMAL and reset
-        // to 0 so the cron (or manual sync) rebuilds them as yield in kg. Guarded by flag.
+        // to 0, then immediately rebuild projected from current bed state.
         try {
             $flagRow = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = 'seeds.yield_kg.migrated' LIMIT 1");
             if (!$flagRow) {
@@ -103,8 +103,10 @@ class GardenSchema
                     $db->execute("ALTER TABLE seeds MODIFY COLUMN projected_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
                     $db->execute("ALTER TABLE seeds MODIFY COLUMN harvested_seed_prod_count DECIMAL(10,3) NOT NULL DEFAULT 0");
                 }
-                // Old values were plant counts, not kg — wipe and let cron/sync rebuild projected.
+                // Old values were plant counts, not kg — wipe harvested (can't backfill without
+                // per-event yield snapshots). Rebuild projected immediately from current beds.
                 $db->execute("UPDATE seeds SET projected_seed_prod_count = 0, harvested_seed_prod_count = 0");
+                GardenHelpers::recalcAllSeedsProjected($db);
                 $db->execute(
                     "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
                      VALUES ('seeds.yield_kg.migrated', '1', 'text', 0, NOW())
@@ -113,6 +115,22 @@ class GardenSchema
             }
         } catch (\Throwable $e) {
             \App\Support\Logger::error('GardenSchema: yield_kg migration failed — ' . $e->getMessage());
+        }
+
+        // v3.1.86: if yield migration ran but auto-recalc was missing (bug in 3.1.85), run it now.
+        try {
+            $needsRecalc = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = 'seeds.yield_kg.migrated' LIMIT 1");
+            $alreadyDone = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = 'seeds.yield_kg.recalculated' LIMIT 1");
+            if ($needsRecalc && !$alreadyDone) {
+                GardenHelpers::recalcAllSeedsProjected($db);
+                $db->execute(
+                    "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+                     VALUES ('seeds.yield_kg.recalculated', '1', 'text', 0, NOW())
+                     ON DUPLICATE KEY UPDATE setting_value_text = '1', updated_at = NOW()"
+                );
+            }
+        } catch (\Throwable $e) {
+            Logger::error('GardenSchema: yield_kg auto-recalc failed — ' . $e->getMessage());
         }
 
         // One-time backfill — guarded by a settings flag.

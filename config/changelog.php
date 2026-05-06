@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.86' => [
+        'date'  => '2026-05-06',
+        'title' => 'Family Needs: auto-rebuild projected yield on boot (bug fix)',
+        'fixed' => [
+            'v3.1.85 migration reset projected_seed_prod_count to 0 but never rebuilt it — requiring a manual "Sync to ground" click that many users would not know to do. GardenSchema::ensure() now immediately calls recalcAllSeedsProjected() after the migration reset, and a one-time boot guard (seeds.yield_kg.recalculated) triggers the same recalc on any install that already ran the 3.1.85 migration without it.',
+            'recalcSeedsProjected and recalcAllSeedsProjected no longer swallow errors silently. Failures now log via Logger::error so they appear in Settings → Error Logs.',
+        ],
+    ],
+
     '3.1.85' => [
         'date'  => '2026-05-06',
         'title' => 'Family Needs: yield-based projection (FAM NEEDS)',

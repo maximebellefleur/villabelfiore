@@ -554,7 +554,9 @@ class GardenHelpers
                     [$totals[$sid] ?? 0.0, $sid]
                 );
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            Logger::error('recalcSeedsProjected failed — ' . $e->getMessage());
+        }
     }
 
     /**
@@ -568,7 +570,10 @@ class GardenHelpers
             if (empty($seedIds)) return 0;
             self::recalcSeedsProjected($db, $seedIds);
             return count($seedIds);
-        } catch (\Throwable $e) { return 0; }
+        } catch (\Throwable $e) {
+            Logger::error('recalcAllSeedsProjected failed — ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**

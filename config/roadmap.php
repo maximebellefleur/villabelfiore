@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.86' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Family Needs: auto-rebuild projected yield (bug fix)',
+        'features' => [
+            ['title' => 'Immediate projected yield rebuild', 'detail' => 'GardenSchema::ensure() now calls recalcAllSeedsProjected() right after the yield-kg migration, and a catch-up guard fires on any install that already ran v3.1.85 without it. No manual sync needed after updating.'],
+        ],
+    ],
+
     '3.1.85' => [
         'status'   => 'released',
         'released' => '2026-05-06',
