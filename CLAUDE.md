@@ -4,6 +4,22 @@
 
 Task statuses live exclusively in `storage/task_statuses.json` on the user's live server — that file is NOT in the repo and Claude has no access to it. There is no local trigger_ai check to run. Just proceed with the user's current request.
 
+## ⚠️ AFTER EVERY SINGLE TASK — NO EXCEPTIONS
+
+After completing **any** task — bug fix, feature, one-liner change, anything — immediately do ALL of the following before responding to the next message:
+
+1. **Bump the patch version** in `config/defaults.php` (e.g. 3.1.67 → 3.1.68). Update `version_name`.
+2. **Add a changelog entry** in `config/changelog.php` (new version, today's date, bullet points).
+3. **Add a roadmap block** in `config/roadmap.php` (`'status' => 'released'`, today's date).
+4. **Update `version.json`** to the new version number.
+5. **Run `bash build-update-zip.sh`** to rebuild the ZIP.
+6. **Commit everything** — changed source files + ZIP — with a descriptive message.
+7. **Push**: `git push -u origin HEAD:claude/create-rooted-project-RVbog`
+
+**Do this even for hotfixes.** The user upgrades the live app after every task via Settings → Update → Update Now. If there is no new ZIP with a new version number, the upgrade panel shows nothing and the fix is not deployable.
+
+**Never batch multiple tasks into one version bump.** Each task = one version increment = one push.
+
 ## Task Logging Protocol
 
 **Rule**: if the user's message starts with `(ZONE)` — e.g. `(GARDEN) fix layout`, `(SEEDS) add notes` — always log it as a task. No judgment, no exceptions. The user controls what gets logged by choosing to use the `(ZONE)` prefix.
