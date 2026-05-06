@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.76' => [
+        'date'  => '2026-05-06',
+        'title' => 'Custom item type icons everywhere (Task #39)',
+        'fixed' => [
+            'Custom item types now show their chosen emoji and color on the items list, item detail page, and map markers — previously these views had hardcoded type maps that ignored anything not built-in.',
+        ],
+        'new' => [
+            'config/item_types.php now carries emoji + color for every type (single source of truth). Views derive from the merged config so adding a new built-in or custom type lights it up everywhere automatically.',
+        ],
+    ],
+
     '3.1.75' => [
         'date'  => '2026-05-06',
         'title' => 'Planting palette: search/letter mutually exclusive (Task #38 fix)',

@@ -311,9 +311,12 @@ class ItemController
             }
         } catch (\Throwable $e) { /* item_surveys not yet created */ }
 
+        $itemTypes = SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
+
         Response::render('items/show', [
             'title'          => e($item['name']),
             'item'           => $item,
+            'itemTypes'      => $itemTypes,
             'meta'           => $metaMap,
             'attachments'    => $attachments,
             'activityLog'    => $activityLog,

@@ -447,7 +447,7 @@ class DashboardController
             }
         }
 
-        $itemTypes = require BASE_PATH . '/config/item_types.php';
+        $itemTypes = \App\Controllers\SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
 
         // Configurable boundary types (which item types can draw polygon boundaries)
         $defaultBoundaryTypes = ['garden', 'bed', 'orchard', 'zone', 'prep_zone', 'mobile_coop', 'building'];

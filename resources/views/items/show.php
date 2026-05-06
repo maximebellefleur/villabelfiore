@@ -22,22 +22,11 @@ $irrigHourPresets = [
     'custom'  => 'Custom hour…',
 ];
 
-$typeEmoji = [
-    'olive_tree'  => '🫒', 'tree' => '🌳', 'vine' => '🍇',
-    'almond_tree' => '🌰', 'garden' => '🌿', 'zone' => '🛖',
-    'orchard'     => '🏕', 'bed' => '🌱', 'line' => '〰️',
-    'prep_zone'   => '🟫', 'mobile_coop' => '🐓',
-    'building'    => '🏠', 'water_point' => '💧',
-];
-$typeColor = [
-    'olive_tree'  => '#2d6a4f', 'almond_tree' => '#92400e', 'vine' => '#6d28d9',
-    'tree'        => '#166534', 'garden' => '#0369a1', 'bed' => '#0369a1',
-    'orchard'     => '#c2410c', 'zone' => '#4338ca', 'prep_zone' => '#b45309',
-    'water_point' => '#0284c7', 'mobile_coop' => '#991b1b',
-    'building'    => '#374151', 'line' => '#1d4ed8',
-];
-$emoji     = $typeEmoji[$item['type']] ?? '📦';
-$color     = $typeColor[$item['type']] ?? '#2d6a4f';
+// Pull emoji and color from the merged item types config (built-in + custom).
+// $itemTypes is provided by ItemController.
+$_typeCfg  = $itemTypes[$item['type']] ?? [];
+$emoji     = $_typeCfg['emoji'] ?? '📦';
+$color     = $_typeCfg['color'] ?? '#2d6a4f';
 $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
 
 // Find identification photo for hero

@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.76' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Custom item type icons everywhere',
+        'features' => [
+            ['title' => 'Single source of truth for item type icons', 'detail' => 'emoji + color moved into config/item_types.php; items list, item detail, and map all read from the merged config so custom types light up everywhere.'],
+        ],
+    ],
+
     '3.1.75' => [
         'status'   => 'released',
         'released' => '2026-05-06',

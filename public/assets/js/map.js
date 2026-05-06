@@ -4,22 +4,33 @@
 
     // -------------------------------------------------------------------------
     // Type configuration: colors and icons
+    // Built from MAP_TYPE_CONFIG passed by the view (built-in + custom types).
+    // Falls back to a minimal hardcoded set if the variable isn't injected
+    // (e.g. older deployment, embedded contexts).
     // -------------------------------------------------------------------------
-    var TYPE_CONFIG = {
-        olive_tree:  { color: '#4a7c59', label: 'Olive Tree',   icon: '🫒' },
-        almond_tree: { color: '#a0785a', label: 'Almond Tree',  icon: '🌰' },
-        vine:        { color: '#7c4fa0', label: 'Vine',         icon: '🍇' },
-        tree:        { color: '#2d5a27', label: 'Tree',         icon: '🌳' },
-        garden:      { color: '#6abf69', label: 'Garden',       icon: '🥦' },
-        bed:         { color: '#c5e1a5', label: 'Garden Bed',   icon: '🌿' },
-        orchard:     { color: '#ef8c2f', label: 'Orchard',      icon: '🍊' },
-        zone:        { color: '#3c8dbc', label: 'Zone',         icon: '📐' },
-        prep_zone:   { color: '#00bcd4', label: 'Prep Zone',    icon: '🔧' },
-        water_point: { color: '#2196f3', label: 'Water Point',  icon: '💧' },
-        tool:        { color: '#9e9e9e', label: 'Tool',         icon: '🔨' },
-        mobile_coop: { color: '#795548', label: 'Mobile Coop',  icon: '🐔' },
-        building:    { color: '#607d8b', label: 'Building',     icon: '🏠' },
-    };
+    var TYPE_CONFIG = {};
+    if (typeof MAP_TYPE_CONFIG !== 'undefined' && MAP_TYPE_CONFIG && typeof MAP_TYPE_CONFIG === 'object') {
+        Object.keys(MAP_TYPE_CONFIG).forEach(function (k) {
+            var c = MAP_TYPE_CONFIG[k] || {};
+            TYPE_CONFIG[k] = { color: c.color || '#888', label: c.label || k, icon: c.emoji || '📦' };
+        });
+    } else {
+        TYPE_CONFIG = {
+            olive_tree:  { color: '#2d6a4f', label: 'Olive Tree',   icon: '🫒' },
+            almond_tree: { color: '#92400e', label: 'Almond Tree',  icon: '🌰' },
+            vine:        { color: '#6d28d9', label: 'Vine',         icon: '🍇' },
+            tree:        { color: '#166534', label: 'Tree',         icon: '🌳' },
+            garden:      { color: '#0369a1', label: 'Garden',       icon: '🌿' },
+            bed:         { color: '#0369a1', label: 'Garden Bed',   icon: '🌱' },
+            orchard:     { color: '#c2410c', label: 'Orchard',      icon: '🏕' },
+            zone:        { color: '#4338ca', label: 'Zone',         icon: '🛖' },
+            prep_zone:   { color: '#b45309', label: 'Prep Zone',    icon: '🟫' },
+            water_point: { color: '#0284c7', label: 'Water Point',  icon: '💧' },
+            mobile_coop: { color: '#991b1b', label: 'Mobile Coop',  icon: '🐓' },
+            building:    { color: '#374151', label: 'Building',     icon: '🏠' },
+            line:        { color: '#1d4ed8', label: 'Line',         icon: '〰️' },
+        };
+    }
 
     var BOUNDARY_TYPES = (typeof MAP_BOUNDARY_TYPES !== 'undefined' && Array.isArray(MAP_BOUNDARY_TYPES))
         ? MAP_BOUNDARY_TYPES

@@ -177,6 +177,20 @@ var MAP_LAND_NAME         = '<?= e($landName) ?>';
 var MAP_HAS_LAND_BOUNDARY = <?= $hasLandBoundary ? 'true' : 'false' ?>;
 var MAP_LAND_BOUNDARY     = <?= $landBoundaryJson ?>;
 var MAP_BOUNDARY_TYPES    = <?= json_encode($boundaryTypes) ?>;
+
+// Full item-type config (built-in + custom) — emoji, color, label.
+// Lets map.js pick up custom types added via Settings → Item Types.
+var MAP_TYPE_CONFIG = <?php
+    $_mtc = [];
+    foreach ($itemTypes as $_k => $_c) {
+        $_mtc[$_k] = [
+            'label' => $_c['label'] ?? ucwords(str_replace('_', ' ', $_k)),
+            'emoji' => $_c['emoji'] ?? '📦',
+            'color' => $_c['color'] ?? '#888',
+        ];
+    }
+    echo json_encode($_mtc, JSON_UNESCAPED_UNICODE);
+?>;
 </script>
 <script>
 (function () {

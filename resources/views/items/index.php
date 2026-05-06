@@ -1,19 +1,14 @@
 <?php
 $csrfToken = \App\Support\CSRF::getToken();
-$typeEmoji = [
-    'olive_tree'  => '🫒', 'tree' => '🌳', 'vine' => '🍇',
-    'almond_tree' => '🌰', 'garden' => '🌿', 'zone' => '🛖',
-    'orchard'     => '🏕', 'bed' => '🌱', 'line' => '〰️',
-    'prep_zone'   => '🟫', 'mobile_coop' => '🐓',
-    'building'    => '🏠', 'water_point' => '💧',
-];
-$typeColor = [
-    'olive_tree'  => '#2d6a4f', 'almond_tree' => '#92400e', 'vine' => '#6d28d9',
-    'tree'        => '#166534', 'garden' => '#0369a1', 'bed' => '#0369a1',
-    'orchard'     => '#c2410c', 'zone' => '#4338ca', 'prep_zone' => '#b45309',
-    'water_point' => '#0284c7', 'mobile_coop' => '#991b1b',
-    'building'    => '#374151', 'line' => '#1d4ed8',
-];
+
+// Build emoji/color maps from the merged item types config (built-in + custom).
+// $itemTypes is provided by ItemController and already includes custom types.
+$typeEmoji = [];
+$typeColor = [];
+foreach ($itemTypes as $_tk => $_tc) {
+    $typeEmoji[$_tk] = $_tc['emoji'] ?? '📦';
+    $typeColor[$_tk] = $_tc['color'] ?? '#2d6a4f';
+}
 ?>
 <div class="items-page">
 
@@ -181,8 +176,8 @@ var _loading   = false;
 var _distSortActive = false;
 var _filters   = <?= json_encode(['type' => $filters['type'], 'status' => $filters['status'], 'search' => $filters['search']]) ?>;
 
-var TYPE_COLOR = {olive_tree:'#2d6a4f',almond_tree:'#92400e',vine:'#6d28d9',tree:'#166534',garden:'#0369a1',bed:'#0369a1',orchard:'#c2410c',zone:'#4338ca',prep_zone:'#b45309',water_point:'#0284c7',mobile_coop:'#991b1b',building:'#374151',line:'#1d4ed8'};
-var TYPE_EMOJI = {olive_tree:'🫒',tree:'🌳',vine:'🍇',almond_tree:'🌰',garden:'🌿',zone:'🛖',orchard:'🏕',bed:'🌱','line':'〰️',prep_zone:'🟫',mobile_coop:'🐓',building:'🏠',water_point:'💧'};
+var TYPE_COLOR = <?= json_encode($typeColor, JSON_UNESCAPED_UNICODE) ?>;
+var TYPE_EMOJI = <?= json_encode($typeEmoji, JSON_UNESCAPED_UNICODE) ?>;
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 

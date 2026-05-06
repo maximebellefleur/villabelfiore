@@ -1,5 +1,11 @@
 [
   {
+    "id": 39,
+    "title": "Custom item type icons everywhere (item types icon)",
+    "description": "Custom item type emoji and color now flow through the items list, item detail page, and map markers. Built emoji+color into config/item_types.php (single source of truth) and made views derive from the merged types array — removed all hardcoded $typeEmoji / $typeColor / TYPE_CONFIG maps.",
+    "created_at": "2026-05-06 14:25:00"
+  },
+  {
     "id": 38,
     "title": "Planting palette: A-Z scroller and search",
     "description": "Add a compact search field and alphabetical A-Z index bar to the seed palette on the garden bed planting page. Clicking a letter filters to seeds starting with that letter; typing in the search filters by name/variety. Works on mobile and desktop. Fix (2026-05-06): the two filters are now mutually exclusive — typing clears any active letter, clicking a letter clears the search field.",
