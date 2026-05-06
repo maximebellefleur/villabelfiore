@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.63' => [
+        'date'  => '2026-05-06',
+        'title' => 'Fix item detail page crash',
+        'fixed' => [
+            'Item detail page showed "Something went wrong" due to an orphaned endif left from the v3.1.62 redesign.',
+        ],
+    ],
+
     '3.1.62' => [
         'date'  => '2026-05-05',
         'title' => 'Item detail redesign + garden reorder fix',

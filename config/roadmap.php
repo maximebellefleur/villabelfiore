@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.63' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Fix item detail page crash',
+        'features' => [
+            ['title' => 'Item detail page crash fix', 'detail' => 'Orphaned endif tag from v3.1.62 redesign caused a PHP parse error on all item detail pages.'],
+        ],
+    ],
+
     '3.1.62' => [
         'status'   => 'released',
         'released' => '2026-05-05',
