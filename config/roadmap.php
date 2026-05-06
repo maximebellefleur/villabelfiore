@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.71' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Bed overview respects garden sort order',
+        'features' => [
+            ['title' => 'Bed schematic sort order', 'detail' => 'Garden groups in the Bed Overview now appear in drag-reorder order. Beds within each garden also follow sort_order.'],
+        ],
+    ],
+
     '3.1.70' => [
         'status'   => 'released',
         'released' => '2026-05-06',

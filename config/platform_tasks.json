@@ -212,7 +212,7 @@
   {
     "id": 1,
     "title": "Garden bed reordering + action log fix",
-    "description": "Beds within a garden can be drag-reordered via sort_order on items. Action log reminder INSERT wrapped in try/catch so the log always saves even if reminder fails. Mobile fix: added touch handlers with elementFromPoint. Save-not-persisting fix (2026-05-02): touchend was missing e.preventDefault() — browser fired a synthetic click on the <a> bed row under the finger, navigating away and cancelling the in-flight fetch before it completed.",
+    "description": "Beds within a garden can be drag-reordered via sort_order on items. Action log reminder INSERT wrapped in try/catch so the log always saves even if reminder fails. Mobile fix: added touch handlers with elementFromPoint. Save-not-persisting fix (2026-05-02): touchend was missing e.preventDefault() — browser fired a synthetic click on the <a> bed row under the finger, navigating away and cancelling the in-flight fetch before it completed. Bed Overview fix (2026-05-06): garden groups and beds within them now iterate in sort_order — garden query updated to ORDER BY ISNULL(sort_order), sort_order ASC in both GardenController and DashboardController; partial updated to iterate gardens in schematicGardens key order.",
     "created_at": "2026-04-30 11:35:00"
   }
 ]

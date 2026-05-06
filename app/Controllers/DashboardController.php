@@ -142,7 +142,7 @@ class DashboardController
                  LEFT JOIN item_meta m ON m.item_id = i.id
                    AND m.meta_key IN ('bed_length_m','bed_width_m','bed_rows','line_direction')
                  WHERE i.type = 'bed' AND i.deleted_at IS NULL AND i.status = 'active'
-                 GROUP BY i.id ORDER BY i.parent_id, i.name"
+                 GROUP BY i.id ORDER BY i.parent_id, i.sort_order ASC, i.name ASC"
             );
             $bedIds = array_column($rawBeds, 'id');
             $plantingsByBed = [];
@@ -160,7 +160,7 @@ class DashboardController
                 $schematicBeds[$bed['id']] = array_merge($bed, ['plantings' => $plantingsByBed[$bed['id']] ?? []]);
             }
             $gardenRows = $db->fetchAll(
-                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY name"
+                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY ISNULL(sort_order), sort_order ASC, name ASC"
             );
             foreach ($gardenRows as $g) $schematicGardens[$g['id']] = $g['name'];
         } catch (\Throwable $e) { /* non-fatal — table may not exist yet */ }

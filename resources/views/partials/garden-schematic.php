@@ -99,8 +99,15 @@ $_schTitle = $schematicTitle ?? 'Bed Overview';
 
 $_bedsByGarden = [];
 foreach ($schematicBeds as $_bed) {
-    $_bedsByGarden[$_bed['parent_id'] ?? 0][] = $_bed;
+    $_bedsByGarden[(int)($_bed['parent_id'] ?? 0)][] = $_bed;
 }
+
+// Iterate gardens in their sort order (from controller), unassigned last
+$_orderedGardenIds = [];
+foreach ($schematicGardens as $_gId => $_gName) {
+    if (!empty($_bedsByGarden[(int)$_gId])) $_orderedGardenIds[] = (int)$_gId;
+}
+if (!empty($_bedsByGarden[0])) $_orderedGardenIds[] = 0;
 
 $_totalBeds    = count($schematicBeds);
 $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0));
@@ -313,7 +320,8 @@ $_totalGardens = count(array_filter(array_keys($_bedsByGarden), fn($k) => $k > 0
         </div>
 
         <div class="gs-groups-flex">
-        <?php foreach ($_bedsByGarden as $_gardenId => $_beds): ?>
+        <?php foreach ($_orderedGardenIds as $_gardenId):
+              $_beds = $_bedsByGarden[$_gardenId] ?? []; if (empty($_beds)) continue; ?>
         <div class="gs-group">
             <div class="gs-group-head">
                 <div class="gs-diamond"></div>

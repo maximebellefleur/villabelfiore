@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.71' => [
+        'date'  => '2026-05-06',
+        'title' => 'Bed overview respects garden sort order',
+        'fixed' => [
+            'Bed Overview schematic now shows gardens in the same order as your drag-reorder on the Gardens page. Beds within each garden also follow sort order.',
+        ],
+    ],
+
     '3.1.70' => [
         'date'  => '2026-05-06',
         'title' => 'Items list: batch change item type',

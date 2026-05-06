@@ -195,7 +195,7 @@ class GardenController
 
             // Gardens for grouping headers
             $gardenRows = $db->fetchAll(
-                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY name"
+                "SELECT id, name FROM items WHERE type='garden' AND deleted_at IS NULL AND status='active' ORDER BY ISNULL(sort_order), sort_order ASC, name ASC"
             );
             foreach ($gardenRows as $g) $schematicGardens[$g['id']] = $g['name'];
         } catch (\Throwable $e) { /* non-fatal */ }

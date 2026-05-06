@@ -349,6 +349,7 @@ foreach ($stages as $i => $s) {
                 onclick="svSubmitStage('<?= $stage['id'] ?>',<?= $stage['count'] ?>,<?= $si ?>,'<?= $stage['cat'] ?>','<?= $stage['action_type'] ?>',<?= !empty($stage['scale_label']) ? 'true' : 'false' ?>,<?= $isLast ? 'true' : 'false' ?>)">
             📤 Upload & <?= $isLast ? 'Finish' : 'Continue' ?>
         </button>
+        <button type="button" class="sv-skip" onclick="svSkip(<?= $si ?>)">Skip this for now</button>
     </div>
     <?php endif; ?>
 </div>
