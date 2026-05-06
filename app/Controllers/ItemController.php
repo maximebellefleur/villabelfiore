@@ -752,6 +752,44 @@ class ItemController
     // API
     // -------------------------------------------------------------------------
 
+    public function apiBatchChangeType(Request $request, array $params = []): void
+    {
+        if (empty($_SESSION['user_id'])) { Response::json(['success' => false, 'message' => 'Unauthenticated'], 401); return; }
+        if (!CSRF::validateToken($request->post('_token', ''))) { Response::json(['success' => false, 'message' => 'Invalid token'], 403); return; }
+
+        $ids     = $request->post('ids', []);
+        $newType = trim($request->post('type', ''));
+        if (!is_array($ids) || empty($ids) || $newType === '') {
+            Response::json(['success' => false, 'message' => 'Missing ids or type']); return;
+        }
+
+        $allTypes = SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
+        if (!isset($allTypes[$newType])) { Response::json(['success' => false, 'message' => 'Invalid type']); return; }
+
+        $db      = DB::getInstance();
+        $userId  = (int)$_SESSION['user_id'];
+        $updated = 0;
+
+        foreach ($ids as $rawId) {
+            $id   = (int)$rawId;
+            $item = $db->fetchOne('SELECT id, type, name FROM items WHERE id = ? AND deleted_at IS NULL', [$id]);
+            if (!$item) continue;
+            $oldType = $item['type'];
+            if ($oldType === $newType) continue;
+            $db->execute('UPDATE items SET type = ?, updated_at = NOW() WHERE id = ?', [$newType, $id]);
+            $db->execute(
+                'INSERT INTO activity_log (item_id, action_type, action_label, description, performed_by, performed_at)
+                 VALUES (?, ?, ?, ?, ?, NOW())',
+                [$id, 'note', 'type_change',
+                 'Type changed from ' . $oldType . ' to ' . $newType,
+                 $userId]
+            );
+            $updated++;
+        }
+
+        Response::json(['success' => true, 'updated' => $updated]);
+    }
+
     public function apiNearby(Request $request, array $params = []): void
     {
         if (empty($_SESSION['user_id'])) { Response::json(['success' => false, 'message' => 'Unauthenticated'], 401); }

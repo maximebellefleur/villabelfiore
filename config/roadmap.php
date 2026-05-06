@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.70' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Items list: batch change item type',
+        'features' => [
+            ['title' => 'Batch item type change', 'detail' => 'Select multiple items via checkboxes and reassign their type in one action. Each item gets an individual activity log entry.'],
+        ],
+    ],
+
     '3.1.69' => [
         'status'   => 'released',
         'released' => '2026-05-06',

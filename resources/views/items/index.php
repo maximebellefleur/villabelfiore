@@ -1,4 +1,5 @@
 <?php
+$csrfToken = \App\Support\CSRF::getToken();
 $typeEmoji = [
     'olive_tree'  => '🫒', 'tree' => '🌳', 'vine' => '🍇',
     'almond_tree' => '🌰', 'garden' => '🌿', 'zone' => '🛖',
@@ -64,8 +65,26 @@ $typeColor = [
         <button type="button" class="items-sort-btn active" data-sort="default">Name</button>
         <button type="button" class="items-sort-btn" data-sort="date" id="sortByDate">🕐 Newest</button>
         <button type="button" class="items-sort-btn" data-sort="distance" id="sortByDist">📍 Distance</button>
+        <button type="button" class="items-sort-btn items-select-toggle" id="batchToggle" style="margin-left:auto">☑ Select</button>
     </div>
 </form>
+
+<!-- Batch action bar (hidden until items selected) -->
+<div class="batch-bar" id="batchBar" style="display:none">
+    <span class="batch-bar-count" id="batchCount">0 selected</span>
+    <select class="batch-bar-select" id="batchTypeSelect">
+        <option value="">— Change type to… —</option>
+        <?php
+        $allTypesForBatch = \App\Controllers\SettingsController::mergeCustomItemTypes(require BASE_PATH . '/config/item_types.php');
+        foreach ($allTypesForBatch as $tKey => $tCfg):
+            if (!empty($tCfg['hidden_from_create'])) continue;
+        ?>
+        <option value="<?= e($tKey) ?>"><?= e($tCfg['label']) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <button type="button" class="btn btn-primary btn-sm" id="batchApplyBtn" disabled onclick="batchApply()">Apply</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="batchCancel()">Cancel</button>
+</div>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
 
@@ -90,9 +109,12 @@ $typeColor = [
         $photoId = $photoMap[(int)$item['id']] ?? null;
     ?>
     <div class="item-row <?= $item['status'] !== 'active' ? 'item-row--inactive' : '' ?>"
+         data-id="<?= (int)$item['id'] ?>"
          data-lat="<?= $hasGps ? e($item['gps_lat']) : '' ?>"
-         data-lng="<?= $hasGps ? e($item['gps_lng']) : '' ?>">
+         data-lng="<?= $hasGps ? e($item['gps_lng']) : '' ?>"
+         data-created="<?= e($item['created_at'] ?? '') ?>">
 
+        <input type="checkbox" class="item-batch-cb" value="<?= (int)$item['id'] ?>">
         <!-- Left accent bar -->
         <div class="item-row-accent" style="background:<?= $color ?>"></div>
 
@@ -152,6 +174,7 @@ $typeColor = [
 
 <script>
 var BASE_URL   = '<?= url('/') ?>';
+var CSRF_TOKEN = '<?= e($csrfToken) ?>';
 var _curPage   = <?= $page ?>;
 var _lastPage  = <?= $lastPage ?>;
 var _loading   = false;
@@ -186,7 +209,8 @@ function buildRow(item, idx) {
     el.dataset.origIndex = idx;
     el.style.animationDelay = (idx * 40) + 'ms';
     el.innerHTML =
-        '<div class="item-row-accent" style="background:'+color+'"></div>'
+        '<input type="checkbox" class="item-batch-cb" value="'+item.id+'">'
+      + '<div class="item-row-accent" style="background:'+color+'"></div>'
       + '<a href="'+BASE_URL+'items/'+item.id+'" class="item-row-main">'
       +   photoHtml
       +   '<div class="item-row-body">'
@@ -296,6 +320,7 @@ function doDateSort() {
 
 document.querySelectorAll('.items-sort-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
+        if (!btn.dataset.sort) return;
         document.querySelectorAll('.items-sort-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         try { localStorage.setItem(SORT_KEY, btn.dataset.sort); } catch (e) {}
@@ -372,6 +397,87 @@ function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
 document.getElementById('itemsFilter').addEventListener('submit', function() {
     _curPage = 0; _lastPage = 1;
 });
+
+// ── Batch select ──────────────────────────────────────────────────
+var _batchMode   = false;
+var _selectedIds = new Set();
+
+document.getElementById('batchToggle').addEventListener('click', function() {
+    _batchMode = !_batchMode;
+    document.body.classList.toggle('batch-mode', _batchMode);
+    this.classList.toggle('active', _batchMode);
+    document.getElementById('batchBar').style.display = _batchMode ? 'flex' : 'none';
+    if (!_batchMode) _clearBatchState();
+});
+
+function _clearBatchState() {
+    _selectedIds.clear();
+    document.querySelectorAll('.item-batch-cb').forEach(function(cb) { cb.checked = false; });
+    document.querySelectorAll('.item-row--selected').forEach(function(r) { r.classList.remove('item-row--selected'); });
+    document.getElementById('batchTypeSelect').value = '';
+    _updateBatchBar();
+}
+
+function _updateBatchBar() {
+    var count = _selectedIds.size;
+    document.getElementById('batchCount').textContent = count + ' selected';
+    var typeVal = document.getElementById('batchTypeSelect').value;
+    document.getElementById('batchApplyBtn').disabled = count === 0 || !typeVal;
+}
+
+document.getElementById('batchTypeSelect').addEventListener('change', _updateBatchBar);
+
+// Checkbox toggle via delegation
+document.getElementById('itemsList').addEventListener('change', function(e) {
+    if (!e.target.classList.contains('item-batch-cb')) return;
+    var row = e.target.closest('.item-row');
+    if (e.target.checked) {
+        _selectedIds.add(e.target.value);
+        if (row) row.classList.add('item-row--selected');
+    } else {
+        _selectedIds.delete(e.target.value);
+        if (row) row.classList.remove('item-row--selected');
+    }
+    _updateBatchBar();
+});
+
+// Clicking row main in batch mode toggles checkbox instead of navigating
+document.getElementById('itemsList').addEventListener('click', function(e) {
+    if (!_batchMode) return;
+    var main = e.target.closest('.item-row-main');
+    if (!main) return;
+    e.preventDefault();
+    var cb = main.closest('.item-row').querySelector('.item-batch-cb');
+    if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+});
+
+function batchApply() {
+    var typeVal = document.getElementById('batchTypeSelect').value;
+    if (!typeVal || _selectedIds.size === 0) return;
+    var btn = document.getElementById('batchApplyBtn');
+    btn.disabled = true; btn.textContent = 'Applying…';
+    var body = '_token=' + encodeURIComponent(CSRF_TOKEN) + '&type=' + encodeURIComponent(typeVal)
+             + Array.from(_selectedIds).map(function(id) { return '&ids[]=' + encodeURIComponent(id); }).join('');
+    fetch(BASE_URL + 'api/items/batch-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { window.location.reload(); }
+        else { alert(d.message || 'Something went wrong'); btn.disabled = false; btn.textContent = 'Apply'; }
+    })
+    .catch(function() { alert('Request failed'); btn.disabled = false; btn.textContent = 'Apply'; });
+}
+
+function batchCancel() {
+    _batchMode = false;
+    document.body.classList.remove('batch-mode');
+    document.getElementById('batchToggle').classList.remove('active');
+    document.getElementById('batchBar').style.display = 'none';
+    _clearBatchState();
+}
 </script>
 
 <style>
@@ -491,4 +597,24 @@ document.getElementById('itemsFilter').addEventListener('submit', function() {
     animation: spinnerSpin 0.7s linear infinite;
 }
 @keyframes spinnerSpin { to { transform: rotate(360deg); } }
+
+/* Batch mode */
+.item-batch-cb { display: none; flex-shrink: 0; width: 18px; height: 18px; margin: auto 0 auto 10px; cursor: pointer; accent-color: var(--color-primary); }
+.batch-mode .item-batch-cb { display: block; }
+.item-row--selected { background: var(--color-primary-soft) !important; }
+.batch-mode .item-row-main { cursor: pointer; }
+.batch-bar {
+    position: sticky; bottom: 16px; z-index: 100;
+    margin: 12px 0 0; background: var(--color-surface-raised);
+    border: 1.5px solid var(--color-primary); border-radius: var(--radius-xl);
+    padding: 10px 16px; display: flex; align-items: center; gap: var(--spacing-3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+}
+.batch-bar-count { font-size: 0.85rem; font-weight: 700; color: var(--color-text); flex-shrink: 0; white-space: nowrap; }
+.batch-bar-select {
+    flex: 1; min-width: 0; padding: 8px 12px;
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-pill);
+    font-size: 0.85rem; font-family: inherit;
+    background: var(--color-surface); color: var(--color-text);
+}
 </style>

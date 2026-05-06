@@ -278,6 +278,7 @@ $router->get('/api/csrf',                      'TaskController@csrfEndpoint');
 $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');
 $router->post('/api/items',                    'ItemController@apiStore');
+$router->post('/api/items/batch-type',         'ItemController@apiBatchChangeType');
 $router->post('/api/items/{id}/actions',       'ItemController@apiAddAction');
 $router->post('/api/ai/identify-seed',         'AiController@identifySeed');
 $router->get('/api/ai/gemini-models',          'AiController@geminiModels');

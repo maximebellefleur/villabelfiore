@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.70' => [
+        'date'  => '2026-05-06',
+        'title' => 'Items list: batch change item type',
+        'new' => [
+            'Select multiple items with checkboxes and reassign their type in one action. Each affected item gets an individual activity log entry recording the type change.',
+        ],
+    ],
+
     '3.1.69' => [
         'date'  => '2026-05-06',
         'title' => 'Items list: sort by date newest first',
