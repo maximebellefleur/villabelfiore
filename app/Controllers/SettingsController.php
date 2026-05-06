@@ -240,12 +240,18 @@ class SettingsController
         $key = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $label));
         $key = trim($key, '_');
 
-        $builtIn = require BASE_PATH . '/config/item_types.php';
-        $custom  = self::loadCustomItemTypes();
-        $allKeys = array_merge(array_keys($builtIn), array_column($custom, 'key'));
-        if (in_array($key, $allKeys, true)) {
-            $base = $key; $n = 2;
-            while (in_array($key, $allKeys, true)) { $key = $base . '_' . $n++; }
+        $builtIn    = require BASE_PATH . '/config/item_types.php';
+        $custom     = self::loadCustomItemTypes();
+        $allKeys    = array_merge(array_keys($builtIn), array_column($custom, 'key'));
+        $allLabels  = array_merge(
+            array_map(fn($c) => strtolower($c['label']), $custom),
+            array_map(fn($c) => strtolower($c['label']), $builtIn)
+        );
+
+        if (in_array($key, $allKeys, true) || in_array(strtolower($label), $allLabels, true)) {
+            flash('error', '"' . $label . '" already exists.');
+            Response::redirect('/settings/item-types');
+            return;
         }
 
         $custom[] = ['key' => $key, 'label' => $label, 'emoji' => $emoji ?: '📦'];
