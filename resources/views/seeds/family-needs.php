@@ -28,7 +28,13 @@ $seedsJs = json_encode(array_map(fn($s) => [
 
 <div class="page-header">
     <h1 class="page-title">👨‍👩‍👧 Family Needs</h1>
-    <a href="<?= url('/seeds') ?>" class="btn btn-secondary">&larr; Seed Catalog</a>
+    <div style="display:flex;gap:8px;align-items:center">
+        <form method="POST" action="<?= url('/seeds/family-needs/sync') ?>" style="margin:0">
+            <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
+            <button type="submit" class="btn btn-secondary" onclick="this.disabled=true;this.textContent='Syncing…';this.form.submit()">🔄 Sync to ground</button>
+        </form>
+        <a href="<?= url('/seeds') ?>" class="btn btn-secondary">&larr; Seed Catalog</a>
+    </div>
 </div>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>

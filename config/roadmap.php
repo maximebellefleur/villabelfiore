@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.84' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Family Needs: Sync to ground button',
+        'features' => [
+            ['title' => 'Manual sync trigger on Family Needs', 'detail' => 'New "Sync to ground" button in the Family Needs header. Posts to /seeds/family-needs/sync (auth-protected, CSRF-checked), calls GardenHelpers::recalcAllSeedsProjected() in-process, then redirects back with a flash showing how many seeds were recomputed. No cron key exposure needed.'],
+        ],
+    ],
+
     '3.1.83' => [
         'status'   => 'released',
         'released' => '2026-05-06',

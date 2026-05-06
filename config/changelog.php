@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.84' => [
+        'date'  => '2026-05-06',
+        'title' => 'Family Needs: Sync to ground button (FAM NEEDS)',
+        'new' => [
+            'Added a "Sync to ground" button on the Family Needs page. Clicking it triggers GardenHelpers::recalcAllSeedsProjected() directly (no cron key required — session-authenticated) and reloads the page so projected_seed_prod_count values reflect the current garden state immediately.',
+        ],
+    ],
+
     '3.1.83' => [
         'date'  => '2026-05-06',
         'title' => 'Family Needs: list always renders + schema errors logged (FAM NEEDS bug)',

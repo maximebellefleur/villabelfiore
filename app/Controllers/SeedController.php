@@ -533,6 +533,23 @@ class SeedController
         Response::redirect('/seeds/family-needs');
     }
 
+    public function syncFamilyNeeds(Request $request, array $params = []): void
+    {
+        $this->requireAuth();
+        CSRF::validate($request->post('_token', ''));
+        $db = DB::getInstance();
+        $this->ensureTables($db);
+        try { GardenSchema::ensure($db); } catch (\Throwable $e) {}
+        try {
+            $count = GardenHelpers::recalcAllSeedsProjected($db);
+            flash('success', '✅ Ground sync complete — ' . $count . ' seed(s) recomputed.');
+        } catch (\Throwable $e) {
+            \App\Support\Logger::error('Family needs sync failed — ' . $e->getMessage());
+            flash('error', 'Sync failed: ' . $e->getMessage());
+        }
+        Response::redirect('/seeds/family-needs');
+    }
+
     // ── Buy list / out-of-seed ────────────────────────────────────────────────
 
     public function toggleRestock(Request $request, array $params = []): void

@@ -213,6 +213,7 @@ $router->get('/seeds/create',             'SeedController@create');
 $router->get('/seeds/buy-list',           'SeedController@buyList');
 $router->get('/seeds/family-needs',       'SeedController@familyNeeds');
 $router->post('/seeds/family-needs',      'SeedController@storeFamilyNeed');
+$router->post('/seeds/family-needs/sync', 'SeedController@syncFamilyNeeds');
 $router->post('/seeds',                   'SeedController@store');
 $router->get('/seeds/{id}',               'SeedController@show');
 $router->get('/seeds/{id}/edit',          'SeedController@edit');
