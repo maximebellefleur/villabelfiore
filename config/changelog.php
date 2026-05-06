@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.81' => [
+        'date'  => '2026-05-06',
+        'title' => 'Item map zooms to max-2 on show page',
+        'improved' => [
+            'The mini-map on the item detail page now opens at zoom 20 (maxZoom − 2) instead of the generic zoom 16, giving a much closer satellite view of the item\'s exact position.',
+        ],
+    ],
+
     '3.1.80' => [
         'date'  => '2026-05-06',
         'title' => 'Custom item types: color picker for map markers (Task #39 fix)',

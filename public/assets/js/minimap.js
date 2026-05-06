@@ -20,8 +20,10 @@
 
     if (!readOnly && (!latInput || !lngInput)) return;
 
-    var miniMap = L.map('miniMap', { zoomControl: true, dragging: !readOnly, scrollWheelZoom: !readOnly, maxZoom: 22 })
-                   .setView([initialLat, initialLng], hasCoords ? 16 : 5);
+    var MAX_ZOOM  = 22;
+    var initZoom  = hasCoords ? (readOnly ? MAX_ZOOM - 2 : 16) : 5;
+    var miniMap = L.map('miniMap', { zoomControl: true, dragging: !readOnly, scrollWheelZoom: !readOnly, maxZoom: MAX_ZOOM })
+                   .setView([initialLat, initialLng], initZoom);
 
     // Satellite by default — Google Maps (same source as main map, zoom 21)
     L.tileLayer(

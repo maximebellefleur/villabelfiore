@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.81' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Item map zooms to max-2 on show page',
+        'features' => [
+            ['title' => 'Closer default zoom on item detail map', 'detail' => 'Mini-map on the item detail page initialises at zoom 20 (maxZoom − 2) so the satellite view is as close as possible while still showing surrounding context. The edit-form map keeps its existing zoom 16.'],
+        ],
+    ],
+
     '3.1.80' => [
         'status'   => 'released',
         'released' => '2026-05-06',
