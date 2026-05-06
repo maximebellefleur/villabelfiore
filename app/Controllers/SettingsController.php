@@ -286,14 +286,14 @@ class SettingsController
 
     private static function saveCustomItemTypes(array $types): void
     {
-        $db  = DB::getInstance();
+        $db   = DB::getInstance();
         $json = json_encode(array_values($types));
-        $exists = $db->fetchOne("SELECT id FROM settings WHERE setting_key = 'item_types.custom' LIMIT 1");
-        if ($exists) {
-            $db->execute("UPDATE settings SET setting_value_json = ?, updated_at = NOW() WHERE setting_key = 'item_types.custom'", [$json]);
-        } else {
-            $db->execute("INSERT INTO settings (setting_key, setting_value_json, setting_type, is_public, created_at, updated_at) VALUES ('item_types.custom', ?, 'json', 0, NOW(), NOW())", [$json]);
-        }
+        $db->execute(
+            "INSERT INTO settings (setting_key, setting_value_json, value_type, autoload, updated_at)
+             VALUES ('item_types.custom', ?, 'json', 0, NOW())
+             ON DUPLICATE KEY UPDATE setting_value_json = VALUES(setting_value_json), updated_at = NOW()",
+            [$json]
+        );
     }
 
     public static function mergeCustomItemTypes(array $builtIn): array
