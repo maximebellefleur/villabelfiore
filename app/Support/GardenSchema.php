@@ -84,14 +84,27 @@ class GardenSchema
         self::ensureColumn($db, 'seeds', 'harvest_months', "ALTER TABLE seeds ADD COLUMN harvest_months JSON DEFAULT NULL");
         self::ensureColumn($db, 'seeds', 'gardener_note',  "ALTER TABLE seeds ADD COLUMN gardener_note TEXT DEFAULT NULL");
 
+        // ── New columns for harvest projection system (v3.1.74) ─────────
+        // projected_seed_prod_count = currently growing/sown + planned-with-past-date,
+        //   recomputed by daily cron and on every bed write.
+        // harvested_seed_prod_count = lifetime harvested plant_count (incremented on harvest).
+        self::ensureColumn($db, 'seeds', 'harvested_seed_prod_count', "ALTER TABLE seeds ADD COLUMN harvested_seed_prod_count INT NOT NULL DEFAULT 0");
+        self::ensureColumn($db, 'seeds', 'projected_seed_prod_count', "ALTER TABLE seeds ADD COLUMN projected_seed_prod_count INT NOT NULL DEFAULT 0");
+
+        // Drop the old seed_ground_cache (replaced by the two columns above).
+        try { $db->execute("DROP TABLE IF EXISTS seed_ground_cache"); } catch (\Throwable $e) {}
+
+        // One-time backfill — guarded by a settings flag.
         try {
-            $db->execute("CREATE TABLE IF NOT EXISTS seed_ground_cache (
-                seed_id    BIGINT UNSIGNED NOT NULL,
-                in_ground  INT NOT NULL DEFAULT 0,
-                planned    INT NOT NULL DEFAULT 0,
-                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (seed_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $row = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = 'seeds.prod_counts.backfilled' LIMIT 1");
+            if (!$row) {
+                self::backfillSeedProdCounts($db);
+                $db->execute(
+                    "INSERT INTO settings (setting_key, setting_value_text, value_type, autoload, updated_at)
+                     VALUES ('seeds.prod_counts.backfilled', '1', 'text', 0, NOW())
+                     ON DUPLICATE KEY UPDATE setting_value_text = '1', updated_at = NOW()"
+                );
+            }
         } catch (\Throwable $e) {}
 
         try {
@@ -167,6 +180,37 @@ class GardenSchema
         } catch (\Throwable $e) {
             // table missing or already dropped
         }
+    }
+
+    /**
+     * One-time migration: populate harvested_seed_prod_count from seed_harvest_log
+     * and projected_seed_prod_count from current garden_plantings. Idempotent for
+     * a single run — guarded by settings flag in ensure().
+     */
+    private static function backfillSeedProdCounts(DB $db): void
+    {
+        try {
+            // Harvested totals from seed_harvest_log
+            $rows = $db->fetchAll(
+                "SELECT seed_id, SUM(plant_count) AS total
+                 FROM seed_harvest_log
+                 GROUP BY seed_id"
+            );
+            foreach ($rows as $r) {
+                $db->execute(
+                    "UPDATE seeds SET harvested_seed_prod_count = ? WHERE id = ?",
+                    [(int)$r['total'], (int)$r['seed_id']]
+                );
+            }
+        } catch (\Throwable $e) {}
+
+        // Projected totals from current plantings — handled by GardenHelpers.
+        try {
+            $seedIds = array_column($db->fetchAll("SELECT id FROM seeds"), 'id');
+            if (!empty($seedIds)) {
+                \App\Support\GardenHelpers::recalcSeedsProjected($db, $seedIds);
+            }
+        } catch (\Throwable $e) {}
     }
 
     private static function backfillSeedColors(DB $db): void

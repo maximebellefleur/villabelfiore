@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.1.74' => [
+        'date'  => '2026-05-06',
+        'title' => 'Seed projection: cron + lifetime harvest column (Task #13 redesign)',
+        'fixed' => [
+            'Planned-becomes-today no longer drops out of the in-ground count: a daily cron now recomputes projected counts based on actual ground state.',
+        ],
+        'new' => [
+            'Two new seed columns: projected_seed_prod_count (current in-ground + past-date planned, refreshed daily) and harvested_seed_prod_count (lifetime cumulative, incremented on every harvest). Old seed_ground_cache table removed.',
+            'New /cron/seed-counts endpoint (key-protected) and a Settings → Cron tab that shows the URL and ready-to-paste cPanel command.',
+        ],
+    ],
+
     '3.1.73' => [
         'date'  => '2026-05-06',
         'title' => 'Planting palette: A-Z scroller and search',

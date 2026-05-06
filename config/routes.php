@@ -274,6 +274,10 @@ $router->post('/api/map/land-boundary/delete',    'MapController@deleteLandBound
 $router->post('/api/map/boundary/{id}',           'MapController@saveBoundary');
 $router->post('/api/map/boundary/{id}/delete',    'MapController@deleteBoundary');
 
+// Cron / scheduled jobs (key-protected)
+$router->get('/cron/seed-counts',              'CronController@seedProjectedCounts');
+$router->get('/settings/cron-info',            'CronController@info');
+
 $router->get('/api/csrf',                      'TaskController@csrfEndpoint');
 $router->get('/api/items/nearby',              'ItemController@apiNearby');
 $router->get('/api/items/{id}',                'ItemController@apiShow');

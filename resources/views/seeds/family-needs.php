@@ -88,6 +88,8 @@ $seedsJs = json_encode(array_map(fn($s) => [
     $linkedNames   = $need['linked_seed_names'] ?? [];
     $hasSeed       = !empty($linkedIds);
     $harvestByYear = $need['harvest_by_year'] ?? [];
+    $harvestedTotal = 0;
+    foreach ($harvestByYear as $hy) $harvestedTotal += (int)$hy['total'];
 ?>
 <div class="card" id="fn-card-<?= (int)$need['id'] ?>">
     <!-- Read view -->

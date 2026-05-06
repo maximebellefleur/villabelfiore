@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.74' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Seed projection: cron + lifetime harvest column',
+        'features' => [
+            ['title' => 'Daily cron for projected counts', 'detail' => 'Replaces seed_ground_cache. Two new seed columns: projected_seed_prod_count (refreshed daily and on bed writes) and harvested_seed_prod_count (cumulative). New /cron/seed-counts endpoint and Settings → Cron tab.'],
+        ],
+    ],
+
     '3.1.73' => [
         'status'   => 'released',
         'released' => '2026-05-06',

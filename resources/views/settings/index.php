@@ -18,6 +18,7 @@
         <a href="<?= url('/settings/menus') ?>"        class="settings-tab" role="tab">☰ Menus</a>
         <a href="<?= url('/logs/errors') ?>"           class="settings-tab" role="tab">Error Logs</a>
         <a href="<?= url('/settings/upcoming') ?>"     class="settings-tab" role="tab">🗺 Roadmap</a>
+        <a href="<?= url('/settings/cron-info') ?>"    class="settings-tab" role="tab">⏰ Cron</a>
         <a href="<?= url('/settings/upgrade') ?>"      class="settings-tab" role="tab">⬆️ Upgrade</a>
     </nav>
 

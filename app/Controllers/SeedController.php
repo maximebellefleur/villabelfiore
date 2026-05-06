@@ -314,25 +314,31 @@ class SeedController
             $seedMap = [];
             if (!empty($allSeedIds)) {
                 $ph   = implode(',', array_fill(0, count($allSeedIds), '?'));
-                $sRows = $db->fetchAll("SELECT id, name, variety FROM seeds WHERE id IN ($ph)", array_keys($allSeedIds));
+                $sRows = $db->fetchAll(
+                    "SELECT id, name, variety, projected_seed_prod_count, harvested_seed_prod_count
+                     FROM seeds WHERE id IN ($ph)",
+                    array_keys($allSeedIds)
+                );
                 foreach ($sRows as $s) $seedMap[(int)$s['id']] = $s;
             }
 
-            // Bulk-fetch ground counts from cache (one query for all seeds)
-            $cacheMap = [];
+            // Future-planned (status='planned' AND planted_at > today) — live query, rarely shown
+            $plannedFuture = [];
             if (!empty($allSeedIds)) {
                 try {
                     $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
-                    $cRows = $db->fetchAll(
-                        "SELECT seed_id, in_ground, planned FROM seed_ground_cache WHERE seed_id IN ($ph)",
+                    $pfRows = $db->fetchAll(
+                        "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count,1)) AS total
+                         FROM garden_plantings gp
+                         LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
+                         WHERE gp.seed_id IN ($ph)
+                           AND gp.status = 'planned'
+                           AND (gp.planted_at IS NULL OR gp.planted_at > CURDATE())
+                           AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
+                         GROUP BY gp.seed_id",
                         array_keys($allSeedIds)
                     );
-                    foreach ($cRows as $cr) {
-                        $cacheMap[(int)$cr['seed_id']] = [
-                            'in_ground' => (int)$cr['in_ground'],
-                            'planned'   => (int)$cr['planned'],
-                        ];
-                    }
+                    foreach ($pfRows as $pr) $plannedFuture[(int)$pr['seed_id']] = (int)$pr['total'];
                 } catch (\Throwable $e) {}
             }
 
@@ -361,14 +367,14 @@ class SeedController
 
             foreach ($rows as $need) {
                 $ids = self::parseSeedIds($need);
-                // Aggregate ground counts from cache across all linked seeds
+                // Aggregate counts directly from seeds table columns (v3.1.74)
                 $agg = ['plants_in_ground' => 0, 'plants_planned' => 0];
                 foreach ($ids as $sid) {
-                    $entry = $cacheMap[$sid] ?? null;
-                    if ($entry) {
-                        $agg['plants_in_ground'] += $entry['in_ground'];
-                        $agg['plants_planned']   += $entry['planned'];
+                    $s = $seedMap[$sid] ?? null;
+                    if ($s) {
+                        $agg['plants_in_ground'] += (int)($s['projected_seed_prod_count'] ?? 0);
                     }
+                    $agg['plants_planned'] += $plannedFuture[$sid] ?? 0;
                 }
                 // Merge harvest-by-year data across all linked seeds
                 $harvestByYearMerged = [];

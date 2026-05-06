@@ -518,53 +518,74 @@ class GardenHelpers
     }
 
     /**
-     * Recalculate seed_ground_cache for the given seed IDs.
-     * Uses the same bed_rows JOIN as seedGroundStats to exclude phantom lines.
-     * Silent fail — non-critical cache refresh.
+     * Recalculate seeds.projected_seed_prod_count for the given seed IDs.
+     * Projected = sum of plant_count where the planting is currently in the
+     * ground OR has a planned date that has already arrived. Excludes phantom
+     * lines (line_number > bed_rows). Silent fail.
+     *
+     * Replaces the old seed_ground_cache table (v3.1.74).
      */
-    public static function recalcSeedGroundCounts(DB $db, array $seedIds): void
+    public static function recalcSeedsProjected(DB $db, array $seedIds): void
     {
+        $seedIds = array_values(array_unique(array_filter(array_map('intval', $seedIds), fn($v) => $v > 0)));
         if (empty($seedIds)) return;
         try {
             $ph   = implode(',', array_fill(0, count($seedIds), '?'));
             $rows = $db->fetchAll(
-                "SELECT gp.seed_id,
-                        SUM(CASE WHEN gp.status IN ('growing','sown') THEN COALESCE(gp.plant_count,1) ELSE 0 END) AS in_ground,
-                        SUM(CASE WHEN gp.status = 'planned'           THEN COALESCE(gp.plant_count,1) ELSE 0 END) AS planned
+                "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count, 1)) AS total
                  FROM garden_plantings gp
                  LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
                  WHERE gp.seed_id IN ($ph)
-                   AND gp.status IN ('growing','sown','planned')
+                   AND (gp.status IN ('growing','sown')
+                        OR (gp.status = 'planned' AND gp.planted_at IS NOT NULL AND gp.planted_at <= CURDATE()))
                    AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
                  GROUP BY gp.seed_id",
                 $seedIds
             );
-            $resultMap = [];
-            foreach ($rows as $r) {
-                $resultMap[(int)$r['seed_id']] = [
-                    'in_ground' => (int)$r['in_ground'],
-                    'planned'   => (int)$r['planned'],
-                ];
-            }
+            $totals = [];
+            foreach ($rows as $r) $totals[(int)$r['seed_id']] = (int)$r['total'];
             foreach ($seedIds as $sid) {
-                $sid = (int)$sid;
-                if ($sid <= 0) continue;
-                $ig = $resultMap[$sid]['in_ground'] ?? 0;
-                $pl = $resultMap[$sid]['planned']   ?? 0;
                 $db->execute(
-                    "INSERT INTO seed_ground_cache (seed_id, in_ground, planned, updated_at)
-                     VALUES (?,?,?,NOW())
-                     ON DUPLICATE KEY UPDATE in_ground=VALUES(in_ground), planned=VALUES(planned), updated_at=NOW()",
-                    [$sid, $ig, $pl]
+                    "UPDATE seeds SET projected_seed_prod_count = ? WHERE id = ?",
+                    [$totals[$sid] ?? 0, $sid]
                 );
             }
         } catch (\Throwable $e) {}
     }
 
     /**
-     * Trigger a cache recalculation for all seeds in the given bed, plus any
-     * extra seed IDs (e.g. seeds that were just deleted from the bed).
-     * Silent fail — best-effort.
+     * Recalculate projected counts for every seed. Used by the daily cron.
+     * Returns the number of seeds processed.
+     */
+    public static function recalcAllSeedsProjected(DB $db): int
+    {
+        try {
+            $seedIds = array_column($db->fetchAll("SELECT id FROM seeds"), 'id');
+            if (empty($seedIds)) return 0;
+            self::recalcSeedsProjected($db, $seedIds);
+            return count($seedIds);
+        } catch (\Throwable $e) { return 0; }
+    }
+
+    /**
+     * Increment seeds.harvested_seed_prod_count by $count (lifetime cumulative).
+     * Called from the harvest flow alongside the seed_harvest_log INSERT.
+     */
+    public static function addToSeedHarvested(DB $db, int $seedId, int $count): void
+    {
+        if ($seedId <= 0 || $count <= 0) return;
+        try {
+            $db->execute(
+                "UPDATE seeds SET harvested_seed_prod_count = harvested_seed_prod_count + ? WHERE id = ?",
+                [$count, $seedId]
+            );
+        } catch (\Throwable $e) {}
+    }
+
+    /**
+     * Recalculate projected counts for every seed currently linked to a bed,
+     * plus any extra seed IDs (e.g. just-deleted plantings whose seed_id was
+     * captured before the row was removed).
      */
     public static function triggerBedRecalc(DB $db, int $bedId, array $extraSeedIds = []): void
     {
@@ -578,7 +599,7 @@ class GardenHelpers
                 array_map('intval', $seedIds),
                 array_filter(array_map('intval', $extraSeedIds))
             )));
-            self::recalcSeedGroundCounts($db, $merged);
+            self::recalcSeedsProjected($db, $merged);
         } catch (\Throwable $e) {}
     }
 

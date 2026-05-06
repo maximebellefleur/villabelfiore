@@ -783,14 +783,16 @@ class GardenBedController
             [$id]
         );
 
-        // Log into seed_harvest_log (best-effort)
+        // Log into seed_harvest_log AND increment seeds.harvested_seed_prod_count (lifetime)
         if ($seedId > 0 && (int)($planting['plant_count'] ?? 0) > 0) {
+            $harvestedCount = max(1, (int)$planting['plant_count']);
             try {
                 $db->execute(
                     "INSERT INTO seed_harvest_log (seed_id, bed_id, plant_count, harvested_on) VALUES (?,?,?,CURDATE())",
-                    [$seedId, $itemId, max(1, (int)$planting['plant_count'])]
+                    [$seedId, $itemId, $harvestedCount]
                 );
             } catch (\Throwable $e) {}
+            GardenHelpers::addToSeedHarvested($db, $seedId, $harvestedCount);
         }
 
         // Log harvest record (best-effort — silent on schema mismatch)
@@ -827,6 +829,30 @@ class GardenBedController
         $today   = GardenHelpers::todayIso();
         $year    = (int)date('Y');
         $season  = GardenHelpers::seasonOfMonth((int)date('n'));
+
+        // Capture rows BEFORE delete to record harvest counts and trigger recalc
+        $clearedSeedIds = [];
+        try {
+            $beforeDelete = $db->fetchAll(
+                "SELECT seed_id, plant_count FROM garden_plantings
+                 WHERE item_id = ? AND line_number = ? AND seed_id IS NOT NULL",
+                [$itemId, $lineNum]
+            );
+            foreach ($beforeDelete as $bd) {
+                $sid = (int)($bd['seed_id'] ?? 0);
+                $cnt = max(1, (int)($bd['plant_count'] ?? 0));
+                if ($sid > 0) {
+                    $clearedSeedIds[] = $sid;
+                    GardenHelpers::addToSeedHarvested($db, $sid, $cnt);
+                    try {
+                        $db->execute(
+                            "INSERT INTO seed_harvest_log (seed_id, bed_id, plant_count, harvested_on) VALUES (?,?,?,CURDATE())",
+                            [$sid, $itemId, $cnt]
+                        );
+                    } catch (\Throwable $e) {}
+                }
+            }
+        } catch (\Throwable $e) {}
 
         // Append everything currently planted to rotation_history
         try {
@@ -883,6 +909,8 @@ class GardenBedController
             [$itemId, $lineNum]
         );
 
+        GardenHelpers::triggerBedRecalc($db, $itemId, $clearedSeedIds);
+
         Response::json(['success' => true]);
     }
 
@@ -918,7 +946,8 @@ class GardenBedController
         if (!is_array($harvest) || empty($harvest)) { Response::json(['success' => false, 'error' => 'Nothing to harvest']); return; }
 
         try {
-            $clearedSeedIds = [];
+            $clearedSeedIds   = [];
+            $touchedSeedIds   = [];
             foreach ($harvest as $pid => $entry) {
                 $pid    = (int)$pid;
                 $plants = max(0, (int)($entry['plants'] ?? 0));
@@ -929,14 +958,29 @@ class GardenBedController
                 $row = $db->fetchOne("SELECT id, plant_count, crop_name, seed_id FROM garden_plantings WHERE id = ? AND item_id = ? AND line_number = ?", [$pid, $itemId, $lineNum]);
                 if (!$row) continue;
 
-                $cur = (int)($row['plant_count'] ?? 0);
+                $cur     = (int)($row['plant_count'] ?? 0);
+                $sid     = (int)($row['seed_id'] ?? 0);
+                $removed = 0;
                 if ($plants > 0) {
                     if ($plants >= $cur) {
+                        $removed = max(1, $cur);
                         $db->execute("DELETE FROM garden_plantings WHERE id = ?", [$pid]);
-                        if (!empty($row['seed_id'])) $clearedSeedIds[] = (int)$row['seed_id'];
+                        if ($sid > 0) $clearedSeedIds[] = $sid;
                     } else {
+                        $removed = $plants;
                         $db->execute("UPDATE garden_plantings SET plant_count = plant_count - ? WHERE id = ?", [$plants, $pid]);
+                        if ($sid > 0) $touchedSeedIds[] = $sid;
                     }
+                }
+                // Log harvest count + bump lifetime harvested
+                if ($sid > 0 && $removed > 0) {
+                    GardenHelpers::addToSeedHarvested($db, $sid, $removed);
+                    try {
+                        $db->execute(
+                            "INSERT INTO seed_harvest_log (seed_id, bed_id, plant_count, harvested_on) VALUES (?,?,?,CURDATE())",
+                            [$sid, $itemId, $removed]
+                        );
+                    } catch (\Throwable $e) {}
                 }
 
                 if ($qty > 0) {
@@ -972,6 +1016,8 @@ class GardenBedController
             Response::json(['success' => false, 'error' => $e->getMessage()]);
             return;
         }
+
+        GardenHelpers::triggerBedRecalc($db, $itemId, array_merge($clearedSeedIds, $touchedSeedIds));
 
         Response::json(['success' => true, 'line_empty' => $remaining === 0]);
     }
