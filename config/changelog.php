@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.65' => [
+        'date'  => '2026-05-06',
+        'title' => 'Survey: skip stage + done for now',
+        'new' => [
+            '"Done for now" button at the top right of the survey page — exits back to the item at any point.',
+            '"Skip this for now" link below each stage\'s upload button — skips to the next incomplete stage without submitting. If it\'s the last stage, returns to the item page.',
+        ],
+    ],
+
     '3.1.64' => [
         'date'  => '2026-05-06',
         'title' => 'Instant distance sort from cached GPS',

@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.65' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Survey: skip stage + done for now',
+        'features' => [
+            ['title' => '"Done for now" exit button', 'detail' => 'A compact "Done for now" button at the top right of the survey lets you exit back to the item page at any point without losing already-completed stages.'],
+            ['title' => '"Skip this for now" per stage', 'detail' => 'Each survey stage has a "Skip this for now" link below the upload button. Clicking it moves to the next incomplete stage without submitting. On the last stage it returns to the item page.'],
+        ],
+    ],
+
     '3.1.64' => [
         'status'   => 'released',
         'released' => '2026-05-06',

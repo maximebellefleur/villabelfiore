@@ -64,6 +64,10 @@ foreach ($stages as $i => $s) {
 .sv-back { color:var(--color-text-muted);text-decoration:none;display:flex;align-items:center; }
 .sv-title { font-size:1.05rem;font-weight:800;flex:1; }
 .sv-badge { font-size:.72rem;font-weight:700;color:var(--color-primary);background:var(--color-primary-soft);padding:2px 10px;border-radius:999px;white-space:nowrap; }
+.sv-done-now { font-size:.78rem;font-weight:700;color:var(--color-text-muted);text-decoration:none;white-space:nowrap;border:1.5px solid var(--color-border);border-radius:8px;padding:5px 12px; }
+.sv-done-now:hover { border-color:var(--color-text-muted);color:var(--color-text); }
+.sv-skip { display:block;text-align:center;margin-top:10px;font-size:.82rem;color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:4px; }
+.sv-skip:hover { color:var(--color-text); }
 
 /* Progress strip */
 .sv-progress { display:flex;gap:6px;margin-bottom:24px;align-items:center; }
@@ -169,6 +173,7 @@ foreach ($stages as $i => $s) {
     </a>
     <span class="sv-title"><?= e($itemName) ?></span>
     <span class="sv-badge"><?= e(ucwords(str_replace('_', ' ', $itemType))) ?></span>
+    <a href="<?= url('/items/' . $itemId) ?>" class="sv-done-now">Done for now</a>
 </div>
 
 <?php include BASE_PATH . '/resources/views/partials/flash.php'; ?>
@@ -239,6 +244,7 @@ foreach ($stages as $i => $s) {
         <button class="btn btn-primary btn-lg" id="svCompassBtn" onclick="svSubmitCompass(<?= $si ?>)" disabled>
             📤 Upload & <?= $isLast ? 'Finish' : 'Continue' ?>
         </button>
+        <button type="button" class="sv-skip" onclick="svSkip(<?= $si ?>)">Skip this for now</button>
     </div>
 
     <?php else: ?>
@@ -276,6 +282,7 @@ foreach ($stages as $i => $s) {
                 onclick="svSubmitStage('<?= $stage['id'] ?>',<?= $stage['count'] ?>,<?= $si ?>,'<?= $stage['cat'] ?>','<?= $stage['action_type'] ?>',<?= !empty($stage['scale_label']) ? 'true' : 'false' ?>,<?= $isLast ? 'true' : 'false' ?>)">
             📤 Upload & <?= $isLast ? 'Finish' : 'Continue' ?>
         </button>
+        <button type="button" class="sv-skip" onclick="svSkip(<?= $si ?>)">Skip this for now</button>
     </div>
     <?php endif; ?>
 </div><!-- /sv-stage -->
@@ -306,6 +313,7 @@ foreach ($stages as $i => $s) {
         <button class="btn btn-primary btn-lg" id="svCompassBtn" onclick="svSubmitCompass(<?= $si ?>)" disabled>
             📤 Upload & <?= $isLast ? 'Finish' : 'Continue' ?>
         </button>
+        <button type="button" class="sv-skip" onclick="svSkip(<?= $si ?>)">Skip this for now</button>
     </div>
 
     <?php else: ?>
@@ -634,6 +642,29 @@ foreach ($stages as $i => $s) {
         if (nextDot) { nextDot.classList.remove('sv-done'); nextDot.classList.add('sv-active'); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    window.svSkip = function(stageIdx) {
+        var dot = document.getElementById('svDot_' + STAGES[stageIdx].id);
+        if (dot) { dot.classList.remove('sv-active'); }
+        var cur = document.getElementById('svStage_' + STAGES[stageIdx].id);
+        if (cur) cur.classList.remove('sv-active');
+
+        var next = null;
+        for (var i = stageIdx + 1; i < STAGES.length; i++) {
+            var nextEl = document.getElementById('svStage_' + STAGES[i].id);
+            if (nextEl) { next = { idx: i, el: nextEl, stage: STAGES[i] }; break; }
+        }
+
+        if (!next) {
+            window.location.href = <?= json_encode(url('/items/' . $itemId)) ?>;
+            return;
+        }
+
+        next.el.classList.add('sv-active');
+        var nextDot = document.getElementById('svDot_' + next.stage.id);
+        if (nextDot) { nextDot.classList.remove('sv-done'); nextDot.classList.add('sv-active'); }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     // ── Compress ──────────────────────────────────────────────────────────────
     function compress(file, cb) {
