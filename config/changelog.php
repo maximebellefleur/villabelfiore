@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.77' => [
+        'date'  => '2026-05-06',
+        'title' => 'Single item view: gallery shows all attachments (Task #40)',
+        'fixed' => [
+            'Item detail page photo gallery now sorts attachments newest-first and shows survey, log, treatment, harvest and custom-category photos alongside identification photos — previously the unordered query could leave survey photos out of the preview.',
+        ],
+        'new' => [
+            'Preview grid bumped from 8 to 12 tiles before the +more overlay. The full-screen gallery still contains every image regardless.',
+        ],
+    ],
+
     '3.1.76' => [
         'date'  => '2026-05-06',
         'title' => 'Custom item type icons everywhere (Task #39)',

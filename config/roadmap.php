@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.77' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Single item view: gallery shows all attachments',
+        'features' => [
+            ['title' => 'All-source photo gallery', 'detail' => 'Every active image attached to the item — survey, log, treatment, harvest, identification, custom-category — flows through the preview grid and full-screen gallery, sorted newest first.'],
+        ],
+    ],
+
     '3.1.76' => [
         'status'   => 'released',
         'released' => '2026-05-06',

@@ -38,9 +38,13 @@ foreach ($attachments as $att) {
     }
 }
 
-// Photo preview: all image attachments, newest first, max 8
+// Photo preview: ALL image attachments regardless of source — survey photos,
+// treatment/note/log photos, harvest photos, identification photos, general
+// uploads. Newest first; preview shows up to 12 with a "+more" overlay on
+// the last tile if there are more (clicking opens the full-screen gallery
+// which contains every image).
 $imageAttachments = array_values(array_filter($attachments, fn($a) => str_starts_with($a['mime_type'] ?? '', 'image/')));
-$previewPhotos    = array_slice($imageAttachments, 0, 8);
+$previewPhotos    = array_slice($imageAttachments, 0, 12);
 $totalPhotos      = count($imageAttachments);
 
 // Gallery: find which index in $imageAttachments corresponds to $idPhoto
@@ -503,8 +507,8 @@ foreach (($irrigationPlans ?? []) as $_ip) {
              onkeydown="if(event.key==='Enter'||event.key===' ')openGallery(<?= $i ?>)">
             <img src="<?= att_url((int)$att['id']) ?>"
                  alt="" loading="lazy">
-            <?php if ($i === 7 && $totalPhotos > 8): ?>
-            <div class="show-photo-more">+<?= $totalPhotos - 8 ?></div>
+            <?php if ($i === 11 && $totalPhotos > 12): ?>
+            <div class="show-photo-more">+<?= $totalPhotos - 12 ?></div>
             <?php endif; ?>
         </div>
         <?php endforeach; ?>

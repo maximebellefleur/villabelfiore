@@ -1,5 +1,11 @@
 [
   {
+    "id": 40,
+    "title": "Single item view: gallery shows all attachments",
+    "description": "The photo gallery on the item detail page now shows EVERY active image attached to the item — survey photos, log/note/treatment photos, harvest photos, identification photos, custom-category uploads. Sorted newest first. Preview increased from 8 to 12 tiles before the +more overlay.",
+    "created_at": "2026-05-06 14:30:00"
+  },
+  {
     "id": 39,
     "title": "Custom item type icons everywhere (item types icon)",
     "description": "Custom item type emoji and color now flow through the items list, item detail page, and map markers. Built emoji+color into config/item_types.php (single source of truth) and made views derive from the merged types array — removed all hardcoded $typeEmoji / $typeColor / TYPE_CONFIG maps.",

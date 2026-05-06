@@ -242,7 +242,18 @@ class ItemController
 
         $this->ensureLogAttachmentColumn($db);
         $meta        = $db->fetchAll('SELECT meta_key, meta_value_text FROM item_meta WHERE item_id = ?', [$id]);
-        $attachments = $db->fetchAll("SELECT * FROM attachments WHERE item_id = ? AND (status = 'active' OR status IS NULL)", [$id]);
+        // ALL active image/file attachments for this item — regardless of category.
+        // Includes survey photos (yearly_refresh_*, *_photo), log_photo, harvest_photo,
+        // identification_photo, general_attachment, and any custom category. Survey
+        // temp uploads (status='survey_temp') are excluded because they aren't
+        // confirmed yet.
+        $attachments = $db->fetchAll(
+            "SELECT * FROM attachments
+             WHERE item_id = ?
+               AND (status = 'active' OR status IS NULL)
+             ORDER BY uploaded_at DESC",
+            [$id]
+        );
         $activityLog = $db->fetchAll(
             'SELECT al.*, a.id AS att_id, a.stored_filename AS att_filename, a.mime_type AS att_mime
              FROM activity_log al
