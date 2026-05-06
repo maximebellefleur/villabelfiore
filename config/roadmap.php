@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.68' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Fix custom item type save',
+        'features' => [
+            ['title' => 'Custom item type save fix', 'detail' => 'Fixed crash when adding a custom item type from Settings → Item Types.'],
+        ],
+    ],
+
     '3.1.67' => [
         'status'   => 'released',
         'released' => '2026-05-06',

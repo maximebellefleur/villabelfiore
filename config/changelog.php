@@ -8,6 +8,14 @@
  */
 return [
 
+    '3.1.68' => [
+        'date'  => '2026-05-06',
+        'title' => 'Fix custom item type save',
+        'fixed' => [
+            'Adding a custom item type was failing with "something went wrong" — INSERT used wrong column names (setting_type/is_public instead of value_type/autoload).',
+        ],
+    ],
+
     '3.1.67' => [
         'date'  => '2026-05-06',
         'title' => 'Proximity warning + item type duplicate check',
