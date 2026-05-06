@@ -26,10 +26,11 @@
                 <input type="hidden" name="_token" value="<?= e(\App\Support\CSRF::getToken()) ?>">
                 <div class="it-add-row">
                     <input type="text" name="emoji" class="it-emoji-input" placeholder="📦" maxlength="4" value="">
+                    <input type="color" name="color" class="it-color-input" value="#4b7c59" title="Marker color on map">
                     <input type="text" name="label" class="settings-input it-label-input" placeholder="e.g. Rose Bush" required>
                     <button type="submit" class="btn btn-primary btn-sm">+ Add</button>
                 </div>
-                <p class="settings-hint">The emoji is optional. The type key is auto-generated from the name (e.g. "Rose Bush" → <code>rose_bush</code>).</p>
+                <p class="settings-hint">Emoji and color are optional. The color appears on map markers. The type key is auto-generated from the name (e.g. "Rose Bush" → <code>rose_bush</code>).</p>
             </form>
         </div>
 
@@ -40,7 +41,7 @@
             <div class="it-grid">
                 <?php foreach ($custom as $t): ?>
                 <div class="it-card it-card--custom">
-                    <span class="it-emoji"><?= e($t['emoji'] ?? '📦') ?></span>
+                    <span class="it-emoji" style="background:<?= e($t['color'] ?? '#4b7c59') ?>;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;"><?= e($t['emoji'] ?? '📦') ?></span>
                     <div class="it-info">
                         <span class="it-label"><?= e($t['label']) ?></span>
                         <code class="it-key"><?= e($t['key']) ?></code>
@@ -89,6 +90,7 @@
 .it-add-form { max-width:520px; }
 .it-add-row { display:flex;gap:8px;align-items:center;margin-bottom:6px; }
 .it-emoji-input { width:54px;text-align:center;font-size:1.3rem;padding:8px 4px;border:1.5px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-raised); }
+.it-color-input { width:36px;height:36px;padding:2px;border:1.5px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;flex-shrink:0; }
 .it-label-input { flex:1; }
 .it-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px; }
 .it-card { display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--color-border);background:var(--color-surface); }

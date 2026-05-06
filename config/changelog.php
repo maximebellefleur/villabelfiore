@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.1.80' => [
+        'date'  => '2026-05-06',
+        'title' => 'Custom item types: color picker for map markers (Task #39 fix)',
+        'fixed' => [
+            'Custom item types were always displayed as grey (#888) circles on the map because no color was stored. The "Add Custom Type" form now includes a color picker; the chosen color is saved, passed through mergeCustomItemTypes, and applied to the map marker.',
+        ],
+        'new' => [
+            'Custom type cards in Settings → Item Types now show the type emoji inside a colored circle matching the map marker color.',
+        ],
+    ],
+
     '3.1.79' => [
         'date'  => '2026-05-06',
         'title' => 'Menu links: full https:// URLs used as-is (Task #42)',

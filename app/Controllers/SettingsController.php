@@ -235,6 +235,8 @@ class SettingsController
 
         $label = trim($request->post('label', ''));
         $emoji = trim($request->post('emoji', ''));
+        $color = trim($request->post('color', ''));
+        if ($color === '' || !preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#4b7c59';
         if ($label === '') { flash('error', 'Name is required.'); Response::redirect('/settings/item-types'); return; }
 
         $key = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $label));
@@ -254,7 +256,7 @@ class SettingsController
             return;
         }
 
-        $custom[] = ['key' => $key, 'label' => $label, 'emoji' => $emoji ?: '📦'];
+        $custom[] = ['key' => $key, 'label' => $label, 'emoji' => $emoji ?: '📦', 'color' => $color];
         self::saveCustomItemTypes($custom);
         flash('success', '"' . $label . '" added.');
         Response::redirect('/settings/item-types');
@@ -304,6 +306,7 @@ class SettingsController
             $builtIn[$t['key']] = [
                 'label'                => $t['label'],
                 'emoji'                => $t['emoji'] ?? '📦',
+                'color'                => $t['color'] ?? '#4b7c59',
                 'custom'               => true,
                 'allowed_parents'      => [null],
                 'allowed_children'     => [],

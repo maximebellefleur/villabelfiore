@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.80' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Custom item types: color picker for map markers',
+        'features' => [
+            ['title' => 'Map marker color for custom types', 'detail' => 'Custom item types now have a color field (picked at creation time) that flows through to map markers and the Settings card. Previously all custom types rendered as grey #888 on the map.'],
+        ],
+    ],
+
     '3.1.79' => [
         'status'   => 'released',
         'released' => '2026-05-06',
