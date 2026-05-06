@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.1.87' => [
+        'date'  => '2026-05-06',
+        'title' => 'Family Needs: live plant count + yield fallback (bug fix)',
+        'fixed' => [
+            'Family Needs cards showed "No yield data" even when plants were in beds because the controller relied entirely on the cached projected_seed_prod_count column (0 when yield_per_plant_kg is NULL). Now a direct live query against garden_plantings always retrieves current plant counts per seed.',
+            'Cards now show "X plants in ground ⚠ set kg/plant for yield" when plants exist but yield_per_plant_kg is not configured, instead of showing nothing.',
+            'The kg yield display ("🌱 X kg projected") still shows when yield IS configured and the sync has run.',
+        ],
+    ],
+
     '3.1.86' => [
         'date'  => '2026-05-06',
         'title' => 'Family Needs: auto-rebuild projected yield on boot (bug fix)',

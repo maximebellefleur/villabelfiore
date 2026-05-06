@@ -97,6 +97,8 @@ $seedsJs = json_encode(array_map(fn($s) => [
     $projectedKg   = (float)($need['projected_yield_kg'] ?? 0);
     $harvestedKg   = (float)($need['harvested_yield_kg'] ?? 0);
     $totalKg       = (float)($need['total_yield_kg'] ?? 0);
+    $inGround      = (int)($need['plants_in_ground'] ?? 0);
+    $noYield       = (int)($need['plants_no_yield'] ?? 0);
     $planned       = (int)($need['plants_planned'] ?? 0);
     $linkedIds     = $need['linked_seed_ids'] ?? [];
     $linkedNames   = $need['linked_seed_names'] ?? [];
@@ -137,6 +139,11 @@ $seedsJs = json_encode(array_map(fn($s) => [
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= fmtKg($projectedKg) ?> projected (in ground)</span>
             </div>
+            <?php elseif ($inGround > 0): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px">
+                <span style="font-size:.78rem;font-weight:600;color:#16a34a">🌱 <?= $inGround ?> plant<?= $inGround !== 1 ? 's' : '' ?> in ground</span>
+                <?php if ($noYield > 0): ?><span style="font-size:.7rem;color:#d97706;margin-left:4px">⚠ set kg/plant for yield</span><?php endif; ?>
+            </div>
             <?php endif; ?>
             <?php if ($harvestedKg > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px">
@@ -147,10 +154,10 @@ $seedsJs = json_encode(array_map(fn($s) => [
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:7px">
                 <span style="font-size:.78rem;font-weight:600;color:#7c3aed">= <?= fmtKg($totalKg) ?> total coverage</span>
             </div>
-            <?php elseif ($hasSeed): ?>
-            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0">No yield data — set kg/plant on linked seed(s)</div>
-            <?php else: ?>
+            <?php elseif (!$hasSeed): ?>
             <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0">No seed linked</div>
+            <?php elseif ($inGround === 0): ?>
+            <div style="font-size:.78rem;color:var(--color-text-muted);padding:4px 0">Not yet planted</div>
             <?php endif; ?>
             <?php if ($planned > 0): ?>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px">

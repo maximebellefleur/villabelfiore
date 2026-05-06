@@ -315,31 +315,26 @@ class SeedController
             foreach (self::parseSeedIds($r) as $sid) $allSeedIds[$sid] = true;
         }
 
-        // 2. Enrich with seed data. Wrapped so the list still renders if columns
-        //    are missing (e.g. v3.1.74 schema migration didn't fire on this server)
-        //    or any other DB error. A fallback query without the v3.1.74 columns
-        //    keeps the seed names visible at minimum.
+        // 2. Enrich with seed data (name, cached yield columns, and yield_per_plant_kg).
         $seedMap = [];
         if (!empty($allSeedIds)) {
             $ph     = implode(',', array_fill(0, count($allSeedIds), '?'));
             $params = array_keys($allSeedIds);
             try {
                 $sRows = $db->fetchAll(
-                    "SELECT id, name, variety, projected_seed_prod_count, harvested_seed_prod_count
+                    "SELECT id, name, variety, projected_seed_prod_count, harvested_seed_prod_count, yield_per_plant_kg
                      FROM seeds WHERE id IN ($ph)",
                     $params
                 );
                 foreach ($sRows as $s) $seedMap[(int)$s['id']] = $s;
             } catch (\Throwable $e) {
-                \App\Support\Logger::error('Family needs: seed enrichment query failed (likely missing v3.1.74 columns) — ' . $e->getMessage());
+                \App\Support\Logger::error('Family needs: seed enrichment query failed — ' . $e->getMessage());
                 try {
-                    $sRows = $db->fetchAll(
-                        "SELECT id, name, variety FROM seeds WHERE id IN ($ph)",
-                        $params
-                    );
+                    $sRows = $db->fetchAll("SELECT id, name, variety FROM seeds WHERE id IN ($ph)", $params);
                     foreach ($sRows as $s) {
                         $s['projected_seed_prod_count'] = 0;
                         $s['harvested_seed_prod_count'] = 0;
+                        $s['yield_per_plant_kg']        = null;
                         $seedMap[(int)$s['id']] = $s;
                     }
                 } catch (\Throwable $e2) {
@@ -348,7 +343,31 @@ class SeedController
             }
         }
 
-        // 3. Future-planned plants (status='planned' AND planted_at > today). Optional.
+        // 3. Live plant count in ground — direct query, NOT the cached column.
+        //    This is the source of truth for what's actually in beds right now.
+        //    Separate from yield: a seed with no yield_per_plant_kg still shows plant count.
+        $liveGroundCounts = [];
+        if (!empty($allSeedIds)) {
+            try {
+                $ph = implode(',', array_fill(0, count($allSeedIds), '?'));
+                $gcRows = $db->fetchAll(
+                    "SELECT gp.seed_id, SUM(COALESCE(gp.plant_count, 1)) AS total
+                     FROM garden_plantings gp
+                     LEFT JOIN item_meta im ON im.item_id = gp.item_id AND im.meta_key = 'bed_rows'
+                     WHERE gp.seed_id IN ($ph)
+                       AND (gp.status IN ('growing','sown')
+                            OR (gp.status = 'planned' AND gp.planted_at IS NOT NULL AND gp.planted_at <= CURDATE()))
+                       AND gp.line_number <= CAST(COALESCE(im.meta_value_text, '9999') AS UNSIGNED)
+                     GROUP BY gp.seed_id",
+                    array_keys($allSeedIds)
+                );
+                foreach ($gcRows as $r) $liveGroundCounts[(int)$r['seed_id']] = (int)$r['total'];
+            } catch (\Throwable $e) {
+                \App\Support\Logger::error('Family needs: live ground count query failed — ' . $e->getMessage());
+            }
+        }
+
+        // 4. Future-planned plants (status='planned' AND planted_at > today). Optional.
         $plannedFuture = [];
         if (!empty($allSeedIds)) {
             try {
@@ -370,7 +389,7 @@ class SeedController
             }
         }
 
-        // 4. Bulk-fetch harvest totals from log (current year + 2 previous). Optional.
+        // 5. Bulk-fetch harvest totals from log (current year + 2 previous). Optional.
         $harvestMap = [];
         if (!empty($allSeedIds)) {
             try {
@@ -395,16 +414,28 @@ class SeedController
             }
         }
 
-        // 5. Assemble the final needs list. Each row is independently safe.
+        // 6. Assemble the final needs list. Each row is independently safe.
         $needs = [];
         foreach ($rows as $need) {
             $ids = self::parseSeedIds($need);
-            $agg = ['projected_yield_kg' => 0.0, 'harvested_yield_kg' => 0.0, 'plants_planned' => 0];
+            $agg = [
+                'projected_yield_kg'  => 0.0,
+                'harvested_yield_kg'  => 0.0,
+                'plants_in_ground'    => 0,    // live count regardless of yield config
+                'plants_no_yield'     => 0,    // plants whose seed has no yield_per_plant_kg
+                'plants_planned'      => 0,
+            ];
             foreach ($ids as $sid) {
                 $s = $seedMap[$sid] ?? null;
                 if ($s) {
                     $agg['projected_yield_kg'] += (float)($s['projected_seed_prod_count'] ?? 0);
                     $agg['harvested_yield_kg'] += (float)($s['harvested_seed_prod_count'] ?? 0);
+                }
+                $groundForSeed = $liveGroundCounts[$sid] ?? 0;
+                $agg['plants_in_ground'] += $groundForSeed;
+                // If this seed has no yield configured, count those plants separately
+                if ($groundForSeed > 0 && ($s === null || $s['yield_per_plant_kg'] === null || (float)$s['yield_per_plant_kg'] <= 0)) {
+                    $agg['plants_no_yield'] += $groundForSeed;
                 }
                 $agg['plants_planned'] += $plannedFuture[$sid] ?? 0;
             }

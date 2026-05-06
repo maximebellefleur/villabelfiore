@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.87' => [
+        'status'   => 'released',
+        'released' => '2026-05-06',
+        'title'    => 'Family Needs: live plant count fallback',
+        'features' => [
+            ['title' => 'Live plant count always visible', 'detail' => 'familyNeeds() now runs a direct garden_plantings query for current plant counts per seed, independent of the yield cache. Cards show "X plants in ground" when yield is not set, with a "set kg/plant" prompt. When yield IS configured and sync has run, shows kg instead.'],
+        ],
+    ],
+
     '3.1.86' => [
         'status'   => 'released',
         'released' => '2026-05-06',
