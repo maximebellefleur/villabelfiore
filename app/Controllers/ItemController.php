@@ -701,32 +701,36 @@ class ItemController
         if ($logId && $request->post('attach_photo', '0') === '1') {
             $logPhotos = $_FILES['log_photos'] ?? null;
             if ($logPhotos && is_array($logPhotos['name']) && count($logPhotos['name']) > 0) {
-                $firstAttId = null;
-                $dir        = STORAGE_PATH . '/uploads/items/';
-                $finfo      = new \finfo(FILEINFO_MIME_TYPE);
-                $allowedMimes = ['image/jpeg','image/png','image/webp','image/gif'];
-                for ($fi = 0; $fi < count($logPhotos['name']); $fi++) {
-                    if ($logPhotos['error'][$fi] !== UPLOAD_ERR_OK) continue;
-                    try {
-                        $mime = $finfo->file($logPhotos['tmp_name'][$fi]) ?: 'application/octet-stream';
-                        if (!in_array($mime, $allowedMimes, true)) continue;
-                        $ext    = strtolower(pathinfo($logPhotos['name'][$fi], PATHINFO_EXTENSION)) ?: 'jpg';
-                        $uuid   = bin2hex(random_bytes(16));
-                        $stored = date('Ymd_Hi') . '_' . $id . '_' . substr($uuid, 0, 8) . '.' . $ext;
-                        if ((is_dir($dir) || mkdir($dir, 0755, true)) && move_uploaded_file($logPhotos['tmp_name'][$fi], $dir . $stored)) {
-                            $db->execute(
-                                'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
-                                 VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
-                                [$uuid, $id, 'log_photo', $logPhotos['name'][$fi], $stored, $mime, $ext, 'local', 'uploads/items/' . $stored, $logPhotos['size'][$fi], 0, $_SESSION['user_id'], 'active']
-                            );
-                            $attId = (int) $db->lastInsertId();
-                            // Link first photo to the log entry (for feed thumbnail)
-                            if ($attId && $firstAttId === null) {
-                                $firstAttId = $attId;
-                                $db->execute('UPDATE activity_log SET attachment_id = ? WHERE id = ?', [$attId, $logId]);
+                try {
+                    $firstAttId   = null;
+                    $dir          = STORAGE_PATH . '/uploads/items/';
+                    $finfo        = new \finfo(FILEINFO_MIME_TYPE);
+                    $allowedMimes = ['image/jpeg','image/png','image/webp','image/gif'];
+                    for ($fi = 0; $fi < count($logPhotos['name']); $fi++) {
+                        if ($logPhotos['error'][$fi] !== UPLOAD_ERR_OK) continue;
+                        try {
+                            $mime = $finfo->file($logPhotos['tmp_name'][$fi]) ?: 'application/octet-stream';
+                            if (!in_array($mime, $allowedMimes, true)) continue;
+                            $ext    = strtolower(pathinfo($logPhotos['name'][$fi], PATHINFO_EXTENSION)) ?: 'jpg';
+                            $uuid   = bin2hex(random_bytes(16));
+                            $stored = date('Ymd_Hi') . '_' . $id . '_' . substr($uuid, 0, 8) . '.' . $ext;
+                            if ((is_dir($dir) || mkdir($dir, 0755, true)) && move_uploaded_file($logPhotos['tmp_name'][$fi], $dir . $stored)) {
+                                $db->execute(
+                                    'INSERT INTO attachments (uuid, item_id, category, original_filename, stored_filename, mime_type, extension, storage_driver, storage_path, file_size_bytes, is_primary, uploaded_at, uploaded_by, status)
+                                     VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),?,?)',
+                                    [$uuid, $id, 'log_photo', $logPhotos['name'][$fi], $stored, $mime, $ext, 'local', 'uploads/items/' . $stored, $logPhotos['size'][$fi], 0, $_SESSION['user_id'], 'active']
+                                );
+                                $attId = (int) $db->lastInsertId();
+                                // Link first photo to the log entry (for feed thumbnail)
+                                if ($attId && $firstAttId === null) {
+                                    $firstAttId = $attId;
+                                    $db->execute('UPDATE activity_log SET attachment_id = ? WHERE id = ?', [$attId, $logId]);
+                                }
                             }
-                        }
-                    } catch (\Throwable $e) { /* non-fatal */ }
+                        } catch (\Throwable $e) { /* non-fatal per-file */ }
+                    }
+                } catch (\Throwable $e) {
+                    \App\Support\Logger::error('addAction: photo upload failed — ' . $e->getMessage());
                 }
             }
         }

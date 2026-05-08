@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.88' => [
+        'date'  => '2026-05-08',
+        'title' => 'Item log: photo upload no longer causes 500 error',
+        'fixed' => [
+            'Attaching a photo when logging an item activity returned "Server error — please try again." because new \finfo(FILEINFO_MIME_TYPE) was instantiated outside the per-file try/catch. Any exception there bypassed all error handling and hit the global 500 handler. The entire photo block is now wrapped in an outer try/catch so exceptions are logged and never crash the response.',
+            'The activity log entry is always saved first; a photo upload failure no longer prevents the note from being recorded.',
+        ],
+    ],
+
     '3.1.87' => [
         'date'  => '2026-05-06',
         'title' => 'Family Needs: live plant count + yield fallback (bug fix)',

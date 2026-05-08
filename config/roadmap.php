@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.1.88' => [
+        'status'   => 'released',
+        'released' => '2026-05-08',
+        'title'    => 'Item log: photo upload 500 fix',
+        'features' => [
+            ['title' => 'Photo upload error no longer crashes note save', 'detail' => 'The finfo instantiation and all photo-processing code in ItemController::addAction() is now wrapped in an outer try/catch. Errors are logged; the note is always saved successfully regardless of photo outcome.'],
+        ],
+    ],
+
     '3.1.87' => [
         'status'   => 'released',
         'released' => '2026-05-06',
