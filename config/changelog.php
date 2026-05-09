@@ -8,6 +8,18 @@
  */
 return [
 
+    '3.2.1' => [
+        'date'  => '2026-05-09',
+        'title' => 'Garden bed: drag-only planting + brighter seed info panel',
+        'improved' => [
+            'Drag-and-drop is now the only way to add a seed to a garden line. Clicking a palette chip selects it (shows details in the sidebar) but no longer plants. This prevents accidental plants when browsing the catalog.',
+            'The seed info bottom sheet (double-tap on mobile) and desktop sidebar are noticeably brighter — darken factor raised from 38% to 55% so the background colour is readable rather than nearly black.',
+            'The seed info panel now has bottom padding (48px + safe-area inset) so the notes and companion plant tags at the bottom are no longer clipped behind the screen edge when scrolling.',
+            'Empty dot slots in the bed grid no longer show a "tap to plant" cursor or title — they are purely informational.',
+            'Palette label and active-line label updated to say "Drag a seed onto a line to plant".',
+        ],
+    ],
+
     '3.2.0' => [
         'date'  => '2026-05-09',
         'title' => 'Bulletproof saves — no more blank "Something went wrong" pages',

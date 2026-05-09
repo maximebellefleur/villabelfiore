@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.2.1' => [
+        'status'   => 'released',
+        'released' => '2026-05-09',
+        'title'    => 'Garden bed: drag-only planting + brighter seed panel',
+        'features' => [
+            ['title' => 'Drag-only planting', 'detail' => 'Clicking a palette chip now only selects it for info display. Planting requires drag-and-drop onto a line — no accidental plants when browsing.'],
+            ['title' => 'Brighter seed info panel', 'detail' => 'Bottom sheet and sidebar background raised from 38% to 55% brightness. Text and details are much more readable.'],
+            ['title' => 'Bottom padding on seed info', 'detail' => 'Notes and companion tags at the bottom of the panel are no longer clipped — padding accounts for safe-area and bottom bars.'],
+        ],
+    ],
+
     '3.2.0' => [
         'status'   => 'released',
         'released' => '2026-05-09',

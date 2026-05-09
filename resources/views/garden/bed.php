@@ -170,7 +170,7 @@ $bedId = (int)$item['id'];
               $head = !empty($s['head']) ? ' is-head' : '';
               echo '<div class="rg-dot rg-dot--filled' . $head . '" style="background:' . e($color) . ';border-color:' . e($color) . '" title="' . e($crop['name'] ?? '') . '"></div>';
             else:
-              echo '<div class="rg-dot rg-dot--clickable" data-slot="' . (int)$i . '" title="tap to plant"></div>';
+              echo '<div class="rg-dot rg-dot--empty" data-slot="' . (int)$i . '"></div>';
             endif;
           endforeach; ?>
         </div>
@@ -223,7 +223,7 @@ $bedId = (int)$item['id'];
   <div class="rg-palette" id="rgPalette">
     <div class="rg-palette-toolbar">
       <div id="rgPaletteLabel" style="font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--color-text-muted);white-space:nowrap">
-        Tap a line to select it, then tap a crop to plant
+        Drag a seed onto a line to plant
       </div>
       <div class="rg-palette-search-wrap">
         <svg class="rg-palette-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -281,18 +281,18 @@ $bedId = (int)$item['id'];
 
   <!-- Seed info modal (double-tap palette chip) -->
   <div class="rg-blackout" id="rgSeedInfoModal" style="display:none">
-    <div id="rgSeedInfoCard" style="background:#2c4a30;color:#e8f0e9;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
-      <div id="rgSeedInfoHead" style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0">
+    <div id="rgSeedInfoCard" style="background:#3a5e3f;color:#e8f0e9;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+      <div id="rgSeedInfoHead" style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.10);flex-shrink:0">
         <div style="flex:1;display:flex;align-items:center;gap:12px">
           <span id="rgSeedInfoEmoji" style="font-size:2rem;line-height:1"></span>
           <div>
             <div id="rgSeedInfoName" style="font-weight:800;font-size:1.05rem;color:#e8f0e9"></div>
-            <div id="rgSeedInfoVariety" style="font-size:.78rem;color:rgba(255,255,255,.5)"></div>
+            <div id="rgSeedInfoVariety" style="font-size:.78rem;color:rgba(255,255,255,.6)"></div>
           </div>
         </div>
-        <button type="button" id="rgSeedInfoClose" style="background:rgba(255,255,255,.1);border:none;color:#e8f0e9;font-size:1.3rem;line-height:1;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+        <button type="button" id="rgSeedInfoClose" style="background:rgba(255,255,255,.15);border:none;color:#e8f0e9;font-size:1.3rem;line-height:1;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
       </div>
-      <div id="rgSeedInfoBody" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch"></div>
+      <div id="rgSeedInfoBody" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;padding-bottom:max(env(safe-area-inset-bottom, 0px), 48px)"></div>
     </div>
   </div>
 
@@ -618,7 +618,7 @@ $bedId = (int)$item['id'];
       }
     });
     for (var i = cur; i < totalSlots; i++) {
-      $dots.append('<div class="rg-dot rg-dot--clickable" data-slot="' + i + '" title="tap to plant"></div>');
+      $dots.append('<div class="rg-dot rg-dot--empty" data-slot="' + i + '"></div>');
     }
 
     // Overpack banner
@@ -779,8 +779,8 @@ $bedId = (int)$item['id'];
 
   function updateCropSidebar(crop) {
     if (!crop) return;
-    var bg = crop.color ? darkenHex(crop.color, 0.38) : '#2c4a30';
-    $('#rgBedSidebar').css({background: bg, borderRightColor: 'rgba(255,255,255,.08)'});
+    var bg = crop.color ? darkenHex(crop.color, 0.55) : '#3a5e3f';
+    $('#rgBedSidebar').css({background: bg, borderRightColor: 'rgba(255,255,255,.10)'});
     $('#rgSidebarContent').html(buildCropInfoHtml(crop, true)).removeClass('rg-sidebar-empty');
   }
 
@@ -792,7 +792,7 @@ $bedId = (int)$item['id'];
     var bar = $('#rgSeedInfoHead').find('.rg-seed-colorbar');
     if (!bar.length) bar = $('<div class="rg-seed-colorbar" style="height:3px;border-radius:999px;margin:6px 0 0"></div>').appendTo($('#rgSeedInfoHead'));
     bar.css('background', crop.color || '#4ade80');
-    var modalBg = crop.color ? darkenHex(crop.color, 0.38) : '#2c4a30';
+    var modalBg = crop.color ? darkenHex(crop.color, 0.55) : '#3a5e3f';
     $('#rgSeedInfoCard').css('background', modalBg);
     $('#rgSeedInfoBody').html(buildCropInfoHtml(crop, true));
     $('#rgSeedInfoModal').css('display', 'flex').css('align-items', 'flex-end');
@@ -869,9 +869,9 @@ $bedId = (int)$item['id'];
     });
     var $lbl = $('#rgPaletteLabel');
     if (activeLineNum) {
-      $lbl.html('Tap a crop to plant in <strong>Line ' + activeLineNum + '</strong>').css('color','var(--color-primary)');
+      $lbl.html('Drag a seed onto <strong>Line ' + activeLineNum + '</strong> to plant').css('color','var(--color-primary)');
     } else {
-      $lbl.html('Select a line, then tap a crop to plant').css('color','');
+      $lbl.html('Drag a seed onto a line to plant').css('color','');
     }
   }
   if (activeLineNum) setActiveLine(activeLineNum);
@@ -911,34 +911,27 @@ $bedId = (int)$item['id'];
     var cropId = parseInt($chip.data('crop-id'), 10);
     var now = Date.now(), el = this;
     if (now - _lastTap < 320 && _lastTapEl === el) {
-      // double-tap → info modal only
+      // double-tap → info modal
       if (cropsMap[cropId]) showSeedInfoModal(cropsMap[cropId]);
       _lastTap = 0; _lastTapEl = null;
     } else {
+      // single tap → select crop (drag onto a line to plant)
       _lastTap = now; _lastTapEl = el;
       setActiveCrop(cropId);
-      if (activeLineNum) plantOne(activeLineNum, cropId);
     }
   });
 
   $('#rgPalette').on('click', '.rg-palette-chip', function (e) {
+    // Click selects the crop and shows info in the sidebar — does NOT plant.
+    // Drag and drop is the only way to add a seed to a line.
     var cropId = parseInt($(this).data('crop-id'), 10);
     setActiveCrop(cropId);
-    if (activeLineNum) plantOne(activeLineNum, cropId);
-    // no toast — blank space click just selects the crop and shows info
   });
 
-  // ── Suggestion chips + dot clicks ────────────────────────────────
+  // ── Suggestion chips ─────────────────────────────────────────────
   $page.on('click', '.rg-plant-action', function (e) {
     e.stopPropagation();
     plantOne(parseInt($(this).data('line'), 10), parseInt($(this).data('crop-id'), 10));
-  });
-  $page.on('click', '.rg-dot--clickable', function (e) {
-    e.stopPropagation();
-    if (!activeCropId) { showToast('Select a crop from the palette first', 'warn'); return; }
-    var lineNum = parseInt($(this).closest('.rg-line').data('line'), 10);
-    setActiveLine(lineNum);
-    plantOne(lineNum, activeCropId);
   });
 
   // ── HTML5 Drag-and-Drop ──────────────────────────────────────────
