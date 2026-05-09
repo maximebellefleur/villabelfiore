@@ -8,6 +8,8 @@ use App\Support\DB;
 use App\Support\CSRF;
 use App\Support\GardenHelpers;
 use App\Support\GardenSchema;
+use App\Support\DbRecord;
+use App\Support\Logger;
 
 class SeedController
 {
@@ -91,6 +93,12 @@ class SeedController
         if (empty($colorCol)) {
             try { $db->execute("ALTER TABLE seeds ADD COLUMN color CHAR(7) DEFAULT NULL"); } catch (\Throwable $e) {}
         }
+
+        // Migrate: add gardener_note (personal inline note, separate from public notes)
+        $gnCol = $db->fetchAll("SHOW COLUMNS FROM seeds LIKE 'gardener_note'");
+        if (empty($gnCol)) {
+            try { $db->execute("ALTER TABLE seeds ADD COLUMN gardener_note TEXT DEFAULT NULL"); } catch (\Throwable $e) {}
+        }
     }
 
     // ── Seed CRUD ─────────────────────────────────────────────────────────────
@@ -158,29 +166,33 @@ class SeedController
 
         $data = $this->extractSeedData($request);
 
-        $db->execute(
-            "INSERT INTO seeds (name, variety, botanical_family, type, sowing_type,
-             days_to_germinate, days_to_maturity, spacing_cm, row_spacing_cm, sowing_depth_mm,
-             sun_exposure, soil_notes, planting_months, harvest_months, frost_hardy,
-             companions, antagonists, yield_per_plant_kg,
-             stock_qty, stock_unit, stock_low_threshold, stock_enabled, notes, color)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            [
-                $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
-                $data['days_to_germinate'], $data['days_to_maturity'], $data['spacing_cm'],
-                $data['row_spacing_cm'], $data['sowing_depth_mm'],
-                $data['sun_exposure'], $data['soil_notes'],
-                $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
-                $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
-                $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
-                $data['stock_enabled'], $data['notes'], $data['color'],
-            ]
-        );
-
-        $id = (int) $db->lastInsertId();
-        $addedName = trim($request->post('name', 'Seed'));
-        flash('success', '✅ "' . $addedName . '" added to catalog — add another one below.');
-        Response::redirect('/seeds/create');
+        try {
+            $db->execute(
+                "INSERT INTO seeds (name, variety, botanical_family, type, sowing_type,
+                 days_to_germinate, days_to_maturity, spacing_cm, row_spacing_cm, sowing_depth_mm,
+                 sun_exposure, soil_notes, planting_months, harvest_months, frost_hardy,
+                 companions, antagonists, yield_per_plant_kg,
+                 stock_qty, stock_unit, stock_low_threshold, stock_enabled, notes, color)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                [
+                    $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
+                    $data['days_to_germinate'], $data['days_to_maturity'], $data['spacing_cm'],
+                    $data['row_spacing_cm'], $data['sowing_depth_mm'],
+                    $data['sun_exposure'], $data['soil_notes'],
+                    $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
+                    $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
+                    $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
+                    $data['stock_enabled'], $data['notes'], $data['color'],
+                ]
+            );
+            $addedName = trim($request->post('name', 'Seed'));
+            flash('success', '✅ "' . $addedName . '" added to catalog — add another one below.');
+            Response::redirect('/seeds/create');
+        } catch (\Throwable $e) {
+            Logger::error('SeedController::store failed — ' . $e->getMessage());
+            flash('error', 'Could not add seed — please try again.');
+            Response::redirect('/seeds/create');
+        }
     }
 
     public function show(Request $request, array $params = []): void
@@ -228,33 +240,38 @@ class SeedController
         $db   = DB::getInstance();
         $this->ensureTables($db);
 
-        $data = $this->extractSeedData($request);
-
+        $data         = $this->extractSeedData($request);
         $gardenerNote = trim($request->post('gardener_note', '')) ?: null;
-        $db->execute(
-            "UPDATE seeds SET name=?, variety=?, botanical_family=?, type=?, sowing_type=?,
-             days_to_germinate=?, days_to_maturity=?, spacing_cm=?, row_spacing_cm=?, sowing_depth_mm=?,
-             sun_exposure=?, soil_notes=?, planting_months=?, harvest_months=?, frost_hardy=?,
-             companions=?, antagonists=?, yield_per_plant_kg=?,
-             stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?, color=?,
-             gardener_note=?
-             WHERE id=?",
-            [
-                $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
-                $data['days_to_germinate'], $data['days_to_maturity'], $data['spacing_cm'],
-                $data['row_spacing_cm'], $data['sowing_depth_mm'],
-                $data['sun_exposure'], $data['soil_notes'],
-                $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
-                $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
-                $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
-                $data['stock_enabled'], $data['notes'], $data['color'],
-                $gardenerNote,
-                $id,
-            ]
-        );
 
-        flash('success', 'Seed updated.');
-        Response::redirect('/seeds/' . $id);
+        try {
+            $db->execute(
+                "UPDATE seeds SET name=?, variety=?, botanical_family=?, type=?, sowing_type=?,
+                 days_to_germinate=?, days_to_maturity=?, spacing_cm=?, row_spacing_cm=?, sowing_depth_mm=?,
+                 sun_exposure=?, soil_notes=?, planting_months=?, harvest_months=?, frost_hardy=?,
+                 companions=?, antagonists=?, yield_per_plant_kg=?,
+                 stock_qty=?, stock_unit=?, stock_low_threshold=?, stock_enabled=?, notes=?, color=?,
+                 gardener_note=?
+                 WHERE id=?",
+                [
+                    $data['name'], $data['variety'], $data['botanical_family'], $data['type'], $data['sowing_type'],
+                    $data['days_to_germinate'], $data['days_to_maturity'], $data['spacing_cm'],
+                    $data['row_spacing_cm'], $data['sowing_depth_mm'],
+                    $data['sun_exposure'], $data['soil_notes'],
+                    $data['planting_months'], $data['harvest_months'], $data['frost_hardy'],
+                    $data['companions'], $data['antagonists'], $data['yield_per_plant_kg'],
+                    $data['stock_qty'], $data['stock_unit'], $data['stock_low_threshold'],
+                    $data['stock_enabled'], $data['notes'], $data['color'],
+                    $gardenerNote,
+                    $id,
+                ]
+            );
+            flash('success', 'Seed updated.');
+            Response::redirect('/seeds/' . $id);
+        } catch (\Throwable $e) {
+            Logger::error('SeedController::update #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not save seed — please try again.');
+            Response::redirect('/seeds/' . $id . '/edit');
+        }
     }
 
     public function trash(Request $request, array $params = []): void
@@ -264,8 +281,13 @@ class SeedController
         $id = (int)($params['id'] ?? 0);
         $db = DB::getInstance();
         $this->ensureTables($db);
-        $db->execute('DELETE FROM seeds WHERE id = ?', [$id]);
-        flash('success', 'Seed deleted.');
+        try {
+            $db->execute('DELETE FROM seeds WHERE id = ?', [$id]);
+            flash('success', 'Seed deleted.');
+        } catch (\Throwable $e) {
+            Logger::error('SeedController::trash #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not delete seed — please try again.');
+        }
         Response::redirect('/seeds');
     }
 
@@ -280,15 +302,19 @@ class SeedController
         $action = $request->post('stock_action', 'set');
         $amount = (float) $request->post('stock_amount', 0);
 
-        if ($action === 'add') {
-            $db->execute('UPDATE seeds SET stock_qty = stock_qty + ? WHERE id = ?', [$amount, $id]);
-        } elseif ($action === 'subtract') {
-            $db->execute('UPDATE seeds SET stock_qty = GREATEST(0, stock_qty - ?) WHERE id = ?', [$amount, $id]);
-        } else {
-            $db->execute('UPDATE seeds SET stock_qty = ? WHERE id = ?', [max(0, $amount), $id]);
+        try {
+            if ($action === 'add') {
+                $db->execute('UPDATE seeds SET stock_qty = stock_qty + ? WHERE id = ?', [$amount, $id]);
+            } elseif ($action === 'subtract') {
+                $db->execute('UPDATE seeds SET stock_qty = GREATEST(0, stock_qty - ?) WHERE id = ?', [$amount, $id]);
+            } else {
+                $db->execute('UPDATE seeds SET stock_qty = ? WHERE id = ?', [max(0, $amount), $id]);
+            }
+            flash('success', 'Stock updated.');
+        } catch (\Throwable $e) {
+            Logger::error('SeedController::adjustStock #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not update stock — please try again.');
         }
-
-        flash('success', 'Stock updated.');
         Response::redirect('/seeds/' . $id);
     }
 

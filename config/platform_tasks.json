@@ -1,5 +1,11 @@
 [
   {
+    "id": 46,
+    "title": "Bulletproof save/update/delete across all writes",
+    "description": "Any uncaught exception during a form POST now redirects back with a flash error instead of showing a blank 'Something went wrong' page. Root cause of the seed-edit crash (missing gardener_note column migration) fixed. New DbRecord helper provides parameterised save/update/delete/softDelete for all future writes.",
+    "created_at": "2026-05-09 00:00:00"
+  },
+  {
     "id": 45,
     "title": "Family Needs: yield-based seed projection",
     "description": "projected_seed_prod_count was storing a raw plant count instead of yield in kg. Rewrote recalcSeedsProjected to multiply plant_count × yield_per_plant_kg, and addToSeedHarvested to accumulate kg at harvest time. Family Needs cards now show projected kg, harvested kg, and total coverage instead of a unitless count.",

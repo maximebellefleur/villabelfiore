@@ -8,6 +8,17 @@
  */
 return [
 
+    '3.2.0' => [
+        'status'   => 'released',
+        'released' => '2026-05-09',
+        'title'    => 'Bulletproof saves: no more blank error pages',
+        'features' => [
+            ['title' => 'POST errors redirect with flash instead of blank page', 'detail' => 'The global exception handler now redirects any failed form submission back to the referer with a human-readable flash error. The raw exception is still logged. Users never see a blank "Something went wrong" page for a form action again.'],
+            ['title' => 'DbRecord helper — safe save/update/delete for all tables', 'detail' => 'app/Support/DbRecord.php provides save(), update(), delete(), softDelete(), and exec() that build parameterised SQL from field arrays, catch exceptions internally, and log errors. All future DB writes should use this class.'],
+            ['title' => 'Fixed: seed edit crashed due to missing gardener_note column', 'detail' => 'The seeds UPDATE query referenced gardener_note but ensureTables() never added it. The migration guard is now in place.'],
+        ],
+    ],
+
     '3.1.88' => [
         'status'   => 'released',
         'released' => '2026-05-08',

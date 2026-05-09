@@ -148,17 +148,30 @@ set_exception_handler(function (Throwable $e): void {
 
     $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
            || ($_POST['_ajax'] ?? '') === '1';
+    $isPost  = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    $debug   = (bool) env('APP_DEBUG', false);
 
-    http_response_code(500);
     if ($isAjax) {
+        http_response_code(500);
         header('Content-Type: application/json');
-        $msg = (bool) env('APP_DEBUG', false)
-            ? $e->getMessage()
-            : 'Server error — please try again.';
+        $msg = $debug ? $e->getMessage() : 'Server error — please try again.';
         echo json_encode(['success' => false, 'error' => $msg]);
-    } elseif ((bool) env('APP_DEBUG', false)) {
+    } elseif ($isPost && !headers_sent()) {
+        // Form submission: redirect back with a flash error rather than a blank page.
+        // The error is already logged above — the user sees a human-readable message.
+        $msg = $debug
+            ? 'Save failed: ' . $e->getMessage()
+            : 'Could not save — please try again. If the problem persists, check Settings → Error Logs.';
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_flash']['error'] = $msg;
+        }
+        $back = $_SERVER['HTTP_REFERER'] ?? '/';
+        header('Location: ' . $back, true, 302);
+    } elseif ($debug) {
+        http_response_code(500);
         echo '<pre>' . htmlspecialchars((string) $e, ENT_QUOTES) . '</pre>';
     } else {
+        http_response_code(500);
         echo '<h1>Something went wrong. Please try again.</h1>';
     }
     exit(1);

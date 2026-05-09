@@ -6,6 +6,7 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\DB;
 use App\Support\CSRF;
+use App\Support\Logger;
 use App\Controllers\SettingsController;
 
 class ItemController
@@ -180,51 +181,57 @@ class ItemController
             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
         );
 
-        $db->execute(
-            'INSERT INTO items (uuid, type, subtype, name, parent_id, status, gps_lat, gps_lng, gps_accuracy, gps_source, is_finance_enabled, is_mobile_asset, created_by, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())',
-            [
-                $uuid,
-                $data['type'] ?? '',
-                $data['subtype'] ?? null,
-                $data['name'],
-                !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
-                'active',
-                !empty($data['gps_lat'])  ? (float)$data['gps_lat']  : null,
-                !empty($data['gps_lng'])  ? (float)$data['gps_lng']  : null,
-                !empty($data['gps_accuracy']) ? (float)$data['gps_accuracy'] : null,
-                $data['gps_source'] ?? 'manual',
-                0, 0,
-                $_SESSION['user_id'],
-            ]
-        );
+        try {
+            $db->execute(
+                'INSERT INTO items (uuid, type, subtype, name, parent_id, status, gps_lat, gps_lng, gps_accuracy, gps_source, is_finance_enabled, is_mobile_asset, created_by, created_at, updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())',
+                [
+                    $uuid,
+                    $data['type'] ?? '',
+                    $data['subtype'] ?? null,
+                    $data['name'],
+                    !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
+                    'active',
+                    !empty($data['gps_lat'])  ? (float)$data['gps_lat']  : null,
+                    !empty($data['gps_lng'])  ? (float)$data['gps_lng']  : null,
+                    !empty($data['gps_accuracy']) ? (float)$data['gps_accuracy'] : null,
+                    $data['gps_source'] ?? 'manual',
+                    0, 0,
+                    $_SESSION['user_id'],
+                ]
+            );
 
-        $id = (int) $db->lastInsertId();
+            $id = (int) $db->lastInsertId();
 
-        // Save meta fields
-        $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
-                     'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
-                     'tree_type'];
-        foreach ($metaKeys as $key) {
-            if (isset($data['meta'][$key]) && $data['meta'][$key] !== '') {
-                $db->execute(
-                    'INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
-                     VALUES (?,?,?,?,NOW(),NOW())
-                     ON DUPLICATE KEY UPDATE meta_value_text=VALUES(meta_value_text), updated_at=NOW()',
-                    [$id, $key, $data['meta'][$key], 'text']
-                );
+            // Save meta fields
+            $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
+                         'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
+                         'tree_type'];
+            foreach ($metaKeys as $key) {
+                if (isset($data['meta'][$key]) && $data['meta'][$key] !== '') {
+                    $db->execute(
+                        'INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+                         VALUES (?,?,?,?,NOW(),NOW())
+                         ON DUPLICATE KEY UPDATE meta_value_text=VALUES(meta_value_text), updated_at=NOW()',
+                        [$id, $key, $data['meta'][$key], 'text']
+                    );
+                }
             }
+
+            // Activity log
+            $db->execute(
+                'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at)
+                 VALUES (?,?,?,?,?,?,NOW())',
+                [$id, $data['type'] ?? '', 'item_created', 'Item Created', 'Item "' . ($data['name'] ?? '') . '" created.', $_SESSION['user_id']]
+            );
+
+            flash('success', 'Item created successfully.');
+            Response::redirect('/items/' . $id);
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::store failed — ' . $e->getMessage());
+            flash('error', 'Could not create item — please try again.');
+            Response::redirect('/items/create');
         }
-
-        // Activity log
-        $db->execute(
-            'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at)
-             VALUES (?,?,?,?,?,?,NOW())',
-            [$id, $data['type'] ?? '', 'item_created', 'Item Created', 'Item "' . ($data['name'] ?? '') . '" created.', $_SESSION['user_id']]
-        );
-
-        flash('success', 'Item created successfully.');
-        Response::redirect('/items/' . $id);
     }
 
     public function show(Request $request, array $params = []): void
@@ -588,48 +595,54 @@ class ItemController
             ? $data['type']
             : ($currentItem['type'] ?? 'tree');
 
-        $db->execute(
-            'UPDATE items SET name=?, type=?, subtype=?, parent_id=?, gps_lat=?, gps_lng=?, gps_accuracy=?, gps_source=?, updated_at=NOW() WHERE id=?',
-            [
-                $data['name'] ?? '',
-                $newType,
-                $data['subtype'] ?? null,
-                !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
-                !empty($data['gps_lat'])   ? (float)$data['gps_lat'] : null,
-                !empty($data['gps_lng'])   ? (float)$data['gps_lng'] : null,
-                !empty($data['gps_accuracy']) ? (float)$data['gps_accuracy'] : null,
-                $data['gps_source'] ?? 'manual',
-                $id,
-            ]
-        );
+        try {
+            $db->execute(
+                'UPDATE items SET name=?, type=?, subtype=?, parent_id=?, gps_lat=?, gps_lng=?, gps_accuracy=?, gps_source=?, updated_at=NOW() WHERE id=?',
+                [
+                    $data['name'] ?? '',
+                    $newType,
+                    $data['subtype'] ?? null,
+                    !empty($data['parent_id']) ? (int)$data['parent_id'] : null,
+                    !empty($data['gps_lat'])   ? (float)$data['gps_lat'] : null,
+                    !empty($data['gps_lng'])   ? (float)$data['gps_lng'] : null,
+                    !empty($data['gps_accuracy']) ? (float)$data['gps_accuracy'] : null,
+                    $data['gps_source'] ?? 'manual',
+                    $id,
+                ]
+            );
 
-        // Save meta fields
-        $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
-                     'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
-                     'tree_type'];
-        foreach ($metaKeys as $key) {
-            if (isset($data['meta'][$key])) {
-                $val = $data['meta'][$key];
-                if ($val !== '') {
-                    $db->execute(
-                        'INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
-                         VALUES (?,?,?,?,NOW(),NOW())
-                         ON DUPLICATE KEY UPDATE meta_value_text=VALUES(meta_value_text), updated_at=NOW()',
-                        [$id, $key, $val, 'text']
-                    );
-                } else {
-                    $db->execute('DELETE FROM item_meta WHERE item_id = ? AND meta_key = ?', [$id, $key]);
+            // Save meta fields
+            $metaKeys = ['variety', 'latin_name', 'estimated_age_years', 'purpose', 'sun_exposure', 'soil_type', 'irrigation_type',
+                         'bed_length_m', 'bed_width_m', 'garden_area_m2', 'line_crop_mix', 'cover_crop_type', 'mobile_asset_history_enabled',
+                         'tree_type'];
+            foreach ($metaKeys as $key) {
+                if (isset($data['meta'][$key])) {
+                    $val = $data['meta'][$key];
+                    if ($val !== '') {
+                        $db->execute(
+                            'INSERT INTO item_meta (item_id, meta_key, meta_value_text, value_type, created_at, updated_at)
+                             VALUES (?,?,?,?,NOW(),NOW())
+                             ON DUPLICATE KEY UPDATE meta_value_text=VALUES(meta_value_text), updated_at=NOW()',
+                            [$id, $key, $val, 'text']
+                        );
+                    } else {
+                        $db->execute('DELETE FROM item_meta WHERE item_id = ? AND meta_key = ?', [$id, $key]);
+                    }
                 }
             }
+
+            $db->execute(
+                'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,?,NOW())',
+                [$id, $data['type'] ?? '', 'item_updated', 'Item Updated', 'Item "' . ($data['name'] ?? '') . '" updated.', $_SESSION['user_id']]
+            );
+
+            flash('success', 'Item updated.');
+            Response::redirect('/items/' . $id);
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::update #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not save item — please try again.');
+            Response::redirect('/items/' . $id . '/edit');
         }
-
-        $db->execute(
-            'INSERT INTO activity_log (item_id, item_type, action_type, action_label, description, performed_by, performed_at) VALUES (?,?,?,?,?,?,NOW())',
-            [$id, $data['type'] ?? '', 'item_updated', 'Item Updated', 'Item "' . ($data['name'] ?? '') . '" updated.', $_SESSION['user_id']]
-        );
-
-        flash('success', 'Item updated.');
-        Response::redirect('/items/' . $id);
     }
 
     public function trash(Request $request, array $params = []): void
@@ -638,8 +651,13 @@ class ItemController
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
         $db = DB::getInstance();
-        $db->execute("UPDATE items SET status='trashed', deleted_at=NOW(), updated_at=NOW() WHERE id=?", [$id]);
-        flash('success', 'Item moved to trash.');
+        try {
+            $db->execute("UPDATE items SET status='trashed', deleted_at=NOW(), updated_at=NOW() WHERE id=?", [$id]);
+            flash('success', 'Item moved to trash.');
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::trash #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not trash item — please try again.');
+        }
         Response::redirect('/items');
     }
 
@@ -649,8 +667,13 @@ class ItemController
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
         $db = DB::getInstance();
-        $db->execute("UPDATE items SET status='active', deleted_at=NULL, updated_at=NOW() WHERE id=?", [$id]);
-        flash('success', 'Item restored.');
+        try {
+            $db->execute("UPDATE items SET status='active', deleted_at=NULL, updated_at=NOW() WHERE id=?", [$id]);
+            flash('success', 'Item restored.');
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::restore #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not restore item — please try again.');
+        }
         Response::redirect('/items/' . $id);
     }
 
@@ -660,8 +683,13 @@ class ItemController
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
         $db = DB::getInstance();
-        $db->execute("UPDATE items SET status='archived', updated_at=NOW() WHERE id=?", [$id]);
-        flash('success', 'Item archived.');
+        try {
+            $db->execute("UPDATE items SET status='archived', updated_at=NOW() WHERE id=?", [$id]);
+            flash('success', 'Item archived.');
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::archive #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not archive item — please try again.');
+        }
         Response::redirect('/items');
     }
 
@@ -931,8 +959,13 @@ class ItemController
         $this->requireAuth();
         CSRF::validate($request->post('_token', ''));
         $id = (int) ($params['id'] ?? 0);
-        DB::getInstance()->execute('DELETE FROM activity_log WHERE id = ?', [$id]);
-        flash('success', 'Log entry deleted.');
+        try {
+            DB::getInstance()->execute('DELETE FROM activity_log WHERE id = ?', [$id]);
+            flash('success', 'Log entry deleted.');
+        } catch (\Throwable $e) {
+            Logger::error('ItemController::deleteLog #' . $id . ' failed — ' . $e->getMessage());
+            flash('error', 'Could not delete log entry — please try again.');
+        }
         Response::redirect($_SERVER['HTTP_REFERER'] ?? '/items');
     }
 

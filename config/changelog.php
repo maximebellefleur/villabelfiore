@@ -8,6 +8,20 @@
  */
 return [
 
+    '3.2.0' => [
+        'date'  => '2026-05-09',
+        'title' => 'Bulletproof saves — no more blank "Something went wrong" pages',
+        'fixed' => [
+            'Seed edit was crashing with "Something went wrong" because the UPDATE query referenced a gardener_note column that was never added by the schema migration. The column is now added automatically on first boot.',
+            'All POST form submissions across the entire app now redirect back to the form with a flash error message if anything goes wrong, instead of showing a blank error page. The error is still logged to Settings → Error Logs for diagnosis.',
+            'SeedController store/update/trash/adjustStock all have explicit try/catch: on DB failure the user sees a clear error message and stays on the right page.',
+            'ItemController store/update/trash/restore/archive/deleteLog all have explicit try/catch with the same pattern.',
+        ],
+        'new' => [
+            'DbRecord helper (app/Support/DbRecord.php) — bulletproof save(), update(), delete(), softDelete(), and exec() methods that build fully-parameterised SQL from associative arrays, catch all exceptions internally, and log errors automatically. Use for all future write operations.',
+        ],
+    ],
+
     '3.1.88' => [
         'date'  => '2026-05-08',
         'title' => 'Item log: photo upload no longer causes 500 error',
