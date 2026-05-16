@@ -8,6 +8,15 @@
  */
 return [
 
+    '3.2.2' => [
+        'date'  => '2026-05-16',
+        'title' => 'Survey photos now reliably saved and shown on item page',
+        'fixed' => [
+            'Photos taken during Annual Survey (Budding, Fruits, Health stages) were silently lost if the survey_id / survey_direction columns had not yet been added to the attachments table. The promotion step is now split in two: status is always set to active first (columns that exist on every install), then survey_id is linked in a separate best-effort update. Photos will always appear on the item page.',
+            'Survey photo categories (Survey: Budding, Survey: Fruits, Survey: Health) are now listed in the Photos gallery with correct icons and labels instead of raw category strings.',
+        ],
+    ],
+
     '3.2.1' => [
         'date'  => '2026-05-09',
         'title' => 'Garden bed: drag-only planting + brighter seed info panel',

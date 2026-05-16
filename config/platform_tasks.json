@@ -1,5 +1,11 @@
 [
   {
+    "id": 47,
+    "title": "Survey photos missing on item page after survey",
+    "description": "Photos taken during Annual Survey stages (Budding, Fruits, Health) were not appearing on the item page. The promotion UPDATE set status='active' and survey_id in one statement — if survey_id column was absent the whole update failed silently and photos expired as survey_temp after 6h. Fixed by splitting into two updates so status is always promoted.",
+    "created_at": "2026-05-16 00:00:00"
+  },
+  {
     "id": 46,
     "title": "Bulletproof save/update/delete across all writes",
     "description": "Any uncaught exception during a form POST now redirects back with a flash error instead of showing a blank 'Something went wrong' page. Root cause of the seed-edit crash (missing gardener_note column migration) fixed. New DbRecord helper provides parameterised save/update/delete/softDelete for all future writes.",

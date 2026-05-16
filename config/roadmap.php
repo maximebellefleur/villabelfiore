@@ -8,6 +8,16 @@
  */
 return [
 
+    '3.2.2' => [
+        'status'   => 'released',
+        'released' => '2026-05-16',
+        'title'    => 'Survey photos reliably saved and visible on item page',
+        'features' => [
+            ['title' => 'Survey photos always promoted to active', 'detail' => 'Split the single-shot UPDATE into two steps so status=active is always set regardless of whether survey_id column exists yet. Photos no longer disappear after 6 hours.'],
+            ['title' => 'Survey photo categories in gallery', 'detail' => 'budding_photo, fruits_photo, health_photo now listed in the Photos gallery with emoji icons and readable labels.'],
+        ],
+    ],
+
     '3.2.1' => [
         'status'   => 'released',
         'released' => '2026-05-09',

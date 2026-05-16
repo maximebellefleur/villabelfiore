@@ -449,7 +449,9 @@ class AttachmentController
             exit;
         }
 
-        // Confirm temp attachments → active, linked to survey
+        // Confirm temp attachments → active, linked to survey.
+        // Step 1 (status + category) uses only columns that always exist; step 2 (survey_id +
+        // survey_direction) is a best-effort that fails silently if columns aren't yet present.
         $dirCatMap = ['south'=>'yearly_refresh_south','east'=>'yearly_refresh_east','north'=>'yearly_refresh_north','west'=>'yearly_refresh_west'];
         foreach ($photos as $photoEntry) {
             $tempId    = (int)(is_array($photoEntry) ? ($photoEntry['temp_id'] ?? 0) : $photoEntry);
@@ -460,13 +462,22 @@ class AttachmentController
             $cat = ($stage === 'compass' && $direction)
                 ? ($dirCatMap[$direction] ?? 'survey_compass')
                 : $stage . '_photo';
+            // Always promote to active — these columns exist on every install
             try {
                 $db->execute(
-                    "UPDATE attachments SET status='active', survey_id=?, survey_direction=?, category=?
+                    "UPDATE attachments SET status='active', category=?
                      WHERE id=? AND item_id=? AND status='survey_temp'",
-                    [$surveyRowId, $direction, $cat, $tempId, $itemId]
+                    [$cat, $tempId, $itemId]
                 );
             } catch (\Throwable $e) { /* non-fatal */ }
+            // Best-effort: link to survey row (columns added lazily by ensureSurveyAttachmentColumns)
+            try {
+                $db->execute(
+                    "UPDATE attachments SET survey_id=?, survey_direction=?
+                     WHERE id=? AND item_id=?",
+                    [$surveyRowId, $direction, $tempId, $itemId]
+                );
+            } catch (\Throwable $e) { /* non-fatal — survey_id column may not exist yet */ }
         }
 
         // Log to activity_log for backwards compatibility
